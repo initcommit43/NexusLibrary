@@ -7,9 +7,11 @@ import dev.nexus.core.cache.ItemNotFoundException;
 import dev.nexus.core.importing.ExternalAccountNotConnectedException;
 import dev.nexus.core.importing.ImportNotSupportedException;
 import dev.nexus.core.importing.SteamVerificationFailedException;
+import dev.nexus.core.importing.SyncJobNotFoundException;
 import dev.nexus.core.review.ReviewNotFoundException;
 import dev.nexus.core.tracking.EntryNotFoundException;
 import dev.nexus.modules.games.IgdbUnavailableException;
+import dev.nexus.modules.games.SteamProfileNotPublicException;
 import dev.nexus.modules.games.SteamProfilePrivateException;
 import dev.nexus.modules.games.SteamUnavailableException;
 import jakarta.validation.ConstraintViolationException;
@@ -87,6 +89,18 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                         + "Steam privacy settings, then try again."));
     }
 
+    /**
+     * A different setting from the private-library case, so it names a different fix.
+     * Sending someone to change "Game details" when the profile is the problem wastes
+     * their time and makes the app look broken.
+     */
+    @ExceptionHandler(SteamProfileNotPublicException.class)
+    public ResponseEntity<ApiError> handleProfileNotPublic(SteamProfileNotPublicException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ApiError("Steam only shares achievements for public profiles. Set "
+                        + "\"My profile\" to Public in your Steam privacy settings, then try again."));
+    }
+
     @ExceptionHandler(SteamVerificationFailedException.class)
     public ResponseEntity<ApiError> handleSteamVerification(SteamVerificationFailedException e) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ApiError(e.getMessage()));
@@ -109,7 +123,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         EntryNotFoundException.class,
         ItemNotFoundException.class,
         ExternalAccountNotConnectedException.class,
-        ReviewNotFoundException.class
+        ReviewNotFoundException.class,
+        SyncJobNotFoundException.class
     })
     public ResponseEntity<ApiError> handleNotFound(RuntimeException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiError(e.getMessage()));
