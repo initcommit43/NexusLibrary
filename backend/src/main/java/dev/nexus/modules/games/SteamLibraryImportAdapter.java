@@ -44,7 +44,12 @@ public class SteamLibraryImportAdapter implements LibraryImportAdapter {
                     .uri(
                             properties.apiBaseUrl()
                                     + "/IPlayerService/GetOwnedGames/v1/?key={key}&steamid={id}"
-                                    + "&include_appinfo=true&include_played_free_games=true",
+                                    + "&include_appinfo=true&include_played_free_games=true"
+                                    // Steam otherwise silently omits "unvetted" apps -- uncurated
+                                    // titles that are owned and played but never appear in the
+                                    // response, and are left out of game_count too, so nothing
+                                    // in the payload reveals that anything is missing.
+                                    + "&skip_unvetted_apps=false",
                             properties.apiKey(),
                             account.getExternalUserId())
                     .retrieve()
