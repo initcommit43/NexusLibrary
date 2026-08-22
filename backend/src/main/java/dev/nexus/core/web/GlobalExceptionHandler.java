@@ -4,8 +4,13 @@ import dev.nexus.auth.AuthenticationFailedException;
 import dev.nexus.auth.RegistrationConflictException;
 import dev.nexus.core.adapter.MetadataAdapterNotAvailableException;
 import dev.nexus.core.cache.ItemNotFoundException;
+import dev.nexus.core.importing.ExternalAccountNotConnectedException;
+import dev.nexus.core.importing.ImportNotSupportedException;
+import dev.nexus.core.importing.SteamVerificationFailedException;
 import dev.nexus.core.tracking.EntryNotFoundException;
 import dev.nexus.modules.games.IgdbUnavailableException;
+import dev.nexus.modules.games.SteamProfilePrivateException;
+import dev.nexus.modules.games.SteamUnavailableException;
 import jakarta.validation.ConstraintViolationException;
 import java.util.HashMap;
 import java.util.Map;
@@ -70,7 +75,40 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ApiError(e.getMessage()));
     }
 
-    @ExceptionHandler({EntryNotFoundException.class, ItemNotFoundException.class})
+    /**
+     * A private Steam profile is a setting the user controls, not a fault. Say exactly what
+     * to change rather than reporting a generic failure.
+     */
+    @ExceptionHandler(SteamProfilePrivateException.class)
+    public ResponseEntity<ApiError> handlePrivateProfile(SteamProfilePrivateException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ApiError("Steam returned no games. Set \"Game details\" to Public in your "
+                        + "Steam privacy settings, then try again."));
+    }
+
+    @ExceptionHandler(SteamVerificationFailedException.class)
+    public ResponseEntity<ApiError> handleSteamVerification(SteamVerificationFailedException e) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ApiError(e.getMessage()));
+    }
+
+    @ExceptionHandler(SteamUnavailableException.class)
+    public ResponseEntity<ApiError> handleSteamUnavailable(SteamUnavailableException e) {
+        log.warn("Steam unavailable: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(new ApiError("Steam is unavailable right now. Please try again."));
+    }
+
+    @ExceptionHandler(ImportNotSupportedException.class)
+    public ResponseEntity<ApiError> handleImportUnsupported(ImportNotSupportedException e) {
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED)
+                .body(new ApiError("Importing from that service is not available yet."));
+    }
+
+    @ExceptionHandler({
+        EntryNotFoundException.class,
+        ItemNotFoundException.class,
+        ExternalAccountNotConnectedException.class
+    })
     public ResponseEntity<ApiError> handleNotFound(RuntimeException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiError(e.getMessage()));
     }

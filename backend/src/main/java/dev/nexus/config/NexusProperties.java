@@ -17,7 +17,10 @@ public record NexusProperties(Jwt jwt, Security security, RateLimit rateLimit) {
             @Positive long accessTtlMinutes,
             @Positive long refreshTtlDays) {}
 
-    public record Security(boolean cookieSecure, List<String> allowedOrigins) {}
+    public record Security(boolean cookieSecure, List<String> allowedOrigins, String frontendUrl) {}
 
-    public record RateLimit(@Positive int authRequestsPerMinute, @Positive int searchRequestsPerMinute) {}
+    public record RateLimit(
+            @Positive int authRequestsPerMinute,
+            @Positive int searchRequestsPerMinute,
+            @Positive int importRequestsPerMinute) {}
 }
