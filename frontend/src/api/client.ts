@@ -1,0 +1,112 @@
+const BASE = '/api'
+
+export type User = {
+  id: number
+  email: string
+  username: string
+}
+
+export type AuthResponse = {
+  accessToken: string
+  user: User
+}
+
+export class ApiError extends Error {
+  readonly status: number
+  readonly fieldErrors: Record<string, string>
+
+  constructor(status: number, message: string, fieldErrors: Record<string, string> = {}) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+    this.fieldErrors = fieldErrors
+  }
+}
+
+// The access token is deliberately module state, never localStorage: an XSS payload
+// can read storage but cannot read a closure variable it has no reference to.
+let accessToken: string | null = null
+let onSessionLost: (() => void) | null = null
+
+export const setAccessToken = (token: string | null) => {
+  accessToken = token
+}
+
+export const onSessionLostHandler = (handler: (() => void) | null) => {
+  onSessionLost = handler
+}
+
+// Concurrent 401s must trigger exactly one refresh, not one per in-flight request.
+let refreshInFlight: Promise<string | null> | null = null
+
+const parseError = async (res: Response): Promise<ApiError> => {
+  let message = 'Something went wrong. Please try again.'
+  let fieldErrors: Record<string, string> = {}
+  try {
+    const body = await res.json()
+    if (typeof body.message === 'string') message = body.message
+    if (body.fieldErrors && typeof body.fieldErrors === 'object') fieldErrors = body.fieldErrors
+  } catch {
+    // Non-JSON body (proxy error, gateway timeout) — the default message stands.
+  }
+  return new ApiError(res.status, message, fieldErrors)
+}
+
+const refreshAccessToken = (): Promise<string | null> => {
+  refreshInFlight ??= fetch(`${BASE}/auth/refresh`, {
+    method: 'POST',
+    credentials: 'include',
+  })
+    .then(async (res) => {
+      if (!res.ok) return null
+      const body: AuthResponse = await res.json()
+      accessToken = body.accessToken
+      return body.accessToken
+    })
+    .catch(() => null)
+    .finally(() => {
+      refreshInFlight = null
+    })
+
+  return refreshInFlight
+}
+
+const request = async <T>(path: string, init: RequestInit = {}, allowRetry = true): Promise<T> => {
+  const headers = new Headers(init.headers)
+  if (init.body) headers.set('Content-Type', 'application/json')
+  if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`)
+
+  const res = await fetch(BASE + path, { ...init, headers, credentials: 'include' })
+
+  if (res.status === 401 && allowRetry) {
+    const renewed = await refreshAccessToken()
+    if (renewed) return request<T>(path, init, false)
+    accessToken = null
+    onSessionLost?.()
+  }
+
+  if (!res.ok) throw await parseError(res)
+  if (res.status === 204) return undefined as T
+  return res.json() as Promise<T>
+}
+
+export const api = {
+  register: (payload: { email: string; username: string; password: string }) =>
+    request<AuthResponse>('/auth/register', { method: 'POST', body: JSON.stringify(payload) }),
+
+  login: (payload: { email: string; password: string }) =>
+    request<AuthResponse>('/auth/login', { method: 'POST', body: JSON.stringify(payload) }),
+
+  logout: () => request<void>('/auth/logout', { method: 'POST' }),
+
+  me: () => request<User>('/auth/me'),
+
+  health: () => request<{ status: string }>('/health'),
+
+  restoreSession: async (): Promise<AuthResponse | null> => {
+    const token = await refreshAccessToken()
+    if (!token) return null
+    const user = await request<User>('/auth/me')
+    return { accessToken: token, user }
+  },
+}
