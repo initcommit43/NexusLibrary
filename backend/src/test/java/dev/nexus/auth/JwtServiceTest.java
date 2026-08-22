@@ -18,8 +18,8 @@ class JwtServiceTest {
     void setUp() {
         jwtService = new JwtService(new NexusProperties(
                 new NexusProperties.Jwt(SECRET, 15, 30),
-                new NexusProperties.Security(false, List.of()),
-                new NexusProperties.RateLimit(10, 30)));
+                new NexusProperties.Security(false, List.of(), "http://localhost:5173"),
+                new NexusProperties.RateLimit(10, 30, 3)));
 
         user = new AppUser("player@example.com", "player", "hash");
         setId(user, 42L);
@@ -44,8 +44,8 @@ class JwtServiceTest {
     void tokenSignedWithAnotherSecretIsRejected() {
         JwtService attacker = new JwtService(new NexusProperties(
                 new NexusProperties.Jwt("a-completely-different-signing-key-0123456789", 15, 30),
-                new NexusProperties.Security(false, List.of()),
-                new NexusProperties.RateLimit(10, 30)));
+                new NexusProperties.Security(false, List.of(), "http://localhost:5173"),
+                new NexusProperties.RateLimit(10, 30, 3)));
 
         String forged = attacker.issueAccessToken(user);
 

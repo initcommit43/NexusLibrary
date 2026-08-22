@@ -7,9 +7,11 @@ nexus:
   security:
     cookie-secure: false
     allowed-origins: http://localhost:5173
+    frontend-url: http://localhost:5173
   rate-limit:
     auth-requests-per-minute: 100
     search-requests-per-minute: 1000
+    import-requests-per-minute: 1000
   igdb:
     # Tests stub the transport; these are never used to reach the real IGDB.
     client-id: test-client-id
@@ -17,3 +19,10 @@ nexus:
     api-base-url: https://igdb.test/v4
     token-url: https://twitch.test/oauth2/token
     requests-per-second: 1000
+  steam:
+    api-key: test-steam-key
+    api-base-url: https://steam.test
+    open-id-endpoint: https://steam.test/openid/login
+  encryption:
+    # Test-only key; production reads NEXUS_ENCRYPTION_KEY from the environment.
+    key: bmV4dXMtdGVzdC1vbmx5LWVuY3J5cHRpb24ta2V5ISE=

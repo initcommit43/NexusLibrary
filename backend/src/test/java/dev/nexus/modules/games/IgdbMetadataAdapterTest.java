@@ -2,7 +2,11 @@ package dev.nexus.modules.games;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -121,11 +125,46 @@ class IgdbMetadataAdapterTest {
         assertThat(adapter.fetchById("7346").orElseThrow().itemState()).isEqualTo(ItemState.UPCOMING);
     }
 
+    /**
+     * Guards the import path: falling back to the inherited one-at-a-time default would
+     * turn a 500-game library into 500 sequential calls at four per second.
+     */
+    @Test
+    void fetchingManyIdsUsesTheBulkEndpointRatherThanOneCallEach() {
+        when(client.findGamesByIds(anyCollection())).thenReturn(List.of(game(), game(7347, "Hades")));
+
+        var items = adapter.fetchByIds(List.of("7346", "7347"));
+
+        assertThat(items).hasSize(2);
+        verify(client, times(1)).findGamesByIds(anyCollection());
+        verify(client, never()).findGameById(anyString());
+    }
+
+    @Test
+    void splitsAnOversizedBatchIntoRequestsIgdbWillAccept() {
+        List<String> ids = java.util.stream.IntStream.rangeClosed(1, 1200)
+                .mapToObj(String::valueOf)
+                .toList();
+        when(client.findGamesByIds(anyCollection())).thenReturn(List.of());
+
+        adapter.fetchByIds(ids);
+
+        // 1200 ids over a 500-row response cap.
+        verify(client, times(3)).findGamesByIds(anyCollection());
+    }
+
     @Test
     void returnsEmptyWhenIgdbKnowsNoSuchGame() {
         when(client.findGameById(anyString())).thenReturn(List.of());
 
         assertThat(adapter.fetchById("999999")).isEqualTo(Optional.empty());
+    }
+
+    private Map<String, Object> game(int id, String name) {
+        Map<String, Object> game = game();
+        game.put("id", id);
+        game.put("name", name);
+        return game;
     }
 
     private Map<String, Object> game() {
