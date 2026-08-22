@@ -175,3 +175,119 @@ button.ghost {
   gap: 1rem;
   margin-top: 1.5rem;
 }
+
+.shell-nav {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.9rem;
+}
+
+.shell-nav a {
+  color: var(--muted);
+  text-decoration: none;
+  padding: 0.3rem 0;
+  border-bottom: 2px solid transparent;
+}
+
+.shell-nav a.active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+.search-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 1rem 0 1.5rem;
+}
+
+.search-bar input[type='search'] {
+  flex: 1 1 16rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.search-bar select,
+.status-picker {
+  padding: 0.5rem 0.6rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.85rem;
+  width: 100%;
+}
+
+.search-bar select {
+  width: auto;
+}
+
+.cover-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.cover-card {
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.cover-card img,
+.cover-placeholder {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  display: block;
+}
+
+.cover-placeholder {
+  background: linear-gradient(140deg, var(--border), var(--surface));
+}
+
+.cover-body {
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex: 1;
+}
+
+.cover-body h2,
+.cover-body h3 {
+  font-size: 0.9rem;
+  line-height: 1.3;
+  margin: 0;
+}
+
+.cover-body .muted {
+  font-size: 0.8rem;
+  margin: 0;
+  flex: 1;
+}
+
+.cover-body button {
+  padding: 0.45rem 0.6rem;
+  font-size: 0.85rem;
+}
+
+button.small {
+  padding: 0.35rem 0.6rem;
+  font-size: 0.8rem;
+}
+
+.status-section {
+  margin-bottom: 1rem;
+}
+
+.status-section h2 {
+  font-size: 1rem;
+  margin: 1.5rem 0 0.75rem;
+}

@@ -11,6 +11,50 @@ export type AuthResponse = {
   user: User
 }
 
+export type MediaType = 'GAME' | 'MOVIE' | 'SHOW' | 'ANIME' | 'MANGA' | 'BOOK'
+
+export type TrackingStatus = 'PLANNING' | 'IN_PROGRESS' | 'COMPLETED' | 'PAUSED' | 'DROPPED'
+
+export type SearchResult = {
+  mediaType: MediaType
+  source: string
+  externalId: string
+  title: string
+  coverUrl: string | null
+  releaseDate: string | null
+}
+
+export type TrackedItem = {
+  id: number
+  mediaType: MediaType
+  source: string
+  externalId: string
+  title: string
+  coverUrl: string | null
+  releaseDate: string | null
+  metadata: Record<string, unknown>
+  status: TrackingStatus
+  rating: number | null
+  progressCurrent: number | null
+  progressUnit: string | null
+  favorite: boolean
+  notes: string | null
+}
+
+export type TrackPayload = {
+  source: string
+  externalId: string
+  status: TrackingStatus
+}
+
+export type UpdateEntryPayload = Partial<{
+  status: TrackingStatus
+  rating: number | null
+  progressCurrent: number
+  favorite: boolean
+  notes: string
+}>
+
 export class ApiError extends Error {
   readonly status: number
   readonly fieldErrors: Record<string, string>
@@ -102,6 +146,21 @@ export const api = {
   me: () => request<User>('/auth/me'),
 
   health: () => request<{ status: string }>('/health'),
+
+  searchCatalog: (mediaType: MediaType, query: string) =>
+    request<SearchResult[]>(
+      `/catalog/search?mediaType=${mediaType}&q=${encodeURIComponent(query)}`,
+    ),
+
+  listEntries: () => request<TrackedItem[]>('/entries'),
+
+  createEntry: (payload: TrackPayload) =>
+    request<TrackedItem>('/entries', { method: 'POST', body: JSON.stringify(payload) }),
+
+  updateEntry: (id: number, payload: UpdateEntryPayload) =>
+    request<TrackedItem>(`/entries/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+
+  deleteEntry: (id: number) => request<void>(`/entries/${id}`, { method: 'DELETE' }),
 
   restoreSession: async (): Promise<AuthResponse | null> => {
     const token = await refreshAccessToken()
