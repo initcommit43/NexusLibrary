@@ -41,6 +41,27 @@ export type TrackedItem = {
   notes: string | null
 }
 
+export type Provider = 'STEAM' | 'ANILIST' | 'MAL' | 'TRAKT'
+
+export type ConnectedAccount = {
+  provider: Provider
+  externalUserId: string
+  connectedAt: string
+  lastSyncedAt: string | null
+}
+
+export type UnmatchedItem = {
+  providerItemId: string
+  title: string
+  reason: string
+}
+
+export type ImportReport = {
+  created: number
+  updated: number
+  unmatched: UnmatchedItem[]
+}
+
 export type TrackPayload = {
   source: string
   externalId: string
@@ -161,6 +182,23 @@ export const api = {
     request<TrackedItem>(`/entries/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
 
   deleteEntry: (id: number) => request<void>(`/entries/${id}`, { method: 'DELETE' }),
+
+  listIntegrations: () => request<ConnectedAccount[]>('/integrations'),
+
+  steamAuthorizeUrl: () =>
+    request<{ url: string }>('/integrations/steam/authorize', { method: 'POST' }),
+
+  completeSteamConnect: (params: Record<string, string>) =>
+    request<ConnectedAccount>('/integrations/steam/callback', {
+      method: 'POST',
+      body: JSON.stringify({ params }),
+    }),
+
+  importLibrary: (provider: Provider) =>
+    request<ImportReport>(`/integrations/${provider}/import`, { method: 'POST' }),
+
+  disconnect: (provider: Provider) =>
+    request<void>(`/integrations/${provider}`, { method: 'DELETE' }),
 
   restoreSession: async (): Promise<AuthResponse | null> => {
     const token = await refreshAccessToken()
