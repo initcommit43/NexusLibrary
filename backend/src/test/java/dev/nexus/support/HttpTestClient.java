@@ -72,6 +72,12 @@ public class HttpTestClient {
                 .method("PATCH", HttpRequest.BodyPublishers.ofString(write(payload))));
     }
 
+    public Response putJson(String path, Map<String, ?> payload, String... headers) {
+        return send(request(path, headers)
+                .header("Content-Type", "application/json")
+                .PUT(HttpRequest.BodyPublishers.ofString(write(payload))));
+    }
+
     public Response delete(String path, String... headers) {
         return send(request(path, headers).DELETE());
     }

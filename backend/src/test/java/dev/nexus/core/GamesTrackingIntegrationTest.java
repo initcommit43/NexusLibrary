@@ -52,9 +52,7 @@ class GamesTrackingIntegrationTest extends PostgresIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        entries.deleteAll();
-        items.deleteAll();
-        users.deleteAll();
+        resetDatabase();
 
         http = new HttpTestClient(port);
         token = registerAndGetToken(http, "player@example.com", "player");

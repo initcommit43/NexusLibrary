@@ -51,9 +51,7 @@ class EntryOwnershipIntegrationTest extends PostgresIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        entries.deleteAll();
-        items.deleteAll();
-        users.deleteAll();
+        resetDatabase();
 
         http = new HttpTestClient(port);
         when(igdbClient.findGameById(eq(GamesTestData.BOTW_ID))).thenReturn(List.of(GamesTestData.botw()));

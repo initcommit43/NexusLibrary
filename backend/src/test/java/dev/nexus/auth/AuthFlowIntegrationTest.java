@@ -25,7 +25,7 @@ class AuthFlowIntegrationTest extends PostgresIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        users.deleteAll();
+        resetDatabase();
         http = new HttpTestClient(port);
     }
 

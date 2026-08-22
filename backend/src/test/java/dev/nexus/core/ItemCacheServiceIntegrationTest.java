@@ -44,8 +44,7 @@ class ItemCacheServiceIntegrationTest extends PostgresIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        entries.deleteAll();
-        items.deleteAll();
+        resetDatabase();
         when(igdbClient.findGameById(anyString())).thenReturn(List.of(GamesTestData.botw()));
     }
 
