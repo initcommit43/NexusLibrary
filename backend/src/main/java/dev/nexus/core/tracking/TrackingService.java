@@ -1,5 +1,7 @@
 package dev.nexus.core.tracking;
 
+import dev.nexus.core.activity.ActivityRecorder;
+import dev.nexus.core.activity.ActivityRecorder.EntrySnapshot;
 import dev.nexus.core.cache.ItemCacheService;
 import dev.nexus.core.domain.TrackableItem;
 import dev.nexus.core.domain.UserEntry;
@@ -23,10 +25,12 @@ public class TrackingService {
 
     private final UserEntryRepository entries;
     private final ItemCacheService itemCache;
+    private final ActivityRecorder activity;
 
-    public TrackingService(UserEntryRepository entries, ItemCacheService itemCache) {
+    public TrackingService(UserEntryRepository entries, ItemCacheService itemCache, ActivityRecorder activity) {
         this.entries = entries;
         this.itemCache = itemCache;
+        this.activity = activity;
     }
 
     @Transactional(readOnly = true)
@@ -47,8 +51,10 @@ public class TrackingService {
     public UserEntry track(Long userId, TrackRequest request) {
         TrackableItem item = itemCache.findOrCache(request.source(), request.externalId());
 
-        UserEntry entry = entries.findByUserIdAndItemId(userId, item.getId())
-                .orElseGet(() -> new UserEntry(userId, item, request.status()));
+        UserEntry existing = entries.findByUserIdAndItemId(userId, item.getId()).orElse(null);
+        boolean isNew = existing == null;
+        UserEntry entry = isNew ? new UserEntry(userId, item, request.status()) : existing;
+        EntrySnapshot before = isNew ? null : EntrySnapshot.of(entry);
 
         entry.setStatus(request.status());
         applyIfPresent(request.rating(), entry::setRating);
@@ -62,12 +68,19 @@ public class TrackingService {
             entry.setFavorite(request.favorite());
         }
 
-        return entries.save(entry);
+        UserEntry saved = entries.save(entry);
+        if (isNew) {
+            activity.added(saved);
+        } else {
+            activity.changed(saved, before);
+        }
+        return saved;
     }
 
     @Transactional
     public UserEntry update(Long userId, Long entryId, UpdateEntryRequest request) {
         UserEntry entry = requireOwned(entryId, userId);
+        EntrySnapshot before = EntrySnapshot.of(entry);
 
         applyIfPresent(request.status(), entry::setStatus);
         applyIfPresent(request.rating(), entry::setRating);
@@ -81,7 +94,9 @@ public class TrackingService {
             entry.setFavorite(request.favorite());
         }
 
-        return entries.save(entry);
+        UserEntry saved = entries.save(entry);
+        activity.changed(saved, before);
+        return saved;
     }
 
     @Transactional

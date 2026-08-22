@@ -7,6 +7,7 @@ import dev.nexus.core.cache.ItemNotFoundException;
 import dev.nexus.core.importing.ExternalAccountNotConnectedException;
 import dev.nexus.core.importing.ImportNotSupportedException;
 import dev.nexus.core.importing.SteamVerificationFailedException;
+import dev.nexus.core.review.ReviewNotFoundException;
 import dev.nexus.core.tracking.EntryNotFoundException;
 import dev.nexus.modules.games.IgdbUnavailableException;
 import dev.nexus.modules.games.SteamProfilePrivateException;
@@ -107,7 +108,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler({
         EntryNotFoundException.class,
         ItemNotFoundException.class,
-        ExternalAccountNotConnectedException.class
+        ExternalAccountNotConnectedException.class,
+        ReviewNotFoundException.class
     })
     public ResponseEntity<ApiError> handleNotFound(RuntimeException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiError(e.getMessage()));
