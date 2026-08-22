@@ -6,6 +6,8 @@ import dev.nexus.core.adapter.TrackableItemData;
 import dev.nexus.core.domain.ItemState;
 import dev.nexus.core.domain.MediaType;
 import dev.nexus.core.domain.Source;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -58,17 +60,33 @@ public class IgdbMetadataAdapter implements MetadataAdapter {
 
     @Override
     public Optional<TrackableItemData> fetchById(String externalId) {
-        return client.findGameById(externalId).stream()
-                .findFirst()
-                .map(game -> new TrackableItemData(
-                        MediaType.GAME,
-                        Source.IGDB,
-                        string(game.get("id")),
-                        string(game.get("name")),
-                        coverUrl(game),
-                        releaseDate(game),
-                        itemState(game),
-                        metadata(game)));
+        return client.findGameById(externalId).stream().findFirst().map(this::toItemData);
+    }
+
+    /**
+     * Overrides the one-at-a-time default with IGDB's bulk form. Importing a library asks
+     * for hundreds of ids at once, and at four requests per second the default would take
+     * minutes for what this does in a couple of calls.
+     */
+    @Override
+    public List<TrackableItemData> fetchByIds(Collection<String> externalIds) {
+        List<TrackableItemData> items = new ArrayList<>();
+        for (List<String> batch : IgdbClient.partition(externalIds)) {
+            client.findGamesByIds(batch).stream().map(this::toItemData).forEach(items::add);
+        }
+        return items;
+    }
+
+    private TrackableItemData toItemData(Map<String, Object> game) {
+        return new TrackableItemData(
+                MediaType.GAME,
+                Source.IGDB,
+                string(game.get("id")),
+                string(game.get("name")),
+                coverUrl(game),
+                releaseDate(game),
+                itemState(game),
+                metadata(game));
     }
 
     private String coverUrl(Map<String, Object> game) {

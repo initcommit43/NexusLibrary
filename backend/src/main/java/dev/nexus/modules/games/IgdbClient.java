@@ -1,5 +1,6 @@
 package dev.nexus.modules.games;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import org.springframework.http.HttpStatusCode;
@@ -13,6 +14,8 @@ import org.springframework.web.client.RestClientException;
  */
 @Component
 public class IgdbClient {
+
+    static final int MAX_BATCH = 500;
 
     private static final String GAME_FIELDS =
             "id,name,summary,first_release_date,cover.url,platforms.name,genres.name,total_rating,status";
@@ -38,22 +41,59 @@ public class IgdbClient {
         return post("where id = %s; fields %s; limit 1;".formatted(Long.parseLong(externalId), GAME_FIELDS));
     }
 
-    @SuppressWarnings("unchecked")
+    /** Bulk variant, so importing a library costs a handful of requests rather than one each. */
+    public List<Map<String, Object>> findGamesByIds(Collection<String> externalIds) {
+        return post("where id = (%s); fields %s; limit %d;"
+                .formatted(numericCsv(externalIds), GAME_FIELDS, MAX_BATCH));
+    }
+
+    /** Cross-references Steam appids to IGDB games. Category 1 is Steam. */
+    public List<Map<String, Object>> findGamesBySteamAppIds(Collection<String> appIds) {
+        return post(
+                "where category = 1 & uid = (%s); fields game,uid; limit %d;"
+                        .formatted(quotedCsv(appIds), MAX_BATCH),
+                "/external_games");
+    }
+
+    /** IGDB caps a response at 500 rows, so callers resolve in chunks of that size. */
+    public static List<List<String>> partition(Collection<String> values) {
+        List<String> all = List.copyOf(values);
+        List<List<String>> batches = new java.util.ArrayList<>();
+        for (int i = 0; i < all.size(); i += MAX_BATCH) {
+            batches.add(all.subList(i, Math.min(all.size(), i + MAX_BATCH)));
+        }
+        return batches;
+    }
+
+    private String numericCsv(Collection<String> values) {
+        return values.stream().map(Long::parseLong).map(String::valueOf).collect(java.util.stream.Collectors.joining(","));
+    }
+
+    private String quotedCsv(Collection<String> values) {
+        return values.stream()
+                .map(v -> "\"" + v.replace("\"", "") + "\"")
+                .collect(java.util.stream.Collectors.joining(","));
+    }
+
     private List<Map<String, Object>> post(String body) {
+        return post(body, "/games");
+    }
+
+    private List<Map<String, Object>> post(String body, String path) {
         rateLimiter.acquire();
 
         try {
-            return execute(body, true);
+            return execute(body, path, true);
         } catch (RestClientException e) {
             throw new IgdbUnavailableException("IGDB request failed", e);
         }
     }
 
     @SuppressWarnings("unchecked")
-    private List<Map<String, Object>> execute(String body, boolean allowRetry) {
+    private List<Map<String, Object>> execute(String body, String path, boolean allowRetry) {
         List<Map<String, Object>> response = restClient
                 .post()
-                .uri(properties.apiBaseUrl() + "/games")
+                .uri(properties.apiBaseUrl() + path)
                 .header("Client-ID", properties.clientId())
                 .header("Authorization", "Bearer " + auth.accessToken())
                 .contentType(MediaType.TEXT_PLAIN)
@@ -72,7 +112,7 @@ public class IgdbClient {
         if (response == null) {
             // The token was rejected; drop it and try once with a freshly minted one.
             auth.invalidate();
-            return execute(body, false);
+            return execute(body, path, false);
         }
         return response;
     }
