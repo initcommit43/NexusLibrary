@@ -9,3 +9,11 @@ nexus:
     allowed-origins: http://localhost:5173
   rate-limit:
     auth-requests-per-minute: 100
+    search-requests-per-minute: 1000
+  igdb:
+    # Tests stub the transport; these are never used to reach the real IGDB.
+    client-id: test-client-id
+    client-secret: test-client-secret
+    api-base-url: https://igdb.test/v4
+    token-url: https://twitch.test/oauth2/token
+    requests-per-second: 1000

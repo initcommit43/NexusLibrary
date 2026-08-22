@@ -15,7 +15,7 @@ import java.util.Optional;
  */
 public class HttpTestClient {
 
-    public record Response(int status, Map<String, Object> body, List<String> setCookie) {
+    public record Response(int status, String rawBody, Map<String, Object> body, List<String> setCookie) {
 
         public Optional<String> refreshCookie() {
             return setCookie.stream().filter(cookie -> cookie.startsWith("nexus_refresh=")).findFirst();
@@ -34,6 +34,16 @@ public class HttpTestClient {
         public Map<String, Object> fieldErrors() {
             return (Map<String, Object>) body.getOrDefault("fieldErrors", Map.of());
         }
+
+        /** For endpoints that answer with a JSON array rather than an object. */
+        @SuppressWarnings("unchecked")
+        public List<Map<String, Object>> list() {
+            try {
+                return new ObjectMapper().readValue(rawBody, List.class);
+            } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+                throw new IllegalStateException("Response body is not a JSON array: " + rawBody, e);
+            }
+        }
     }
 
     private final ObjectMapper mapper = new ObjectMapper();
@@ -43,6 +53,16 @@ public class HttpTestClient {
 
     public HttpTestClient(int port) {
         this.baseUri = "http://localhost:" + port + "/api";
+    }
+
+    public Response patchJson(String path, Map<String, ?> payload, String... headers) {
+        return send(request(path, headers)
+                .header("Content-Type", "application/json")
+                .method("PATCH", HttpRequest.BodyPublishers.ofString(write(payload))));
+    }
+
+    public Response delete(String path, String... headers) {
+        return send(request(path, headers).DELETE());
     }
 
     public Response postJson(String path, Map<String, ?> payload, String... headers) {
@@ -72,6 +92,7 @@ public class HttpTestClient {
             HttpResponse<String> response = client.send(builder.build(), HttpResponse.BodyHandlers.ofString());
             return new Response(
                     response.statusCode(),
+                    response.body(),
                     read(response.body()),
                     response.headers().allValues("set-cookie"));
         } catch (java.io.IOException e) {
@@ -90,9 +111,10 @@ public class HttpTestClient {
         }
     }
 
+    /** Object bodies parse; array bodies stay reachable through {@code rawBody}/{@code list()}. */
     @SuppressWarnings("unchecked")
     private Map<String, Object> read(String body) {
-        if (body == null || body.isBlank()) {
+        if (body == null || body.isBlank() || body.startsWith("[")) {
             return Map.of();
         }
         try {
