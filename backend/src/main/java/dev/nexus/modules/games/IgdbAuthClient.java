@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 
 /**
@@ -41,6 +42,11 @@ public class IgdbAuthClient {
     }
 
     private void fetchToken() {
+        if (!StringUtils.hasText(properties.clientId()) || !StringUtils.hasText(properties.clientSecret())) {
+            throw new IgdbUnavailableException(
+                    "IGDB credentials are not configured; set IGDB_CLIENT_ID and IGDB_CLIENT_SECRET");
+        }
+
         Map<?, ?> response = restClient
                 .post()
                 .uri(

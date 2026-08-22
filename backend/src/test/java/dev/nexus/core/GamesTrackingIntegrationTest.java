@@ -166,6 +166,35 @@ class GamesTrackingIntegrationTest extends PostgresIntegrationTest {
     }
 
     @Test
+    void aStatusOutsideTheEnumIsRejectedAsABadRequest() {
+        Response response = http.postJson(
+                "/entries",
+                Map.of("source", "IGDB", "externalId", GamesTestData.BOTW_ID, "status", "NONSENSE"),
+                "Authorization",
+                "Bearer " + token);
+
+        assertThat(response.status()).isEqualTo(400);
+        assertThat(response.body().get("message").toString()).doesNotContain("Exception");
+    }
+
+    @Test
+    void aMissingSearchParameterIsABadRequestRatherThanAServerError() {
+        assertThat(get("/catalog/search?mediaType=GAME").status()).isEqualTo(400);
+        assertThat(get("/catalog/search?q=zelda").status()).isEqualTo(400);
+    }
+
+    @Test
+    void anEmptySearchQueryIsRejected() {
+        assertThat(get("/catalog/search?mediaType=GAME&q=").status()).isEqualTo(400);
+    }
+
+    @Test
+    void anUnknownRouteIsNotFoundRatherThanAServerError() {
+        assertThat(get("/entries/not-a-number").status()).isEqualTo(400);
+        assertThat(get("/nope").status()).isIn(401, 404);
+    }
+
+    @Test
     void trackingAGameIgdbDoesNotKnowIsNotFound() {
         when(igdbClient.findGameById(eq("999999"))).thenReturn(List.of());
 

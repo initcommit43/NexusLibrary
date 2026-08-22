@@ -47,8 +47,8 @@ nexus:
     auth-requests-per-minute: 10
     search-requests-per-minute: 30
   igdb:
-    client-id: ${IGDB_CLIENT_ID}
-    client-secret: ${IGDB_CLIENT_SECRET}
+    client-id: ${IGDB_CLIENT_ID:}
+    client-secret: ${IGDB_CLIENT_SECRET:}
     api-base-url: https://api.igdb.com/v4
     token-url: https://id.twitch.tv/oauth2/token
     # IGDB permits 4 requests per second.
