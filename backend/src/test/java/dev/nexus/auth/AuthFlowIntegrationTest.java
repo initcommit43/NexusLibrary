@@ -85,6 +85,13 @@ class AuthFlowIntegrationTest extends PostgresIntegrationTest {
     }
 
     @Test
+    void validationMessagesAreEnglishRegardlessOfTheServerLocale() {
+        Response response = register("not-an-email", "player", PASSWORD);
+
+        assertThat(response.fieldErrors().get("email").toString()).isEqualTo("must be a well-formed email address");
+    }
+
+    @Test
     void loginSucceedsWithTheRightPasswordAndFailsWithTheWrongOne() {
         register("player@example.com", "player", PASSWORD);
 

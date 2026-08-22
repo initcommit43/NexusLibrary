@@ -11,6 +11,11 @@ spring:
     open-in-view: false
   flyway:
     enabled: true
+  web:
+    # Pin validation messages to English; otherwise they follow the server's system
+    # locale and the API answers in whatever language the host happens to run in.
+    locale: en
+    locale-resolver: fixed
 
 server:
   port: ${PORT:8080}
