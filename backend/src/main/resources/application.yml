@@ -1,0 +1,42 @@
+spring:
+  application:
+    name: nexus
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+
+server:
+  port: ${PORT:8080}
+  servlet:
+    context-path: /api
+  error:
+    include-stacktrace: never
+    include-message: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
+nexus:
+  jwt:
+    secret: ${JWT_SECRET}
+    access-ttl-minutes: ${JWT_ACCESS_TTL_MINUTES:15}
+    refresh-ttl-days: 30
+  security:
+    # Browsers reject Secure cookies over plain http, which local dev uses.
+    cookie-secure: true
+    allowed-origins: ${ALLOWED_ORIGINS:}
+  rate-limit:
+    auth-requests-per-minute: 10

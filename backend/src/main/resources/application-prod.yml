@@ -1,0 +1,7 @@
+nexus:
+  security:
+    cookie-secure: true
+
+logging:
+  level:
+    root: INFO

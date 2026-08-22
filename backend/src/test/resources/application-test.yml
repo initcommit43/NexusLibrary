@@ -1,0 +1,11 @@
+nexus:
+  jwt:
+    # Test-only value; the real secret comes from the environment.
+    secret: test-only-signing-key-not-used-anywhere-else-0123456789
+    access-ttl-minutes: 15
+    refresh-ttl-days: 30
+  security:
+    cookie-secure: false
+    allowed-origins: http://localhost:5173
+  rate-limit:
+    auth-requests-per-minute: 100

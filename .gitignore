@@ -36,3 +36,9 @@ Thumbs.db
 # --- Runtime ---
 logs/
 *.log
+
+# --- Maven wrapper (keep) ---
+!.mvn/
+!.mvn/wrapper/
+!mvnw
+!mvnw.cmd
