@@ -1,0 +1,14 @@
+* text=auto eol=lf
+
+# Windows-only tooling must keep CRLF to stay executable
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Maven wrapper
+mvnw text eol=lf
+mvnw.cmd text eol=crlf
+
+*.png binary
+*.jpg binary
+*.ico binary
+*.jar binary

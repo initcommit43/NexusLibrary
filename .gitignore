@@ -1,0 +1,38 @@
+# --- Local-only working files (never commit) ---
+plan.md
+MEMORY.md
+memory/
+.claude/
+*.local.md
+
+# --- Secrets ---
+.env
+.env.*
+!.env.example
+
+# --- Java / Maven ---
+target/
+!.mvn/wrapper/maven-wrapper.jar
+*.class
+*.jar
+*.war
+
+# --- Node ---
+node_modules/
+dist/
+dist-ssr/
+*.tsbuildinfo
+npm-debug.log*
+yarn-error.log*
+
+# --- IDE / editor ---
+.idea/
+*.iml
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# --- Runtime ---
+logs/
+*.log
