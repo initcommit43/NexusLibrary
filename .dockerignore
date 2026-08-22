@@ -1,0 +1,21 @@
+# Never let secrets or local state into the build context.
+.env
+.env.*
+!.env.example
+plan.md
+MEMORY.md
+memory/
+.claude/
+
+.git
+.gitignore
+
+# Build output — the image builds these itself.
+backend/target/
+frontend/node_modules/
+frontend/dist/
+
+.idea/
+.vscode/
+*.iml
+*.log
