@@ -9,20 +9,11 @@ import {
 } from '../api/client'
 import { AppShell } from '../components/AppShell'
 import { RatingInput } from '../components/RatingInput'
+import { hoursToMinutes, progressFieldValue, progressLabel } from '../components/progress'
 import { toDisplayScore } from '../components/rating'
 import { StatusPicker } from '../components/StatusPicker'
 
 const asList = (value: unknown) => (Array.isArray(value) ? (value as string[]) : [])
-
-/** Steam reports playtime in minutes, which stops reading naturally after an hour or two. */
-const formatProgress = (entry: TrackedItem) => {
-  if (entry.progressCurrent === null) return null
-  if (entry.progressUnit === 'MINUTES') {
-    const hours = entry.progressCurrent / 60
-    return `${hours.toFixed(1)} hours played`
-  }
-  return `${entry.progressCurrent} ${(entry.progressUnit ?? '').toLowerCase()}`
-}
 
 export const EntryDetailPage = () => {
   const { id } = useParams()
@@ -33,6 +24,7 @@ export const EntryDetailPage = () => {
   const [review, setReview] = useState<Review | null>(null)
   const [reviewDraft, setReviewDraft] = useState('')
   const [spoilers, setSpoilers] = useState(false)
+  const [editingReview, setEditingReview] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -75,6 +67,7 @@ export const EntryDetailPage = () => {
     try {
       const saved = await api.writeReview(entryId, reviewDraft, spoilers)
       setReview(saved)
+      setEditingReview(false)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not save your review.')
     } finally {
@@ -89,6 +82,7 @@ export const EntryDetailPage = () => {
       setReview(null)
       setReviewDraft('')
       setSpoilers(false)
+      setEditingReview(false)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not delete your review.')
     } finally {
@@ -123,7 +117,7 @@ export const EntryDetailPage = () => {
 
   const platforms = asList(entry.metadata.platforms)
   const genres = asList(entry.metadata.genres)
-  const progress = formatProgress(entry)
+  const tracksMinutes = entry.progressUnit === 'MINUTES' || entry.progressUnit === null
 
   return (
     <AppShell>
@@ -173,24 +167,29 @@ export const EntryDetailPage = () => {
             </label>
 
             <label className="field">
-              <span>Progress {entry.progressUnit === 'MINUTES' && '(minutes)'}</span>
+              <span>{progressLabel(entry)}</span>
               <input
+                className="number-input"
                 type="number"
+                inputMode="decimal"
                 min={0}
-                defaultValue={entry.progressCurrent ?? ''}
+                step={tracksMinutes ? 0.1 : 1}
+                // Keyed so the field picks up a new saved value instead of holding the
+                // stale one it was first mounted with.
+                key={entry.progressCurrent ?? 'empty'}
+                defaultValue={progressFieldValue(entry)}
                 disabled={busy}
-                onBlur={(e) =>
-                  e.target.value !== String(entry.progressCurrent ?? '') &&
+                onBlur={(e) => {
+                  if (e.target.value === progressFieldValue(entry)) return
+                  const typed = Number(e.target.value)
                   void save({
-                    progressCurrent: Number(e.target.value),
+                    progressCurrent: tracksMinutes ? hoursToMinutes(typed) : Math.round(typed),
                     progressUnit: entry.progressUnit ?? 'MINUTES',
                   })
-                }
+                }}
               />
             </label>
           </div>
-
-          {progress && <p className="muted">{progress}</p>}
 
           <label className="field">
             <span>Private notes</span>
@@ -206,39 +205,79 @@ export const EntryDetailPage = () => {
 
       <section className="status-section">
         <h2>Review</h2>
-        <div className="card">
-          <label className="field">
-            <span>{review ? 'Your review' : 'Write a review'}</span>
-            <textarea
-              rows={6}
-              value={reviewDraft}
-              disabled={busy}
-              placeholder="What did you make of it?"
-              onChange={(e) => setReviewDraft(e.target.value)}
-            />
-          </label>
 
-          <label className="checkbox">
-            <input
-              type="checkbox"
-              checked={spoilers}
-              disabled={busy}
-              onChange={(e) => setSpoilers(e.target.checked)}
-            />
-            <span>Contains spoilers</span>
-          </label>
-
-          <div className="detail-actions">
-            <button type="button" disabled={busy || !reviewDraft.trim()} onClick={() => void saveReview()}>
-              {review ? 'Update review' : 'Save review'}
-            </button>
-            {review && (
-              <button type="button" className="ghost" disabled={busy} onClick={() => void removeReview()}>
-                Delete review
+        {/* A saved review reads as text. Leaving it in a textarea makes finished writing
+            look like an unsaved draft, so the editor only appears while editing. */}
+        {review && !editingReview ? (
+          <div className="card review-card">
+            {review.containsSpoilers && <p className="spoiler-flag">Contains spoilers</p>}
+            <p className="review-body">{review.body}</p>
+            <p className="muted">
+              {review.updatedAt !== review.createdAt ? 'Edited ' : 'Written '}
+              {new Date(review.updatedAt).toLocaleDateString()}
+            </p>
+            <div className="detail-actions">
+              <button
+                type="button"
+                className="ghost small"
+                disabled={busy}
+                onClick={() => {
+                  setReviewDraft(review.body)
+                  setSpoilers(review.containsSpoilers)
+                  setEditingReview(true)
+                }}
+              >
+                Edit
               </button>
-            )}
+              <button type="button" className="ghost small" disabled={busy} onClick={() => void removeReview()}>
+                Delete
+              </button>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="card">
+            <label className="field">
+              <span>{review ? 'Edit your review' : 'Write a review'}</span>
+              <textarea
+                rows={6}
+                value={reviewDraft}
+                disabled={busy}
+                placeholder="What did you make of it?"
+                onChange={(e) => setReviewDraft(e.target.value)}
+              />
+            </label>
+
+            <label className="checkbox">
+              <input
+                type="checkbox"
+                checked={spoilers}
+                disabled={busy}
+                onChange={(e) => setSpoilers(e.target.checked)}
+              />
+              <span>Contains spoilers</span>
+            </label>
+
+            <div className="detail-actions">
+              <button type="button" disabled={busy || !reviewDraft.trim()} onClick={() => void saveReview()}>
+                {review ? 'Save changes' : 'Save review'}
+              </button>
+              {review && (
+                <button
+                  type="button"
+                  className="ghost"
+                  disabled={busy}
+                  onClick={() => {
+                    setReviewDraft(review.body)
+                    setSpoilers(review.containsSpoilers)
+                    setEditingReview(false)
+                  }}
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </section>
 
       <section className="status-section">

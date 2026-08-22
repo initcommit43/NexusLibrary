@@ -85,19 +85,25 @@ export const DashboardPage = () => {
             <div className="cover-grid">
               {group.map((entry) => (
                 <article key={entry.id} className="card cover-card">
-                  {entry.coverUrl ? (
-                    <img src={entry.coverUrl} alt="" loading="lazy" />
-                  ) : (
-                    <div className="cover-placeholder" aria-hidden="true" />
-                  )}
+                  {/* The cover and title are one link: a title-only target is too small
+                      to be the obvious way in, and the cover is what people click. The
+                      status picker and remove button stay outside it, since nesting
+                      controls inside an anchor breaks both clicking and keyboard use. */}
+                  <Link className="cover-link" to={`/entries/${entry.id}`}>
+                    {entry.coverUrl ? (
+                      <img src={entry.coverUrl} alt="" loading="lazy" />
+                    ) : (
+                      <div className="cover-placeholder" aria-hidden="true" />
+                    )}
+                    <div className="cover-heading">
+                      <h3>{entry.title}</h3>
+                      <p className="muted">
+                        {entry.releaseDate?.slice(0, 4) ?? 'Unreleased'}
+                        {entry.rating !== null && ` · ${toDisplayScore(entry.rating)}`}
+                      </p>
+                    </div>
+                  </Link>
                   <div className="cover-body">
-                    <h3>
-                      <Link to={`/entries/${entry.id}`}>{entry.title}</Link>
-                    </h3>
-                    <p className="muted">
-                      {entry.releaseDate?.slice(0, 4) ?? 'Unreleased'}
-                      {entry.rating !== null && ` · ${toDisplayScore(entry.rating)}`}
-                    </p>
                     <StatusPicker
                       value={entry.status}
                       disabled={busyId === entry.id}
