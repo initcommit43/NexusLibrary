@@ -13,8 +13,8 @@ public class OutboundRateLimiter {
     private final long spacingNanos;
     private long nextPermitAt;
 
-    public OutboundRateLimiter(int requestsPerSecond) {
-        this.spacingNanos = TimeUnit.SECONDS.toNanos(1) / requestsPerSecond;
+    public OutboundRateLimiter(double requestsPerSecond) {
+        this.spacingNanos = (long) (TimeUnit.SECONDS.toNanos(1) / requestsPerSecond);
         this.nextPermitAt = System.nanoTime();
     }
 

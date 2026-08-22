@@ -7,6 +7,7 @@ import {
   type TrackedItem,
   type UpdateEntryPayload,
 } from '../api/client'
+import { AchievementList } from '../components/AchievementList'
 import { AppShell } from '../components/AppShell'
 import { RatingInput } from '../components/RatingInput'
 import { hoursToMinutes, progressFieldValue, progressLabel } from '../components/progress'
@@ -202,6 +203,8 @@ export const EntryDetailPage = () => {
           </label>
         </div>
       </div>
+
+      <AchievementList entry={entry} />
 
       <section className="status-section">
         <h2>Review</h2>

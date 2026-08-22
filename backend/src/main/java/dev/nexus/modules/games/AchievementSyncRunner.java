@@ -40,6 +40,11 @@ public class AchievementSyncRunner {
             // The one failure a user can actually fix, so it survives as the job's message
             // rather than being flattened into a generic error.
             job.fail(PROFILE_NOT_PUBLIC_ADVICE);
+        } catch (SteamThrottledException e) {
+            // Every game synced so far is already committed, so say what was kept rather
+            // than implying the whole run was lost.
+            job.fail("Steam started rate limiting. Progress so far has been saved — run it "
+                    + "again in a few minutes to finish the rest.");
         } catch (RuntimeException e) {
             log.warn("Achievement sync failed for job {}", job.getId(), e);
             job.fail("The achievement sync could not be completed. Please try again.");

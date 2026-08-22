@@ -35,6 +35,7 @@ public class SteamAchievementsClient {
     private final RestClient restClient;
     private final SteamProperties properties;
     private final Duration initialBackoff;
+    private final OutboundRateLimiter rateLimiter;
 
     @Autowired
     public SteamAchievementsClient(RestClient.Builder builder, SteamProperties properties) {
@@ -46,6 +47,7 @@ public class SteamAchievementsClient {
         this.restClient = builder.build();
         this.properties = properties;
         this.initialBackoff = initialBackoff;
+        this.rateLimiter = new OutboundRateLimiter(properties.achievementRequestsPerSecond());
     }
 
     /**
@@ -76,6 +78,35 @@ public class SteamAchievementsClient {
         return Optional.ofNullable(achievementsOf(stats));
     }
 
+    /**
+     * The game's achievement list, with icons and the hidden flag.
+     *
+     * <p>Carries no user context, so it is the same for every player and worth caching once
+     * per game forever. It is also readable regardless of profile privacy, unlike a player's
+     * own unlocks.
+     */
+    @SuppressWarnings("unchecked")
+    public List<Map<String, Object>> fetchSchema(String appId) {
+        rateLimiter.acquire();
+
+        Map<String, Object> body = restClient
+                .get()
+                .uri(
+                        properties.apiBaseUrl() + "/ISteamUserStats/GetSchemaForGame/v2/?key={key}&appid={appid}&l=english",
+                        properties.apiKey(),
+                        appId)
+                .exchange((request, response) -> response.getStatusCode().isError()
+                        ? Map.<String, Object>of()
+                        : (Map<String, Object>) response.bodyTo(Map.class));
+
+        if (!(body.get("game") instanceof Map<?, ?> game)
+                || !(((Map<String, Object>) game).get("availableGameStats") instanceof Map<?, ?> stats)
+                || !(((Map<String, Object>) stats).get("achievements") instanceof List<?> achievements)) {
+            return List.of();
+        }
+        return (List<Map<String, Object>>) achievements;
+    }
+
     @SuppressWarnings("unchecked")
     private List<Map<String, Object>> achievementsOf(Map<String, Object> stats) {
         return stats.get("achievements") instanceof List<?> list ? (List<Map<String, Object>>) list : List.of();
@@ -90,6 +121,9 @@ public class SteamAchievementsClient {
         Duration backoff = initialBackoff;
 
         for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+            // Spaced out before the call, not only after a rejection: reacting to 429s
+            // alone means every sync trips the limit before it starts behaving.
+            rateLimiter.acquire();
             try {
                 Map<String, Object> body = restClient
                         .get()
@@ -130,7 +164,7 @@ public class SteamAchievementsClient {
             }
         }
 
-        throw new SteamUnavailableException("Steam kept throttling achievement requests");
+        throw new SteamThrottledException();
     }
 
     private void sleep(Duration duration) {

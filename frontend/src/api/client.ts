@@ -37,6 +37,7 @@ export type TrackedItem = {
   rating: number | null
   progressCurrent: number | null
   progressUnit: string | null
+  progressExtra: Record<string, unknown> | null
   favorite: boolean
   notes: string | null
 }
@@ -81,6 +82,30 @@ export type Review = {
   containsSpoilers: boolean
   createdAt: string
   updatedAt: string
+}
+
+export type SyncJob = {
+  id: string
+  state: 'RUNNING' | 'COMPLETE' | 'FAILED'
+  total: number
+  processed: number
+  changed: number
+  message: string | null
+}
+
+export type AchievementCatalogueEntry = {
+  id: string
+  name: string | null
+  description: string | null
+  icon: string | null
+  lockedIcon: string | null
+  hidden: boolean
+}
+
+export type AchievementProgress = {
+  unlocked: string[]
+  unlockedAt: Record<string, number>
+  total: number
 }
 
 export type TrackPayload = {
@@ -223,6 +248,11 @@ export const api = {
 
   disconnect: (provider: Provider) =>
     request<void>(`/integrations/${provider}`, { method: 'DELETE' }),
+
+  syncAchievements: () =>
+    request<SyncJob>('/integrations/steam/achievements', { method: 'POST' }),
+
+  syncJob: (jobId: string) => request<SyncJob>(`/integrations/jobs/${jobId}`),
 
   activityFeed: (limit = 50) => request<ActivityEntry[]>(`/activity?limit=${limit}`),
 

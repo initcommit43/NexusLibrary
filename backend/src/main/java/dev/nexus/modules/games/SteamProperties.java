@@ -9,4 +9,13 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * <p>Optional at startup: a missing key disables Steam import, not the whole application.
  */
 @ConfigurationProperties(prefix = "nexus.steam")
-public record SteamProperties(String apiKey, String apiBaseUrl, String openIdEndpoint) {}
+public record SteamProperties(
+        String apiKey,
+        String apiBaseUrl,
+        String openIdEndpoint,
+        /**
+         * How fast to walk a library's achievements. Steam does not document its per-method
+         * limits, but bursting through dozens of games trips them; pacing costs a background
+         * job some seconds and avoids the throttling entirely.
+         */
+        double achievementRequestsPerSecond) {}

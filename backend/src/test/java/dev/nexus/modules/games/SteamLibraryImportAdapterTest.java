@@ -32,7 +32,7 @@ class SteamLibraryImportAdapterTest {
         RestClient.Builder builder = RestClient.builder();
         server = MockRestServiceServer.bindTo(builder).build();
         adapter = new SteamLibraryImportAdapter(
-                builder, new SteamProperties("test-key", "https://steam.test", "https://steam.test/openid/login"));
+                builder, new SteamProperties("test-key", "https://steam.test", "https://steam.test/openid/login", 1000));
     }
 
     /**
@@ -100,7 +100,7 @@ class SteamLibraryImportAdapterTest {
     @Test
     void aMissingApiKeyIsReportedBeforeAnyRequestIsMade() {
         SteamLibraryImportAdapter unconfigured = new SteamLibraryImportAdapter(
-                RestClient.builder(), new SteamProperties("", "https://steam.test", "https://steam.test/openid/login"));
+                RestClient.builder(), new SteamProperties("", "https://steam.test", "https://steam.test/openid/login", 1000));
 
         assertThatExceptionOfType(SteamUnavailableException.class)
                 .isThrownBy(() -> unconfigured.pullLibrary(ACCOUNT));

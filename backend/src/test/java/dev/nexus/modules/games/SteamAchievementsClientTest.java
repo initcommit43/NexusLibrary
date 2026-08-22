@@ -32,7 +32,7 @@ class SteamAchievementsClientTest {
         server = MockRestServiceServer.bindTo(builder).build();
         client = new SteamAchievementsClient(
                 builder,
-                new SteamProperties("test-key", "https://steam.test", "https://steam.test/openid/login"),
+                new SteamProperties("test-key", "https://steam.test", "https://steam.test/openid/login", 1000),
                 // The retry logic is what matters here, not how long the real delays are.
                 Duration.ofMillis(1));
     }
@@ -94,19 +94,23 @@ class SteamAchievementsClientTest {
         server.verify();
     }
 
+    /**
+     * Reported as throttling rather than a general outage: whatever synced before this point
+     * is committed, and the answer is to run again shortly rather than to investigate.
+     */
     @Test
-    void givesUpAfterRepeatedThrottling() {
+    void sustainedThrottlingIsReportedAsThrottlingNotAnOutage() {
         server.expect(ExpectedCount.manyTimes(), requestTo(Matchers.any(String.class)))
                 .andRespond(withStatus(HttpStatus.TOO_MANY_REQUESTS));
 
-        assertThatExceptionOfType(SteamUnavailableException.class)
+        assertThatExceptionOfType(SteamThrottledException.class)
                 .isThrownBy(() -> client.fetch(APP_ID, STEAM_ID));
     }
 
     @Test
     void aMissingApiKeyIsReportedBeforeAnyRequest() {
         SteamAchievementsClient unconfigured = new SteamAchievementsClient(
-                RestClient.builder(), new SteamProperties("", "https://steam.test", "https://steam.test/openid"));
+                RestClient.builder(), new SteamProperties("", "https://steam.test", "https://steam.test/openid", 1000));
 
         assertThatExceptionOfType(SteamUnavailableException.class)
                 .isThrownBy(() -> unconfigured.fetch(APP_ID, STEAM_ID));

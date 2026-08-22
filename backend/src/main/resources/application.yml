@@ -59,6 +59,7 @@ nexus:
     api-key: ${STEAM_API_KEY:}
     api-base-url: https://api.steampowered.com
     open-id-endpoint: https://steamcommunity.com/openid/login
+    achievement-requests-per-second: 1
   encryption:
     # 32 bytes, base64. Generate with: openssl rand -base64 32
     key: ${NEXUS_ENCRYPTION_KEY}

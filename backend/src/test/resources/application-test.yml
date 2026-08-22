@@ -23,6 +23,7 @@ nexus:
     api-key: test-steam-key
     api-base-url: https://steam.test
     open-id-endpoint: https://steam.test/openid/login
+    achievement-requests-per-second: 1000
   encryption:
     # Test-only key; production reads NEXUS_ENCRYPTION_KEY from the environment.
     key: bmV4dXMtdGVzdC1vbmx5LWVuY3J5cHRpb24ta2V5ISE=

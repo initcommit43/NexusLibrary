@@ -4,6 +4,7 @@ import {
   api,
   type ConnectedAccount,
   type ImportReport,
+  type SyncJob,
 } from '../api/client'
 import { AppShell } from '../components/AppShell'
 
@@ -11,7 +12,8 @@ export const SettingsPage = () => {
   const [accounts, setAccounts] = useState<ConnectedAccount[] | null>(null)
   const [report, setReport] = useState<ImportReport | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [busy, setBusy] = useState<'connect' | 'import' | 'disconnect' | null>(null)
+  const [busy, setBusy] = useState<'connect' | 'import' | 'disconnect' | 'achievements' | null>(null)
+  const [job, setJob] = useState<SyncJob | null>(null)
 
   const steam = accounts?.find((account) => account.provider === 'STEAM') ?? null
 
@@ -48,6 +50,33 @@ export const SettingsPage = () => {
       load()
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'The import could not be completed.')
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  /**
+   * Achievements are one Steam request per game, so the server returns a job immediately
+   * and this polls it rather than holding a request open for a minute.
+   */
+  const syncAchievements = async () => {
+    setBusy('achievements')
+    setError(null)
+    try {
+      let current = await api.syncAchievements()
+      setJob(current)
+
+      while (current.state === 'RUNNING') {
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+        current = await api.syncJob(current.id)
+        setJob(current)
+      }
+
+      if (current.state === 'FAILED') {
+        setError(current.message ?? 'The achievement sync failed.')
+      }
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not sync achievements.')
     } finally {
       setBusy(null)
     }
@@ -100,6 +129,14 @@ export const SettingsPage = () => {
                   type="button"
                   className="ghost"
                   disabled={busy !== null}
+                  onClick={() => void syncAchievements()}
+                >
+                  {busy === 'achievements' ? 'Syncing…' : 'Sync achievements'}
+                </button>
+                <button
+                  type="button"
+                  className="ghost"
+                  disabled={busy !== null}
                   onClick={() => void disconnectSteam()}
                 >
                   Disconnect
@@ -124,6 +161,27 @@ export const SettingsPage = () => {
           )}
         </article>
       </section>
+
+      {job && (
+        <section className="status-section">
+          <h2>Achievement sync</h2>
+          <p className="muted">
+            {job.state === 'RUNNING'
+              ? `Checking ${job.processed} of ${job.total} games…`
+              : job.state === 'COMPLETE'
+                ? `Done — ${job.changed} of ${job.total} games updated.`
+                : 'Sync failed.'}
+          </p>
+          {job.total > 0 && (
+            <div className="achievement-bar">
+              <div
+                className="achievement-bar-fill"
+                style={{ width: `${Math.round((job.processed / job.total) * 100)}%` }}
+              />
+            </div>
+          )}
+        </section>
+      )}
 
       {report && (
         <section className="status-section">

@@ -23,6 +23,9 @@ public record TrackedItemResponse(
         Integer progressCurrent,
         Integer progressMax,
         ProgressUnit progressUnit,
+        // Carries the per-user shape a module needs and core does not model — today the
+        // achievements a player has unlocked.
+        Map<String, Object> progressExtra,
         LocalDate startedAt,
         LocalDate finishedAt,
         boolean favorite,
@@ -44,6 +47,7 @@ public record TrackedItemResponse(
                 entry.getProgressCurrent(),
                 entry.getProgressMax(),
                 entry.getProgressUnit(),
+                entry.getProgressExtra(),
                 entry.getStartedAt(),
                 entry.getFinishedAt(),
                 entry.isFavorite(),
