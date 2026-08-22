@@ -22,8 +22,9 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    private static final String[] PUBLIC_ENDPOINTS = {
-        "/auth/register", "/auth/login", "/auth/refresh", "/auth/logout", "/health", "/actuator/health"
+    /** The only API paths reachable without a token. */
+    private static final String[] PUBLIC_API_ENDPOINTS = {
+        "/api/auth/register", "/api/auth/login", "/api/auth/refresh", "/api/auth/logout", "/api/health"
     };
 
     private final NexusProperties properties;
@@ -39,10 +40,23 @@ public class SecurityConfig {
                 // cookie is SameSite=Strict, which is what stands in for CSRF tokens here.
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth.requestMatchers(PUBLIC_ENDPOINTS)
+                .authorizeHttpRequests(auth -> auth.requestMatchers(PUBLIC_API_ENDPOINTS)
                         .permitAll()
+                        .requestMatchers("/actuator/health")
+                        .permitAll()
+                        // Anything else under /actuator would expose internals if it were
+                        // ever added to the exposure list, so refuse it here too.
+                        .requestMatchers("/actuator/**")
+                        .denyAll()
+                        // The API stays deny-by-default: everything not whitelisted above
+                        // needs a token.
+                        .requestMatchers("/api/**")
+                        .authenticated()
+                        // What remains is the built single-page app. Serving its shell has
+                        // to be public or nobody could reach the login screen; it carries no
+                        // data of its own, and every route behind it calls the API above.
                         .anyRequest()
-                        .authenticated())
+                        .permitAll())
                 .exceptionHandling(handling ->
                         handling.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)

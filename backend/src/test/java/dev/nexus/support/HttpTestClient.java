@@ -50,9 +50,20 @@ public class HttpTestClient {
     private final HttpClient client =
             HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NEVER).build();
     private final String baseUri;
+    private final String rootUri;
 
     public HttpTestClient(int port) {
-        this.baseUri = "http://localhost:" + port + "/api";
+        this.rootUri = "http://localhost:" + port;
+        this.baseUri = rootUri + "/api";
+    }
+
+    /** Hits a path outside the /api prefix — the app shell, actuator, static assets. */
+    public Response getRoot(String path, String... headers) {
+        HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(rootUri + path));
+        for (int i = 0; i + 1 < headers.length; i += 2) {
+            builder.header(headers[i], headers[i + 1]);
+        }
+        return send(builder.GET());
     }
 
     public Response patchJson(String path, Map<String, ?> payload, String... headers) {

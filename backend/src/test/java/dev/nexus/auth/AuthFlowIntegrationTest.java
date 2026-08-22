@@ -180,6 +180,25 @@ class AuthFlowIntegrationTest extends PostgresIntegrationTest {
         assertThat(failed.body().get("message").toString()).doesNotContain("Exception");
     }
 
+    /**
+     * The SPA shell has to be reachable without a token or nobody could get to the login
+     * screen. What must not leak is data, so the API stays closed.
+     */
+    @Test
+    void theAppShellIsPublicButTheApiIsNot() {
+        assertThat(http.getRoot("/").status()).isIn(200, 404);
+        assertThat(http.get("/entries").status()).isEqualTo(401);
+        assertThat(http.get("/integrations").status()).isEqualTo(401);
+        assertThat(http.get("/auth/me").status()).isEqualTo(401);
+    }
+
+    @Test
+    void actuatorEndpointsBeyondHealthAreRefused() {
+        assertThat(http.getRoot("/actuator/health").status()).isEqualTo(200);
+        assertThat(http.getRoot("/actuator/env").status()).isIn(401, 403, 404);
+        assertThat(http.getRoot("/actuator/beans").status()).isIn(401, 403, 404);
+    }
+
     @Test
     void healthIsPublic() {
         assertThat(http.get("/health").status()).isEqualTo(200);
