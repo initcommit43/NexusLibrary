@@ -1,16 +1,39 @@
 # Nexus Media Tracker
 
-One dashboard for the games, films, shows, anime and books you track, replacing the
-need to juggle a separate service per medium.
+A unified media tracker: one dashboard with switchable modules for games, films and TV,
+anime and manga, and books — replacing the need to juggle a separate service per medium.
 
-Built as a modular monolith: tracking, rating and activity logic lives once in a shared
-core, and each medium contributes only an external-API adapter, its item metadata and a
-progress shape. External APIs are cached globally, so lookups scale with distinct titles
-rather than with users.
+Built as a modular monolith. Tracking, rating and activity logic lives once in a shared
+core; each medium contributes only an external-API adapter, its item metadata and a
+progress shape. External APIs are cached globally, so calls scale with the number of
+distinct titles tracked rather than with the number of users.
+
+## Project status
+
+**Work in progress — phase 1 of 8.** Built one module at a time, games first, so the
+shared core is proven by a real vertical slice before a second medium is added.
+
+| | |
+|---|---|
+| ✅ **Phase 0** | Scaffold, JWT auth, PWA shell, local Postgres |
+| ✅ **Phase 1** | Games: IGDB search, track with a status, dashboard |
+| ⬜ **Phase 2** | Steam import — connect an account, pull a library with playtimes |
+| ⬜ **Phase 2b** | Containerize and deploy |
+| ⬜ **Phase 3** | Activity feed, ratings, progress editing, reviews |
+| ⬜ **Phase 4** | Cache staleness and refresh |
+| ⬜ **Phase 5–7** | Anime and manga, films and TV, books |
+| ⬜ **Phase 8** | Enable and disable modules per user |
+
+What that means today: you can search a game, track it with a status, and see your shelf.
+The domain model already carries ratings, progress, notes and dates, but only status is
+editable in the UI — the rest arrives with the screens in phase 3.
 
 ## Stack
 
-Spring Boot (Java 21) · React + Vite (PWA) · PostgreSQL · Flyway · JWT auth
+Spring Boot 4 (Java 21) · React 19 + Vite (PWA) · PostgreSQL 17 · Flyway · JWT auth
+
+Requires an IGDB client id and secret, obtained through a Twitch developer application.
+Game search is disabled without them; the rest of the app still runs.
 
 ## Running locally
 
@@ -33,3 +56,7 @@ http on localhost. Production runs the `prod` profile, where it stays on.
 cd backend && ./mvnw test   # spins up Postgres via Testcontainers
 cd frontend && npm run lint && npm run build
 ```
+
+The suite covers the two claims the architecture rests on: a second user tracking an
+already-cached title costs no additional API call, and no user can reach another user's
+entry by any route.
