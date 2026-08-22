@@ -17,6 +17,9 @@ public class IgdbClient {
 
     static final int MAX_BATCH = 500;
 
+    /** IGDB's external_game_source id for Steam. */
+    private static final int STEAM_SOURCE_ID = 1;
+
     private static final String GAME_FIELDS =
             "id,name,summary,first_release_date,cover.url,platforms.name,genres.name,total_rating,status";
 
@@ -47,11 +50,16 @@ public class IgdbClient {
                 .formatted(numericCsv(externalIds), GAME_FIELDS, MAX_BATCH));
     }
 
-    /** Cross-references Steam appids to IGDB games. Category 1 is Steam. */
+    /**
+     * Cross-references Steam appids to IGDB games.
+     *
+     * <p>Filters on {@code external_game_source}, not the older {@code category} field: IGDB
+     * has retired category on these rows, so filtering by it silently matches nothing.
+     */
     public List<Map<String, Object>> findGamesBySteamAppIds(Collection<String> appIds) {
         return post(
-                "where category = 1 & uid = (%s); fields game,uid; limit %d;"
-                        .formatted(quotedCsv(appIds), MAX_BATCH),
+                "where external_game_source = %d & uid = (%s); fields game,uid; limit %d;"
+                        .formatted(STEAM_SOURCE_ID, quotedCsv(appIds), MAX_BATCH),
                 "/external_games");
     }
 
