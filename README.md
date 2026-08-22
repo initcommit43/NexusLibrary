@@ -8,17 +8,18 @@ core; each medium contributes only an external-API adapter, its item metadata an
 progress shape. External APIs are cached globally, so calls scale with the number of
 distinct titles tracked rather than with the number of users.
 
+
 ## Project status
 
-**Work in progress — phase 1 of 8.** Built one module at a time, games first, so the
+**Work in progress — phase 2b of 8.** Built one module at a time, games first, so the
 shared core is proven by a real vertical slice before a second medium is added.
 
 | | |
 |---|---|
 | ✅ **Phase 0** | Scaffold, JWT auth, PWA shell, local Postgres |
 | ✅ **Phase 1** | Games: IGDB search, track with a status, dashboard |
-| ⬜ **Phase 2** | Steam import — connect an account, pull a library with playtimes |
-| ⬜ **Phase 2b** | Containerize and deploy |
+| ✅ **Phase 2** | Steam import — connect an account, pull a library with playtimes |
+| ✅ **Phase 2b** | Containerized and deployed |
 | ⬜ **Phase 3** | Activity feed, ratings, progress editing, reviews |
 | ⬜ **Phase 4** | Cache staleness and refresh |
 | ⬜ **Phase 5–7** | Anime and manga, films and TV, books |
@@ -39,16 +40,30 @@ Game search is disabled without them; the rest of the app still runs.
 
 Requires Docker and a JDK 21. Node 20+ for the frontend.
 
+The whole application, from a fresh clone:
+
 ```bash
 cp .env.example .env      # then fill in the blanks
-docker compose up -d      # Postgres on :5432
+docker compose up         # http://localhost:8080
+```
 
+Or with the frontend on Vite's dev server, for hot reload:
+
+```bash
+docker compose up -d postgres
 cd backend && ./mvnw spring-boot:run      # :8080, Flyway migrates on boot
 cd frontend && npm install && npm run dev # :5173, proxies /api to the backend
 ```
 
+One image serves the API and the built frontend from the same origin. Splitting them
+would make the refresh cookie cross-site, and `SameSite=Strict` means the browser would
+withhold it — so every session would end at the first reload.
+
 `SPRING_PROFILES_ACTIVE=dev` relaxes the cookie Secure flag so auth works over plain
 http on localhost. Production runs the `prod` profile, where it stays on.
+
+`NEXUS_ENCRYPTION_KEY` encrypts stored OAuth tokens at rest. It must stay stable: change
+it and every token already stored becomes unreadable.
 
 ## Tests
 
