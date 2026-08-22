@@ -7,9 +7,11 @@ import dev.nexus.core.adapter.LibraryImportAdapter;
 import dev.nexus.core.adapter.ItemResolver;
 import dev.nexus.core.cache.ItemCacheService;
 import dev.nexus.core.domain.ExternalAccount;
+import dev.nexus.core.domain.ExternalIds;
 import dev.nexus.core.domain.Provider;
 import dev.nexus.core.domain.Source;
 import dev.nexus.core.domain.TrackableItem;
+import dev.nexus.core.domain.TrackableItemRepository;
 import dev.nexus.core.domain.UserEntry;
 import dev.nexus.core.domain.UserEntryRepository;
 import java.util.ArrayList;
@@ -39,18 +41,21 @@ public class LibraryImportService {
     private final List<ItemResolver> resolvers;
     private final ItemCacheService itemCache;
     private final UserEntryRepository entries;
+    private final TrackableItemRepository items;
 
     public LibraryImportService(
             List<LibraryImportAdapter> adapters,
             List<ItemResolver> resolvers,
             ItemCacheService itemCache,
-            UserEntryRepository entries) {
+            UserEntryRepository entries,
+            TrackableItemRepository items) {
         // Kept as lists and matched on demand: there will only ever be a handful of
         // providers, and indexing them up front would call into every adapter at startup.
         this.adapters = List.copyOf(adapters);
         this.resolvers = List.copyOf(resolvers);
         this.itemCache = itemCache;
         this.entries = entries;
+        this.items = items;
     }
 
     @Transactional
@@ -69,6 +74,7 @@ public class LibraryImportService {
         // One batch per catalogue: already-cached titles cost nothing, and a title another
         // user cached earlier costs nothing either.
         Map<Source, Map<String, TrackableItem>> cached = cacheResolvedItems(resolved.values());
+        recordProviderIds(provider, resolved, cached);
 
         List<ImportReport.UnmatchedItem> unmatched = new ArrayList<>();
         int created = 0;
@@ -96,6 +102,34 @@ public class LibraryImportService {
 
         account.markSynced();
         return new ImportReport(created, updated, unmatched);
+    }
+
+    /**
+     * Remembers which provider id resolved to which canonical item.
+     *
+     * <p>The resolver has just computed this and it is otherwise thrown away, leaving no
+     * route from a tracked game back to the provider — which anything working per-item,
+     * like achievements, needs.
+     */
+    private void recordProviderIds(
+            Provider provider,
+            Map<ExternalItemRef, CanonicalRef> resolved,
+            Map<Source, Map<String, TrackableItem>> cached) {
+
+        List<TrackableItem> updated = new ArrayList<>();
+        resolved.forEach((ref, canonical) -> {
+            TrackableItem item =
+                    cached.getOrDefault(canonical.source(), Map.of()).get(canonical.externalId());
+            if (item != null && ExternalIds.record(item, provider, ref.providerItemId())) {
+                updated.add(item);
+            }
+        });
+
+        // Items cached during this run come back detached from their own transaction, so
+        // mutating them is not enough on its own.
+        if (!updated.isEmpty()) {
+            items.saveAll(updated);
+        }
     }
 
     private Map<Source, Map<String, TrackableItem>> cacheResolvedItems(Iterable<CanonicalRef> refs) {
