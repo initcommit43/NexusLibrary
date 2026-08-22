@@ -2,6 +2,10 @@ package dev.nexus.core.web;
 
 import dev.nexus.auth.AuthenticationFailedException;
 import dev.nexus.auth.RegistrationConflictException;
+import dev.nexus.core.adapter.MetadataAdapterNotAvailableException;
+import dev.nexus.core.cache.ItemNotFoundException;
+import dev.nexus.core.tracking.EntryNotFoundException;
+import dev.nexus.modules.games.IgdbUnavailableException;
 import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -35,6 +39,25 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AuthenticationFailedException.class)
     public ResponseEntity<ApiError> handleAuthFailure(AuthenticationFailedException e) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ApiError(e.getMessage()));
+    }
+
+    @ExceptionHandler({EntryNotFoundException.class, ItemNotFoundException.class})
+    public ResponseEntity<ApiError> handleNotFound(RuntimeException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiError(e.getMessage()));
+    }
+
+    @ExceptionHandler(MetadataAdapterNotAvailableException.class)
+    public ResponseEntity<ApiError> handleModuleUnavailable(MetadataAdapterNotAvailableException e) {
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED)
+                .body(new ApiError("That module is not available yet."));
+    }
+
+    /** An upstream outage is not the client's fault, and its detail is not their business. */
+    @ExceptionHandler(IgdbUnavailableException.class)
+    public ResponseEntity<ApiError> handleUpstreamUnavailable(IgdbUnavailableException e) {
+        log.warn("IGDB unavailable: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(new ApiError("The game database is unavailable right now. Please try again."));
     }
 
     @ExceptionHandler(RateLimitExceededException.class)
