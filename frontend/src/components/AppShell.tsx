@@ -17,6 +17,7 @@ export const AppShell = ({ children }: { children: React.ReactNode }) => {
             Dashboard
           </NavLink>
           <NavLink to="/search">Search</NavLink>
+          <NavLink to="/activity">Activity</NavLink>
           <NavLink to="/settings">Settings</NavLink>
         </nav>
 

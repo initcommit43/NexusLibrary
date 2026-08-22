@@ -62,6 +62,27 @@ export type ImportReport = {
   unmatched: UnmatchedItem[]
 }
 
+export type ActivityType = 'ADDED' | 'STATUS_CHANGE' | 'PROGRESS' | 'RATED' | 'REVIEWED'
+
+export type ActivityEntry = {
+  id: number
+  type: ActivityType
+  title: string
+  coverUrl: string | null
+  externalId: string
+  payload: { from?: string | null; to?: string | null; unit?: string; status?: string }
+  createdAt: string
+}
+
+export type Review = {
+  id: number
+  entryId: number
+  body: string
+  containsSpoilers: boolean
+  createdAt: string
+  updatedAt: string
+}
+
 export type TrackPayload = {
   source: string
   externalId: string
@@ -70,8 +91,9 @@ export type TrackPayload = {
 
 export type UpdateEntryPayload = Partial<{
   status: TrackingStatus
-  rating: number | null
+  rating: number
   progressCurrent: number
+  progressUnit: string
   favorite: boolean
   notes: string
 }>
@@ -175,6 +197,8 @@ export const api = {
 
   listEntries: () => request<TrackedItem[]>('/entries'),
 
+  getEntry: (id: number) => request<TrackedItem>(`/entries/${id}`),
+
   createEntry: (payload: TrackPayload) =>
     request<TrackedItem>('/entries', { method: 'POST', body: JSON.stringify(payload) }),
 
@@ -199,6 +223,19 @@ export const api = {
 
   disconnect: (provider: Provider) =>
     request<void>(`/integrations/${provider}`, { method: 'DELETE' }),
+
+  activityFeed: (limit = 50) => request<ActivityEntry[]>(`/activity?limit=${limit}`),
+
+  getReview: (entryId: number) => request<Review>(`/entries/${entryId}/review`),
+
+  writeReview: (entryId: number, body: string, containsSpoilers: boolean) =>
+    request<Review>(`/entries/${entryId}/review`, {
+      method: 'PUT',
+      body: JSON.stringify({ body, containsSpoilers }),
+    }),
+
+  deleteReview: (entryId: number) =>
+    request<void>(`/entries/${entryId}/review`, { method: 'DELETE' }),
 
   restoreSession: async (): Promise<AuthResponse | null> => {
     const token = await refreshAccessToken()

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { ApiError, api, type TrackedItem, type TrackingStatus } from '../api/client'
 import { AppShell } from '../components/AppShell'
 import { StatusPicker } from '../components/StatusPicker'
+import { toDisplayScore } from '../components/rating'
 import { STATUS_LABELS, STATUS_ORDER } from '../components/trackingStatus'
 
 const PENDING_MODULES = [
@@ -90,8 +91,13 @@ export const DashboardPage = () => {
                     <div className="cover-placeholder" aria-hidden="true" />
                   )}
                   <div className="cover-body">
-                    <h3>{entry.title}</h3>
-                    <p className="muted">{entry.releaseDate?.slice(0, 4) ?? 'Unreleased'}</p>
+                    <h3>
+                      <Link to={`/entries/${entry.id}`}>{entry.title}</Link>
+                    </h3>
+                    <p className="muted">
+                      {entry.releaseDate?.slice(0, 4) ?? 'Unreleased'}
+                      {entry.rating !== null && ` · ${toDisplayScore(entry.rating)}`}
+                    </p>
                     <StatusPicker
                       value={entry.status}
                       disabled={busyId === entry.id}

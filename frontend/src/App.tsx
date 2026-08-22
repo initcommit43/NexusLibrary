@@ -1,6 +1,8 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { ProtectedRoute } from './components/ProtectedRoute'
+import { ActivityPage } from './pages/ActivityPage'
 import { DashboardPage } from './pages/DashboardPage'
+import { EntryDetailPage } from './pages/EntryDetailPage'
 import { LoginPage } from './pages/LoginPage'
 import { SearchPage } from './pages/SearchPage'
 import { SettingsPage } from './pages/SettingsPage'
@@ -14,6 +16,8 @@ export const App = () => (
     <Route element={<ProtectedRoute />}>
       <Route path="/" element={<DashboardPage />} />
       <Route path="/search" element={<SearchPage />} />
+      <Route path="/activity" element={<ActivityPage />} />
+      <Route path="/entries/:id" element={<EntryDetailPage />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/settings/steam/callback" element={<SteamCallbackPage />} />
     </Route>
