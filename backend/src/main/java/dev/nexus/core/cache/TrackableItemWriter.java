@@ -3,6 +3,7 @@ package dev.nexus.core.cache;
 import dev.nexus.core.adapter.TrackableItemData;
 import dev.nexus.core.domain.TrackableItem;
 import dev.nexus.core.domain.TrackableItemRepository;
+import java.util.List;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,9 +24,19 @@ public class TrackableItemWriter {
         this.items = items;
     }
 
+    /** Bulk insert for imports, where losing a race on one item must not fail the batch. */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public List<TrackableItem> insertAll(List<TrackableItemData> data) {
+        return items.saveAll(data.stream().map(TrackableItemWriter::toEntity).toList());
+    }
+
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public TrackableItem insert(TrackableItemData data) {
-        return items.saveAndFlush(new TrackableItem(
+        return items.saveAndFlush(toEntity(data));
+    }
+
+    private static TrackableItem toEntity(TrackableItemData data) {
+        return new TrackableItem(
                 data.mediaType(),
                 data.source(),
                 data.externalId(),
@@ -33,6 +44,6 @@ public class TrackableItemWriter {
                 data.coverUrl(),
                 data.releaseDate(),
                 data.itemState(),
-                data.metadata()));
+                data.metadata());
     }
 }

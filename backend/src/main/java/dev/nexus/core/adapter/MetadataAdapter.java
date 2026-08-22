@@ -2,6 +2,7 @@ package dev.nexus.core.adapter;
 
 import dev.nexus.core.domain.MediaType;
 import dev.nexus.core.domain.Source;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,4 +20,15 @@ public interface MetadataAdapter {
     List<ItemSearchResult> search(String query, int limit);
 
     Optional<TrackableItemData> fetchById(String externalId);
+
+    /**
+     * Fetches many items at once. Importing a library needs hundreds of items, and one
+     * request each would spend minutes inside the source's rate limit.
+     *
+     * <p>The default is a correct-but-slow loop so a module can ignore this until it has a
+     * reason to care; sources with a bulk endpoint should override it.
+     */
+    default List<TrackableItemData> fetchByIds(Collection<String> externalIds) {
+        return externalIds.stream().map(this::fetchById).flatMap(Optional::stream).toList();
+    }
 }

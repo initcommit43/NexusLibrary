@@ -6,6 +6,12 @@ import dev.nexus.core.adapter.TrackableItemData;
 import dev.nexus.core.domain.Source;
 import dev.nexus.core.domain.TrackableItem;
 import dev.nexus.core.domain.TrackableItemRepository;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -36,6 +42,48 @@ public class ItemCacheService {
     public TrackableItem findOrCache(Source source, String externalId) {
         return items.findBySourceAndExternalId(source, externalId)
                 .orElseGet(() -> fetchAndStore(source, externalId));
+    }
+
+    /**
+     * Cache-on-miss for a whole batch: one query for what is already cached, one bulk fetch
+     * for the rest. An import of several hundred titles therefore costs a couple of external
+     * calls rather than one per item — and costs none at all where another user already
+     * caused the same titles to be cached.
+     *
+     * @return the items that resolved, keyed by external id; ids the source did not return
+     *     are simply absent
+     */
+    public Map<String, TrackableItem> findOrCacheAll(Source source, Collection<String> externalIds) {
+        if (externalIds.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<String, TrackableItem> found = items.findBySourceAndExternalIdIn(source, externalIds).stream()
+                .collect(Collectors.toMap(TrackableItem::getExternalId, Function.identity(), (a, b) -> a));
+
+        List<String> missing =
+                externalIds.stream().distinct().filter(id -> !found.containsKey(id)).toList();
+        if (missing.isEmpty()) {
+            return found;
+        }
+
+        MetadataAdapter adapter = adapters
+                .forSource(source)
+                .orElseThrow(() -> new ItemNotFoundException("No adapter registered for source " + source));
+
+        List<TrackableItemData> fetched = adapter.fetchByIds(missing);
+
+        Map<String, TrackableItem> result = new LinkedHashMap<>(found);
+        try {
+            writer.insertAll(fetched).forEach(item -> result.put(item.getExternalId(), item));
+        } catch (DataIntegrityViolationException e) {
+            // Another import cached some of these first. Re-read the whole batch rather than
+            // unpicking which rows collided.
+            log.debug("Lost a batch cache race for {}, re-reading", source);
+            items.findBySourceAndExternalIdIn(source, externalIds)
+                    .forEach(item -> result.put(item.getExternalId(), item));
+        }
+        return result;
     }
 
     private TrackableItem fetchAndStore(Source source, String externalId) {
