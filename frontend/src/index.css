@@ -464,15 +464,6 @@ button.small {
   letter-spacing: var(--tracking-wide);
 }
 
-/* A section heading can carry one action; it sits at the far end of the rule. */
-.section-link {
-  margin-left: auto;
-  font-size: var(--text-sm);
-  font-weight: 500;
-  text-transform: none;
-  letter-spacing: normal;
-}
-
 .status-section h2 {
   display: flex;
   align-items: baseline;

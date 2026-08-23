@@ -2,12 +2,9 @@ import { NavLink } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
 import { ModuleSwitcher } from './ModuleSwitcher'
 import { ThemeToggle } from './ThemeToggle'
+import { useCurrentModule } from '../modules/useCurrentModule'
 import type { ModuleDefinition } from '../modules/registry'
 
-/**
- * Pages that belong to a module pass it in, which names it in the switcher; the pages that
- * span every module leave it out rather than claiming one you are not looking at.
- */
 const CogIcon = () => (
   <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" aria-hidden>
     <circle cx="12" cy="12" r="3.2" strokeWidth="1.8" />
@@ -20,6 +17,11 @@ const CogIcon = () => (
   </svg>
 )
 
+/**
+ * The switcher names the module you are in and stays put on every page: settings and
+ * activity span modules, but you are still somewhere, and leaving on the last module you
+ * picked is what makes Dashboard go back where you were.
+ */
 export const AppShell = ({
   children,
   module,
@@ -28,6 +30,7 @@ export const AppShell = ({
   module?: ModuleDefinition
 }) => {
   const { user, logout } = useAuth()
+  const current = useCurrentModule(module)
 
   return (
     <div className="shell">
@@ -37,10 +40,10 @@ export const AppShell = ({
           <span>Nexus</span>
         </div>
 
-        {module && <ModuleSwitcher current={module} />}
+        <ModuleSwitcher current={current} />
 
         <nav className="shell-nav">
-          <NavLink to="/" end>
+          <NavLink to={`/library/${current.slug}`} end>
             Dashboard
           </NavLink>
           <NavLink to="/search">Search</NavLink>
@@ -59,7 +62,7 @@ export const AppShell = ({
         </div>
       </header>
 
-      <main className="shell-main" data-module={module?.slug}>
+      <main className="shell-main" data-module={current.slug}>
         {children}
       </main>
     </div>

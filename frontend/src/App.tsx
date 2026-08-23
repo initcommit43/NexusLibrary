@@ -1,7 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { ActivityPage } from './pages/ActivityPage'
-import { DashboardPage } from './pages/DashboardPage'
 import { LibraryPage } from './pages/LibraryPage'
 import { EntryDetailPage } from './pages/EntryDetailPage'
 import { LoginPage } from './pages/LoginPage'
@@ -10,6 +9,16 @@ import { SettingsPage } from './pages/SettingsPage'
 import { AniListCallbackPage } from './pages/AniListCallbackPage'
 import { SteamCallbackPage } from './pages/SteamCallbackPage'
 import { RegisterPage } from './pages/RegisterPage'
+import { useCurrentModule } from './modules/useCurrentModule'
+import { useModules } from './modules/useModules'
+
+/** '/' is whichever module you were last in, so a bookmark or a reload lands where you left. */
+const LandingRedirect = () => {
+  const { loading } = useModules()
+  const current = useCurrentModule()
+  if (loading) return null
+  return <Navigate to={`/library/${current.slug}`} replace />
+}
 
 
 export const App = () => (
@@ -17,7 +26,7 @@ export const App = () => (
     <Route path="/login" element={<LoginPage />} />
     <Route path="/register" element={<RegisterPage />} />
     <Route element={<ProtectedRoute />}>
-      <Route path="/" element={<DashboardPage />} />
+      <Route path="/" element={<LandingRedirect />} />
       <Route path="/library/:module" element={<LibraryPage />} />
       <Route path="/search" element={<SearchPage />} />
       <Route path="/activity" element={<ActivityPage />} />
