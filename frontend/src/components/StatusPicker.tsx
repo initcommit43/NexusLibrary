@@ -4,11 +4,13 @@ import { STATUS_LABELS, STATUS_ORDER } from './trackingStatus'
 type Props = {
   value: TrackingStatus
   onChange: (status: TrackingStatus) => void
+  /** A module's own verbs — Playing, Watching, Reading. */
+  labels?: Record<TrackingStatus, string>
   disabled?: boolean
   'aria-label'?: string
 }
 
-export const StatusPicker = ({ value, onChange, disabled, ...rest }: Props) => (
+export const StatusPicker = ({ value, onChange, labels = STATUS_LABELS, disabled, ...rest }: Props) => (
   <select
     className="status-picker"
     value={value}
@@ -18,7 +20,7 @@ export const StatusPicker = ({ value, onChange, disabled, ...rest }: Props) => (
   >
     {STATUS_ORDER.map((status) => (
       <option key={status} value={status}>
-        {STATUS_LABELS[status]}
+        {labels[status]}
       </option>
     ))}
   </select>

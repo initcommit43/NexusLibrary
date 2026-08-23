@@ -1,11 +1,19 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { ApiError, api, type SearchResult, type TrackingStatus } from '../api/client'
 import { AppShell } from '../components/AppShell'
-import { STATUS_LABELS, STATUS_ORDER } from '../components/trackingStatus'
+import { STATUS_ORDER } from '../components/trackingStatus'
+import { moduleBySlug } from '../modules/registry'
+import { useModules } from '../modules/useModules'
 
 type TrackState = Record<string, 'idle' | 'saving' | 'tracked'>
 
 export const SearchPage = () => {
+  // Search is always inside a module: the catalogue endpoint requires a media type.
+  const [params] = useSearchParams()
+  const { firstAvailable } = useModules()
+  const module = moduleBySlug(params.get('module') ?? undefined) ?? firstAvailable
+
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[] | null>(null)
   const [status, setStatus] = useState<TrackingStatus>('PLANNING')
@@ -30,7 +38,7 @@ export const SearchPage = () => {
     setSearching(true)
     setError(null)
     try {
-      setResults(await api.searchCatalog('GAME', query.trim()))
+      setResults(await api.searchCatalog(module.defaultMediaType, query.trim()))
     } catch (err) {
       setResults(null)
       setError(err instanceof ApiError ? err.message : 'Could not reach the server.')
@@ -55,8 +63,8 @@ export const SearchPage = () => {
   }
 
   return (
-    <AppShell>
-      <h1>Find a game</h1>
+    <AppShell module={module}>
+      <h1>Search {module.label}</h1>
 
       <form className="search-bar" onSubmit={runSearch}>
         <input
@@ -73,7 +81,7 @@ export const SearchPage = () => {
         >
           {STATUS_ORDER.map((option) => (
             <option key={option} value={option}>
-              Add as {STATUS_LABELS[option]}
+              Add as {module.statusLabels[option]}
             </option>
           ))}
         </select>

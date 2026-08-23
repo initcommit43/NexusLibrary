@@ -151,17 +151,27 @@ button.small {
 
 /* --- app shell --- */
 
-.shell-header {
+/*
+ * A rail beside the content rather than a bar above it: four modules plus the pages that
+ * span them do not fit a header, and the rail gives the module you are in somewhere to be
+ * named.
+ */
+.shell {
+  display: grid;
+  grid-template-columns: 15rem 1fr;
+  min-height: 100vh;
+}
+
+.shell-rail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: var(--space-5) var(--space-4);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
   position: sticky;
   top: 0;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  gap: var(--space-6);
-  padding: 0 var(--space-6);
-  height: 3.5rem;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
+  height: 100vh;
 }
 
 .brand {
@@ -179,39 +189,124 @@ button.small {
   border-radius: var(--radius-sm);
 }
 
+/* --- module switcher --- */
+
+.module-switcher {
+  position: relative;
+}
+
+.module-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  font-weight: 600;
+  text-align: left;
+}
+
+.module-trigger:hover:not(:disabled) {
+  background: var(--surface-raised);
+  border-color: var(--accent);
+}
+
+.module-menu {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + var(--space-1));
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: var(--space-1);
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-2);
+}
+
+.module-option {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  text-align: left;
+  font-weight: 500;
+}
+
+.module-option:hover:not(:disabled) {
+  background: var(--surface-raised);
+  color: var(--text);
+}
+
+/* Disabled options stay listed: what is coming is part of what the app is. */
+.module-option:disabled {
+  cursor: default;
+  opacity: 1;
+  color: var(--text-muted);
+}
+
+.module-option[aria-current='true'] {
+  color: var(--accent);
+}
+
+/* --- rail navigation --- */
+
 .shell-nav {
   display: flex;
-  gap: var(--space-5);
+  flex-direction: column;
+  gap: var(--space-1);
   font-size: var(--text-base);
-  margin-right: auto;
 }
 
 .shell-nav a {
-  color: var(--text-muted);
-  padding: var(--space-1) 0;
-  border-bottom: 2px solid transparent;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  color: var(--text-body);
   font-weight: 500;
 }
 
 .shell-nav a:hover {
+  background: var(--surface-raised);
   color: var(--text);
   text-decoration: none;
 }
 
 .shell-nav a.active {
+  background: var(--accent-soft);
   color: var(--accent);
-  border-bottom-color: var(--accent);
 }
 
-.header-right {
+.rail-footer {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+}
+
+.rail-actions {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
 }
 
 .shell-main {
   max-width: 64rem;
-  margin: 0 auto;
   padding: var(--space-7) var(--space-6) var(--space-8);
 }
 
@@ -678,9 +773,41 @@ button.small {
 }
 
 @media (max-width: 40rem) {
-  .shell-header {
-    gap: var(--space-4);
-    padding: 0 var(--space-4);
+  /* The rail becomes a band above the content rather than a column beside it. */
+  .shell {
+    grid-template-columns: 1fr;
+  }
+
+  .shell-rail {
+    position: static;
+    height: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .module-switcher {
+    flex: 1 1 12rem;
+  }
+
+  .shell-nav {
+    flex-direction: row;
+    order: 3;
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .rail-footer {
+    margin-top: 0;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-3);
+    padding-top: 0;
+    border-top: none;
   }
 
   .shell-main {

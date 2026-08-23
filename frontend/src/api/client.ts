@@ -220,6 +220,8 @@ export const api = {
       `/catalog/search?mediaType=${mediaType}&q=${encodeURIComponent(query)}`,
     ),
 
+  availableModules: () => request<MediaType[]>('/catalog/modules'),
+
   listEntries: () => request<TrackedItem[]>('/entries'),
 
   getEntry: (id: number) => request<TrackedItem>(`/entries/${id}`),

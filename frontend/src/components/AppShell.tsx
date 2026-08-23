@@ -1,38 +1,51 @@
 import { NavLink } from 'react-router-dom'
-import { ThemeToggle } from './ThemeToggle'
 import { useAuth } from '../auth/useAuth'
+import { ModuleSwitcher } from './ModuleSwitcher'
+import { ThemeToggle } from './ThemeToggle'
+import type { ModuleDefinition } from '../modules/registry'
 
-export const AppShell = ({ children }: { children: React.ReactNode }) => {
+/**
+ * The rail names the module you are in and carries the pages that span all of them. Pages
+ * that belong to a module pass it in; the cross-module ones leave it out and the switcher
+ * stays hidden rather than claiming a module you are not looking at.
+ */
+export const AppShell = ({
+  children,
+  module,
+}: {
+  children: React.ReactNode
+  module?: ModuleDefinition
+}) => {
   const { user, logout } = useAuth()
 
   return (
     <div className="shell">
-      <header className="shell-header">
+      <aside className="shell-rail">
         <div className="brand">
-          <img src="/pwa-192x192.png" alt="" width={32} height={32} />
+          <img src="/pwa-192x192.png" alt="" width={28} height={28} />
           <span>Nexus</span>
         </div>
 
+        {module && <ModuleSwitcher current={module} />}
+
         <nav className="shell-nav">
-          <NavLink to="/" end>
-            Dashboard
-          </NavLink>
           <NavLink to="/search">Search</NavLink>
           <NavLink to="/activity">Activity</NavLink>
           <NavLink to="/settings">Settings</NavLink>
         </nav>
 
-        <div className="header-right">
+        <div className="rail-footer">
           <span className="muted">{user?.username}</span>
-          <ThemeToggle />
-          <button type="button" className="ghost" onClick={() => void logout()}>
-            Sign out
-          </button>
+          <div className="rail-actions">
+            <ThemeToggle />
+            <button type="button" className="ghost small" onClick={() => void logout()}>
+              Sign out
+            </button>
+          </div>
         </div>
-      </header>
+      </aside>
 
-      {/* The module comes from the route once the registry lands; games is all there is today. */}
-      <main className="shell-main" data-module="games">
+      <main className="shell-main" data-module={module?.slug}>
         {children}
       </main>
     </div>

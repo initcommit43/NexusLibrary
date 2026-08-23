@@ -1,18 +1,16 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, Navigate, useParams } from 'react-router-dom'
 import { ApiError, api, type TrackedItem, type TrackingStatus } from '../api/client'
 import { AppShell } from '../components/AppShell'
 import { StatusPicker } from '../components/StatusPicker'
 import { toDisplayScore } from '../components/rating'
-import { STATUS_LABELS, STATUS_ORDER } from '../components/trackingStatus'
+import { STATUS_ORDER } from '../components/trackingStatus'
+import { moduleBySlug } from '../modules/registry'
 
-const PENDING_MODULES = [
-  { label: 'Movies & TV', phase: 'Phase 6' },
-  { label: 'Anime & Manga', phase: 'Phase 5' },
-  { label: 'Books', phase: 'Phase 7' },
-]
+export const LibraryPage = () => {
+  const { module: slug } = useParams()
+  const module = moduleBySlug(slug)
 
-export const DashboardPage = () => {
   const [entries, setEntries] = useState<TrackedItem[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<number | null>(null)
@@ -25,6 +23,10 @@ export const DashboardPage = () => {
         setError(err instanceof ApiError ? err.message : 'Could not load your library.'),
       )
   }, [])
+
+  if (!module) {
+    return <Navigate to="/" replace />
+  }
 
   const changeStatus = async (entry: TrackedItem, status: TrackingStatus) => {
     setBusyId(entry.id)
@@ -52,11 +54,13 @@ export const DashboardPage = () => {
     }
   }
 
-  const byStatus = (status: TrackingStatus) => entries?.filter((e) => e.status === status) ?? []
+  // One request returns everything tracked; the module decides what belongs on its shelf.
+  const mine = entries?.filter((entry) => module.mediaTypes.includes(entry.mediaType)) ?? []
+  const byStatus = (status: TrackingStatus) => mine.filter((entry) => entry.status === status)
 
   return (
-    <AppShell>
-      <h1>Games</h1>
+    <AppShell module={module}>
+      <h1>{module.label}</h1>
 
       {error && (
         <p className="alert" role="alert">
@@ -66,9 +70,9 @@ export const DashboardPage = () => {
 
       {entries === null && !error && <p className="muted">Loading your library…</p>}
 
-      {entries?.length === 0 && (
+      {entries !== null && mine.length === 0 && (
         <p className="muted">
-          Nothing tracked yet. <Link to="/search">Find a game</Link> to get started.
+          {module.emptyHint} <Link to={`/search?module=${module.slug}`}>Search</Link>
         </p>
       )}
 
@@ -79,7 +83,7 @@ export const DashboardPage = () => {
         return (
           <section key={status} className="status-section">
             <h2>
-              {STATUS_LABELS[status]} <span className="muted">({group.length})</span>
+              {module.statusLabels[status]} <span className="muted">({group.length})</span>
             </h2>
 
             <div className="cover-grid">
@@ -106,6 +110,7 @@ export const DashboardPage = () => {
                   <div className="cover-body">
                     <StatusPicker
                       value={entry.status}
+                      labels={module.statusLabels}
                       disabled={busyId === entry.id}
                       aria-label={`Status for ${entry.title}`}
                       onChange={(next) => void changeStatus(entry, next)}
@@ -125,18 +130,6 @@ export const DashboardPage = () => {
           </section>
         )
       })}
-
-      <section className="status-section">
-        <h2 className="muted">Other modules</h2>
-        <div className="module-grid">
-          {PENDING_MODULES.map((module) => (
-            <article key={module.label} className="card module-card">
-              <h3>{module.label}</h3>
-              <p className="muted">Not built yet — {module.phase}.</p>
-            </article>
-          ))}
-        </div>
-      </section>
     </AppShell>
   )
 }

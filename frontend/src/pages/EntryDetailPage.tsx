@@ -9,6 +9,7 @@ import {
 } from '../api/client'
 import { AchievementList } from '../components/AchievementList'
 import { AppShell } from '../components/AppShell'
+import { moduleForMediaType } from '../modules/registry'
 import { RatingInput } from '../components/RatingInput'
 import { hoursToMinutes, progressFieldValue, progressLabel } from '../components/progress'
 import { toDisplayScore } from '../components/rating'
@@ -121,7 +122,7 @@ export const EntryDetailPage = () => {
   const tracksMinutes = entry.progressUnit === 'MINUTES' || entry.progressUnit === null
 
   return (
-    <AppShell>
+    <AppShell module={moduleForMediaType(entry.mediaType)}>
       {error && (
         <p className="alert" role="alert">
           {error}
