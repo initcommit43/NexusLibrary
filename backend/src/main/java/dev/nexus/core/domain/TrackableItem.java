@@ -85,6 +85,35 @@ public class TrackableItem {
         this.metadata = metadata == null ? new HashMap<>() : new HashMap<>(metadata);
     }
 
+    /**
+     * Overwrites the cached copy with a freshly fetched one.
+     *
+     * <p>Metadata is merged rather than replaced. Modules write their own keys into it — the
+     * Steam achievement catalogue is one — and the metadata source knows nothing about them,
+     * so replacing the map wholesale would delete work that took hundreds of calls to build.
+     */
+    public void refreshFrom(
+            String title,
+            String coverUrl,
+            LocalDate releaseDate,
+            ItemState itemState,
+            Map<String, Object> metadata,
+            Instant refreshedAt) {
+        this.title = title;
+        this.coverUrl = coverUrl;
+        this.releaseDate = releaseDate;
+        this.itemState = itemState;
+        if (metadata != null) {
+            this.metadata.putAll(metadata);
+        }
+        this.refreshedAt = refreshedAt;
+    }
+
+    /** When this copy last matched the source: its most recent refresh, or the first fetch. */
+    public Instant lastRefreshedAt() {
+        return refreshedAt != null ? refreshedAt : cachedAt;
+    }
+
     public Long getId() {
         return id;
     }

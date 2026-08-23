@@ -48,6 +48,14 @@ nexus:
     search-requests-per-minute: 30
     # An import touches a whole library and spends external API budget.
     import-requests-per-minute: 3
+  refresh:
+    # An ongoing or upcoming title can change any day; a released one is settled and is
+    # never refreshed at all, which is what keeps a big library off the API budget.
+    ongoing-ttl: 24h
+    upcoming-ttl: 24h
+    # Backoff for a source that is down or has dropped an item.
+    retry-after: 15m
+    max-items-per-read: 50
   igdb:
     client-id: ${IGDB_CLIENT_ID:}
     client-secret: ${IGDB_CLIENT_SECRET:}

@@ -12,6 +12,12 @@ nexus:
     auth-requests-per-minute: 100
     search-requests-per-minute: 1000
     import-requests-per-minute: 1000
+  refresh:
+    # Same values as production; tests that care about staleness set the clock in SQL.
+    ongoing-ttl: 24h
+    upcoming-ttl: 24h
+    retry-after: 15m
+    max-items-per-read: 50
   igdb:
     # Tests stub the transport; these are never used to reach the real IGDB.
     client-id: test-client-id
