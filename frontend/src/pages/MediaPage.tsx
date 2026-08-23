@@ -111,30 +111,29 @@ export const MediaPage = () => {
         )}
 
         <div className="media-head">
-          {media.coverUrl ? (
-            <img className="media-cover" src={media.coverUrl} alt="" />
-          ) : (
-            <div className="media-cover cover-placeholder" aria-hidden="true" />
-          )}
-
-          <div className="media-intro">
-            <h1>{media.title}</h1>
-            {summary && <p className="media-summary">{summary}</p>}
+          <div className="media-cover-column">
+            {media.coverUrl ? (
+              <img className="media-cover" src={media.coverUrl} alt="" />
+            ) : (
+              <div className="media-cover cover-placeholder" aria-hidden="true" />
+            )}
 
             <div className="media-actions">
               {entry ? (
-                <>
-                  <button type="button" onClick={() => setEditing(entry)}>
-                    {statusLabelsFor(media.mediaType)[entry.status]}
-                  </button>
-                  <span className="muted">On your list</span>
-                </>
+                <button type="button" onClick={() => setEditing(entry)}>
+                  {statusLabelsFor(media.mediaType)[entry.status]}
+                </button>
               ) : (
                 <button type="button" disabled={busy} onClick={() => void track()}>
                   {busy ? 'Adding…' : 'Add to list'}
                 </button>
               )}
             </div>
+          </div>
+
+          <div className="media-intro">
+            <h1>{media.title}</h1>
+            {summary && <p className="media-summary">{summary}</p>}
           </div>
         </div>
       </div>

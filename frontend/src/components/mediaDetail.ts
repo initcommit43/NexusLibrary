@@ -128,6 +128,37 @@ export const readRankings = (detail: Record<string, unknown>): string[] =>
     return [`#${ranking.rank} ${context}${when ? ` ${when}` : ''}`]
   })
 
+export interface NextEpisode {
+  episode: number
+  airingAt: number
+}
+
+/**
+ * When the next episode lands, as an absolute time.
+ *
+ * <p>AniList also offers a countdown, but a countdown cached for a day is wrong by a day —
+ * the timestamp is what survives being stored, and the counting happens on screen.
+ */
+export const readNextEpisode = (detail: Record<string, unknown>): NextEpisode | null => {
+  const next = record(detail.nextAiringEpisode)
+  if (typeof next.episode !== 'number' || typeof next.airingAt !== 'number') return null
+  return { episode: next.episode, airingAt: next.airingAt }
+}
+
+/** "3d 4h", "12h 30m", "8m" — enough to know when, without pretending to a precision. */
+export const countdown = (airingAt: number, now: number = Date.now()): string | null => {
+  const seconds = airingAt - Math.floor(now / 1000)
+  if (seconds <= 0) return null
+
+  const days = Math.floor(seconds / 86400)
+  const hours = Math.floor((seconds % 86400) / 3600)
+  const minutes = Math.floor((seconds % 3600) / 60)
+
+  if (days > 0) return `${days}d ${hours}h`
+  if (hours > 0) return `${hours}h ${minutes}m`
+  return `${minutes}m`
+}
+
 export const readTrailer = (detail: Record<string, unknown>): string | null => {
   const trailer = record(detail.trailer)
   const id = text(trailer.id)

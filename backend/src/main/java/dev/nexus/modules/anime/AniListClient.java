@@ -104,12 +104,17 @@ public class AniListClient {
     /**
      * Everything the detail page shows. One call, kept apart from the fields every list row
      * needs: relations alone carry a nested media record each.
+     *
+     * <p>The next episode is asked for as an absolute airing time rather than a countdown:
+     * a duration cached for a day is wrong by a day, while a timestamp stays true.
      */
     private static final String DETAIL_QUERY =
             """
             query ($id: Int) {
               Media(id: $id) {
+                title { romaji english native }
                 bannerImage
+                nextAiringEpisode { episode airingAt }
                 season
                 seasonYear
                 duration
@@ -121,7 +126,7 @@ public class AniListClient {
                 studios { edges { isMain node { id name } } }
                 relations {
                   edges {
-                    relationType
+                    relationType(version: 2)
                     node {
                       id type format status
                       title { romaji english native }

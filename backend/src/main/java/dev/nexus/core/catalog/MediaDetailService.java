@@ -24,6 +24,15 @@ public class MediaDetailService {
     /** Where a source's own extra detail lives on the shared item. */
     public static final String DETAIL_KEY = "detail";
 
+    /**
+     * Bumped whenever the shape or meaning of what a source returns changes. Detail cached
+     * under an older stamp is re-fetched rather than shown, which is how a fix to a query
+     * reaches titles that were cached before it.
+     */
+    static final String VERSION_KEY = "schemaVersion";
+
+    static final int DETAIL_VERSION = 2;
+
     private static final Logger log = LoggerFactory.getLogger(MediaDetailService.class);
 
     private final ItemCacheService cache;
@@ -45,7 +54,7 @@ public class MediaDetailService {
      */
     public TrackableItem findOrFetch(Source source, String externalId) {
         TrackableItem item = cache.findOrCache(source, externalId);
-        if (item.getMetadata().containsKey(DETAIL_KEY)) {
+        if (isCurrent(item.getMetadata().get(DETAIL_KEY))) {
             return item;
         }
 
@@ -58,14 +67,23 @@ public class MediaDetailService {
             return item;
         }
 
+        Map<String, Object> stamped = new java.util.HashMap<>(detail);
+        stamped.put(VERSION_KEY, DETAIL_VERSION);
+
         try {
-            writer.storeDetail(source, externalId, detail);
-            item.getMetadata().put(DETAIL_KEY, detail);
+            writer.storeDetail(source, externalId, stamped);
+            item.getMetadata().put(DETAIL_KEY, stamped);
         } catch (RuntimeException e) {
             // The page is perfectly readable without it; losing the write is not worth failing on.
             log.warn("Could not store detail for {}:{}", source, externalId, e);
         }
         return item;
+    }
+
+    private boolean isCurrent(Object stored) {
+        return stored instanceof Map<?, ?> detail
+                && detail.get(VERSION_KEY) instanceof Number version
+                && version.intValue() >= DETAIL_VERSION;
     }
 
     public TrackableItem require(Source source, String externalId) {

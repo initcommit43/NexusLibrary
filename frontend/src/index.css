@@ -590,6 +590,12 @@ button.small {
   align-items: start;
 }
 
+.media-cover-column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
 .media-cover {
   width: 100%;
   aspect-ratio: 3 / 4;
@@ -600,7 +606,7 @@ button.small {
 }
 
 /* Only with a banner behind it is there anything to ride up over. */
-.has-banner .media-cover {
+.has-banner .media-cover-column {
   margin-top: -6rem;
   box-shadow: var(--shadow-2);
 }
@@ -617,15 +623,18 @@ button.small {
 }
 
 .media-summary {
-  max-width: 70ch;
   white-space: pre-wrap;
   color: var(--text-body);
 }
 
 .media-actions {
   display: flex;
-  align-items: center;
-  gap: var(--space-3);
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.media-actions button {
+  width: 100%;
 }
 
 /* Same columns as the head, so the facts sit directly beneath the cover. */
@@ -650,6 +659,17 @@ button.small {
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+.fact.airing {
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+}
+
+.fact.airing .fact-value {
+  color: var(--accent);
+  font-weight: 600;
 }
 
 .fact-label {
@@ -874,8 +894,8 @@ button.small {
     grid-template-columns: 1fr;
   }
 
-  .has-banner .media-cover {
-    width: 8rem;
+  .has-banner .media-cover-column {
+    width: 10rem;
     margin-top: -4rem;
   }
 }
