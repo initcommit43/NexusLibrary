@@ -1,4 +1,5 @@
 import type { MediaDetail } from '../api/client'
+import { readRankings } from './mediaDetail'
 
 const text = (value: unknown): string | null =>
   typeof value === 'string' && value.trim() ? value : typeof value === 'number' ? String(value) : null
@@ -46,8 +47,16 @@ export const MediaFacts = ({ media }: { media: MediaDetail }) => {
   const genres = list(meta.genres)
   const platforms = list(meta.platforms)
 
+  const rankings = readRankings(detail)
+
   return (
     <aside className="media-facts">
+      {rankings.map((ranking) => (
+        <span key={ranking} className="ranking">
+          {ranking}
+        </span>
+      ))}
+
       {rows
         .filter(([, value]) => value)
         .map(([label, value]) => (

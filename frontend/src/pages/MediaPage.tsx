@@ -5,6 +5,14 @@ import { AppShell } from '../components/AppShell'
 import { EntryEditDialog } from '../components/EntryEditDialog'
 import { MediaFacts } from '../components/MediaFacts'
 import { MediaRelations } from '../components/MediaRelations'
+import {
+  MediaCharacters,
+  MediaLinks,
+  MediaStaff,
+  MediaStats,
+  MediaTags,
+  MediaTrailer,
+} from '../components/MediaPanels'
 import { statusLabelsFor, moduleForMediaType } from '../modules/registry'
 
 /** AniList writes synopses in HTML, and pads them with blank lines it does not mean. */
@@ -138,10 +146,18 @@ export const MediaPage = () => {
       )}
 
       <div className="media-layout">
-        <MediaFacts media={media} />
+        <div className="media-side">
+          <MediaFacts media={media} />
+          <MediaTags detail={detail} />
+          <MediaLinks detail={detail} />
+        </div>
 
         <div className="media-main">
           <MediaRelations detail={detail} source={media.source} />
+          <MediaCharacters detail={detail} />
+          <MediaStaff detail={detail} />
+          <MediaStats detail={detail} />
+          <MediaTrailer detail={detail} />
         </div>
       </div>
 

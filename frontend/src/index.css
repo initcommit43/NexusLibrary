@@ -715,6 +715,148 @@ button.small {
   line-height: var(--leading-tight);
 }
 
+.media-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* --- people --- */
+
+.person-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: var(--space-2);
+}
+
+/* Character on the left, the voice behind them on the right, facing each other. */
+.person-card {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-2);
+  background: var(--surface);
+  border: 2px solid var(--card-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.person-card img,
+.person-blank {
+  width: 3.5rem;
+  object-fit: cover;
+  background: var(--surface-raised);
+  flex-shrink: 0;
+}
+
+.person-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding: var(--space-2) 0;
+}
+
+.person-text.right {
+  text-align: right;
+}
+
+.person-text strong {
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text);
+  line-height: var(--leading-tight);
+}
+
+.person-text .muted {
+  font-size: var(--text-xs);
+}
+
+/* --- distributions --- */
+
+.bar-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+  height: 8rem;
+  padding: var(--space-3);
+  background: var(--surface);
+  border: 2px solid var(--card-border);
+  border-radius: var(--radius-lg);
+}
+
+.bar {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-xs);
+}
+
+.bar-fill {
+  width: 100%;
+  min-height: 2px;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  background: var(--accent);
+}
+
+.trailer {
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 2px solid var(--card-border);
+}
+
+.trailer iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* --- sidebar lists: tags and links --- */
+
+.tag-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--surface);
+  border: 2px solid var(--card-border);
+  border-radius: var(--radius-lg);
+}
+
+.tag-list h2 {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--text-muted);
+}
+
+.tag-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--text-body);
+}
+
+.ranking {
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-align: center;
+}
+
 /* An entry page holds a reading width rather than stretching across the whole column. */
 .entry-top {
   width: 100%;
