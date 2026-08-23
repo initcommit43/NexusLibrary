@@ -10,6 +10,8 @@ import dev.nexus.core.importing.SteamVerificationFailedException;
 import dev.nexus.core.importing.SyncJobNotFoundException;
 import dev.nexus.core.review.ReviewNotFoundException;
 import dev.nexus.core.tracking.EntryNotFoundException;
+import dev.nexus.modules.anime.AniListNotConfiguredException;
+import dev.nexus.modules.anime.AniListUnavailableException;
 import dev.nexus.modules.games.IgdbUnavailableException;
 import dev.nexus.modules.games.SteamProfileNotPublicException;
 import dev.nexus.modules.games.SteamProfilePrivateException;
@@ -142,6 +144,23 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         log.warn("IGDB unavailable: {}", e.getMessage());
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
                 .body(new ApiError("The game database is unavailable right now. Please try again."));
+    }
+
+    @ExceptionHandler(AniListUnavailableException.class)
+    public ResponseEntity<ApiError> handleAniListUnavailable(AniListUnavailableException e) {
+        log.warn("AniList unavailable: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(new ApiError("AniList is unavailable right now. Please try again."));
+    }
+
+    /**
+     * Missing credentials are a deployment problem, not a fault the reader can retry away —
+     * so it says what is wrong instead of hiding behind a generic failure.
+     */
+    @ExceptionHandler(AniListNotConfiguredException.class)
+    public ResponseEntity<ApiError> handleAniListNotConfigured(AniListNotConfiguredException e) {
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED)
+                .body(new ApiError("AniList is not configured on this server, so accounts cannot be connected."));
     }
 
     @ExceptionHandler(RateLimitExceededException.class)
