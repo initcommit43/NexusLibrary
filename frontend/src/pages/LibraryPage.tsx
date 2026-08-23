@@ -1,15 +1,13 @@
 import { useEffect, useState } from 'react'
-import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom'
-import { ApiError, api, type MediaType, type TrackedItem, type TrackingStatus } from '../api/client'
+import { Link, Navigate, useParams } from 'react-router-dom'
+import { ApiError, api, type TrackedItem, type TrackingStatus } from '../api/client'
 import { AppShell } from '../components/AppShell'
 import { StatusPicker } from '../components/StatusPicker'
 import { toDisplayScore } from '../components/rating'
-import { STATUS_ORDER } from '../components/trackingStatus'
-import { moduleBySlug, statusLabelsFor } from '../modules/registry'
+import { defaultTypeOf, moduleBySlug, typeBySlug } from '../modules/registry'
 
 export const LibraryPage = () => {
-  const { module: slug } = useParams()
-  const [params, setParams] = useSearchParams()
+  const { module: slug, type: typeSlug } = useParams()
   const module = moduleBySlug(slug)
 
   const [entries, setEntries] = useState<TrackedItem[] | null>(null)
@@ -29,13 +27,8 @@ export const LibraryPage = () => {
     return <Navigate to="/" replace />
   }
 
-  // A module with two kinds of thing shows one at a time: anime and manga share a shelf in
-  // no other app either, and mixing them would mean picking one set of words for both.
-  const requested = params.get('type') as MediaType | null
-  const active =
-    module.types.find((type) => type.mediaType === requested) ??
-    module.types.find((type) => type.mediaType === module.defaultMediaType) ??
-    module.types[0]
+  // Each kind of thing has its own shelf in the header, so this page shows exactly one.
+  const active = typeBySlug(module, typeSlug) ?? defaultTypeOf(module)
 
   const changeStatus = async (entry: TrackedItem, status: TrackingStatus) => {
     setBusyId(entry.id)
@@ -68,24 +61,7 @@ export const LibraryPage = () => {
 
   return (
     <AppShell module={module}>
-      <h1>{module.label}</h1>
-
-      {module.types.length > 1 && (
-        <div className="type-tabs" role="tablist" aria-label={`${module.label} kinds`}>
-          {module.types.map((type) => (
-            <button
-              key={type.mediaType}
-              type="button"
-              role="tab"
-              aria-selected={type.mediaType === active.mediaType}
-              className={type.mediaType === active.mediaType ? 'type-tab active' : 'type-tab'}
-              onClick={() => setParams({ type: type.mediaType })}
-            >
-              {type.label}
-            </button>
-          ))}
-        </div>
-      )}
+      <h1>{active.listLabel}</h1>
 
       {error && (
         <p className="alert" role="alert">
@@ -98,20 +74,20 @@ export const LibraryPage = () => {
       {entries !== null && mine.length === 0 && (
         <p className="muted">
           {module.emptyHint}{' '}
-          <Link to={`/search?module=${module.slug}&type=${active.mediaType}`}>
+          <Link to={`/search?module=${module.slug}&type=${active.slug}`}>
             {active.searchPlaceholder}
           </Link>
         </p>
       )}
 
-      {STATUS_ORDER.map((status) => {
+      {active.statusOrder.map((status) => {
         const group = byStatus(status)
         if (group.length === 0) return null
 
         return (
           <section key={status} className="status-section">
             <h2>
-              {statusLabelsFor(active.mediaType)[status]}{' '}
+              {active.statusLabels[status]}{' '}
               <span className="muted">({group.length})</span>
             </h2>
 

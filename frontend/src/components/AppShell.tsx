@@ -42,12 +42,18 @@ export const AppShell = ({
 
         <ModuleSwitcher current={current} />
 
+        {/* A module contributes its own shelves; the rest of the header is the same everywhere. */}
         <nav className="shell-nav">
           <NavLink to={`/library/${current.slug}`} end>
             Dashboard
           </NavLink>
           <NavLink to="/search">Search</NavLink>
-          <NavLink to="/activity">Activity</NavLink>
+          {current.types.map((type) => (
+            <NavLink key={type.slug} to={`/library/${current.slug}/${type.slug}`}>
+              {type.listLabel}
+            </NavLink>
+          ))}
+          <NavLink to="/browse">Browse</NavLink>
         </nav>
 
         <div className="header-right">

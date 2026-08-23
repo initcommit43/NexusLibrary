@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { ApiError, api, type SearchResult, type TrackingStatus } from '../api/client'
 import { AppShell } from '../components/AppShell'
 import { STATUS_ORDER } from '../components/trackingStatus'
-import { moduleBySlug, statusLabelsFor } from '../modules/registry'
+import { defaultTypeOf, moduleBySlug, statusLabelsFor, typeBySlug } from '../modules/registry'
 import { useCurrentModule } from '../modules/useCurrentModule'
 
 type TrackState = Record<string, 'idle' | 'saving' | 'tracked'>
@@ -13,11 +13,7 @@ export const SearchPage = () => {
   // query string wins when it names one, otherwise this searches wherever you already are.
   const [params] = useSearchParams()
   const module = useCurrentModule(moduleBySlug(params.get('module') ?? undefined))
-  const requested = params.get('type')
-  const active =
-    module.types.find((type) => type.mediaType === requested) ??
-    module.types.find((type) => type.mediaType === module.defaultMediaType) ??
-    module.types[0]
+  const active = typeBySlug(module, params.get('type') ?? undefined) ?? defaultTypeOf(module)
 
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[] | null>(null)

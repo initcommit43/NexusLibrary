@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { ActivityPage } from './pages/ActivityPage'
+import { BrowsePage } from './pages/BrowsePage'
 import { LibraryPage } from './pages/LibraryPage'
 import { EntryDetailPage } from './pages/EntryDetailPage'
 import { LoginPage } from './pages/LoginPage'
@@ -28,6 +29,8 @@ export const App = () => (
     <Route element={<ProtectedRoute />}>
       <Route path="/" element={<LandingRedirect />} />
       <Route path="/library/:module" element={<LibraryPage />} />
+      <Route path="/library/:module/:type" element={<LibraryPage />} />
+      <Route path="/browse" element={<BrowsePage />} />
       <Route path="/search" element={<SearchPage />} />
       <Route path="/activity" element={<ActivityPage />} />
       <Route path="/entries/:id" element={<EntryDetailPage />} />

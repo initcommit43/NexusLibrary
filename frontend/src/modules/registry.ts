@@ -16,7 +16,13 @@ export interface ModuleProvider {
 export interface MediaTypeDefinition {
   mediaType: MediaType
   label: string
+  /** What the header calls this type's shelf. */
+  listLabel: string
+  /** Lowercase media type, used in the URL. */
+  slug: string
   statusLabels: Record<TrackingStatus, string>
+  /** Section order down the page; each community has its own habit. */
+  statusOrder: TrackingStatus[]
   searchPlaceholder: string
 }
 
@@ -52,7 +58,10 @@ export const MODULES: ModuleDefinition[] = [
       {
         mediaType: 'GAME',
         label: 'Games',
+        listLabel: 'Game List',
+        slug: 'games',
         searchPlaceholder: 'Search games…',
+        statusOrder: ['IN_PROGRESS', 'PLANNING', 'COMPLETED', 'PAUSED', 'DROPPED'],
         statusLabels: {
           PLANNING: 'Backlog',
           IN_PROGRESS: 'Playing',
@@ -73,13 +82,19 @@ export const MODULES: ModuleDefinition[] = [
       {
         mediaType: 'ANIME',
         label: 'Anime',
+        listLabel: 'Anime List',
+        slug: 'anime',
         searchPlaceholder: 'Search anime…',
+        statusOrder: ['IN_PROGRESS', 'COMPLETED', 'PAUSED', 'DROPPED', 'PLANNING'],
         statusLabels: watching,
       },
       {
         mediaType: 'MANGA',
         label: 'Manga',
+        listLabel: 'Manga List',
+        slug: 'manga',
         searchPlaceholder: 'Search manga…',
+        statusOrder: ['IN_PROGRESS', 'COMPLETED', 'PAUSED', 'DROPPED', 'PLANNING'],
         statusLabels: {
           PLANNING: 'Plan to read',
           IN_PROGRESS: 'Reading',
@@ -107,13 +122,19 @@ export const MODULES: ModuleDefinition[] = [
       {
         mediaType: 'MOVIE',
         label: 'Movies',
+        listLabel: 'Film List',
+        slug: 'movies',
         searchPlaceholder: 'Search films…',
+        statusOrder: ['IN_PROGRESS', 'COMPLETED', 'PAUSED', 'DROPPED', 'PLANNING'],
         statusLabels: { ...watching, PLANNING: 'Watchlist', COMPLETED: 'Watched' },
       },
       {
         mediaType: 'SHOW',
         label: 'TV',
+        listLabel: 'TV List',
+        slug: 'tv',
         searchPlaceholder: 'Search shows…',
+        statusOrder: ['IN_PROGRESS', 'COMPLETED', 'PAUSED', 'DROPPED', 'PLANNING'],
         statusLabels: { ...watching, PLANNING: 'Watchlist', COMPLETED: 'Watched' },
       },
     ],
@@ -128,7 +149,10 @@ export const MODULES: ModuleDefinition[] = [
       {
         mediaType: 'BOOK',
         label: 'Books',
+        listLabel: 'Book List',
+        slug: 'books',
         searchPlaceholder: 'Search books…',
+        statusOrder: ['IN_PROGRESS', 'PLANNING', 'COMPLETED', 'PAUSED', 'DROPPED'],
         statusLabels: {
           PLANNING: 'Want to read',
           IN_PROGRESS: 'Reading',
@@ -151,6 +175,14 @@ export const mediaTypesOf = (module: ModuleDefinition): MediaType[] =>
 
 export const moduleForMediaType = (mediaType: MediaType): ModuleDefinition | undefined =>
   MODULES.find((module) => mediaTypesOf(module).includes(mediaType))
+
+export const typeBySlug = (
+  module: ModuleDefinition,
+  slug: string | undefined,
+): MediaTypeDefinition | undefined => module.types.find((type) => type.slug === slug)
+
+export const defaultTypeOf = (module: ModuleDefinition): MediaTypeDefinition =>
+  module.types.find((type) => type.mediaType === module.defaultMediaType) ?? module.types[0]
 
 export const typeDefinitionFor = (mediaType: MediaType): MediaTypeDefinition | undefined =>
   MODULES.flatMap((module) => module.types).find((type) => type.mediaType === mediaType)
