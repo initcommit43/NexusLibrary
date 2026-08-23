@@ -637,6 +637,14 @@ button.small {
   width: 100%;
 }
 
+/* The chevron sits at the end, so the label stays centred against its own width. */
+.status-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
 /* Same columns as the head, so the facts sit directly beneath the cover. */
 .media-layout {
   display: grid;

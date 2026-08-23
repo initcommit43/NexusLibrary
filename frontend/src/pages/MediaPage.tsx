@@ -15,6 +15,13 @@ import {
 } from '../components/MediaPanels'
 import { statusLabelsFor, moduleForMediaType } from '../modules/registry'
 
+/** Marks the status button as something that opens, rather than something that fires. */
+const ChevronIcon = () => (
+  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" aria-hidden>
+    <path d="m6 9 6 6 6-6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+)
+
 /** AniList writes synopses in HTML, and pads them with blank lines it does not mean. */
 const plainText = (html: unknown): string | null => {
   if (typeof html !== 'string' || !html.trim()) return null
@@ -120,8 +127,9 @@ export const MediaPage = () => {
 
             <div className="media-actions">
               {entry ? (
-                <button type="button" onClick={() => setEditing(entry)}>
-                  {statusLabelsFor(media.mediaType)[entry.status]}
+                <button type="button" className="status-action" onClick={() => setEditing(entry)}>
+                  <span>{statusLabelsFor(media.mediaType)[entry.status]}</span>
+                  <ChevronIcon />
                 </button>
               ) : (
                 <button type="button" disabled={busy} onClick={() => void track()}>
