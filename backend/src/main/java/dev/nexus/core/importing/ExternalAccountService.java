@@ -3,6 +3,7 @@ package dev.nexus.core.importing;
 import dev.nexus.core.domain.ExternalAccount;
 import dev.nexus.core.domain.ExternalAccountRepository;
 import dev.nexus.core.domain.Provider;
+import java.time.Instant;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,12 +35,32 @@ public class ExternalAccountService {
     /** Connecting again with a different account re-points the existing link. */
     @Transactional
     public ExternalAccount connect(Long userId, Provider provider, String externalUserId) {
-        return accounts.findByUserIdAndProvider(userId, provider)
-                .map(existing -> {
-                    existing.setExternalUserId(externalUserId);
-                    return accounts.save(existing);
-                })
-                .orElseGet(() -> accounts.save(new ExternalAccount(userId, provider, externalUserId)));
+        return connect(userId, provider, externalUserId, null, null, null);
+    }
+
+    /**
+     * The OAuth variant. Tokens are encrypted by the entity's converter on the way to the
+     * column, so nothing here has to know they are sensitive.
+     */
+    @Transactional
+    public ExternalAccount connect(
+            Long userId,
+            Provider provider,
+            String externalUserId,
+            String accessToken,
+            String refreshToken,
+            Instant expiresAt) {
+
+        ExternalAccount account = accounts.findByUserIdAndProvider(userId, provider)
+                .orElseGet(() -> new ExternalAccount(userId, provider, externalUserId));
+
+        account.setExternalUserId(externalUserId);
+        if (accessToken != null) {
+            account.setAccessToken(accessToken);
+            account.setRefreshToken(refreshToken);
+            account.setTokenExpiresAt(expiresAt);
+        }
+        return accounts.save(account);
     }
 
     @Transactional

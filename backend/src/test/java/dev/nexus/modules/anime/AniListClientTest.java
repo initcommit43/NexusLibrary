@@ -32,7 +32,7 @@ class AniListClientTest {
     void setUp() {
         RestClient.Builder builder = RestClient.builder();
         server = MockRestServiceServer.bindTo(builder).build();
-        client = new AniListClient(builder, new AniListProperties(ENDPOINT, 6000));
+        client = new AniListClient(builder, new AniListProperties(ENDPOINT, "id", "secret", "https://anilist.test/oauth/authorize", "https://anilist.test/oauth/token", 6000));
     }
 
     @Test

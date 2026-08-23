@@ -22,7 +22,11 @@ export const SettingsPage = () => {
   const [busy, setBusy] = useState<'connect' | 'import' | 'disconnect' | 'achievements' | null>(null)
   const [job, setJob] = useState<SyncJob | null>(null)
 
-  const steam = accounts?.find((account) => account.provider === 'STEAM') ?? null
+  const connected = (provider: ModuleProvider['provider']) =>
+    accounts?.find((account) => account.provider === provider) ?? null
+
+  const steam = connected('STEAM')
+  const anilist = connected('ANILIST')
 
   const load = useCallback(() => {
     api
@@ -89,11 +93,60 @@ export const SettingsPage = () => {
     }
   }
 
-  const disconnectSteam = async () => {
+  const connectAniList = async () => {
+    setBusy('connect')
+    setError(null)
+    try {
+      const { url } = await api.anilistAuthorizeUrl()
+      // Full-page navigation: the approval screen is AniList's, not ours to embed.
+      window.location.href = url
+    } catch (err) {
+      setBusy(null)
+      setError(err instanceof ApiError ? err.message : 'Could not start the AniList link.')
+    }
+  }
+
+  const anilistCard = (provider: ModuleProvider) => (
+    <article key={provider.provider} className="card integration-card">
+      <div className={anilist ? 'integration-head' : 'integration-head banner'}>
+        <div>
+          <h3>{provider.label}</h3>
+          <p className="muted">
+            {anilist ? `Connected as ${anilist.externalUserId}` : provider.blurb}
+          </p>
+        </div>
+
+        {anilist ? (
+          <div className="integration-actions">
+            <button
+              type="button"
+              className="ghost"
+              disabled={busy !== null}
+              onClick={() => void disconnect('ANILIST')}
+            >
+              Disconnect
+            </button>
+          </div>
+        ) : (
+          <button type="button" disabled={busy !== null} onClick={() => void connectAniList()}>
+            {busy === 'connect' ? 'Redirecting…' : 'Connect AniList'}
+          </button>
+        )}
+      </div>
+
+      {anilist && (
+        <p className="muted note">
+          Importing your lists arrives next; the link is stored and ready for it.
+        </p>
+      )}
+    </article>
+  )
+
+  const disconnect = async (provider: ModuleProvider['provider']) => {
     setBusy('disconnect')
     setError(null)
     try {
-      await api.disconnect('STEAM')
+      await api.disconnect(provider)
       setReport(null)
       load()
     } catch (err) {
@@ -128,7 +181,7 @@ export const SettingsPage = () => {
               type="button"
               className="ghost"
               disabled={busy !== null}
-              onClick={() => void disconnectSteam()}
+              onClick={() => void disconnect('STEAM')}
             >
               Disconnect
             </button>
@@ -219,9 +272,11 @@ export const SettingsPage = () => {
           Nothing to connect: this module imports from a file rather than an account.
         </p>
       ) : (
-        module.providers.map((provider) =>
-          provider.provider === 'STEAM' ? steamCard(provider) : pendingCard(provider),
-        )
+        module.providers.map((provider) => {
+          if (provider.provider === 'STEAM') return steamCard(provider)
+          if (provider.provider === 'ANILIST') return anilistCard(provider)
+          return pendingCard(provider)
+        })
       )}
     </section>
   )

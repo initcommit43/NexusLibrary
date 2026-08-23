@@ -7,6 +7,7 @@ import { EntryDetailPage } from './pages/EntryDetailPage'
 import { LoginPage } from './pages/LoginPage'
 import { SearchPage } from './pages/SearchPage'
 import { SettingsPage } from './pages/SettingsPage'
+import { AniListCallbackPage } from './pages/AniListCallbackPage'
 import { SteamCallbackPage } from './pages/SteamCallbackPage'
 import { RegisterPage } from './pages/RegisterPage'
 
@@ -23,6 +24,7 @@ export const App = () => (
       <Route path="/entries/:id" element={<EntryDetailPage />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/settings/steam/callback" element={<SteamCallbackPage />} />
+      <Route path="/settings/anilist/callback" element={<AniListCallbackPage />} />
     </Route>
     <Route path="*" element={<Navigate to="/" replace />} />
   </Routes>

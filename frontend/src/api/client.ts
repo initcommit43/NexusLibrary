@@ -239,6 +239,15 @@ export const api = {
   steamAuthorizeUrl: () =>
     request<{ url: string }>('/integrations/steam/authorize', { method: 'POST' }),
 
+  anilistAuthorizeUrl: () =>
+    request<{ url: string }>('/integrations/anilist/authorize', { method: 'POST' }),
+
+  completeAniListConnect: (code: string) =>
+    request<ConnectedAccount>('/integrations/anilist/callback', {
+      method: 'POST',
+      body: JSON.stringify({ code }),
+    }),
+
   completeSteamConnect: (params: Record<string, string>) =>
     request<ConnectedAccount>('/integrations/steam/callback', {
       method: 'POST',

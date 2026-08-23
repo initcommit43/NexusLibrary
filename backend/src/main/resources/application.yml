@@ -67,6 +67,11 @@ nexus:
     # Public for reads: search and media lookups need no key. Only importing a user's own
     # list involves OAuth, which phase 5 adds separately.
     api-url: https://graphql.anilist.co
+    # Only needed to connect an account; search works without them.
+    client-id: ${ANILIST_CLIENT_ID:}
+    client-secret: ${ANILIST_CLIENT_SECRET:}
+    authorize-url: https://anilist.co/api/v2/oauth/authorize
+    token-url: https://anilist.co/api/v2/oauth/token
     requests-per-minute: 90
   steam:
     api-key: ${STEAM_API_KEY:}

@@ -7,6 +7,7 @@ import dev.nexus.core.domain.Provider;
 import dev.nexus.core.web.RateLimiter;
 import dev.nexus.core.jobs.JobRegistry;
 import dev.nexus.core.jobs.SyncJob;
+import dev.nexus.modules.anime.AniListOAuthService;
 import dev.nexus.modules.games.AchievementSyncService;
 import dev.nexus.modules.games.SteamOpenIdService;
 import jakarta.validation.constraints.NotEmpty;
@@ -58,9 +59,13 @@ public class IntegrationController {
     /** The raw openid.* parameters, forwarded by the frontend for verification. */
     public record SteamCallbackRequest(@NotEmpty Map<String, String> params) {}
 
+    /** The authorization code AniList hands back, forwarded for exchange server-side. */
+    public record AniListCallbackRequest(@jakarta.validation.constraints.NotBlank String code) {}
+
     private final ExternalAccountService accounts;
     private final LibraryImportService importService;
     private final SteamOpenIdService steamOpenId;
+    private final AniListOAuthService anilistOAuth;
     private final AchievementSyncService achievements;
     private final JobRegistry jobs;
     private final RateLimiter rateLimiter;
@@ -71,6 +76,7 @@ public class IntegrationController {
             ExternalAccountService accounts,
             LibraryImportService importService,
             SteamOpenIdService steamOpenId,
+            AniListOAuthService anilistOAuth,
             AchievementSyncService achievements,
             JobRegistry jobs,
             RateLimiter rateLimiter,
@@ -78,6 +84,7 @@ public class IntegrationController {
         this.accounts = accounts;
         this.importService = importService;
         this.steamOpenId = steamOpenId;
+        this.anilistOAuth = anilistOAuth;
         this.achievements = achievements;
         this.jobs = jobs;
         this.rateLimiter = rateLimiter;
@@ -117,6 +124,38 @@ public class IntegrationController {
                 .orElseThrow(() -> new SteamVerificationFailedException());
 
         return ConnectedAccount.from(accounts.connect(user.id(), Provider.STEAM, steamId));
+    }
+
+    /** Where to send the reader to approve the link. */
+    @PostMapping("/anilist/authorize")
+    public AuthorizeUrlResponse authorizeAniList(@AuthenticationPrincipal CurrentUser user) {
+        return new AuthorizeUrlResponse(anilistOAuth.authorizationUrl(anilistRedirectUri()));
+    }
+
+    /**
+     * Completes the link. AniList redirects the browser back with no Authorization header,
+     * so the frontend forwards the code here on an authenticated request — which binds the
+     * new link to the session that started it rather than to whoever opens the callback.
+     */
+    @PostMapping("/anilist/callback")
+    public ConnectedAccount completeAniList(
+            @AuthenticationPrincipal CurrentUser user,
+            @org.springframework.validation.annotation.Validated @RequestBody AniListCallbackRequest request) {
+
+        AniListOAuthService.Connection connection =
+                anilistOAuth.exchangeCode(request.code(), anilistRedirectUri());
+
+        return ConnectedAccount.from(accounts.connect(
+                user.id(),
+                Provider.ANILIST,
+                connection.externalUserId(),
+                connection.accessToken(),
+                connection.refreshToken(),
+                connection.expiresAt()));
+    }
+
+    private String anilistRedirectUri() {
+        return frontendUrl + "/settings/anilist/callback";
     }
 
     @PostMapping("/{provider}/import")

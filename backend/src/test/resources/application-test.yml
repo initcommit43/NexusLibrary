@@ -28,6 +28,10 @@ nexus:
   anilist:
     # Tests stub the transport; this never reaches the real AniList.
     api-url: https://anilist.test/graphql
+    client-id: test-anilist-client
+    client-secret: test-anilist-secret
+    authorize-url: https://anilist.test/oauth/authorize
+    token-url: https://anilist.test/oauth/token
     requests-per-minute: 6000
   steam:
     api-key: test-steam-key
