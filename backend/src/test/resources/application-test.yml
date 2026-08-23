@@ -33,6 +33,7 @@ nexus:
     authorize-url: https://anilist.test/oauth/authorize
     token-url: https://anilist.test/oauth/token
     requests-per-minute: 6000
+    retry-backoff-ms: 1
   steam:
     api-key: test-steam-key
     api-base-url: https://steam.test

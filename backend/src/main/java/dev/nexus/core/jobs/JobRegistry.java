@@ -23,8 +23,8 @@ public class JobRegistry {
 
     private final Map<String, SyncJob> jobs = new ConcurrentHashMap<>();
 
-    public SyncJob start(Long userId, int total) {
-        SyncJob job = new SyncJob(userId, total);
+    public SyncJob start(Long userId, SyncJob.Kind kind, int total) {
+        SyncJob job = new SyncJob(userId, kind, total);
         jobs.put(job.getId(), job);
         return job;
     }
@@ -34,9 +34,12 @@ public class JobRegistry {
         return Optional.ofNullable(jobs.get(jobId)).filter(job -> job.getUserId().equals(userId));
     }
 
-    public Optional<SyncJob> runningFor(Long userId) {
+    /** Scoped by kind: an import running is no reason to refuse an achievement sync. */
+    public Optional<SyncJob> runningFor(Long userId, SyncJob.Kind kind) {
         return jobs.values().stream()
-                .filter(job -> job.getUserId().equals(userId) && job.getState() == SyncJob.State.RUNNING)
+                .filter(job -> job.getUserId().equals(userId)
+                        && job.getKind() == kind
+                        && job.getState() == SyncJob.State.RUNNING)
                 .findFirst();
     }
 

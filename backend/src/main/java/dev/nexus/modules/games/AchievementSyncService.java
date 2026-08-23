@@ -26,9 +26,9 @@ public class AchievementSyncService {
      * further result, against a request budget shared by everyone using the app.
      */
     public SyncJob start(ExternalAccount account) {
-        return jobs.runningFor(account.getUserId()).orElseGet(() -> {
+        return jobs.runningFor(account.getUserId(), SyncJob.Kind.ACHIEVEMENTS).orElseGet(() -> {
             List<Long> entryIds = syncer.steamEntryIds(account.getUserId());
-            SyncJob job = jobs.start(account.getUserId(), entryIds.size());
+            SyncJob job = jobs.start(account.getUserId(), SyncJob.Kind.ACHIEVEMENTS, entryIds.size());
             runner.run(job, account.getExternalUserId(), entryIds);
             return job;
         });

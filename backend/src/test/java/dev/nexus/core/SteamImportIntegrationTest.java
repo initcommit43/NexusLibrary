@@ -27,6 +27,7 @@ import dev.nexus.support.GamesTestData;
 import dev.nexus.support.HttpTestClient;
 import dev.nexus.support.HttpTestClient.Response;
 import dev.nexus.support.PostgresIntegrationTest;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -98,8 +99,8 @@ class SteamImportIntegrationTest extends PostgresIntegrationTest {
         Response report = runImport();
 
         assertThat(report.status()).isEqualTo(200);
-        assertThat(report.body()).containsEntry("created", 1);
-        assertThat(report.body()).containsEntry("updated", 0);
+        assertThat(reportOf(report)).containsEntry("created", 1);
+        assertThat(reportOf(report)).containsEntry("updated", 0);
 
         Map<String, Object> entry = http.get("/entries", "Authorization", "Bearer " + token)
                 .list()
@@ -131,10 +132,10 @@ class SteamImportIntegrationTest extends PostgresIntegrationTest {
 
         Response report = runImport();
 
-        assertThat(report.body()).containsEntry("created", 1);
+        assertThat(reportOf(report)).containsEntry("created", 1);
 
         @SuppressWarnings("unchecked")
-        List<Map<String, Object>> unmatched = (List<Map<String, Object>>) report.body().get("unmatched");
+        List<Map<String, Object>> unmatched = (List<Map<String, Object>>) reportOf(report).get("unmatched");
         assertThat(unmatched).hasSize(1);
         assertThat(unmatched.getFirst()).containsEntry("providerItemId", UNKNOWN_APPID);
         assertThat(unmatched.getFirst().get("title")).isNotNull();
@@ -149,8 +150,8 @@ class SteamImportIntegrationTest extends PostgresIntegrationTest {
         givenLibrary(playedFor(KNOWN_APPID, 250));
         Response second = runImport();
 
-        assertThat(second.body()).containsEntry("created", 0);
-        assertThat(second.body()).containsEntry("updated", 1);
+        assertThat(reportOf(second)).containsEntry("created", 0);
+        assertThat(reportOf(second)).containsEntry("updated", 1);
         assertThat(entries.count()).isEqualTo(1);
         assertThat(http.get("/entries", "Authorization", "Bearer " + token)
                         .list()
@@ -192,7 +193,9 @@ class SteamImportIntegrationTest extends PostgresIntegrationTest {
         String otherToken = registerAndGetToken(http, "second@example.com", "second");
         Long otherId = users.findByEmail("second@example.com").orElseThrow().getId();
         accountService.connect(otherId, Provider.STEAM, "76561198000000002");
-        http.post("/integrations/STEAM/import", "Authorization", "Bearer " + otherToken);
+        awaitJob(String.valueOf(http.post("/integrations/STEAM/import", "Authorization", "Bearer " + otherToken)
+                .body()
+                .get("id")));
 
         // Still one fetch and one cached row, now backing two users' entries.
         verify(igdbClient, times(1)).findGamesByIds(anyCollection());
@@ -207,7 +210,7 @@ class SteamImportIntegrationTest extends PostgresIntegrationTest {
 
         Response response = runImport();
 
-        assertThat(response.status()).isEqualTo(409);
+        assertThat(response.body().get("state")).isEqualTo("FAILED");
         assertThat(response.body().get("message").toString()).containsIgnoringCase("public");
     }
 
@@ -289,7 +292,49 @@ class SteamImportIntegrationTest extends PostgresIntegrationTest {
                 null);
     }
 
+    /**
+     * Starts an import and waits for the job it hands back.
+     *
+     * <p>An import answers immediately and works in the background, so a test that asserted
+     * on the response alone would be racing the run — and would leave it writing into the
+     * next test's fixture.
+     *
+     * @return the finished job, whose report carries what the run did
+     */
     private Response runImport() {
-        return http.post("/integrations/STEAM/import", "Authorization", "Bearer " + token);
+        Response started = http.post("/integrations/STEAM/import", "Authorization", "Bearer " + token);
+        if (started.status() != 200) {
+            return started;
+        }
+        return awaitJob(String.valueOf(started.body().get("id")));
+    }
+
+    private Response awaitJob(String jobId) {
+        return awaitJob(jobId, token);
+    }
+
+    private Response awaitJob(String jobId, String asToken) {
+        Instant deadline = Instant.now().plusSeconds(20);
+        Response job = null;
+
+        while (Instant.now().isBefore(deadline)) {
+            job = http.get("/integrations/jobs/" + jobId, "Authorization", "Bearer " + asToken);
+            if (job.status() != 200 || !"RUNNING".equals(job.body().get("state"))) {
+                return job;
+            }
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException(e);
+            }
+        }
+        throw new IllegalStateException("Import job never finished: " + jobId);
+    }
+
+    /** The run's own numbers, which now live on the finished job rather than the response. */
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> reportOf(Response job) {
+        return (Map<String, Object>) job.body().get("report");
     }
 }

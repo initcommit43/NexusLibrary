@@ -20,7 +20,10 @@ public record AniListProperties(
         String authorizeUrl,
         String tokenUrl,
         /** AniList permits 90 requests per minute, and answers 429 with Retry-After past it. */
-        @Positive int requestsPerMinute) {
+        @Positive int requestsPerMinute,
+
+        /** How long to wait before retrying a gateway error, doubling per attempt. */
+        @Positive long retryBackoffMs) {
 
     public boolean canConnectAccounts() {
         return clientId != null && !clientId.isBlank() && clientSecret != null && !clientSecret.isBlank();

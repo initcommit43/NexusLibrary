@@ -11,6 +11,7 @@ import dev.nexus.core.domain.ExternalIds;
 import dev.nexus.core.domain.Provider;
 import dev.nexus.core.domain.Source;
 import dev.nexus.core.domain.TrackableItem;
+import dev.nexus.core.jobs.SyncJob;
 import dev.nexus.core.domain.TrackableItemRepository;
 import dev.nexus.core.domain.UserEntry;
 import dev.nexus.core.domain.UserEntryRepository;
@@ -60,6 +61,16 @@ public class LibraryImportService {
 
     @Transactional
     public ImportReport importLibrary(ExternalAccount account) {
+        return importLibrary(account, null);
+    }
+
+    /**
+     * @param job optional, reporting progress as the library is walked. Pulling and
+     *     resolving happen before the first item is counted, so the count starts once there
+     *     is something to count.
+     */
+    @Transactional
+    public ImportReport importLibrary(ExternalAccount account, SyncJob job) {
         Provider provider = account.getProvider();
         LibraryImportAdapter adapter =
                 require(adapters, LibraryImportAdapter::provider, provider, "import adapter");
@@ -67,6 +78,9 @@ public class LibraryImportService {
 
         List<ImportedEntry> library = adapter.pullLibrary(account);
         log.debug("Pulled {} items from {}", library.size(), provider);
+        if (job != null) {
+            job.setTotal(library.size());
+        }
 
         Map<ExternalItemRef, CanonicalRef> resolved =
                 resolver.resolveAll(library.stream().map(ImportedEntry::itemRef).toList());
@@ -84,19 +98,29 @@ public class LibraryImportService {
             CanonicalRef ref = resolved.get(entry.itemRef());
             if (ref == null) {
                 unmatched.add(unmatchedItem(entry, "No match in the catalogue"));
+                if (job != null) {
+                    job.advance(false);
+                }
                 continue;
             }
 
             TrackableItem item = cached.getOrDefault(ref.source(), Map.of()).get(ref.externalId());
             if (item == null) {
                 unmatched.add(unmatchedItem(entry, "Matched but could not be loaded"));
+                if (job != null) {
+                    job.advance(false);
+                }
                 continue;
             }
 
-            if (upsert(account.getUserId(), provider, item, entry)) {
+            boolean isNew = upsert(account.getUserId(), provider, item, entry);
+            if (isNew) {
                 created++;
             } else {
                 updated++;
+            }
+            if (job != null) {
+                job.advance(isNew);
             }
         }
 

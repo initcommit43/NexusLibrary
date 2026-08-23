@@ -5,6 +5,8 @@ import dev.nexus.core.web.OutboundRateLimiter;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -20,8 +22,19 @@ import org.springframework.web.client.RestClientException;
 @Component
 public class AniListClient {
 
+    private static final Logger log = LoggerFactory.getLogger(AniListClient.class);
+
     /** AniList caps a page at 50 rows, so callers resolve in chunks of that size. */
     static final int MAX_BATCH = 50;
+
+    /**
+     * AniList sits behind Cloudflare and intermittently answers 502 or 504 under no load at
+     * all. Importing a list is dozens of calls, so without retries a single blip anywhere in
+     * the run loses the whole import — which is exactly what a reader notices.
+     */
+    private static final int MAX_ATTEMPTS = 3;
+
+
 
     private static final String MEDIA_FIELDS =
             """
@@ -257,8 +270,27 @@ public class AniListClient {
     }
 
     private Map<String, Object> post(String query, Map<String, Object> variables, String accessToken) {
-        rateLimiter.acquire();
+        AniListUnavailableException lastFailure = null;
 
+        for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+            rateLimiter.acquire();
+            try {
+                return attempt(query, variables, accessToken);
+            } catch (AniListUnavailableException e) {
+                lastFailure = e;
+                if (!e.isWorthRetrying() || attempt == MAX_ATTEMPTS) {
+                    throw e;
+                }
+                log.debug("AniList attempt {} failed ({}), retrying", attempt, e.getMessage());
+                pause(properties.retryBackoffMs() * attempt);
+            }
+        }
+
+        throw lastFailure;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> attempt(String query, Map<String, Object> variables, String accessToken) {
         try {
             RestClient.RequestBodySpec request =
                     restClient.post().uri(properties.apiUrl()).header("Accept", "application/json");
@@ -276,7 +308,8 @@ public class AniListClient {
                             if (status.value() == 404) {
                                 return Map.<String, Object>of();
                             }
-                            throw new AniListUnavailableException("AniList responded with " + status.value());
+                            throw new AniListUnavailableException(
+                                    "AniList responded with " + status.value(), status.value());
                         }
                         return (Map<String, Object>) response.bodyTo(Map.class);
                     });
@@ -286,7 +319,17 @@ public class AniListClient {
             }
             return body.get("data") instanceof Map<?, ?> data ? (Map<String, Object>) data : Map.of();
         } catch (RestClientException e) {
-            throw new AniListUnavailableException("AniList request failed", e);
+            // A dropped connection is as transient as a gateway error, and as worth retrying.
+            throw new AniListUnavailableException("AniList request failed", e, true);
+        }
+    }
+
+    private void pause(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new AniListUnavailableException("Interrupted while waiting to retry AniList", e, false);
         }
     }
 }

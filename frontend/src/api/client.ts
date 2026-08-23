@@ -107,11 +107,16 @@ export type Review = {
 
 export type SyncJob = {
   id: string
+  kind: 'IMPORT' | 'ACHIEVEMENTS'
   state: 'RUNNING' | 'COMPLETE' | 'FAILED'
   total: number
   processed: number
   changed: number
   message: string | null
+  /** What the run produced, once it has — an import's counts and unmatched titles. */
+  report: ImportReport | null
+  /** Work that started when this one finished, such as Steam's achievements. */
+  followUpJobId: string | null
 }
 
 export type AchievementCatalogueEntry = {
@@ -281,8 +286,9 @@ export const api = {
       body: JSON.stringify({ params }),
     }),
 
+  /** Answers immediately with a job to watch: an import is minutes of background work. */
   importLibrary: (provider: Provider) =>
-    request<ImportReport>(`/integrations/${provider}/import`, { method: 'POST' }),
+    request<SyncJob>(`/integrations/${provider}/import`, { method: 'POST' }),
 
   disconnect: (provider: Provider) =>
     request<void>(`/integrations/${provider}`, { method: 'DELETE' }),

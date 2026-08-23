@@ -13,20 +13,33 @@ public class SyncJob {
         FAILED
     }
 
+    public enum Kind {
+        IMPORT,
+        ACHIEVEMENTS
+    }
+
     private final String id = UUID.randomUUID().toString();
     private final Long userId;
+    private final Kind kind;
     private final Instant startedAt = Instant.now();
     private final AtomicInteger processed = new AtomicInteger();
     private final AtomicInteger changed = new AtomicInteger();
 
     private volatile int total;
     private volatile State state = State.RUNNING;
+    private volatile Object report;
+    private volatile String followUpJobId;
     private volatile String message;
     private volatile Instant finishedAt;
 
-    public SyncJob(Long userId, int total) {
+    public SyncJob(Long userId, Kind kind, int total) {
         this.userId = userId;
+        this.kind = kind;
         this.total = total;
+    }
+
+    public Kind getKind() {
+        return kind;
     }
 
     public void advance(boolean didChange) {
@@ -78,6 +91,24 @@ public class SyncJob {
 
     public String getMessage() {
         return message;
+    }
+
+    /** What the run produced, for the kinds of job that produce something. */
+    public Object getReport() {
+        return report;
+    }
+
+    public void setReport(Object report) {
+        this.report = report;
+    }
+
+    /** Work another module started once this finished — Steam's achievements. */
+    public String getFollowUpJobId() {
+        return followUpJobId;
+    }
+
+    public void setFollowUp(SyncJob followUp) {
+        this.followUpJobId = followUp.getId();
     }
 
     public Instant getStartedAt() {

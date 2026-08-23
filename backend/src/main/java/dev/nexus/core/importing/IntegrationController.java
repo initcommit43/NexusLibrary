@@ -42,30 +42,30 @@ public class IntegrationController {
 
     public record AuthorizeUrlResponse(String url) {}
 
-    /**
-     * What an import did, plus the job any follow-up work is running under — Steam's
-     * achievements, which start on their own once the library has landed.
-     */
-    public record ImportResponse(
-            int created, int updated, java.util.List<ImportReport.UnmatchedItem> unmatched, String followUpJobId) {
-
-        static ImportResponse of(ImportReport report, String followUpJobId) {
-            return new ImportResponse(
-                    report.created(), report.updated(), report.unmatched(), followUpJobId);
-        }
-    }
-
     public record SyncJobResponse(
-            String id, String state, int total, int processed, int changed, String message) {
+            String id,
+            String kind,
+            String state,
+            int total,
+            int processed,
+            int changed,
+            String message,
+            /** What the run produced, once it has. */
+            Object report,
+            /** Work that started when this finished — Steam's achievements after an import. */
+            String followUpJobId) {
 
         static SyncJobResponse from(SyncJob job) {
             return new SyncJobResponse(
                     job.getId(),
+                    job.getKind().name(),
                     job.getState().name(),
                     job.getTotal(),
                     job.getProcessed(),
                     job.getChanged(),
-                    job.getMessage());
+                    job.getMessage(),
+                    job.getReport(),
+                    job.getFollowUpJobId());
         }
     }
 
@@ -79,7 +79,7 @@ public class IntegrationController {
     private final LibraryImportService importService;
     private final SteamOpenIdService steamOpenId;
     private final AniListOAuthService anilistOAuth;
-    private final List<PostImportSync> postImportSyncs;
+    private final ImportRunner runner;
     private final JobRegistry jobs;
     private final RateLimiter rateLimiter;
     private final ServerTimings timings;
@@ -91,7 +91,7 @@ public class IntegrationController {
             LibraryImportService importService,
             SteamOpenIdService steamOpenId,
             AniListOAuthService anilistOAuth,
-            List<PostImportSync> postImportSyncs,
+            ImportRunner runner,
             JobRegistry jobs,
             RateLimiter rateLimiter,
             ServerTimings timings,
@@ -100,7 +100,7 @@ public class IntegrationController {
         this.importService = importService;
         this.steamOpenId = steamOpenId;
         this.anilistOAuth = anilistOAuth;
-        this.postImportSyncs = List.copyOf(postImportSyncs);
+        this.runner = runner;
         this.jobs = jobs;
         this.rateLimiter = rateLimiter;
         this.timings = timings;
@@ -175,26 +175,30 @@ public class IntegrationController {
     }
 
     /**
-     * Pulls the library, then hands back whatever follow-up work the module started. That
-     * work runs in the background: Steam has no bulk achievements endpoint, so it is one
-     * request per game and far too slow to hold a connection open for.
+     * Starts an import and hands back a job to watch straight away.
+     *
+     * <p>A list of several hundred titles is minutes of work against someone else's rate
+     * limit. Holding the request open for that invites a gateway timeout, and leaves a
+     * reader with a spinner that cannot tell them whether anything is happening.
+     *
+     * <p>Only one import runs per user at a time: a second would repeat every upstream call
+     * for no further result.
      */
     @PostMapping("/{provider}/import")
-    public ImportResponse importLibrary(@AuthenticationPrincipal CurrentUser user, @PathVariable Provider provider) {
+    public SyncJobResponse importLibrary(@AuthenticationPrincipal CurrentUser user, @PathVariable Provider provider) {
         // Throttled hard: each run costs external API budget and touches the whole library.
         rateLimiter.check("import:" + user.id(), importsPerMinute);
 
         ExternalAccount account = accounts.requireConnected(user.id(), provider);
-        ImportReport report = timings.time("import", () -> importService.importLibrary(account));
 
-        String followUpJobId = postImportSyncs.stream()
-                .filter(sync -> sync.provider() == provider)
-                .findFirst()
-                .flatMap(sync -> sync.startAfter(account))
-                .map(SyncJob::getId)
-                .orElse(null);
+        SyncJob job = jobs.runningFor(user.id(), SyncJob.Kind.IMPORT)
+                .orElseGet(() -> {
+                    SyncJob started = jobs.start(user.id(), SyncJob.Kind.IMPORT, 0);
+                    runner.run(started, account);
+                    return started;
+                });
 
-        return ImportResponse.of(report, followUpJobId);
+        return SyncJobResponse.from(job);
     }
 
     @GetMapping("/jobs/{jobId}")

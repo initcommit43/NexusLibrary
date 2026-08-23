@@ -73,6 +73,7 @@ nexus:
     authorize-url: https://anilist.co/api/v2/oauth/authorize
     token-url: https://anilist.co/api/v2/oauth/token
     requests-per-minute: 90
+    retry-backoff-ms: 1500
   steam:
     api-key: ${STEAM_API_KEY:}
     api-base-url: https://api.steampowered.com

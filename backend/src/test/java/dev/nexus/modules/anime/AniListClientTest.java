@@ -32,7 +32,7 @@ class AniListClientTest {
     void setUp() {
         RestClient.Builder builder = RestClient.builder();
         server = MockRestServiceServer.bindTo(builder).build();
-        client = new AniListClient(builder, new AniListProperties(ENDPOINT, "id", "secret", "https://anilist.test/oauth/authorize", "https://anilist.test/oauth/token", 6000));
+        client = new AniListClient(builder, new AniListProperties(ENDPOINT, "id", "secret", "https://anilist.test/oauth/authorize", "https://anilist.test/oauth/token", 6000, 1));
     }
 
     @Test
@@ -117,13 +117,33 @@ class AniListClientTest {
         assertThat(batches.getLast()).hasSize(20);
     }
 
+    /**
+     * AniList answers 502 or 504 through Cloudflare often enough that one blip must not lose
+     * an import, so a gateway error is tried again before it is reported.
+     */
     @Test
-    void anErrorStatusIsReportedRatherThanReturnedAsNoResults() {
-        server.expect(requestTo(ENDPOINT))
+    void aGatewayErrorIsRetriedBeforeItIsReported() {
+        server.expect(
+                        org.springframework.test.web.client.ExpectedCount.times(3),
+                        requestTo(ENDPOINT))
                 .andRespond(org.springframework.test.web.client.response.MockRestResponseCreators.withServerError());
 
         org.assertj.core.api.Assertions.assertThatExceptionOfType(AniListUnavailableException.class)
                 .isThrownBy(() -> client.findMediaById("21"));
+
+        server.verify();
+    }
+
+    /** A query we got wrong fails identically every time; retrying only spends the budget. */
+    @Test
+    void aRequestAniListRefusesIsNotRetried() {
+        server.expect(requestTo(ENDPOINT))
+                .andRespond(org.springframework.test.web.client.response.MockRestResponseCreators.withBadRequest());
+
+        org.assertj.core.api.Assertions.assertThatExceptionOfType(AniListUnavailableException.class)
+                .isThrownBy(() -> client.findMediaById("21"));
+
+        server.verify();
     }
 
     private static String page(String mediaJson) {

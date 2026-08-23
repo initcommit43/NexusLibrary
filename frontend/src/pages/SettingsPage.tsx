@@ -68,11 +68,16 @@ export const SettingsPage = () => {
     setReport(null)
     setJob(null)
     try {
-      const result = await api.importLibrary(provider)
-      setReport(result)
+      const started = await api.importLibrary(provider)
+      const finished = await watchJob(started.id)
       load()
-      if (result.followUpJobId) {
-        await watchFollowUp(result.followUpJobId)
+
+      if (finished?.report) {
+        setReport(finished.report)
+      }
+      // Steam follows an import with its achievements; watching that keeps the count moving.
+      if (finished?.followUpJobId) {
+        await watchJob(finished.followUpJobId)
       }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'The import could not be completed.')
@@ -82,10 +87,15 @@ export const SettingsPage = () => {
   }
 
   /**
-   * Follow-up work runs in the background — Steam's achievements are one request per game,
-   * far too slow to hold a request open for — so the import hands back a job to watch.
+   * Watches a background job to the end, keeping the latest state on screen.
+   *
+   * <p>Imports and achievement syncs are minutes of work against someone else's rate limit,
+   * so both answer immediately with a job and report progress through it. Without a count
+   * on screen there is no way to tell slow from stuck.
+   *
+   * @return the finished job, so a caller can pick up whatever it started
    */
-  const watchFollowUp = async (jobId: string) => {
+  const watchJob = async (jobId: string): Promise<SyncJob | null> => {
     try {
       let current = await api.syncJob(jobId)
       setJob(current)
@@ -97,10 +107,12 @@ export const SettingsPage = () => {
       }
 
       if (current.state === 'FAILED') {
-        setError(current.message ?? 'The follow-up sync failed.')
+        setError(current.message ?? 'That sync could not be completed.')
       }
+      return current
     } catch {
-      // The library is already imported; losing sight of the follow-up is not worth an alarm.
+      // The work carries on server-side; losing sight of it is not worth an alarm.
+      return null
     }
   }
 
@@ -232,10 +244,18 @@ export const SettingsPage = () => {
         <>
           <p className="muted">
             {job.state === 'RUNNING'
-              ? `Syncing achievements — ${job.processed} of ${job.total} games…`
+              ? job.kind === 'IMPORT'
+                ? job.total > 0
+                  ? `Importing — ${job.processed} of ${job.total} titles…`
+                  : 'Fetching your list…'
+                : `Syncing achievements — ${job.processed} of ${job.total} games…`
               : job.state === 'COMPLETE'
-                ? `Achievements synced — ${job.changed} of ${job.total} games updated.`
-                : 'Achievement sync failed.'}
+                ? job.kind === 'IMPORT'
+                  ? `Imported ${job.total} titles.`
+                  : `Achievements synced — ${job.changed} of ${job.total} games updated.`
+                : job.kind === 'IMPORT'
+                  ? 'The import stopped early.'
+                  : 'Achievement sync failed.'}
           </p>
           {job.total > 0 && (
             <div className="achievement-bar">

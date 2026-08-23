@@ -111,6 +111,6 @@ class AniListOAuthServiceTest {
 
     private static AniListProperties properties(String clientId, String clientSecret) {
         return new AniListProperties(
-                API_URL, clientId, clientSecret, "https://anilist.test/oauth/authorize", TOKEN_URL, 6000);
+                API_URL, clientId, clientSecret, "https://anilist.test/oauth/authorize", TOKEN_URL, 6000, 1);
     }
 }
