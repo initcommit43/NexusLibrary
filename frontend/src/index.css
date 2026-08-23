@@ -719,12 +719,16 @@ button.small {
   margin: 0;
   padding: 0;
   width: 100%;
-  max-height: 32rem;
-  overflow-y: auto;
   /* Two across on a wide screen, one on a narrow one. */
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(21rem, 1fr));
   gap: var(--space-2);
+}
+
+/* Only the full list is tall enough to need scrolling. */
+.achievement-list.expanded {
+  max-height: 32rem;
+  overflow-y: auto;
 }
 
 /* Each achievement is its own tile, the way Steam presents them. */

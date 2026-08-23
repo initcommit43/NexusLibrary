@@ -29,6 +29,9 @@ export const AppShell = ({
         {module && <ModuleSwitcher current={module} />}
 
         <nav className="shell-nav">
+          <NavLink to={module ? `/library/${module.slug}` : '/'} end>
+            Dashboard
+          </NavLink>
           <NavLink to="/search">Search</NavLink>
           <NavLink to="/activity">Activity</NavLink>
           <NavLink to="/settings">Settings</NavLink>

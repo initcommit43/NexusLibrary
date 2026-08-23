@@ -2,6 +2,9 @@ import { useState } from 'react'
 import type { TrackedItem } from '../api/client'
 import { achievementCatalogue, achievementProgress, completionPercent } from './achievements'
 
+/** How many unlocked achievements the collapsed list shows before "show all" is needed. */
+const PREVIEW_COUNT = 6
+
 /** Unlocked first, so the list opens on what you actually did rather than what you missed. */
 export const AchievementList = ({ entry }: { entry: TrackedItem }) => {
   const [showLocked, setShowLocked] = useState(false)
@@ -15,7 +18,11 @@ export const AchievementList = ({ entry }: { entry: TrackedItem }) => {
 
   const unlocked = new Set(progress.unlocked)
   const percent = completionPercent(progress)
-  const shown = showLocked ? catalogue : catalogue.filter((a) => unlocked.has(a.id))
+  const unlockedOnly = catalogue.filter((a) => unlocked.has(a.id))
+  // Collapsed is a preview: a handful of rows at full height, nothing to scroll. Expanding
+  // is what turns it into the long, scrollable list.
+  const shown = showLocked ? catalogue : unlockedOnly.slice(0, PREVIEW_COUNT)
+  const hiddenCount = unlockedOnly.length - shown.length
 
   return (
     <section className="status-section">
@@ -41,10 +48,10 @@ export const AchievementList = ({ entry }: { entry: TrackedItem }) => {
         </div>
 
         <button type="button" className="ghost small" onClick={() => setShowLocked((v) => !v)}>
-          {showLocked ? 'Show unlocked only' : `Show all ${progress.total}`}
+          {showLocked ? `Show ${PREVIEW_COUNT} unlocked` : `Show all ${progress.total}`}
         </button>
 
-        <ul className="achievement-list">
+        <ul className={showLocked ? 'achievement-list expanded' : 'achievement-list'}>
           {shown.map((achievement) => {
             const isUnlocked = unlocked.has(achievement.id)
             const at = progress.unlockedAt[achievement.id]
@@ -79,6 +86,10 @@ export const AchievementList = ({ entry }: { entry: TrackedItem }) => {
             )
           })}
         </ul>
+
+        {!showLocked && hiddenCount > 0 && (
+          <p className="muted">and {hiddenCount} more unlocked</p>
+        )}
       </div>
     </section>
   )
