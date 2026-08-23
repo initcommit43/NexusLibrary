@@ -30,7 +30,7 @@ export const readRelations = (detail: Record<string, unknown>): RelatedMedia[] =
   const relations = detail.relations as { edges?: unknown } | undefined
   const edges = Array.isArray(relations?.edges) ? relations.edges : []
 
-  return edges.flatMap((raw) => {
+  const related = edges.flatMap((raw) => {
     if (typeof raw !== 'object' || raw === null) return []
     const edge = raw as Record<string, unknown>
     const node = edge.node as Record<string, unknown> | undefined
@@ -49,6 +49,14 @@ export const readRelations = (detail: Record<string, unknown>): RelatedMedia[] =
         year: typeof start?.year === 'number' ? String(start.year) : null,
       },
     ]
+  })
+
+  // Oldest first: a series reads in the order it came out, and what a thing was adapted
+  // from necessarily predates it. Anything undated sorts last rather than leading.
+  return related.sort((a, b) => {
+    if (!a.year) return b.year ? 1 : a.title.localeCompare(b.title)
+    if (!b.year) return -1
+    return Number(a.year) - Number(b.year) || a.title.localeCompare(b.title)
   })
 }
 
@@ -76,7 +84,9 @@ export const MediaRelations = ({ detail, source }: { detail: Record<string, unkn
               <div className="cover-placeholder" aria-hidden="true" />
             )}
             <span className="relation-type">{relation.relation}</span>
-            <span className="relation-title">{relation.title}</span>
+            <span className="relation-title" title={relation.title}>
+              {relation.title}
+            </span>
             <span className="muted">
               {[relation.format, relation.year].filter(Boolean).join(' · ')}
             </span>

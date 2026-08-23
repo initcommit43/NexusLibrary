@@ -807,12 +807,21 @@ button.small {
   color: var(--accent);
 }
 
+/*
+ * Two lines whether or not it needs them, so the format and year below sit on one line
+ * across the whole row however long the titles happen to be.
+ */
 .relation-title {
   font-family: var(--font-display);
   font-size: var(--text-sm);
   font-weight: 600;
   color: var(--text);
   line-height: var(--leading-tight);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  min-height: calc(2 * var(--leading-tight) * var(--text-sm));
 }
 
 .media-side {
