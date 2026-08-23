@@ -5,6 +5,14 @@
  * cyan accent for sync and integrations. Light is the default; dark keeps the same accent
  * pair on tinted near-black neutrals rather than inverting to grey.
  *
+ * Colour is distributed 60 / 30 / 10 by area:
+ *   60  the field — the page behind everything, a tinted neutral rather than white
+ *   30  the structure — ink chrome, card surfaces, inset panels
+ *   10  the accents — blue for action and state, cyan for sync and integrations only
+ *
+ * The middle band is what makes the other two legible. Cards need a field to sit above,
+ * and covers — this app's real colour — need a calm frame rather than a white void.
+ *
  * Components consume these names and nothing else, so a change of direction is a change to
  * this file.
  */
@@ -12,30 +20,40 @@
 :root {
   color-scheme: light dark;
 
-  /* --- surfaces --- */
-  --bg: #f5f7fa;
+  /* 60 — the field. Deliberately tinted: white here leaves cards nothing to sit on. */
+  --bg: #e9eef6;
+
+  /*
+   * 30 — the structure. Chrome carries the direction's ink slab, so the shell has mass
+   * instead of dissolving into the page.
+   */
+  --chrome-bg: #0b1220;
+  --chrome-text: #ffffff;
+  --chrome-muted: #9baabf;
+  --chrome-border: #1c2740;
+  --chrome-hover: #16203a;
+  --chrome-active: #8fb6ff;
   --surface: #ffffff;
-  /* Secondary panels: inset groups, notes, tiles. */
-  --surface-raised: #f5f7fa;
-  /* Inputs and controls, which need to read as recessed against a card. */
+  --surface-raised: #f0f4fa;
   --field-bg: #ffffff;
-  --border: #e4e9f0;
+  --border: #d9e2ee;
   /* Not in the direction: derived one step darker for control edges. */
-  --border-strong: #cbd5e3;
+  --border-strong: #c2cede;
 
   /* --- text --- */
   --text: #0b1220;
   --text-body: #55637a;
-  --text-muted: #6b7a90;
+  /* Darkened from the direction's #6b7a90, which fell below 4.5:1 at metadata sizes. */
+  --text-muted: #5a6880;
   --text-inverse: #ffffff;
 
-  /* --- primary: navigation and state --- */
+  /* 10 — primary: navigation and state */
   --accent: #1f6fff;
   --accent-hover: #0a4fd1;
   --accent-contrast: #ffffff;
   --accent-soft: #d8e4ff;
 
-  /* --- secondary: sync, integrations, module progress --- */
+  /* 10 — secondary: sync, integrations, module progress */
   --accent-alt: #00c2ff;
   --accent-alt-hover: #00a9e0;
   --accent-alt-contrast: #0b1220;
@@ -48,13 +66,13 @@
   --module-accent: var(--accent);
   --module-accent-soft: var(--accent-soft);
 
-  /* --- ink banner: the dark call-to-action strip --- */
+  /* The call-to-action slab. Same ink family as the chrome, used as a component. */
   --banner-bg: #0b1220;
   --banner-text: #ffffff;
   --banner-muted: #9baabf;
 
   /* --- feedback: derived, the direction does not specify these --- */
-  --danger: #d92d3f;
+  --danger: #c62334;
   --danger-soft: #fdecee;
   --success: #12855c;
   --success-soft: #e3f6ee;
@@ -97,9 +115,9 @@
   --radius-panel: 16px; /* inset panels */
   --radius-full: 999px;
 
-  /* --- elevation --- */
-  --shadow-1: 0 1px 2px rgba(11, 18, 32, 0.04);
-  --shadow-2: 0 1px 2px rgba(11, 18, 32, 0.04), 0 12px 32px rgba(11, 18, 32, 0.06);
+  /* --- elevation: the field is tinted, so a card's lift is now visible --- */
+  --shadow-1: 0 1px 2px rgba(11, 18, 32, 0.06);
+  --shadow-2: 0 1px 2px rgba(11, 18, 32, 0.06), 0 12px 32px rgba(11, 18, 32, 0.1);
 
   /* --- motion --- */
   --duration-fast: 120ms;
@@ -108,20 +126,27 @@
 }
 
 /*
- * Dark. Body text lightens to a blue-grey rather than pure white, and the primary steps up
- * so it holds contrast on the raised card surface.
+ * Dark keeps the same 60 / 30 / 10 split. Body text lightens to a blue-grey rather than
+ * pure white, and the primary steps up so it holds contrast on the raised card surface.
  *
- * Declared for both the system preference and an explicit [data-theme="dark"], so a future
- * in-app toggle works in both directions without redefining the palette a third time.
+ * Declared twice on purpose: once for the system preference, guarded so an explicit light
+ * choice still wins, and once for [data-theme="dark"] so the in-app switch wins in both
+ * directions. The two blocks must stay identical.
  */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
     --bg: #0a0f1a;
-    --surface: #0f1523;
-    --surface-raised: #16233b;
+    --chrome-bg: #0d1424;
+    --chrome-text: #eef3fa;
+    --chrome-muted: #7c8ca6;
+    --chrome-border: #223049;
+    --chrome-hover: #172136;
+    --chrome-active: #8fb6ff;
+    --surface: #141c2e;
+    --surface-raised: #1c2740;
     --field-bg: #0a0f1a;
-    --border: #233049;
-    --border-strong: #33456a;
+    --border: #2a3752;
+    --border-strong: #3b4a69;
 
     --text: #eef3fa;
     --text-body: #a3b2c8;
@@ -149,18 +174,24 @@
     --warning: #f5c451;
     --warning-soft: #2b2113;
 
-    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.06);
-    --shadow-2: 0 1px 2px rgba(0, 0, 0, 0.06), 0 12px 32px rgba(6, 16, 31, 0.35);
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.2);
+    --shadow-2: 0 1px 2px rgba(0, 0, 0, 0.2), 0 12px 32px rgba(3, 8, 18, 0.45);
   }
 }
 
 :root[data-theme='dark'] {
   --bg: #0a0f1a;
-  --surface: #0f1523;
-  --surface-raised: #16233b;
+  --chrome-bg: #0d1424;
+  --chrome-text: #eef3fa;
+  --chrome-muted: #7c8ca6;
+  --chrome-border: #223049;
+  --chrome-hover: #172136;
+  --chrome-active: #8fb6ff;
+  --surface: #141c2e;
+  --surface-raised: #1c2740;
   --field-bg: #0a0f1a;
-  --border: #233049;
-  --border-strong: #33456a;
+  --border: #2a3752;
+  --border-strong: #3b4a69;
 
   --text: #eef3fa;
   --text-body: #a3b2c8;
@@ -188,6 +219,6 @@
   --warning: #f5c451;
   --warning-soft: #2b2113;
 
-  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.06);
-  --shadow-2: 0 1px 2px rgba(0, 0, 0, 0.06), 0 12px 32px rgba(6, 16, 31, 0.35);
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-2: 0 1px 2px rgba(0, 0, 0, 0.2), 0 12px 32px rgba(3, 8, 18, 0.45);
 }

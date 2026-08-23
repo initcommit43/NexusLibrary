@@ -160,8 +160,32 @@ button.small {
   gap: var(--space-6);
   padding: 0 var(--space-6);
   height: 3.5rem;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
+  background: var(--chrome-bg);
+  border-bottom: 1px solid var(--chrome-border);
+}
+
+/*
+ * Everything inside the shell sits on ink in both themes, so these controls take their
+ * colours from the chrome family rather than the page's.
+ */
+.shell-header .muted {
+  color: var(--chrome-muted);
+}
+
+.shell-header button.ghost {
+  background: transparent;
+  border-color: var(--chrome-border);
+  color: var(--chrome-muted);
+}
+
+.shell-header button.ghost:hover:not(:disabled) {
+  background: var(--chrome-hover);
+  border-color: var(--chrome-muted);
+  color: var(--chrome-text);
+}
+
+.shell-header :focus-visible {
+  outline-color: var(--chrome-active);
 }
 
 .brand {
@@ -172,7 +196,7 @@ button.small {
   font-weight: 700;
   font-size: var(--text-md);
   letter-spacing: var(--tracking-tight);
-  color: var(--text);
+  color: var(--chrome-text);
 }
 
 .brand img {
@@ -187,20 +211,20 @@ button.small {
 }
 
 .shell-nav a {
-  color: var(--text-muted);
+  color: var(--chrome-muted);
   padding: var(--space-1) 0;
   border-bottom: 2px solid transparent;
   font-weight: 500;
 }
 
 .shell-nav a:hover {
-  color: var(--text);
+  color: var(--chrome-text);
   text-decoration: none;
 }
 
 .shell-nav a.active {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
+  color: var(--chrome-active);
+  border-bottom-color: var(--chrome-active);
 }
 
 .header-right {
