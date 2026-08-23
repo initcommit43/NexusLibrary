@@ -77,9 +77,10 @@ const Bars = ({ rows, title }: { rows: Distribution[]; title: string }) => {
       <h2>{title}</h2>
       <div className="bar-chart">
         {rows.map((row) => (
-          <div key={row.label} className="bar" title={`${row.label}: ${row.amount}`}>
+          <div key={row.label} className="bar">
+            <span className="bar-value">{row.amount.toLocaleString()}</span>
             <div className="bar-fill" style={{ height: `${Math.round((row.amount / peak) * 100)}%` }} />
-            <span className="muted">{row.label}</span>
+            <span className="bar-label muted">{row.label}</span>
           </div>
         ))}
       </div>

@@ -801,8 +801,8 @@ button.small {
   display: flex;
   align-items: flex-end;
   gap: var(--space-2);
-  height: 8rem;
-  padding: var(--space-3);
+  height: 9rem;
+  padding: var(--space-3) var(--space-3) var(--space-2);
   background: var(--surface);
   border: 2px solid var(--card-border);
   border-radius: var(--radius-lg);
@@ -815,8 +815,25 @@ button.small {
   flex-direction: column;
   justify-content: flex-end;
   align-items: center;
-  gap: var(--space-1);
   font-size: var(--text-xs);
+}
+
+/* Reserves its line whether or not it is showing, so bars do not shift on hover. */
+.bar-value {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease);
+}
+
+.bar:hover .bar-value {
+  opacity: 1;
+}
+
+.bar-label {
+  padding-top: 2px;
+  line-height: 1.2;
 }
 
 .bar-fill {
@@ -824,6 +841,11 @@ button.small {
   min-height: 2px;
   border-radius: var(--radius-sm) var(--radius-sm) 0 0;
   background: var(--accent);
+  transition: background var(--duration-fast) var(--ease);
+}
+
+.bar:hover .bar-fill {
+  background: var(--accent-hover);
 }
 
 .trailer {
