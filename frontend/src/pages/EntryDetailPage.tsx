@@ -152,6 +152,7 @@ export const EntryDetailPage = () => {
               <span>Status</span>
               <StatusPicker
                 value={entry.status}
+                mediaType={entry.mediaType}
                 disabled={busy}
                 aria-label="Status"
                 onChange={(status) => void save({ status })}

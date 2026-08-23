@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { ApiError, api, type SearchResult, type TrackingStatus } from '../api/client'
 import { AppShell } from '../components/AppShell'
 import { STATUS_ORDER } from '../components/trackingStatus'
-import { moduleBySlug } from '../modules/registry'
+import { moduleBySlug, statusLabelsFor } from '../modules/registry'
 import { useCurrentModule } from '../modules/useCurrentModule'
 
 type TrackState = Record<string, 'idle' | 'saving' | 'tracked'>
@@ -13,6 +13,11 @@ export const SearchPage = () => {
   // query string wins when it names one, otherwise this searches wherever you already are.
   const [params] = useSearchParams()
   const module = useCurrentModule(moduleBySlug(params.get('module') ?? undefined))
+  const requested = params.get('type')
+  const active =
+    module.types.find((type) => type.mediaType === requested) ??
+    module.types.find((type) => type.mediaType === module.defaultMediaType) ??
+    module.types[0]
 
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[] | null>(null)
@@ -38,7 +43,7 @@ export const SearchPage = () => {
     setSearching(true)
     setError(null)
     try {
-      setResults(await api.searchCatalog(module.defaultMediaType, query.trim()))
+      setResults(await api.searchCatalog(active.mediaType, query.trim()))
     } catch (err) {
       setResults(null)
       setError(err instanceof ApiError ? err.message : 'Could not reach the server.')
@@ -64,14 +69,14 @@ export const SearchPage = () => {
 
   return (
     <AppShell module={module}>
-      <h1>Search {module.label}</h1>
+      <h1>Search {active.label}</h1>
 
       <form className="search-bar" onSubmit={runSearch}>
         <input
           type="search"
           value={query}
-          placeholder={module.searchPlaceholder}
-          aria-label={`Search ${module.label}`}
+          placeholder={active.searchPlaceholder}
+          aria-label={`Search ${active.label}`}
           onChange={(e) => setQuery(e.target.value)}
         />
         <select
@@ -81,7 +86,7 @@ export const SearchPage = () => {
         >
           {STATUS_ORDER.map((option) => (
             <option key={option} value={option}>
-              Add as {module.statusLabels[option]}
+              Add as {statusLabelsFor(active.mediaType)[option]}
             </option>
           ))}
         </select>

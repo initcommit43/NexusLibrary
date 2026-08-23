@@ -19,7 +19,17 @@ export const SettingsPage = () => {
   const [accounts, setAccounts] = useState<ConnectedAccount[] | null>(null)
   const [report, setReport] = useState<ImportReport | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [busy, setBusy] = useState<'connect' | 'import' | 'disconnect' | 'achievements' | null>(null)
+  /**
+   * Which provider is working, and at what. One flag for the whole page made every card
+   * claim to be importing whenever any of them was.
+   */
+  const [busy, setBusy] = useState<{
+    provider: ModuleProvider['provider']
+    action: 'connect' | 'import' | 'disconnect' | 'achievements'
+  } | null>(null)
+
+  const working = (provider: ModuleProvider['provider'], action?: string) =>
+    busy?.provider === provider && (action === undefined || busy.action === action)
   const [job, setJob] = useState<SyncJob | null>(null)
 
   const connected = (provider: ModuleProvider['provider']) =>
@@ -40,7 +50,7 @@ export const SettingsPage = () => {
   useEffect(load, [load])
 
   const connectSteam = async () => {
-    setBusy('connect')
+    setBusy({ provider: 'STEAM', action: 'connect' })
     setError(null)
     try {
       const { url } = await api.steamAuthorizeUrl()
@@ -53,7 +63,7 @@ export const SettingsPage = () => {
   }
 
   const runImport = async (provider: ModuleProvider['provider']) => {
-    setBusy('import')
+    setBusy({ provider, action: 'import' })
     setError(null)
     setReport(null)
     try {
@@ -71,7 +81,7 @@ export const SettingsPage = () => {
    * and this polls it rather than holding a request open for a minute.
    */
   const syncAchievements = async () => {
-    setBusy('achievements')
+    setBusy({ provider: 'STEAM', action: 'achievements' })
     setError(null)
     try {
       let current = await api.syncAchievements()
@@ -94,7 +104,7 @@ export const SettingsPage = () => {
   }
 
   const connectAniList = async () => {
-    setBusy('connect')
+    setBusy({ provider: 'ANILIST', action: 'connect' })
     setError(null)
     try {
       const { url } = await api.anilistAuthorizeUrl()
@@ -119,7 +129,7 @@ export const SettingsPage = () => {
         {anilist ? (
           <div className="integration-actions">
             <button type="button" disabled={busy !== null} onClick={() => void runImport('ANILIST')}>
-              {busy === 'import' ? 'Importing…' : 'Import lists'}
+              {working('ANILIST', 'import') ? 'Importing…' : 'Import lists'}
             </button>
             <button
               type="button"
@@ -132,7 +142,7 @@ export const SettingsPage = () => {
           </div>
         ) : (
           <button type="button" disabled={busy !== null} onClick={() => void connectAniList()}>
-            {busy === 'connect' ? 'Redirecting…' : 'Connect AniList'}
+            {working('ANILIST', 'connect') ? 'Redirecting…' : 'Connect AniList'}
           </button>
         )}
       </div>
@@ -166,7 +176,7 @@ export const SettingsPage = () => {
   )
 
   const disconnect = async (provider: ModuleProvider['provider']) => {
-    setBusy('disconnect')
+    setBusy({ provider, action: 'disconnect' })
     setError(null)
     try {
       await api.disconnect(provider)
@@ -190,7 +200,7 @@ export const SettingsPage = () => {
         {steam ? (
           <div className="integration-actions">
             <button type="button" disabled={busy !== null} onClick={() => void runImport('STEAM')}>
-              {busy === 'import' ? 'Importing…' : 'Import library'}
+              {working('STEAM', 'import') ? 'Importing…' : 'Import library'}
             </button>
             <button
               type="button"
@@ -198,7 +208,7 @@ export const SettingsPage = () => {
               disabled={busy !== null}
               onClick={() => void syncAchievements()}
             >
-              {busy === 'achievements' ? 'Syncing…' : 'Sync achievements'}
+              {working('STEAM', 'achievements') ? 'Syncing…' : 'Sync achievements'}
             </button>
             <button
               type="button"
@@ -211,7 +221,7 @@ export const SettingsPage = () => {
           </div>
         ) : (
           <button type="button" disabled={busy !== null} onClick={() => void connectSteam()}>
-            {busy === 'connect' ? 'Redirecting…' : 'Connect Steam'}
+            {working('STEAM', 'connect') ? 'Redirecting…' : 'Connect Steam'}
           </button>
         )}
       </div>

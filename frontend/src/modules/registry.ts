@@ -10,56 +10,86 @@ export interface ModuleProvider {
 }
 
 /**
+ * One kind of thing a module tracks. A module can own several, and they do not share a
+ * vocabulary: you watch anime and read manga, and calling both "watching" is simply wrong.
+ */
+export interface MediaTypeDefinition {
+  mediaType: MediaType
+  label: string
+  statusLabels: Record<TrackingStatus, string>
+  searchPlaceholder: string
+}
+
+/**
  * What a module contributes to the shared UI, mirroring the backend's adapter registry:
  * core pages read this and never branch on a media type of their own.
  */
 export interface ModuleDefinition {
   slug: ModuleSlug
   label: string
-  /** A module can own more than one: AniList is canonical for anime and manga alike. */
-  mediaTypes: MediaType[]
-  /** What search opens on when the module owns several types. */
+  types: MediaTypeDefinition[]
+  /** What the library and search open on when the module owns several types. */
   defaultMediaType: MediaType
-  /** The domain is shared; the words are not. */
-  statusLabels: Record<TrackingStatus, string>
   emptyHint: string
-  /** What the search box invites you to type, in the module's own words. */
-  searchPlaceholder: string
   /** Where this module's connect and import controls live in settings. */
   providers: ModuleProvider[]
 }
+
+const watching = {
+  PLANNING: 'Plan to watch',
+  IN_PROGRESS: 'Watching',
+  COMPLETED: 'Completed',
+  PAUSED: 'On hold',
+  DROPPED: 'Dropped',
+} satisfies Record<TrackingStatus, string>
 
 export const MODULES: ModuleDefinition[] = [
   {
     slug: 'games',
     label: 'Games',
-    mediaTypes: ['GAME'],
     defaultMediaType: 'GAME',
-    statusLabels: {
-      PLANNING: 'Backlog',
-      IN_PROGRESS: 'Playing',
-      COMPLETED: 'Completed',
-      PAUSED: 'Paused',
-      DROPPED: 'Dropped',
-    },
-    emptyHint: 'Nothing tracked yet. Connect Steam in settings, or find a game to get started.',
-    searchPlaceholder: 'Search games…',
+    types: [
+      {
+        mediaType: 'GAME',
+        label: 'Games',
+        searchPlaceholder: 'Search games…',
+        statusLabels: {
+          PLANNING: 'Backlog',
+          IN_PROGRESS: 'Playing',
+          COMPLETED: 'Completed',
+          PAUSED: 'Paused',
+          DROPPED: 'Dropped',
+        },
+      },
+    ],
+    emptyHint: 'Nothing tracked yet. Connect Steam in settings, or search for a game.',
     providers: [{ provider: 'STEAM', label: 'Steam', blurb: 'Import your games and playtime.' }],
   },
   {
     slug: 'anime',
     label: 'Anime & Manga',
-    mediaTypes: ['ANIME', 'MANGA'],
     defaultMediaType: 'ANIME',
-    statusLabels: {
-      PLANNING: 'Plan to watch',
-      IN_PROGRESS: 'Watching',
-      COMPLETED: 'Completed',
-      PAUSED: 'On hold',
-      DROPPED: 'Dropped',
-    },
-    emptyHint: 'Nothing tracked yet. Connect AniList or MyAnimeList in settings to fill this in.',
-    searchPlaceholder: 'Search titles…',
+    types: [
+      {
+        mediaType: 'ANIME',
+        label: 'Anime',
+        searchPlaceholder: 'Search anime…',
+        statusLabels: watching,
+      },
+      {
+        mediaType: 'MANGA',
+        label: 'Manga',
+        searchPlaceholder: 'Search manga…',
+        statusLabels: {
+          PLANNING: 'Plan to read',
+          IN_PROGRESS: 'Reading',
+          COMPLETED: 'Completed',
+          PAUSED: 'On hold',
+          DROPPED: 'Dropped',
+        },
+      },
+    ],
+    emptyHint: 'Nothing tracked yet. Connect AniList or MyAnimeList in settings.',
     providers: [
       { provider: 'ANILIST', label: 'AniList', blurb: 'Import your anime and manga lists.' },
       {
@@ -72,33 +102,43 @@ export const MODULES: ModuleDefinition[] = [
   {
     slug: 'film',
     label: 'Movies & TV',
-    mediaTypes: ['MOVIE', 'SHOW'],
     defaultMediaType: 'MOVIE',
-    statusLabels: {
-      PLANNING: 'Watchlist',
-      IN_PROGRESS: 'Watching',
-      COMPLETED: 'Watched',
-      PAUSED: 'On hold',
-      DROPPED: 'Dropped',
-    },
-    emptyHint: 'Nothing tracked yet. Connect Trakt in settings to fill this in.',
-    searchPlaceholder: 'Search films and shows…',
+    types: [
+      {
+        mediaType: 'MOVIE',
+        label: 'Movies',
+        searchPlaceholder: 'Search films…',
+        statusLabels: { ...watching, PLANNING: 'Watchlist', COMPLETED: 'Watched' },
+      },
+      {
+        mediaType: 'SHOW',
+        label: 'TV',
+        searchPlaceholder: 'Search shows…',
+        statusLabels: { ...watching, PLANNING: 'Watchlist', COMPLETED: 'Watched' },
+      },
+    ],
+    emptyHint: 'Nothing tracked yet. Connect Trakt in settings.',
     providers: [{ provider: 'TRAKT', label: 'Trakt', blurb: 'Import your watched films and shows.' }],
   },
   {
     slug: 'books',
     label: 'Books',
-    mediaTypes: ['BOOK'],
     defaultMediaType: 'BOOK',
-    statusLabels: {
-      PLANNING: 'Want to read',
-      IN_PROGRESS: 'Reading',
-      COMPLETED: 'Read',
-      PAUSED: 'On hold',
-      DROPPED: 'Abandoned',
-    },
-    emptyHint: 'Nothing tracked yet. Upload a Goodreads export in settings to fill this in.',
-    searchPlaceholder: 'Search books…',
+    types: [
+      {
+        mediaType: 'BOOK',
+        label: 'Books',
+        searchPlaceholder: 'Search books…',
+        statusLabels: {
+          PLANNING: 'Want to read',
+          IN_PROGRESS: 'Reading',
+          COMPLETED: 'Read',
+          PAUSED: 'On hold',
+          DROPPED: 'Abandoned',
+        },
+      },
+    ],
+    emptyHint: 'Nothing tracked yet. Upload a Goodreads export in settings.',
     providers: [],
   },
 ]
@@ -106,5 +146,21 @@ export const MODULES: ModuleDefinition[] = [
 export const moduleBySlug = (slug: string | undefined): ModuleDefinition | undefined =>
   MODULES.find((module) => module.slug === slug)
 
+export const mediaTypesOf = (module: ModuleDefinition): MediaType[] =>
+  module.types.map((type) => type.mediaType)
+
 export const moduleForMediaType = (mediaType: MediaType): ModuleDefinition | undefined =>
-  MODULES.find((module) => module.mediaTypes.includes(mediaType))
+  MODULES.find((module) => mediaTypesOf(module).includes(mediaType))
+
+export const typeDefinitionFor = (mediaType: MediaType): MediaTypeDefinition | undefined =>
+  MODULES.flatMap((module) => module.types).find((type) => type.mediaType === mediaType)
+
+/** The words for one kind of thing, falling back to plain ones for anything unmapped. */
+export const statusLabelsFor = (mediaType: MediaType): Record<TrackingStatus, string> =>
+  typeDefinitionFor(mediaType)?.statusLabels ?? {
+    PLANNING: 'Planned',
+    IN_PROGRESS: 'In progress',
+    COMPLETED: 'Completed',
+    PAUSED: 'Paused',
+    DROPPED: 'Dropped',
+  }

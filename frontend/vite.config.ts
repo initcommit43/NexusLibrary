@@ -34,6 +34,12 @@ export default defineConfig(({ mode }) => {
         workbox: {
           // API responses are user-scoped and auth-gated; caching them in the SW would
           // risk serving one account's data to the next session on a shared device.
+          // A rebuilt app takes over on the next load rather than the one after it: without
+          // these the service worker keeps serving the previous bundle for a reload, which
+          // reads as a fix that did not land.
+          skipWaiting: true,
+          clientsClaim: true,
+          cleanupOutdatedCaches: true,
           navigateFallbackDenylist: [/^\/api/],
         },
       }),

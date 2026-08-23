@@ -4,13 +4,13 @@ import { ApiError, api, type ActivityEntry } from '../api/client'
 import { AppShell } from '../components/AppShell'
 import { toDisplayScore } from '../components/rating'
 import { useCurrentModule } from '../modules/useCurrentModule'
-import type { ModuleDefinition } from '../modules/registry'
+import { mediaTypesOf, statusLabelsFor } from '../modules/registry'
 import type { TrackingStatus } from '../api/client'
 
 /** Reads the stored old-to-new payload back as a sentence, in the module's own words. */
-const describe = (activity: ActivityEntry, module: ModuleDefinition): string => {
-  const statusLabel = (raw?: string | null) =>
-    raw && raw in module.statusLabels ? module.statusLabels[raw as TrackingStatus] : raw
+const describe = (activity: ActivityEntry): string => {
+  const labels = statusLabelsFor(activity.mediaType)
+  const statusLabel = (raw?: string | null) => (raw && raw in labels ? labels[raw as TrackingStatus] : raw)
   const { from, to, unit } = activity.payload
 
   switch (activity.type) {
@@ -54,7 +54,7 @@ export const ActivityPage = () => {
   }, [])
 
   // One feed comes back for everything tracked; the module decides what belongs on it.
-  const mine = feed?.filter((entry) => module.mediaTypes.includes(entry.mediaType)) ?? []
+  const mine = feed?.filter((entry) => mediaTypesOf(module).includes(entry.mediaType)) ?? []
 
   return (
     <AppShell>
@@ -86,7 +86,7 @@ export const ActivityPage = () => {
             )}
             <div className="activity-text">
               <strong>{activity.title}</strong>
-              <span className="muted">{describe(activity, module)}</span>
+              <span className="muted">{describe(activity)}</span>
             </div>
             <time className="muted" dateTime={activity.createdAt}>
               {relative(activity.createdAt)}

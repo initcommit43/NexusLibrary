@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api, type MediaType } from '../api/client'
-import { MODULES, type ModuleDefinition, type ModuleSlug } from './registry'
+import { MODULES, mediaTypesOf, type ModuleDefinition, type ModuleSlug } from './registry'
 
 export interface ModuleAvailability {
   modules: ModuleDefinition[]
@@ -29,7 +29,7 @@ export const useModules = (): ModuleAvailability => {
   const isAvailable = (slug: ModuleSlug) => {
     const module = MODULES.find((candidate) => candidate.slug === slug)
     if (!module || mediaTypes === null) return false
-    return module.mediaTypes.some((type) => mediaTypes.includes(type))
+    return mediaTypesOf(module).some((type) => mediaTypes.includes(type))
   }
 
   return {

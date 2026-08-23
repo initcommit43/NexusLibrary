@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react'
-import { Link, Navigate, useParams } from 'react-router-dom'
-import { ApiError, api, type TrackedItem, type TrackingStatus } from '../api/client'
+import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom'
+import { ApiError, api, type MediaType, type TrackedItem, type TrackingStatus } from '../api/client'
 import { AppShell } from '../components/AppShell'
 import { StatusPicker } from '../components/StatusPicker'
 import { toDisplayScore } from '../components/rating'
 import { STATUS_ORDER } from '../components/trackingStatus'
-import { moduleBySlug } from '../modules/registry'
+import { moduleBySlug, statusLabelsFor } from '../modules/registry'
 
 export const LibraryPage = () => {
   const { module: slug } = useParams()
+  const [params, setParams] = useSearchParams()
   const module = moduleBySlug(slug)
 
   const [entries, setEntries] = useState<TrackedItem[] | null>(null)
@@ -27,6 +28,14 @@ export const LibraryPage = () => {
   if (!module) {
     return <Navigate to="/" replace />
   }
+
+  // A module with two kinds of thing shows one at a time: anime and manga share a shelf in
+  // no other app either, and mixing them would mean picking one set of words for both.
+  const requested = params.get('type') as MediaType | null
+  const active =
+    module.types.find((type) => type.mediaType === requested) ??
+    module.types.find((type) => type.mediaType === module.defaultMediaType) ??
+    module.types[0]
 
   const changeStatus = async (entry: TrackedItem, status: TrackingStatus) => {
     setBusyId(entry.id)
@@ -54,13 +63,29 @@ export const LibraryPage = () => {
     }
   }
 
-  // One request returns everything tracked; the module decides what belongs on its shelf.
-  const mine = entries?.filter((entry) => module.mediaTypes.includes(entry.mediaType)) ?? []
+  const mine = entries?.filter((entry) => entry.mediaType === active.mediaType) ?? []
   const byStatus = (status: TrackingStatus) => mine.filter((entry) => entry.status === status)
 
   return (
     <AppShell module={module}>
       <h1>{module.label}</h1>
+
+      {module.types.length > 1 && (
+        <div className="type-tabs" role="tablist" aria-label={`${module.label} kinds`}>
+          {module.types.map((type) => (
+            <button
+              key={type.mediaType}
+              type="button"
+              role="tab"
+              aria-selected={type.mediaType === active.mediaType}
+              className={type.mediaType === active.mediaType ? 'type-tab active' : 'type-tab'}
+              onClick={() => setParams({ type: type.mediaType })}
+            >
+              {type.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {error && (
         <p className="alert" role="alert">
@@ -72,7 +97,10 @@ export const LibraryPage = () => {
 
       {entries !== null && mine.length === 0 && (
         <p className="muted">
-          {module.emptyHint} <Link to={`/search?module=${module.slug}`}>Search</Link>
+          {module.emptyHint}{' '}
+          <Link to={`/search?module=${module.slug}&type=${active.mediaType}`}>
+            {active.searchPlaceholder}
+          </Link>
         </p>
       )}
 
@@ -83,7 +111,8 @@ export const LibraryPage = () => {
         return (
           <section key={status} className="status-section">
             <h2>
-              {module.statusLabels[status]} <span className="muted">({group.length})</span>
+              {statusLabelsFor(active.mediaType)[status]}{' '}
+              <span className="muted">({group.length})</span>
             </h2>
 
             <div className="cover-grid">
@@ -110,7 +139,7 @@ export const LibraryPage = () => {
                   <div className="cover-body">
                     <StatusPicker
                       value={entry.status}
-                      labels={module.statusLabels}
+                      mediaType={entry.mediaType}
                       disabled={busyId === entry.id}
                       aria-label={`Status for ${entry.title}`}
                       onChange={(next) => void changeStatus(entry, next)}
