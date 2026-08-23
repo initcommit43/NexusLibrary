@@ -78,6 +78,29 @@ public class AniListClient {
             """
                     .formatted(MEDIA_FIELDS);
 
+    /**
+     * A user's own list. Sent with their token, so private lists come back too — without it
+     * AniList answers with only what the world can see, which would silently drop entries.
+     */
+    private static final String LIST_QUERY =
+            """
+            query ($userName: String, $type: MediaType) {
+              MediaListCollection(userName: $userName, type: $type) {
+                lists {
+                  entries {
+                    status
+                    progress
+                    progressVolumes
+                    score(format: POINT_100)
+                    startedAt { year month day }
+                    completedAt { year month day }
+                    media { id idMal type episodes chapters volumes title { romaji english native } }
+                  }
+                }
+              }
+            }
+            """;
+
     private final RestClient restClient;
     private final AniListProperties properties;
     private final OutboundRateLimiter rateLimiter;
@@ -117,6 +140,29 @@ public class AniListClient {
         return single(data.get("Media"));
     }
 
+    /**
+     * Every entry of one media type from a user's list, flattened: AniList groups them by
+     * the user's own custom list names, which are theirs to arrange and mean nothing here.
+     */
+    @SuppressWarnings("unchecked")
+    public List<Map<String, Object>> fetchList(String userName, MediaType mediaType, String accessToken) {
+        Map<String, Object> data = post(
+                LIST_QUERY, Map.of("userName", userName, "type", anilistType(mediaType)), accessToken);
+
+        if (!(data.get("MediaListCollection") instanceof Map<?, ?> collection)
+                || !(collection.get("lists") instanceof List<?> lists)) {
+            return List.of();
+        }
+
+        List<Map<String, Object>> entries = new java.util.ArrayList<>();
+        for (Object list : lists) {
+            if (list instanceof Map<?, ?> group && group.get("entries") instanceof List<?> rows) {
+                rows.stream().filter(Map.class::isInstance).forEach(row -> entries.add((Map<String, Object>) row));
+            }
+        }
+        return entries;
+    }
+
     /** AniList caps a page at 50 rows, so callers resolve in chunks of that size. */
     public static List<List<String>> partition(Collection<String> values) {
         List<String> all = List.copyOf(values);
@@ -146,15 +192,22 @@ public class AniListClient {
 
     @SuppressWarnings("unchecked")
     private Map<String, Object> post(String query, Map<String, Object> variables) {
+        return post(query, variables, null);
+    }
+
+    private Map<String, Object> post(String query, Map<String, Object> variables, String accessToken) {
         rateLimiter.acquire();
 
         try {
-            Map<String, Object> body = restClient
-                    .post()
-                    .uri(properties.apiUrl())
-                    .header("Accept", "application/json")
+            RestClient.RequestBodySpec request =
+                    restClient.post().uri(properties.apiUrl()).header("Accept", "application/json");
+            if (accessToken != null) {
+                request = request.header("Authorization", "Bearer " + accessToken);
+            }
+
+            Map<String, Object> body = request
                     .body(Map.of("query", query, "variables", variables))
-                    .exchange((request, response) -> {
+                    .exchange((sent, response) -> {
                         HttpStatusCode status = response.getStatusCode();
                         if (status.isError()) {
                             // A 404 for a missing title still arrives as an error status with a

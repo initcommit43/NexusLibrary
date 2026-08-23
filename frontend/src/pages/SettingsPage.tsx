@@ -52,12 +52,12 @@ export const SettingsPage = () => {
     }
   }
 
-  const runImport = async () => {
+  const runImport = async (provider: ModuleProvider['provider']) => {
     setBusy('import')
     setError(null)
     setReport(null)
     try {
-      setReport(await api.importLibrary('STEAM'))
+      setReport(await api.importLibrary(provider))
       load()
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'The import could not be completed.')
@@ -118,6 +118,9 @@ export const SettingsPage = () => {
 
         {anilist ? (
           <div className="integration-actions">
+            <button type="button" disabled={busy !== null} onClick={() => void runImport('ANILIST')}>
+              {busy === 'import' ? 'Importing…' : 'Import lists'}
+            </button>
             <button
               type="button"
               className="ghost"
@@ -134,10 +137,30 @@ export const SettingsPage = () => {
         )}
       </div>
 
-      {anilist && (
-        <p className="muted note">
-          Importing your lists arrives next; the link is stored and ready for it.
-        </p>
+      {anilist?.lastSyncedAt && (
+        <p className="muted">Last imported {new Date(anilist.lastSyncedAt).toLocaleString()}.</p>
+      )}
+
+      {report && (
+        <>
+          <p className="muted">
+            {report.created} added, {report.updated} updated
+            {report.unmatched.length > 0 && `, ${report.unmatched.length} not matched`}.
+          </p>
+
+          {report.unmatched.length > 0 && (
+            <details className="unmatched">
+              <summary>Titles we could not match ({report.unmatched.length})</summary>
+              <ul>
+                {report.unmatched.map((item) => (
+                  <li key={item.providerItemId}>
+                    {item.title} <span className="muted">— {item.reason}</span>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+        </>
       )}
     </article>
   )
@@ -166,7 +189,7 @@ export const SettingsPage = () => {
 
         {steam ? (
           <div className="integration-actions">
-            <button type="button" disabled={busy !== null} onClick={() => void runImport()}>
+            <button type="button" disabled={busy !== null} onClick={() => void runImport('STEAM')}>
               {busy === 'import' ? 'Importing…' : 'Import library'}
             </button>
             <button
