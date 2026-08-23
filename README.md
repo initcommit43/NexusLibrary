@@ -8,7 +8,6 @@ core; each medium contributes only an external-API adapter, its item metadata an
 progress shape. External APIs are cached globally, so calls scale with the number of
 distinct titles tracked rather than with the number of users.
 
-
 ## Project status
 
 **Work in progress — phase 5 of 8.** Built one module at a time, games first, so the
