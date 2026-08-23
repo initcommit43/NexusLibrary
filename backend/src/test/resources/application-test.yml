@@ -25,6 +25,10 @@ nexus:
     api-base-url: https://igdb.test/v4
     token-url: https://twitch.test/oauth2/token
     requests-per-second: 1000
+  anilist:
+    # Tests stub the transport; this never reaches the real AniList.
+    api-url: https://anilist.test/graphql
+    requests-per-minute: 6000
   steam:
     api-key: test-steam-key
     api-base-url: https://steam.test

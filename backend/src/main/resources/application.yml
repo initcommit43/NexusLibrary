@@ -63,6 +63,11 @@ nexus:
     token-url: https://id.twitch.tv/oauth2/token
     # IGDB permits 4 requests per second.
     requests-per-second: 4
+  anilist:
+    # Public for reads: search and media lookups need no key. Only importing a user's own
+    # list involves OAuth, which phase 5 adds separately.
+    api-url: https://graphql.anilist.co
+    requests-per-minute: 90
   steam:
     api-key: ${STEAM_API_KEY:}
     api-base-url: https://api.steampowered.com
