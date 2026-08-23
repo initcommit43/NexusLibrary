@@ -669,12 +669,7 @@ button.small {
   gap: 2px;
 }
 
-.fact.airing {
-  padding: var(--space-2);
-  border-radius: var(--radius-sm);
-  background: var(--accent-soft);
-}
-
+/* Reads as any other fact, save for the countdown itself carrying the accent. */
 .fact.airing .fact-value {
   color: var(--accent);
   font-weight: 600;
