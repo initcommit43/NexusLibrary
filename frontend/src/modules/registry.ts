@@ -20,6 +20,8 @@ export interface MediaTypeDefinition {
   listLabel: string
   /** Lowercase media type, used in the URL. */
   slug: string
+  /** What progress means here — hours played, episodes watched, chapters read. */
+  progressLabel: string
   statusLabels: Record<TrackingStatus, string>
   /** Section order down the page; each community has its own habit. */
   statusOrder: TrackingStatus[]
@@ -60,6 +62,7 @@ export const MODULES: ModuleDefinition[] = [
         label: 'Games',
         listLabel: 'Game List',
         slug: 'games',
+        progressLabel: 'Hours played',
         searchPlaceholder: 'Search games…',
         statusOrder: ['IN_PROGRESS', 'PLANNING', 'COMPLETED', 'PAUSED', 'DROPPED'],
         statusLabels: {
@@ -84,6 +87,7 @@ export const MODULES: ModuleDefinition[] = [
         label: 'Anime',
         listLabel: 'Anime List',
         slug: 'anime',
+        progressLabel: 'Episodes',
         searchPlaceholder: 'Search anime…',
         statusOrder: ['IN_PROGRESS', 'COMPLETED', 'PAUSED', 'DROPPED', 'PLANNING'],
         statusLabels: watching,
@@ -93,6 +97,7 @@ export const MODULES: ModuleDefinition[] = [
         label: 'Manga',
         listLabel: 'Manga List',
         slug: 'manga',
+        progressLabel: 'Chapters',
         searchPlaceholder: 'Search manga…',
         statusOrder: ['IN_PROGRESS', 'COMPLETED', 'PAUSED', 'DROPPED', 'PLANNING'],
         statusLabels: {
@@ -124,6 +129,7 @@ export const MODULES: ModuleDefinition[] = [
         label: 'Movies',
         listLabel: 'Film List',
         slug: 'movies',
+        progressLabel: 'Progress',
         searchPlaceholder: 'Search films…',
         statusOrder: ['IN_PROGRESS', 'COMPLETED', 'PAUSED', 'DROPPED', 'PLANNING'],
         statusLabels: { ...watching, PLANNING: 'Watchlist', COMPLETED: 'Watched' },
@@ -133,6 +139,7 @@ export const MODULES: ModuleDefinition[] = [
         label: 'TV',
         listLabel: 'TV List',
         slug: 'tv',
+        progressLabel: 'Episodes',
         searchPlaceholder: 'Search shows…',
         statusOrder: ['IN_PROGRESS', 'COMPLETED', 'PAUSED', 'DROPPED', 'PLANNING'],
         statusLabels: { ...watching, PLANNING: 'Watchlist', COMPLETED: 'Watched' },
@@ -151,6 +158,7 @@ export const MODULES: ModuleDefinition[] = [
         label: 'Books',
         listLabel: 'Book List',
         slug: 'books',
+        progressLabel: 'Pages',
         searchPlaceholder: 'Search books…',
         statusOrder: ['IN_PROGRESS', 'PLANNING', 'COMPLETED', 'PAUSED', 'DROPPED'],
         statusLabels: {

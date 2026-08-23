@@ -1,5 +1,5 @@
 import type { TrackedItem, TrackingStatus } from '../api/client'
-import { SORT_LABELS, distinct, type ListFilters, type SortKey } from './listFilters'
+import { SORT_LABELS, SORT_ORDER, distinct, type ListFilters, type SortKey } from './listFilters'
 import type { MediaTypeDefinition } from '../modules/registry'
 
 export const ListSidebar = ({
@@ -84,9 +84,9 @@ export const ListSidebar = ({
         <label className="field">
           <span>Sort</span>
           <select value={filters.sort} onChange={(e) => set('sort', e.target.value as SortKey)}>
-            {(Object.keys(SORT_LABELS) as SortKey[]).map((key) => (
+            {SORT_ORDER.map((key) => (
               <option key={key} value={key}>
-                {SORT_LABELS[key]}
+                {key === 'PROGRESS' ? type.progressLabel : SORT_LABELS[key]}
               </option>
             ))}
           </select>

@@ -1,6 +1,6 @@
 import type { TrackedItem, TrackingStatus } from '../api/client'
 
-export type SortKey = 'TITLE' | 'SCORE' | 'PROGRESS' | 'UPDATED'
+export type SortKey = 'TITLE' | 'SCORE' | 'PROGRESS' | 'GENRE' | 'UPDATED'
 
 export interface ListFilters {
   query: string
@@ -18,11 +18,19 @@ export const EMPTY_FILTERS: ListFilters = {
   sort: 'TITLE',
 }
 
-export const SORT_LABELS: Record<SortKey, string> = {
+/** The progress option is named by the media type, since it counts different things. */
+export const SORT_LABELS: Record<Exclude<SortKey, 'PROGRESS'>, string> = {
   TITLE: 'Title',
   SCORE: 'Score',
-  PROGRESS: 'Progress',
+  GENRE: 'Genre',
   UPDATED: 'Recently updated',
+}
+
+export const SORT_ORDER: SortKey[] = ['TITLE', 'SCORE', 'PROGRESS', 'GENRE', 'UPDATED']
+
+export const firstGenre = (entry: TrackedItem): string => {
+  const genres = entry.metadata.genres
+  return Array.isArray(genres) && typeof genres[0] === 'string' ? genres[0] : ''
 }
 
 /** Distinct values actually present on the shelf: an option nothing matches is noise. */

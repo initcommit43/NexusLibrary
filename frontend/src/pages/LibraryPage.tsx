@@ -5,7 +5,7 @@ import { AppShell } from '../components/AppShell'
 import { EntryCard } from '../components/EntryCard'
 import { EntryEditDialog } from '../components/EntryEditDialog'
 import { ListSidebar } from '../components/ListSidebar'
-import { EMPTY_FILTERS, type ListFilters } from '../components/listFilters'
+import { EMPTY_FILTERS, firstGenre, type ListFilters } from '../components/listFilters'
 import { defaultTypeOf, moduleBySlug, typeBySlug } from '../modules/registry'
 
 const asList = (value: unknown): string[] =>
@@ -46,17 +46,28 @@ export const LibraryPage = () => {
       return true
     })
 
+    // Every sort falls back to title, so unscored or untouched entries keep a predictable
+    // order instead of shuffling. Most of a library carries no score at all.
+    const byTitle = (a: TrackedItem, b: TrackedItem) => a.title.localeCompare(b.title)
+
     return [...matching].sort((a, b) => {
       switch (filters.sort) {
         case 'SCORE':
-          return (b.rating ?? -1) - (a.rating ?? -1)
+          return (b.rating ?? -1) - (a.rating ?? -1) || byTitle(a, b)
         case 'PROGRESS':
-          return (b.progressCurrent ?? -1) - (a.progressCurrent ?? -1)
+          return (b.progressCurrent ?? -1) - (a.progressCurrent ?? -1) || byTitle(a, b)
+        case 'GENRE': {
+          const genre = firstGenre(a).localeCompare(firstGenre(b))
+          // Anything with no genre sorts last rather than leading the list.
+          if (!firstGenre(a)) return firstGenre(b) ? 1 : byTitle(a, b)
+          if (!firstGenre(b)) return -1
+          return genre || byTitle(a, b)
+        }
         case 'UPDATED':
           // The list arrives most-recently-updated first, so this is the order it came in.
           return 0
         default:
-          return a.title.localeCompare(b.title)
+          return byTitle(a, b)
       }
     })
   }, [mine, filters])

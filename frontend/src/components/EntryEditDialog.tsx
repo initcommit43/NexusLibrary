@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { ApiError, api, type TrackedItem, type TrackingStatus } from '../api/client'
-import { statusLabelsFor } from '../modules/registry'
+import { statusLabelsFor, typeDefinitionFor } from '../modules/registry'
 import { STATUS_ORDER } from './trackingStatus'
 import { MINUTES_PER_HOUR } from './progress'
 
@@ -22,6 +22,7 @@ export const EntryEditDialog = ({
 }) => {
   const labels = statusLabelsFor(entry.mediaType)
   const tracksMinutes = entry.progressUnit === 'MINUTES'
+  const progressLabel = typeDefinitionFor(entry.mediaType)?.progressLabel ?? 'Progress'
 
   const [status, setStatus] = useState<TrackingStatus>(entry.status)
   const [score, setScore] = useState(entry.rating === null ? '' : (entry.rating / 10).toFixed(1))
@@ -127,9 +128,6 @@ export const EntryEditDialog = ({
             </svg>
           </button>
 
-          <button type="button" disabled={busy} onClick={() => void save()}>
-            {busy ? 'Saving…' : 'Save'}
-          </button>
           <button type="button" className="ghost icon-button" aria-label="Close" onClick={onClose}>
             ✕
           </button>
@@ -141,7 +139,7 @@ export const EntryEditDialog = ({
           </p>
         )}
 
-        <div className="dialog-grid">
+        <div className="dialog-row">
           <label className="field">
             <span>Status</span>
             <select value={status} onChange={(e) => setStatus(e.target.value as TrackingStatus)}>
@@ -151,6 +149,18 @@ export const EntryEditDialog = ({
                 </option>
               ))}
             </select>
+          </label>
+
+          <label className="field">
+            <span>{progressLabel}</span>
+            <input
+              type="number"
+              className="number-input"
+              min={0}
+              step={tracksMinutes ? 0.1 : 1}
+              value={progress}
+              onChange={(e) => setProgress(e.target.value)}
+            />
           </label>
 
           <label className="field">
@@ -165,19 +175,9 @@ export const EntryEditDialog = ({
               onChange={(e) => setScore(e.target.value)}
             />
           </label>
+        </div>
 
-          <label className="field">
-            <span>{tracksMinutes ? 'Hours played' : 'Progress'}</span>
-            <input
-              type="number"
-              className="number-input"
-              min={0}
-              step={tracksMinutes ? 0.1 : 1}
-              value={progress}
-              onChange={(e) => setProgress(e.target.value)}
-            />
-          </label>
-
+        <div className="dialog-row">
           <label className="field">
             <span>Start date</span>
             <input type="date" value={startedAt} onChange={(e) => setStartedAt(e.target.value)} />
@@ -197,6 +197,9 @@ export const EntryEditDialog = ({
         <div className="dialog-foot">
           <button type="button" className="ghost danger" disabled={busy} onClick={() => void remove()}>
             Remove from list
+          </button>
+          <button type="button" disabled={busy} onClick={() => void save()}>
+            {busy ? 'Saving…' : 'Save'}
           </button>
         </div>
       </div>

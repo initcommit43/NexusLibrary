@@ -608,15 +608,17 @@ button.small {
   border-radius: var(--radius-sm);
 }
 
-.dialog-grid {
+.dialog-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
   gap: var(--space-3);
 }
 
+/* Removal on the left, saving on the right: destructive and confirming stay far apart. */
 .dialog-foot {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  gap: var(--space-3);
 }
 
 button.ghost.danger {
