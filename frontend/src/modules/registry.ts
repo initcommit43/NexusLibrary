@@ -41,6 +41,8 @@ export interface ModuleDefinition {
   emptyHint: string
   /** Where this module's connect and import controls live in settings. */
   providers: ModuleProvider[]
+  /** True when the source has a catalogue page worth opening instead of the entry page. */
+  hasMediaPages: boolean
 }
 
 const watching = {
@@ -75,6 +77,7 @@ export const MODULES: ModuleDefinition[] = [
       },
     ],
     emptyHint: 'Nothing tracked yet. Connect Steam in settings, or search for a game.',
+    hasMediaPages: false,
     providers: [{ provider: 'STEAM', label: 'Steam', blurb: 'Import your games and playtime.' }],
   },
   {
@@ -110,6 +113,7 @@ export const MODULES: ModuleDefinition[] = [
       },
     ],
     emptyHint: 'Nothing tracked yet. Connect AniList or MyAnimeList in settings.',
+    hasMediaPages: true,
     providers: [
       { provider: 'ANILIST', label: 'AniList', blurb: 'Import your anime and manga lists.' },
       {
@@ -146,6 +150,7 @@ export const MODULES: ModuleDefinition[] = [
       },
     ],
     emptyHint: 'Nothing tracked yet. Connect Trakt in settings.',
+    hasMediaPages: false,
     providers: [{ provider: 'TRAKT', label: 'Trakt', blurb: 'Import your watched films and shows.' }],
   },
   {
@@ -171,9 +176,25 @@ export const MODULES: ModuleDefinition[] = [
       },
     ],
     emptyHint: 'Nothing tracked yet. Upload a Goodreads export in settings.',
+    hasMediaPages: false,
     providers: [],
   },
 ]
+
+/** Where opening this entry should go. */
+export const detailPathFor = (entry: {
+  id: number
+  mediaType: MediaType
+  source: string
+  externalId: string
+}): string => {
+  const module = MODULES.find((candidate) =>
+    candidate.types.some((type) => type.mediaType === entry.mediaType),
+  )
+  return module?.hasMediaPages
+    ? `/media/${entry.source}/${entry.externalId}`
+    : `/entries/${entry.id}`
+}
 
 export const moduleBySlug = (slug: string | undefined): ModuleDefinition | undefined =>
   MODULES.find((module) => module.slug === slug)

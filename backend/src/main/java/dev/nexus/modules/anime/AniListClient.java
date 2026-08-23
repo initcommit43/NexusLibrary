@@ -101,6 +101,55 @@ public class AniListClient {
             }
             """;
 
+    /**
+     * Everything the detail page shows. One call, kept apart from the fields every list row
+     * needs: relations alone carry a nested media record each.
+     */
+    private static final String DETAIL_QUERY =
+            """
+            query ($id: Int) {
+              Media(id: $id) {
+                bannerImage
+                season
+                seasonYear
+                duration
+                source
+                hashtag
+                popularity
+                favourites
+                meanScore
+                studios { edges { isMain node { id name } } }
+                relations {
+                  edges {
+                    relationType
+                    node {
+                      id type format status
+                      title { romaji english native }
+                      coverImage { large }
+                      startDate { year }
+                    }
+                  }
+                }
+                characters(sort: [ROLE, RELEVANCE], perPage: 12) {
+                  edges {
+                    role
+                    node { id name { full } image { medium } }
+                    voiceActors(language: JAPANESE) { id name { full } image { medium } }
+                  }
+                }
+                staff(perPage: 8) { edges { role node { id name { full } image { medium } } } }
+                tags { name rank isMediaSpoiler }
+                stats {
+                  statusDistribution { status amount }
+                  scoreDistribution { score amount }
+                }
+                trailer { id site thumbnail }
+                externalLinks { site url icon language }
+                rankings { rank type year season allTime context }
+              }
+            }
+            """;
+
     private final RestClient restClient;
     private final AniListProperties properties;
     private final OutboundRateLimiter rateLimiter;
@@ -161,6 +210,13 @@ public class AniListClient {
             }
         }
         return entries;
+    }
+
+    /** Empty when AniList has no such media; the caller treats that as nothing to add. */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> findMediaDetail(String externalId) {
+        Map<String, Object> data = post(DETAIL_QUERY, Map.of("id", Integer.parseInt(externalId)));
+        return data.get("Media") instanceof Map<?, ?> media ? (Map<String, Object>) media : Map.of();
     }
 
     /** AniList caps a page at 50 rows, so callers resolve in chunks of that size. */

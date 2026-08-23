@@ -4,6 +4,7 @@ import dev.nexus.core.domain.MediaType;
 import dev.nexus.core.domain.Source;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.Optional;
 
@@ -25,6 +26,17 @@ public interface MetadataAdapter {
     List<ItemSearchResult> search(MediaType mediaType, String query, int limit);
 
     Optional<TrackableItemData> fetchById(String externalId);
+
+    /**
+     * Everything a source knows about one item beyond the fields core models — relations,
+     * characters, tags, rankings. Shape is the source's own; only that module's UI reads it.
+     *
+     * <p>Separate from {@link #fetchById} because it is far heavier and wanted only when
+     * someone opens a title, not for every row of an import.
+     */
+    default Optional<Map<String, Object>> fetchDetail(String externalId) {
+        return Optional.empty();
+    }
 
     /**
      * Fetches many items at once. Importing a library needs hundreds of items, and one

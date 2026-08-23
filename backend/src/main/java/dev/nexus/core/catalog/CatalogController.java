@@ -4,6 +4,14 @@ import dev.nexus.auth.CurrentUser;
 import dev.nexus.core.adapter.ItemSearchResult;
 import dev.nexus.core.adapter.MetadataAdapterRegistry;
 import dev.nexus.core.domain.MediaType;
+import dev.nexus.core.domain.Source;
+import dev.nexus.core.domain.TrackableItem;
+import dev.nexus.core.tracking.TrackingService;
+import dev.nexus.core.tracking.dto.TrackedItemResponse;
+import java.time.LocalDate;
+import java.util.Map;
+import java.util.Optional;
+import org.springframework.web.bind.annotation.PathVariable;
 import dev.nexus.core.web.RateLimiter;
 import dev.nexus.config.NexusProperties;
 import jakarta.validation.constraints.NotBlank;
@@ -23,13 +31,33 @@ public class CatalogController {
 
     private static final int MAX_RESULTS = 20;
 
+    /** A catalogue item, plus this reader's own entry for it when they have one. */
+    public record MediaResponse(
+            MediaType mediaType,
+            Source source,
+            String externalId,
+            String title,
+            String coverUrl,
+            LocalDate releaseDate,
+            String itemState,
+            Map<String, Object> metadata,
+            TrackedItemResponse entry) {}
+
     private final MetadataAdapterRegistry adapters;
+    private final MediaDetailService media;
+    private final TrackingService tracking;
     private final RateLimiter rateLimiter;
     private final int searchesPerMinute;
 
     public CatalogController(
-            MetadataAdapterRegistry adapters, RateLimiter rateLimiter, NexusProperties properties) {
+            MetadataAdapterRegistry adapters,
+            MediaDetailService media,
+            TrackingService tracking,
+            RateLimiter rateLimiter,
+            NexusProperties properties) {
         this.adapters = adapters;
+        this.media = media;
+        this.tracking = tracking;
         this.rateLimiter = rateLimiter;
         this.searchesPerMinute = properties.rateLimit().searchRequestsPerMinute();
     }
@@ -49,6 +77,33 @@ public class CatalogController {
         rateLimiter.check("search:" + user.id(), searchesPerMinute);
 
         return adapters.requireForMediaType(mediaType).search(mediaType, query.trim(), MAX_RESULTS);
+    }
+
+    /**
+     * One title, whether or not it is on a shelf. Relations point at things nobody here
+     * tracks yet, so a page keyed by the catalogue rather than by an entry is what lets you
+     * follow them.
+     */
+    @GetMapping("/media/{source}/{externalId}")
+    public MediaResponse media(
+            @AuthenticationPrincipal CurrentUser user,
+            @PathVariable Source source,
+            @PathVariable String externalId) {
+
+        TrackableItem item = media.require(source, externalId);
+        Optional<TrackedItemResponse> entry =
+                tracking.findByItem(user.id(), item.getId()).map(TrackedItemResponse::from);
+
+        return new MediaResponse(
+                item.getMediaType(),
+                item.getSource(),
+                item.getExternalId(),
+                item.getTitle(),
+                item.getCoverUrl(),
+                item.getReleaseDate(),
+                item.getItemState().name(),
+                item.getMetadata(),
+                entry.orElse(null));
     }
 
     @GetMapping("/modules")

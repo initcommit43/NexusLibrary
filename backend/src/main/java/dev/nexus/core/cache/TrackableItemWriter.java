@@ -65,6 +65,18 @@ public class TrackableItemWriter {
         }
     }
 
+    /**
+     * Attaches a source's own extra detail to the shared item, merged into the metadata it
+     * already carries so nothing another module wrote is lost.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void storeDetail(Source source, String externalId, Map<String, Object> detail) {
+        items.findBySourceAndExternalId(source, externalId).ifPresent(item -> {
+            item.getMetadata().put("detail", detail);
+            items.save(item);
+        });
+    }
+
     private static TrackableItem toEntity(TrackableItemData data) {
         return new TrackableItem(
                 data.mediaType(),

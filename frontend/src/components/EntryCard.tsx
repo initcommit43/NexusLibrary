@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import type { TrackedItem } from '../api/client'
+import { detailPathFor } from '../modules/registry'
 import { toDisplayScore } from './rating'
 import { MINUTES_PER_HOUR } from './progress'
 
@@ -20,11 +21,12 @@ const progressLabel = (entry: TrackedItem): string | null => {
 export const EntryCard = ({ entry, onEdit }: { entry: TrackedItem; onEdit: () => void }) => {
   const progress = progressLabel(entry)
   const score = toDisplayScore(entry.rating)
+  const to = detailPathFor(entry)
 
   return (
     <article className="card cover-card">
       <div className="cover-art">
-        <Link className="cover-link" to={`/entries/${entry.id}`}>
+        <Link className="cover-link" to={to}>
           {entry.coverUrl ? (
             <img src={entry.coverUrl} alt="" loading="lazy" />
           ) : (
@@ -48,7 +50,7 @@ export const EntryCard = ({ entry, onEdit }: { entry: TrackedItem; onEdit: () =>
 
       <div className="cover-heading">
         <h3>
-          <Link to={`/entries/${entry.id}`}>{entry.title}</Link>
+          <Link to={to}>{entry.title}</Link>
         </h3>
         {(progress || score) && (
           <p className="cover-stats">

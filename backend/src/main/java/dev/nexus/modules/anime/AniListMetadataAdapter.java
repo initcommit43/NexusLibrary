@@ -65,6 +65,12 @@ public class AniListMetadataAdapter implements MetadataAdapter {
         return items;
     }
 
+    @Override
+    public Optional<Map<String, Object>> fetchDetail(String externalId) {
+        Map<String, Object> detail = client.findMediaDetail(externalId);
+        return detail.isEmpty() ? Optional.empty() : Optional.of(detail);
+    }
+
     /** The MAL import's hard ID join: one call resolves a MAL id onto its AniList canonical. */
     public Optional<TrackableItemData> fetchByMalId(MediaType mediaType, String malId) {
         return client.findMediaByMalId(mediaType, malId).stream().findFirst().map(this::toItemData);

@@ -49,6 +49,12 @@ public class TrackingService {
         return owned;
     }
 
+    /** This reader's entry for a catalogue item, when they have one. */
+    @Transactional(readOnly = true)
+    public Optional<UserEntry> findByItem(Long userId, Long itemId) {
+        return entries.findByUserIdAndItemId(userId, itemId);
+    }
+
     @Transactional(readOnly = true)
     public UserEntry requireOwned(Long entryId, Long userId) {
         UserEntry entry = entries.findByIdAndUserId(entryId, userId).orElseThrow(EntryNotFoundException::new);

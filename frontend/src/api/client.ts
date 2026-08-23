@@ -45,6 +45,19 @@ export type TrackedItem = {
   notes: string | null
 }
 
+export type MediaDetail = {
+  mediaType: MediaType
+  source: string
+  externalId: string
+  title: string
+  coverUrl: string | null
+  releaseDate: string | null
+  itemState: string
+  metadata: Record<string, unknown>
+  /** This reader's entry for it, when they have one. */
+  entry: TrackedItem | null
+}
+
 export type Provider = 'STEAM' | 'ANILIST' | 'MAL' | 'TRAKT'
 
 export type ConnectedAccount = {
@@ -230,6 +243,9 @@ export const api = {
     ),
 
   availableModules: () => request<MediaType[]>('/catalog/modules'),
+
+  media: (source: string, externalId: string) =>
+    request<MediaDetail>(`/catalog/media/${source}/${encodeURIComponent(externalId)}`),
 
   listEntries: () => request<TrackedItem[]>('/entries'),
 

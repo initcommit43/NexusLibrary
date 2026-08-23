@@ -3,6 +3,7 @@ import { ProtectedRoute } from './components/ProtectedRoute'
 import { ActivityPage } from './pages/ActivityPage'
 import { BrowsePage } from './pages/BrowsePage'
 import { LibraryPage } from './pages/LibraryPage'
+import { MediaPage } from './pages/MediaPage'
 import { EntryDetailPage } from './pages/EntryDetailPage'
 import { LoginPage } from './pages/LoginPage'
 import { SearchPage } from './pages/SearchPage'
@@ -34,6 +35,7 @@ export const App = () => (
       <Route path="/search" element={<SearchPage />} />
       <Route path="/activity" element={<ActivityPage />} />
       <Route path="/entries/:id" element={<EntryDetailPage />} />
+      <Route path="/media/:source/:externalId" element={<MediaPage />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/settings/steam/callback" element={<SteamCallbackPage />} />
       <Route path="/settings/anilist/callback" element={<AniListCallbackPage />} />
