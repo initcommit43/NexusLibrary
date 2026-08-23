@@ -3,6 +3,7 @@ package dev.nexus.core.tracking;
 import dev.nexus.core.activity.ActivityRecorder;
 import dev.nexus.core.activity.ActivityRecorder.EntrySnapshot;
 import dev.nexus.core.cache.ItemCacheService;
+import dev.nexus.core.cache.ItemRefreshService;
 import dev.nexus.core.domain.TrackableItem;
 import dev.nexus.core.domain.UserEntry;
 import dev.nexus.core.domain.UserEntryRepository;
@@ -26,21 +27,33 @@ public class TrackingService {
     private final UserEntryRepository entries;
     private final ItemCacheService itemCache;
     private final ActivityRecorder activity;
+    private final ItemRefreshService refresh;
 
-    public TrackingService(UserEntryRepository entries, ItemCacheService itemCache, ActivityRecorder activity) {
+    public TrackingService(
+            UserEntryRepository entries,
+            ItemCacheService itemCache,
+            ActivityRecorder activity,
+            ItemRefreshService refresh) {
         this.entries = entries;
         this.itemCache = itemCache;
         this.activity = activity;
+        this.refresh = refresh;
     }
 
     @Transactional(readOnly = true)
     public List<UserEntry> listFor(Long userId) {
-        return entries.findByUserIdOrderByUpdatedAtDesc(userId);
+        List<UserEntry> owned = entries.findByUserIdOrderByUpdatedAtDesc(userId);
+        // The dashboard is the read that keeps the cache honest: it sees a user's whole library
+        // at once, so anything past its TTL is noticed here and re-fetched behind the response.
+        refresh.refreshIfStale(owned.stream().map(UserEntry::getItem).toList());
+        return owned;
     }
 
     @Transactional(readOnly = true)
     public UserEntry requireOwned(Long entryId, Long userId) {
-        return entries.findByIdAndUserId(entryId, userId).orElseThrow(EntryNotFoundException::new);
+        UserEntry entry = entries.findByIdAndUserId(entryId, userId).orElseThrow(EntryNotFoundException::new);
+        refresh.refreshIfStale(entry.getItem());
+        return entry;
     }
 
     /**

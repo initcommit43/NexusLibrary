@@ -30,17 +30,23 @@ public class ItemCacheService {
     private final TrackableItemRepository items;
     private final MetadataAdapterRegistry adapters;
     private final TrackableItemWriter writer;
+    private final ItemRefreshService refresh;
 
     public ItemCacheService(
-            TrackableItemRepository items, MetadataAdapterRegistry adapters, TrackableItemWriter writer) {
+            TrackableItemRepository items,
+            MetadataAdapterRegistry adapters,
+            TrackableItemWriter writer,
+            ItemRefreshService refresh) {
         this.items = items;
         this.adapters = adapters;
         this.writer = writer;
+        this.refresh = refresh;
     }
 
     /** Returns the cached item, fetching and storing it first if this is its first sighting. */
     public TrackableItem findOrCache(Source source, String externalId) {
         return items.findBySourceAndExternalId(source, externalId)
+                .map(this::serveAndRefreshIfStale)
                 .orElseGet(() -> fetchAndStore(source, externalId));
     }
 
@@ -60,6 +66,7 @@ public class ItemCacheService {
 
         Map<String, TrackableItem> found = items.findBySourceAndExternalIdIn(source, externalIds).stream()
                 .collect(Collectors.toMap(TrackableItem::getExternalId, Function.identity(), (a, b) -> a));
+        refresh.refreshIfStale(found.values());
 
         List<String> missing =
                 externalIds.stream().distinct().filter(id -> !found.containsKey(id)).toList();
@@ -84,6 +91,12 @@ public class ItemCacheService {
                     .forEach(item -> result.put(item.getExternalId(), item));
         }
         return result;
+    }
+
+    /** The cached copy goes back to the caller untouched; any re-fetch happens behind it. */
+    private TrackableItem serveAndRefreshIfStale(TrackableItem item) {
+        refresh.refreshIfStale(item);
+        return item;
     }
 
     private TrackableItem fetchAndStore(Source source, String externalId) {
