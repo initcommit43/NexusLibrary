@@ -287,12 +287,6 @@ button.small {
   border-bottom: 1px solid var(--card-border);
 }
 
-/* The lower half of every card is tinted, so a grid reads as blue, not as white boxes. */
-.cover-card .cover-heading,
-.cover-card .cover-body {
-  background: var(--surface-raised);
-}
-
 .cover-body {
   padding: var(--space-3);
   display: flex;
@@ -367,7 +361,7 @@ button.small {
   margin-bottom: var(--space-3);
   padding-bottom: var(--space-2);
   border-bottom: 1px solid var(--card-border);
-  color: var(--accent);
+  color: var(--text-muted);
   font-family: var(--font-sans);
   font-size: var(--text-sm);
   font-weight: 600;

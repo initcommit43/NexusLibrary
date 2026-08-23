@@ -2,13 +2,24 @@
  * The design language, and the only file that holds a raw colour value.
  *
  * Source: the "Nexus Design Direction" canvas — Inter + Krub, electric blue primary with a
- * cyan accent for sync and integrations. Light is the default; dark keeps the same accent
- * pair on tinted near-black neutrals rather than inverting to grey.
+ * cyan accent for sync and integrations.
  *
- * Colour is distributed 60 / 30 / 10 by area:
- *   60  the field — a cool tint, never white; cards need something to sit on
- *   30  the cards and panels — blue-tinted surfaces outlined in the primary
- *   10  the accents — primary for action and state, cyan for sync, progress and modules
+ * Colour is distributed 60 / 30 / 10 by area, against three chosen values:
+ *
+ *   60  #ffffff cards over #f5f7fa page — two values of the same near-white, so the split
+ *       between page and card stays readable without either becoming a colour
+ *   30  #0b1220 ink and its family (#55637a body, #6b7a90 muted, #e4e9f0 borders, and the
+ *       dark banner blocks). Structural, and easy to mistake for "just text" — at normal
+ *       density it is about a third of what the eye sees, and it is what gives the UI weight
+ *   10  #1f6fff primary — active tab, progress fill, scores, links — with #00c2ff as a
+ *       sliver of that ten, reserved for sync and integration actions, so connecting an
+ *       external library reads as a different kind of act from navigating your own
+ *
+ * Two rules that keep the split honest:
+ *   - the light tints (#d8e4ff, #cff4ff) belong to the 10, not the 60. They are accent at
+ *     low saturation, so placeholders and badges must not spread further than they do now.
+ *   - cover art sits outside the system entirely. These neutrals exist so real artwork is
+ *     the loudest thing on screen.
  *
  * Components consume these names and nothing else, so a change of direction is a change to
  * this file.
@@ -17,50 +28,45 @@
 :root {
   color-scheme: light dark;
 
-  /* 60 — the field */
-  --bg: #e8edf7;
-
-  /* 30 — surfaces */
+  /* 60 — the field: two values of one near-white */
+  --bg: #f5f7fa;
   --surface: #ffffff;
-  /* Panels and card bodies carry a blue tint rather than more white. */
-  --surface-raised: #eef3ff;
+  --surface-raised: #f5f7fa;
   --field-bg: #ffffff;
-  --border: #dbe4f2;
-  /* Cards outline in the primary. This is what stops a grid of cards reading as white. */
-  --card-border: #b9d0ff;
-  /* Derived one step darker for control edges. */
-  --border-strong: #c2cede;
 
-  /* --- text --- */
+  /* 30 — the ink family: text, borders, dividers */
   --text: #0b1220;
   --text-body: #55637a;
-  /* Darkened from the direction's #6b7a90, which fell below 4.5:1 at metadata sizes. */
-  --text-muted: #5a6880;
+  --text-muted: #6b7a90;
   --text-inverse: #ffffff;
+  --border: #e4e9f0;
+  --card-border: #e4e9f0;
+  /* Derived one step darker for control edges. */
+  --border-strong: #cbd5e3;
 
-  /* 10 — primary: navigation, state, card outlines */
+  /* 30 — the dark blocks, same ink */
+  --banner-bg: #0b1220;
+  --banner-text: #ffffff;
+  --banner-muted: #9baabf;
+
+  /* 10 — primary: active tab, progress fill, scores, links */
   --accent: #1f6fff;
   --accent-hover: #0a4fd1;
   --accent-contrast: #ffffff;
   --accent-soft: #d8e4ff;
 
-  /* 10 — secondary: sync, integrations, module progress */
+  /* 10 — cyan, a sliver of it: sync and integration actions only */
   --accent-alt: #00c2ff;
   --accent-alt-hover: #00a9e0;
   --accent-alt-contrast: #0b1220;
   --accent-alt-soft: #cff4ff;
 
   /*
-   * Accent used for progress, cover tiles and module badges. Defaults to the primary; a
-   * module may repoint it in themes.css without touching a component.
+   * Accent for progress, cover tiles and module badges. The primary — a module may repoint
+   * it in themes.css, but never to the cyan, which belongs to integrations.
    */
   --module-accent: var(--accent);
   --module-accent-soft: var(--accent-soft);
-
-  /* The call-to-action slab, straight from the direction's canvas. */
-  --banner-bg: #0b1220;
-  --banner-text: #ffffff;
-  --banner-muted: #9baabf;
 
   /* --- feedback: derived, the direction does not specify these --- */
   --danger: #c62334;
@@ -106,9 +112,9 @@
   --radius-panel: 16px; /* inset panels */
   --radius-full: 999px;
 
-  /* --- elevation: the field is tinted, so a card's lift is visible --- */
-  --shadow-1: 0 1px 2px rgba(11, 18, 32, 0.06);
-  --shadow-2: 0 1px 2px rgba(11, 18, 32, 0.06), 0 12px 32px rgba(11, 18, 32, 0.1);
+  /* --- elevation --- */
+  --shadow-1: 0 1px 2px rgba(11, 18, 32, 0.04);
+  --shadow-2: 0 1px 2px rgba(11, 18, 32, 0.04), 0 12px 32px rgba(11, 18, 32, 0.06);
 
   /* --- motion --- */
   --duration-fast: 120ms;
@@ -117,8 +123,9 @@
 }
 
 /*
- * Dark keeps the same split: a near-black field, cards lifted clear of it and outlined in
- * blue, the same two accents.
+ * Dark runs the same three roles on the direction's near-black neutrals: field and card are
+ * the 60, the ink family inverts to light text over #233049 borders for the 30, and the
+ * accent pair steps up to hold contrast for the 10.
  *
  * Declared twice on purpose: once for the system preference, guarded so an explicit light
  * choice still wins, and once for [data-theme="dark"] so the in-app switch wins in both
@@ -127,17 +134,21 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
     --bg: #0a0f1a;
-    --surface: #131b2c;
-    --surface-raised: #1b2740;
+    --surface: #0f1523;
+    --surface-raised: #16233b;
     --field-bg: #0a0f1a;
-    --border: #283654;
-    --card-border: #2b4272;
-    --border-strong: #3b4a69;
 
     --text: #eef3fa;
     --text-body: #a3b2c8;
     --text-muted: #7c8ca6;
     --text-inverse: #06101f;
+    --border: #233049;
+    --card-border: #233049;
+    --border-strong: #33456a;
+
+    --banner-bg: #16233b;
+    --banner-text: #eef3fa;
+    --banner-muted: #7c8ca6;
 
     --accent: #4c8dff;
     --accent-hover: #6fa5ff;
@@ -149,10 +160,6 @@
     --accent-alt-contrast: #06101f;
     --accent-alt-soft: #0e3348;
 
-    --banner-bg: #16233b;
-    --banner-text: #eef3fa;
-    --banner-muted: #7c8ca6;
-
     --danger: #ff6b78;
     --danger-soft: #2a1620;
     --success: #3dd68c;
@@ -160,24 +167,28 @@
     --warning: #f5c451;
     --warning-soft: #2b2113;
 
-    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.2);
-    --shadow-2: 0 1px 2px rgba(0, 0, 0, 0.2), 0 12px 32px rgba(3, 8, 18, 0.45);
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.06);
+    --shadow-2: 0 1px 2px rgba(0, 0, 0, 0.06), 0 12px 32px rgba(6, 16, 31, 0.35);
   }
 }
 
 :root[data-theme='dark'] {
   --bg: #0a0f1a;
-  --surface: #131b2c;
-  --surface-raised: #1b2740;
+  --surface: #0f1523;
+  --surface-raised: #16233b;
   --field-bg: #0a0f1a;
-  --border: #283654;
-  --card-border: #2b4272;
-  --border-strong: #3b4a69;
 
   --text: #eef3fa;
   --text-body: #a3b2c8;
   --text-muted: #7c8ca6;
   --text-inverse: #06101f;
+  --border: #233049;
+  --card-border: #233049;
+  --border-strong: #33456a;
+
+  --banner-bg: #16233b;
+  --banner-text: #eef3fa;
+  --banner-muted: #7c8ca6;
 
   --accent: #4c8dff;
   --accent-hover: #6fa5ff;
@@ -189,10 +200,6 @@
   --accent-alt-contrast: #06101f;
   --accent-alt-soft: #0e3348;
 
-  --banner-bg: #16233b;
-  --banner-text: #eef3fa;
-  --banner-muted: #7c8ca6;
-
   --danger: #ff6b78;
   --danger-soft: #2a1620;
   --success: #3dd68c;
@@ -200,6 +207,6 @@
   --warning: #f5c451;
   --warning-soft: #2b2113;
 
-  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.2);
-  --shadow-2: 0 1px 2px rgba(0, 0, 0, 0.2), 0 12px 32px rgba(3, 8, 18, 0.45);
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-2: 0 1px 2px rgba(0, 0, 0, 0.06), 0 12px 32px rgba(6, 16, 31, 0.35);
 }
