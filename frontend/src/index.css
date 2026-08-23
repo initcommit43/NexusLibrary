@@ -362,6 +362,19 @@ button.small {
   position: relative;
 }
 
+/* Says where a title came from, since a shelf mixes imported and hand-added freely. */
+.card-origin {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-2);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--banner-bg);
+  color: var(--banner-text);
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+
 /* Only shows itself on hover or keyboard focus: forty cards should read as forty covers. */
 .card-menu {
   position: absolute;
@@ -583,8 +596,15 @@ button.small {
 }
 
 .media-banner {
-  height: 14rem;
-  border-radius: var(--radius-lg);
+  /*
+   * Breaks out of the content column to span the window: a key visual is the one thing
+   * that should. The negative margin is half the difference between the two widths, which
+   * is what centres a full-width block inside a narrower parent.
+   */
+  width: 100vw;
+  margin-inline: calc(50% - 50vw);
+  margin-top: calc(var(--space-5) * -1);
+  height: 16rem;
   background-size: cover;
   background-position: center;
 }
@@ -649,11 +669,16 @@ button.small {
 
 /* Label and chevron travel together in the middle, rather than pinned to either edge. */
 .status-action {
+  position: relative;
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-2);
+}
+
+.status-action svg {
+  position: absolute;
+  right: var(--space-3);
 }
 
 .status-options {

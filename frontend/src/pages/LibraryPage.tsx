@@ -43,6 +43,9 @@ export const LibraryPage = () => {
       if (query && !entry.title.toLowerCase().includes(query)) return false
       if (filters.format && entry.metadata.format !== filters.format) return false
       if (filters.genre && !asList(entry.metadata.genres).includes(filters.genre)) return false
+      if (filters.platform && !asList(entry.metadata.platforms).includes(filters.platform)) {
+        return false
+      }
       return true
     })
 

@@ -93,7 +93,7 @@ public class LibraryImportService {
                 continue;
             }
 
-            if (upsert(account.getUserId(), item, entry)) {
+            if (upsert(account.getUserId(), provider, item, entry)) {
                 created++;
             } else {
                 updated++;
@@ -146,15 +146,21 @@ public class LibraryImportService {
     /**
      * @return true when a new entry was created, false when an existing one was updated
      */
-    private boolean upsert(Long userId, TrackableItem item, ImportedEntry imported) {
+    private boolean upsert(Long userId, Provider provider, TrackableItem item, ImportedEntry imported) {
         UserEntry existing =
                 entries.findByUserIdAndItemId(userId, item.getId()).orElse(null);
 
         if (existing == null) {
             UserEntry entry = new UserEntry(userId, item, imported.status());
+            entry.setImportedFrom(provider);
             applyProgress(entry, imported);
             entries.save(entry);
             return true;
+        }
+
+        // An entry added by hand and later found in an import did come from there too.
+        if (existing.getImportedFrom() == null) {
+            existing.setImportedFrom(provider);
         }
 
         // An import must not overwrite what the user set by hand. Progress is objective and

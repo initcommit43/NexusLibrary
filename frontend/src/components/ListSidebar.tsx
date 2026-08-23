@@ -21,6 +21,8 @@ export const ListSidebar = ({
 
   const formats = distinct(entries, (entry) => entry.metadata.format)
   const genres = distinct(entries, (entry) => entry.metadata.genres)
+  // Only games carry these, so the control appears for games and nowhere else.
+  const platforms = distinct(entries, (entry) => entry.metadata.platforms)
 
   return (
     <aside className="list-sidebar">
@@ -75,6 +77,20 @@ export const ListSidebar = ({
               {genres.map((genre) => (
                 <option key={genre} value={genre}>
                   {genre}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+
+        {platforms.length > 0 && (
+          <label className="field">
+            <span>Platform</span>
+            <select value={filters.platform} onChange={(e) => set('platform', e.target.value)}>
+              <option value="">Any</option>
+              {platforms.map((platform) => (
+                <option key={platform} value={platform}>
+                  {platform}
                 </option>
               ))}
             </select>

@@ -7,6 +7,7 @@ export interface ListFilters {
   status: TrackingStatus | 'ALL'
   format: string
   genre: string
+  platform: string
   sort: SortKey
 }
 
@@ -15,6 +16,7 @@ export const EMPTY_FILTERS: ListFilters = {
   status: 'ALL',
   format: '',
   genre: '',
+  platform: '',
   sort: 'TITLE',
 }
 

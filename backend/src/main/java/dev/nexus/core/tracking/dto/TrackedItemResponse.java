@@ -2,6 +2,7 @@ package dev.nexus.core.tracking.dto;
 
 import dev.nexus.core.domain.MediaType;
 import dev.nexus.core.domain.ProgressUnit;
+import dev.nexus.core.domain.Provider;
 import dev.nexus.core.domain.Source;
 import dev.nexus.core.domain.TrackableItem;
 import dev.nexus.core.domain.TrackingStatus;
@@ -29,6 +30,8 @@ public record TrackedItemResponse(
         LocalDate startedAt,
         LocalDate finishedAt,
         boolean favorite,
+        /** Which service this entry was imported from, if it was not added by hand. */
+        Provider importedFrom,
         String notes) {
 
     public static TrackedItemResponse from(UserEntry entry) {
@@ -51,6 +54,7 @@ public record TrackedItemResponse(
                 entry.getStartedAt(),
                 entry.getFinishedAt(),
                 entry.isFavorite(),
+                entry.getImportedFrom(),
                 entry.getNotes());
     }
 }

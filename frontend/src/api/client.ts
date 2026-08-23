@@ -42,6 +42,8 @@ export type TrackedItem = {
   finishedAt: string | null
   progressExtra: Record<string, unknown> | null
   favorite: boolean
+  /** Set when an import put this here rather than the reader adding it by hand. */
+  importedFrom: Provider | null
   notes: string | null
 }
 

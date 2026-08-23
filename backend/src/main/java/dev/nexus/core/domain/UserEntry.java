@@ -65,6 +65,14 @@ public class UserEntry {
     @Column(nullable = false)
     private boolean favorite;
 
+    /**
+     * The provider that put this entry here, if any. A fact about this person's copy — the
+     * shared item's Steam appid says the game is on Steam, not that they imported it.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "imported_from")
+    private Provider importedFrom;
+
     private String notes;
 
     @Column(name = "created_at", nullable = false, insertable = false, updatable = false)
@@ -162,6 +170,14 @@ public class UserEntry {
 
     public void setFinishedAt(LocalDate finishedAt) {
         this.finishedAt = finishedAt;
+    }
+
+    public Provider getImportedFrom() {
+        return importedFrom;
+    }
+
+    public void setImportedFrom(Provider importedFrom) {
+        this.importedFrom = importedFrom;
     }
 
     public boolean isFavorite() {

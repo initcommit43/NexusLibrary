@@ -4,6 +4,15 @@ import { detailPathFor } from '../modules/registry'
 import { toDisplayScore } from './rating'
 import { MINUTES_PER_HOUR } from './progress'
 
+const ORIGIN_LABELS: Record<string, string> = {
+  STEAM: 'Steam',
+  ANILIST: 'AniList',
+  MAL: 'MyAnimeList',
+  TRAKT: 'Trakt',
+}
+
+const origin = (provider: string) => ORIGIN_LABELS[provider] ?? provider
+
 /** "8 / 13", "128 h", or nothing when there is no progress worth showing. */
 const progressLabel = (entry: TrackedItem): string | null => {
   if (entry.progressCurrent === null) return null
@@ -33,6 +42,12 @@ export const EntryCard = ({ entry, onEdit }: { entry: TrackedItem; onEdit: () =>
             <div className="cover-placeholder" aria-hidden="true" />
           )}
         </Link>
+
+        {entry.importedFrom && (
+          <span className="card-origin" title={`Imported from ${origin(entry.importedFrom)}`}>
+            {origin(entry.importedFrom)}
+          </span>
+        )}
 
         <button
           type="button"

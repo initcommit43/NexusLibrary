@@ -13,6 +13,12 @@ html {
 
 body {
   margin: 0;
+  /*
+   * Clip rather than hidden: a full-width banner inside a narrower column overhangs by the
+   * scrollbar's width, and hidden would make this a scroll container, which breaks every
+   * sticky header on the page.
+   */
+  overflow-x: clip;
   min-height: 100vh;
   background: var(--bg);
   color: var(--text-body);
