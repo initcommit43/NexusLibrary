@@ -11,7 +11,7 @@ distinct titles tracked rather than with the number of users.
 
 ## Project status
 
-**Work in progress — phase 2b of 8.** Built one module at a time, games first, so the
+**Work in progress — phase 5 of 8.** Built one module at a time, games first, so the
 shared core is proven by a real vertical slice before a second medium is added.
 
 | | |
@@ -20,21 +20,30 @@ shared core is proven by a real vertical slice before a second medium is added.
 | ✅ **Phase 1** | Games: IGDB search, track with a status, dashboard |
 | ✅ **Phase 2** | Steam import — connect an account, pull a library with playtimes |
 | ✅ **Phase 2b** | Containerized and deployed |
-| ⬜ **Phase 3** | Activity feed, ratings, progress editing, reviews |
-| ⬜ **Phase 4** | Cache staleness and refresh |
-| ⬜ **Phase 5–7** | Anime and manga, films and TV, books |
+| ✅ **Phase 3** | Activity feed, ratings, progress editing, reviews, Steam achievements |
+| ✅ **Phase 4** | Cache staleness and refresh |
+| 🔨 **Phase 5** | Anime and manga — AniList as canonical, AniList and MAL as library feeds |
+| ⬜ **Phase 6–7** | Films and TV, books |
 | ⬜ **Phase 8** | Enable and disable modules per user |
 
-What that means today: you can search a game, track it with a status, and see your shelf.
-The domain model already carries ratings, progress, notes and dates, but only status is
-editable in the UI — the rest arrives with the screens in phase 3.
+What that means today: the games module is complete. You can search IGDB, track a title,
+edit status, rating, progress, dates and notes, write a review, and read back an activity
+feed of every change. Connecting Steam pulls your library with playtimes and reports what
+it could not match; a second sync walks the library for per-game achievement progress in
+the background. Cached items refresh themselves on read once their state-keyed TTL is up.
+
+The shell is built around the module switcher the later phases need: modules come from a
+registry, and each contributes its own status vocabulary — so anime will say "Watching"
+where games say "Playing". Unbuilt modules are listed as such rather than hidden, and light
+and dark themes both follow the system or an explicit choice.
 
 ## Stack
 
 Spring Boot 4 (Java 21) · React 19 + Vite (PWA) · PostgreSQL 17 · Flyway · JWT auth
 
 Requires an IGDB client id and secret, obtained through a Twitch developer application.
-Game search is disabled without them; the rest of the app still runs.
+Game search is disabled without them; the rest of the app still runs. A Steam web API key
+enables the library import and achievement sync, and is optional in the same way.
 
 ## Running locally
 
