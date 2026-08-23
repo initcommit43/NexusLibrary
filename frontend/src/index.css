@@ -726,3 +726,17 @@ button.small {
 .integration-head.banner button:hover:not(:disabled) {
   background: var(--accent-alt-hover);
 }
+
+/* Square ghost button for icon-only controls, sized to stay a comfortable tap target. */
+.icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  color: var(--text-muted);
+}
+
+.icon-button:hover:not(:disabled) {
+  color: var(--text);
+}

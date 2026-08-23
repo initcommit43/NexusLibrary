@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom'
+import { ThemeToggle } from './ThemeToggle'
 import { useAuth } from '../auth/useAuth'
 
 export const AppShell = ({ children }: { children: React.ReactNode }) => {
@@ -23,6 +24,7 @@ export const AppShell = ({ children }: { children: React.ReactNode }) => {
 
         <div className="header-right">
           <span className="muted">{user?.username}</span>
+          <ThemeToggle />
           <button type="button" className="ghost" onClick={() => void logout()}>
             Sign out
           </button>
