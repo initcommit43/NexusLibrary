@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -36,8 +37,8 @@ public class IgdbMetadataAdapter implements MetadataAdapter {
     }
 
     @Override
-    public MediaType mediaType() {
-        return MediaType.GAME;
+    public Set<MediaType> mediaTypes() {
+        return Set.of(MediaType.GAME);
     }
 
     @Override

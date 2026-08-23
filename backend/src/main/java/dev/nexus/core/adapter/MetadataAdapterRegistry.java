@@ -21,7 +21,8 @@ public class MetadataAdapterRegistry {
 
     public MetadataAdapterRegistry(List<MetadataAdapter> adapters) {
         this.byMediaType = adapters.stream()
-                .collect(Collectors.toUnmodifiableMap(MetadataAdapter::mediaType, Function.identity()));
+                .flatMap(adapter -> adapter.mediaTypes().stream().map(type -> Map.entry(type, adapter)))
+                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
         this.bySource = adapters.stream()
                 .collect(Collectors.toUnmodifiableMap(MetadataAdapter::source, Function.identity()));
     }

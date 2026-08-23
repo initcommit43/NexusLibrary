@@ -37,7 +37,7 @@ class IgdbMetadataAdapterTest {
 
     @Test
     void declaresItsMediaTypeAndSource() {
-        assertThat(adapter.mediaType()).isEqualTo(MediaType.GAME);
+        assertThat(adapter.mediaTypes()).containsExactly(MediaType.GAME);
         assertThat(adapter.source()).isEqualTo(Source.IGDB);
     }
 

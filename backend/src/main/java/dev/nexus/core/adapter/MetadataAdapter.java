@@ -4,6 +4,7 @@ import dev.nexus.core.domain.MediaType;
 import dev.nexus.core.domain.Source;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.Optional;
 
 /**
@@ -13,7 +14,11 @@ import java.util.Optional;
  */
 public interface MetadataAdapter {
 
-    MediaType mediaType();
+    /**
+     * The media types this adapter serves. Usually one, but a source can be canonical for
+     * several: AniList covers anime and manga, TMDB covers films and shows.
+     */
+    Set<MediaType> mediaTypes();
 
     Source source();
 
