@@ -95,15 +95,19 @@
   --tracking-tight: -0.03em;
   --tracking-wide: 0.14em;
 
-  /* --- space: 4px base --- */
-  --space-1: 0.25rem;
-  --space-2: 0.5rem;
-  --space-3: 0.75rem;
-  --space-4: 1rem;
-  --space-5: 1.25rem;
-  --space-6: 1.5rem;
-  --space-7: 2rem;
-  --space-8: 3rem;
+  /*
+   * Space runs on an 8-point grid, so every gap, padding and margin in the app is a
+   * multiple of 8 and elements line up across unrelated components. --space-1 is the one
+   * half-step, for the few places 8px is too much: the gap inside a label, or an icon
+   * against its text.
+   */
+  --space-1: 0.25rem; /* 4 — half-step */
+  --space-2: 0.5rem; /* 8 */
+  --space-3: 1rem; /* 16 */
+  --space-4: 1.5rem; /* 24 */
+  --space-5: 2rem; /* 32 */
+  --space-6: 3rem; /* 48 */
+  --space-7: 4rem; /* 64 */
 
   /* --- radius --- */
   --radius-sm: 8px; /* controls, small tiles */

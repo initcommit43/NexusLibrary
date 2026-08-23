@@ -15,7 +15,7 @@
   background: var(--surface);
   border: 2px solid var(--card-border);
   border-radius: var(--radius-lg);
-  padding: var(--space-6);
+  padding: var(--space-4);
   box-shadow: var(--shadow-1);
 }
 
@@ -23,7 +23,7 @@
   min-height: 100vh;
   display: grid;
   place-items: center;
-  padding: var(--space-6);
+  padding: var(--space-4);
   color: var(--text-muted);
 }
 
@@ -33,7 +33,7 @@
   width: min(100%, 21rem);
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-3);
 }
 
 .field {
@@ -98,7 +98,7 @@ input[aria-invalid='true'] {
 /* --- buttons --- */
 
 button {
-  padding: var(--space-2) var(--space-4);
+  padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-sm);
   border: 1px solid transparent;
   background: var(--accent);
@@ -157,8 +157,8 @@ button.small {
   z-index: 10;
   display: flex;
   align-items: center;
-  gap: var(--space-5);
-  padding: 0 var(--space-6);
+  gap: var(--space-4);
+  padding: 0 var(--space-4);
   height: 3.5rem;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
@@ -255,7 +255,7 @@ button.small {
 
 .shell-nav {
   display: flex;
-  gap: var(--space-5);
+  gap: var(--space-4);
   font-size: var(--text-base);
   margin-right: auto;
 }
@@ -287,7 +287,7 @@ button.small {
   width: 100%;
   max-width: 64rem;
   margin-inline: auto;
-  padding: var(--space-7) var(--space-6) var(--space-8);
+  padding: var(--space-5) var(--space-4) var(--space-6);
 }
 
 /* --- search --- */
@@ -296,7 +296,7 @@ button.small {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
-  margin: var(--space-5) 0 var(--space-6);
+  margin: var(--space-4) 0 var(--space-4);
 }
 
 .search-bar input[type='search'] {
@@ -328,7 +328,7 @@ button.small {
 .cover-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
-  gap: var(--space-4);
+  gap: var(--space-3);
 }
 
 .cover-card {
@@ -447,11 +447,13 @@ button.small {
 /* --- dashboard sections --- */
 
 .status-section {
-  margin-bottom: var(--space-7);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
 }
 
 .status-section h2 {
-  margin-bottom: var(--space-3);
   padding-bottom: var(--space-2);
   border-bottom: 1px solid var(--card-border);
   color: var(--text-muted);
@@ -465,11 +467,11 @@ button.small {
 .module-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
-  gap: var(--space-4);
+  gap: var(--space-3);
 }
 
 .module-card {
-  padding: var(--space-4);
+  padding: var(--space-3);
   border-radius: var(--radius-md);
 }
 
@@ -485,7 +487,7 @@ button.small {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--space-4);
+  gap: var(--space-3);
   flex-wrap: wrap;
 }
 
@@ -521,7 +523,7 @@ button.small {
 
 .unmatched ul {
   margin: var(--space-3) 0 0;
-  padding-left: var(--space-5);
+  padding-left: var(--space-4);
   font-size: var(--text-sm);
   line-height: var(--leading-normal);
   max-height: 18rem;
@@ -533,8 +535,8 @@ button.small {
 .detail {
   display: grid;
   grid-template-columns: 12rem 1fr;
-  gap: var(--space-7);
-  margin-bottom: var(--space-7);
+  gap: var(--space-5);
+  margin-bottom: var(--space-5);
 }
 
 .detail-cover img,
@@ -562,7 +564,7 @@ button.small {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
   gap: var(--space-3);
-  margin: var(--space-4) 0 var(--space-2);
+  margin: var(--space-3) 0 var(--space-2);
 }
 
 .detail-actions {
@@ -578,7 +580,7 @@ button.small {
 
 .activity-feed {
   list-style: none;
-  margin: var(--space-5) 0 0;
+  margin: var(--space-4) 0 0;
   padding: 0;
   display: flex;
   flex-direction: column;
@@ -589,7 +591,7 @@ button.small {
 .activity-row {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
+  gap: var(--space-3);
   padding: var(--space-3);
   background: var(--surface);
   border: 2px solid var(--card-border);
@@ -777,21 +779,21 @@ button.small {
 @media (max-width: 40rem) {
   .shell-header {
     gap: var(--space-3);
-    padding: 0 var(--space-4);
+    padding: 0 var(--space-3);
   }
 
   .shell-nav {
-    gap: var(--space-4);
+    gap: var(--space-3);
     overflow-x: auto;
   }
 
   .shell-main {
-    padding: var(--space-5) var(--space-4) var(--space-8);
+    padding: var(--space-4) var(--space-3) var(--space-6);
   }
 
   .detail {
     grid-template-columns: 1fr;
-    gap: var(--space-5);
+    gap: var(--space-4);
   }
 
   .detail-cover {
@@ -805,7 +807,7 @@ button.small {
  */
 .integration-head.banner {
   align-items: center;
-  padding: var(--space-4);
+  padding: var(--space-3);
   border-radius: var(--radius-md);
   background: var(--banner-bg);
 }
