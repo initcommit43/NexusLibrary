@@ -96,4 +96,15 @@ img {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+
+  /*
+   * With one exception. The header sliding away is not decoration: cut to zero it reads as
+   * the header vanishing, and a thing that disappears without moving is harder to follow
+   * than one that leaves. It is a short translate of a thin bar, which is not the kind of
+   * movement the preference exists to prevent — parallax, zoom, anything that fills the
+   * screen — so it keeps its duration.
+   */
+  .shell-header {
+    transition-duration: var(--duration-slow) !important;
+  }
 }

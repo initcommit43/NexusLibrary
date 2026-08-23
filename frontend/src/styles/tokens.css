@@ -123,6 +123,8 @@
   /* --- motion --- */
   --duration-fast: 120ms;
   --duration-base: 200ms;
+  /* Deliberate, unhurried movement: the header leaving and returning. */
+  --duration-slow: 340ms;
   --ease: cubic-bezier(0.2, 0, 0, 1);
 }
 

@@ -155,7 +155,7 @@ button.small {
   position: sticky;
   top: 0;
   z-index: 10;
-  transition: transform var(--duration-base) var(--ease);
+  transition: transform var(--duration-slow) var(--ease);
   display: flex;
   align-items: center;
   gap: var(--space-4);
