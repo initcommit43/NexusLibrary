@@ -1,5 +1,6 @@
 # --- Local-only working files (never commit) ---
 plan.md
+design.md
 MEMORY.md
 memory/
 .claude/
