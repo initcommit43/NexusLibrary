@@ -460,14 +460,15 @@ button.small {
   gap: var(--space-1);
 }
 
+/* Smaller than a heading elsewhere: two lines of it have to fit a cover's width. */
 .cover-heading h3 {
-  font-size: var(--text-md);
+  font-size: var(--text-base);
   font-weight: 600;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   overflow: hidden;
-  min-height: calc(2 * var(--leading-tight) * var(--text-md));
+  min-height: calc(2 * var(--leading-tight) * var(--text-base));
 }
 
 .cover-heading .muted {

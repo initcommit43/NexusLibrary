@@ -26,7 +26,7 @@ export const EntryCard = ({ entry, onEdit }: { entry: TrackedItem; onEdit: () =>
   return (
     <article className="card cover-card">
       <div className="cover-art">
-        <Link className="cover-link" to={to}>
+        <Link className="cover-link" to={to} title={entry.title}>
           {entry.coverUrl ? (
             <img src={entry.coverUrl} alt="" loading="lazy" />
           ) : (
@@ -50,7 +50,10 @@ export const EntryCard = ({ entry, onEdit }: { entry: TrackedItem; onEdit: () =>
 
       <div className="cover-heading">
         <h3>
-          <Link to={to}>{entry.title}</Link>
+          {/* The clamp cuts long titles, so the full one is a hover away. */}
+          <Link to={to} title={entry.title}>
+            {entry.title}
+          </Link>
         </h3>
         {(progress || score) && (
           <p className="cover-stats">
