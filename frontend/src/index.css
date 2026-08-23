@@ -566,39 +566,53 @@ button.small {
 
 /* --- media page --- */
 
-/* Bleeds past the content column: a key visual is the one thing that should. */
+/*
+ * The hero is banner and head in one block: the cover overlaps the banner's lower edge, and
+ * the facts column below lines up under it, so the page reads as two columns throughout.
+ */
+.media-hero {
+  display: flex;
+  flex-direction: column;
+}
+
 .media-banner {
   height: 14rem;
-  margin: calc(var(--space-5) * -1) calc(var(--space-4) * -1) 0;
+  border-radius: var(--radius-lg);
   background-size: cover;
   background-position: center;
-  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
 }
 
 .media-head {
-  display: flex;
+  display: grid;
+  grid-template-columns: 15rem 1fr;
   gap: var(--space-4);
-  align-items: flex-start;
+  align-items: start;
 }
 
 .media-cover {
-  width: 12rem;
+  width: 100%;
   aspect-ratio: 3 / 4;
   object-fit: cover;
   border-radius: var(--radius-md);
   border: 2px solid var(--card-border);
-  box-shadow: var(--shadow-2);
-  /* Rides up over the banner, the way a poster sits on a shelf edge. */
-  margin-top: -6rem;
   background: var(--surface);
 }
 
+/* Only with a banner behind it is there anything to ride up over. */
+.has-banner .media-cover {
+  margin-top: -6rem;
+  box-shadow: var(--shadow-2);
+}
+
+.has-banner .media-head {
+  padding-top: var(--space-4);
+}
+
 .media-intro {
-  flex: 1;
-  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  min-width: 0;
 }
 
 .media-summary {
@@ -613,6 +627,7 @@ button.small {
   gap: var(--space-3);
 }
 
+/* Same columns as the head, so the facts sit directly beneath the cover. */
 .media-layout {
   display: grid;
   grid-template-columns: 15rem 1fr;
@@ -700,12 +715,23 @@ button.small {
   line-height: var(--leading-tight);
 }
 
+/* An entry page holds a reading width rather than stretching across the whole column. */
+.entry-top {
+  width: 100%;
+  max-width: 64rem;
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
 @media (max-width: 52rem) {
+  .media-head,
   .media-layout {
     grid-template-columns: 1fr;
   }
 
-  .media-cover {
+  .has-banner .media-cover {
     width: 8rem;
     margin-top: -4rem;
   }
@@ -889,7 +915,6 @@ button.ghost.danger:hover:not(:disabled) {
   display: grid;
   grid-template-columns: 12rem 1fr;
   gap: var(--space-5);
-  margin-bottom: var(--space-5);
 }
 
 .detail-cover img,

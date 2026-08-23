@@ -7,7 +7,7 @@ import { MediaFacts } from '../components/MediaFacts'
 import { MediaRelations } from '../components/MediaRelations'
 import { statusLabelsFor, moduleForMediaType } from '../modules/registry'
 
-/** AniList writes synopses in HTML; the tags are markup, not something to print. */
+/** AniList writes synopses in HTML, and pads them with blank lines it does not mean. */
 const plainText = (html: unknown): string | null => {
   if (typeof html !== 'string' || !html.trim()) return null
   return html
@@ -16,6 +16,7 @@ const plainText = (html: unknown): string | null => {
     .replace(/&quot;/g, '"')
     .replace(/&#0?39;/g, "'")
     .replace(/&amp;/g, '&')
+    .replace(/\n{3,}/g, '\n\n')
     .trim()
 }
 
@@ -90,34 +91,42 @@ export const MediaPage = () => {
 
   return (
     <AppShell module={module}>
-      {banner && (
-        <div className="media-banner" style={{ backgroundImage: `url(${banner})` }} aria-hidden="true" />
-      )}
-
-      <div className="media-head">
-        {media.coverUrl ? (
-          <img className="media-cover" src={media.coverUrl} alt="" />
-        ) : (
-          <div className="media-cover cover-placeholder" aria-hidden="true" />
+      {/* Banner and head are one block, so the cover can ride the banner's lower edge
+          without fighting the page column's own spacing. */}
+      <div className={banner ? 'media-hero has-banner' : 'media-hero'}>
+        {banner && (
+          <div
+            className="media-banner"
+            style={{ backgroundImage: `url(${banner})` }}
+            aria-hidden="true"
+          />
         )}
 
-        <div className="media-intro">
-          <h1>{media.title}</h1>
-          {summary && <p className="media-summary">{summary}</p>}
+        <div className="media-head">
+          {media.coverUrl ? (
+            <img className="media-cover" src={media.coverUrl} alt="" />
+          ) : (
+            <div className="media-cover cover-placeholder" aria-hidden="true" />
+          )}
 
-          <div className="media-actions">
-            {entry ? (
-              <>
-                <button type="button" onClick={() => setEditing(entry)}>
-                  {statusLabelsFor(media.mediaType)[entry.status]}
+          <div className="media-intro">
+            <h1>{media.title}</h1>
+            {summary && <p className="media-summary">{summary}</p>}
+
+            <div className="media-actions">
+              {entry ? (
+                <>
+                  <button type="button" onClick={() => setEditing(entry)}>
+                    {statusLabelsFor(media.mediaType)[entry.status]}
+                  </button>
+                  <span className="muted">On your list</span>
+                </>
+              ) : (
+                <button type="button" disabled={busy} onClick={() => void track()}>
+                  {busy ? 'Adding…' : 'Add to list'}
                 </button>
-                <span className="muted">On your list</span>
-              </>
-            ) : (
-              <button type="button" disabled={busy} onClick={() => void track()}>
-                {busy ? 'Adding…' : 'Add to list'}
-              </button>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </div>

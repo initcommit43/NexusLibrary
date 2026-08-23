@@ -129,6 +129,7 @@ export const EntryDetailPage = () => {
         </p>
       )}
 
+      <div className="entry-top">
       <div className="detail">
         <div className="detail-cover">
           {entry.coverUrl ? (
@@ -204,6 +205,8 @@ export const EntryDetailPage = () => {
             />
           </label>
         </div>
+      </div>
+
       </div>
 
       <AchievementList entry={entry} />
