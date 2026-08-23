@@ -637,12 +637,57 @@ button.small {
   width: 100%;
 }
 
-/* The chevron sits at the end, so the label stays centred against its own width. */
+.status-menu {
+  position: relative;
+}
+
+/* Label and chevron travel together in the middle, rather than pinned to either edge. */
 .status-action {
+  width: 100%;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: var(--space-2);
+}
+
+.status-options {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + var(--space-1));
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: var(--space-1);
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-2);
+}
+
+.status-options button {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-body);
+  font-weight: 500;
+  text-align: left;
+}
+
+.status-options button:hover:not(:disabled) {
+  background: var(--surface-raised);
+  color: var(--text);
+}
+
+/* The editor holds everything a status cannot say, so it sits apart from the statuses. */
+.status-options .menu-footer {
+  margin-top: var(--space-1);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  color: var(--accent);
 }
 
 /* Same columns as the head, so the facts sit directly beneath the cover. */

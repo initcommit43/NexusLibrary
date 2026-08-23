@@ -91,6 +91,12 @@ export const MediaFacts = ({ media }: { media: MediaDetail }) => {
 
   return (
     <aside className="media-facts">
+      {rankings.map((ranking) => (
+        <span key={ranking} className="ranking">
+          {ranking}
+        </span>
+      ))}
+
       {next && until && (
         <div className="fact airing">
           <span className="fact-label">Airing</span>
@@ -99,12 +105,6 @@ export const MediaFacts = ({ media }: { media: MediaDetail }) => {
           </span>
         </div>
       )}
-
-      {rankings.map((ranking) => (
-        <span key={ranking} className="ranking">
-          {ranking}
-        </span>
-      ))}
 
       {rows
         .filter(([, value]) => value)

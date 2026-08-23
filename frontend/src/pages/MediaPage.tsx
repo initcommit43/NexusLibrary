@@ -4,6 +4,7 @@ import { ApiError, api, type MediaDetail, type TrackedItem } from '../api/client
 import { AppShell } from '../components/AppShell'
 import { EntryEditDialog } from '../components/EntryEditDialog'
 import { MediaFacts } from '../components/MediaFacts'
+import { StatusMenu } from '../components/StatusMenu'
 import { MediaRelations } from '../components/MediaRelations'
 import {
   MediaCharacters,
@@ -13,14 +14,7 @@ import {
   MediaTags,
   MediaTrailer,
 } from '../components/MediaPanels'
-import { statusLabelsFor, moduleForMediaType } from '../modules/registry'
-
-/** Marks the status button as something that opens, rather than something that fires. */
-const ChevronIcon = () => (
-  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" aria-hidden>
-    <path d="m6 9 6 6 6-6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-)
+import { moduleForMediaType } from '../modules/registry'
 
 /** AniList writes synopses in HTML, and pads them with blank lines it does not mean. */
 const plainText = (html: unknown): string | null => {
@@ -127,10 +121,11 @@ export const MediaPage = () => {
 
             <div className="media-actions">
               {entry ? (
-                <button type="button" className="status-action" onClick={() => setEditing(entry)}>
-                  <span>{statusLabelsFor(media.mediaType)[entry.status]}</span>
-                  <ChevronIcon />
-                </button>
+                <StatusMenu
+                  entry={entry}
+                  onChanged={load}
+                  onOpenEditor={() => setEditing(entry)}
+                />
               ) : (
                 <button type="button" disabled={busy} onClick={() => void track()}>
                   {busy ? 'Adding…' : 'Add to list'}
