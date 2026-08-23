@@ -6,12 +6,9 @@
  * pair on tinted near-black neutrals rather than inverting to grey.
  *
  * Colour is distributed 60 / 30 / 10 by area:
- *   60  the field — the page behind everything, a tinted neutral rather than white
- *   30  the structure — ink chrome, card surfaces, inset panels
- *   10  the accents — blue for action and state, cyan for sync and integrations only
- *
- * The middle band is what makes the other two legible. Cards need a field to sit above,
- * and covers — this app's real colour — need a calm frame rather than a white void.
+ *   60  the field — a cool tint, never white; cards need something to sit on
+ *   30  the cards and panels — blue-tinted surfaces outlined in the primary
+ *   10  the accents — primary for action and state, cyan for sync, progress and modules
  *
  * Components consume these names and nothing else, so a change of direction is a change to
  * this file.
@@ -20,24 +17,18 @@
 :root {
   color-scheme: light dark;
 
-  /* 60 — the field. Deliberately tinted: white here leaves cards nothing to sit on. */
-  --bg: #e9eef6;
+  /* 60 — the field */
+  --bg: #e8edf7;
 
-  /*
-   * 30 — the structure. Chrome carries the direction's ink slab, so the shell has mass
-   * instead of dissolving into the page.
-   */
-  --chrome-bg: #0b1220;
-  --chrome-text: #ffffff;
-  --chrome-muted: #9baabf;
-  --chrome-border: #1c2740;
-  --chrome-hover: #16203a;
-  --chrome-active: #8fb6ff;
+  /* 30 — surfaces */
   --surface: #ffffff;
-  --surface-raised: #f0f4fa;
+  /* Panels and card bodies carry a blue tint rather than more white. */
+  --surface-raised: #eef3ff;
   --field-bg: #ffffff;
-  --border: #d9e2ee;
-  /* Not in the direction: derived one step darker for control edges. */
+  --border: #dbe4f2;
+  /* Cards outline in the primary. This is what stops a grid of cards reading as white. */
+  --card-border: #b9d0ff;
+  /* Derived one step darker for control edges. */
   --border-strong: #c2cede;
 
   /* --- text --- */
@@ -47,7 +38,7 @@
   --text-muted: #5a6880;
   --text-inverse: #ffffff;
 
-  /* 10 — primary: navigation and state */
+  /* 10 — primary: navigation, state, card outlines */
   --accent: #1f6fff;
   --accent-hover: #0a4fd1;
   --accent-contrast: #ffffff;
@@ -60,13 +51,13 @@
   --accent-alt-soft: #cff4ff;
 
   /*
-   * Accent used for progress and module badges. Defaults to the primary; a module may
-   * repoint it in themes.css without touching a component.
+   * Accent used for progress, cover tiles and module badges. Defaults to the primary; a
+   * module may repoint it in themes.css without touching a component.
    */
   --module-accent: var(--accent);
   --module-accent-soft: var(--accent-soft);
 
-  /* The call-to-action slab. Same ink family as the chrome, used as a component. */
+  /* The call-to-action slab, straight from the direction's canvas. */
   --banner-bg: #0b1220;
   --banner-text: #ffffff;
   --banner-muted: #9baabf;
@@ -115,7 +106,7 @@
   --radius-panel: 16px; /* inset panels */
   --radius-full: 999px;
 
-  /* --- elevation: the field is tinted, so a card's lift is now visible --- */
+  /* --- elevation: the field is tinted, so a card's lift is visible --- */
   --shadow-1: 0 1px 2px rgba(11, 18, 32, 0.06);
   --shadow-2: 0 1px 2px rgba(11, 18, 32, 0.06), 0 12px 32px rgba(11, 18, 32, 0.1);
 
@@ -126,8 +117,8 @@
 }
 
 /*
- * Dark keeps the same 60 / 30 / 10 split. Body text lightens to a blue-grey rather than
- * pure white, and the primary steps up so it holds contrast on the raised card surface.
+ * Dark keeps the same split: a near-black field, cards lifted clear of it and outlined in
+ * blue, the same two accents.
  *
  * Declared twice on purpose: once for the system preference, guarded so an explicit light
  * choice still wins, and once for [data-theme="dark"] so the in-app switch wins in both
@@ -136,16 +127,11 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
     --bg: #0a0f1a;
-    --chrome-bg: #0d1424;
-    --chrome-text: #eef3fa;
-    --chrome-muted: #7c8ca6;
-    --chrome-border: #223049;
-    --chrome-hover: #172136;
-    --chrome-active: #8fb6ff;
-    --surface: #141c2e;
-    --surface-raised: #1c2740;
+    --surface: #131b2c;
+    --surface-raised: #1b2740;
     --field-bg: #0a0f1a;
-    --border: #2a3752;
+    --border: #283654;
+    --card-border: #2b4272;
     --border-strong: #3b4a69;
 
     --text: #eef3fa;
@@ -181,16 +167,11 @@
 
 :root[data-theme='dark'] {
   --bg: #0a0f1a;
-  --chrome-bg: #0d1424;
-  --chrome-text: #eef3fa;
-  --chrome-muted: #7c8ca6;
-  --chrome-border: #223049;
-  --chrome-hover: #172136;
-  --chrome-active: #8fb6ff;
-  --surface: #141c2e;
-  --surface-raised: #1c2740;
+  --surface: #131b2c;
+  --surface-raised: #1b2740;
   --field-bg: #0a0f1a;
-  --border: #2a3752;
+  --border: #283654;
+  --card-border: #2b4272;
   --border-strong: #3b4a69;
 
   --text: #eef3fa;
