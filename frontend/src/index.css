@@ -436,6 +436,11 @@ button.small {
 .cover-heading h3 {
   font-size: var(--text-md);
   font-weight: 600;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  min-height: calc(2 * var(--leading-tight) * var(--text-md));
 }
 
 .cover-heading .muted {
@@ -449,7 +454,13 @@ button.small {
   flex-direction: column;
 }
 
-.cover-card .cover-body {
+/*
+ * The link takes every spare pixel and the controls take none, so a card's controls sit at
+ * its bottom edge whatever the title does. Both growing would split the slack between them,
+ * which is what put neighbouring cards' controls at different heights.
+ */
+.cover-link + .cover-body {
+  flex: 0 0 auto;
   margin-top: auto;
   padding: 0 var(--space-3) var(--space-3);
   gap: var(--space-2);
