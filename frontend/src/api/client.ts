@@ -36,7 +36,10 @@ export type TrackedItem = {
   status: TrackingStatus
   rating: number | null
   progressCurrent: number | null
+  progressMax: number | null
   progressUnit: string | null
+  startedAt: string | null
+  finishedAt: string | null
   progressExtra: Record<string, unknown> | null
   favorite: boolean
   notes: string | null
@@ -121,7 +124,10 @@ export type UpdateEntryPayload = Partial<{
   status: TrackingStatus
   rating: number
   progressCurrent: number
+  progressMax: number
   progressUnit: string
+  startedAt: string
+  finishedAt: string
   favorite: boolean
   notes: string
 }>

@@ -1,10 +1,15 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { ApiError, api, type TrackedItem, type TrackingStatus } from '../api/client'
 import { AppShell } from '../components/AppShell'
-import { StatusPicker } from '../components/StatusPicker'
-import { toDisplayScore } from '../components/rating'
+import { EntryCard } from '../components/EntryCard'
+import { EntryEditDialog } from '../components/EntryEditDialog'
+import { ListSidebar } from '../components/ListSidebar'
+import { EMPTY_FILTERS, type ListFilters } from '../components/listFilters'
 import { defaultTypeOf, moduleBySlug, typeBySlug } from '../modules/registry'
+
+const asList = (value: unknown): string[] =>
+  Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []
 
 export const LibraryPage = () => {
   const { module: slug, type: typeSlug } = useParams()
@@ -12,7 +17,8 @@ export const LibraryPage = () => {
 
   const [entries, setEntries] = useState<TrackedItem[] | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [busyId, setBusyId] = useState<number | null>(null)
+  const [filters, setFilters] = useState<ListFilters>(EMPTY_FILTERS)
+  const [editing, setEditing] = useState<TrackedItem | null>(null)
 
   useEffect(() => {
     api
@@ -23,41 +29,44 @@ export const LibraryPage = () => {
       )
   }, [])
 
-  if (!module) {
+  const active = module ? (typeBySlug(module, typeSlug) ?? defaultTypeOf(module)) : undefined
+
+  // Each kind of thing has its own shelf in the header, so this page shows exactly one.
+  const mine = useMemo(
+    () => entries?.filter((entry) => entry.mediaType === active?.mediaType) ?? [],
+    [entries, active],
+  )
+
+  const shown = useMemo(() => {
+    const query = filters.query.trim().toLowerCase()
+    const matching = mine.filter((entry) => {
+      if (query && !entry.title.toLowerCase().includes(query)) return false
+      if (filters.format && entry.metadata.format !== filters.format) return false
+      if (filters.genre && !asList(entry.metadata.genres).includes(filters.genre)) return false
+      return true
+    })
+
+    return [...matching].sort((a, b) => {
+      switch (filters.sort) {
+        case 'SCORE':
+          return (b.rating ?? -1) - (a.rating ?? -1)
+        case 'PROGRESS':
+          return (b.progressCurrent ?? -1) - (a.progressCurrent ?? -1)
+        case 'UPDATED':
+          // The list arrives most-recently-updated first, so this is the order it came in.
+          return 0
+        default:
+          return a.title.localeCompare(b.title)
+      }
+    })
+  }, [mine, filters])
+
+  if (!module || !active) {
     return <Navigate to="/" replace />
   }
 
-  // Each kind of thing has its own shelf in the header, so this page shows exactly one.
-  const active = typeBySlug(module, typeSlug) ?? defaultTypeOf(module)
-
-  const changeStatus = async (entry: TrackedItem, status: TrackingStatus) => {
-    setBusyId(entry.id)
-    setError(null)
-    try {
-      const updated = await api.updateEntry(entry.id, { status })
-      setEntries((current) => current?.map((e) => (e.id === updated.id ? updated : e)) ?? null)
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not save that change.')
-    } finally {
-      setBusyId(null)
-    }
-  }
-
-  const remove = async (entry: TrackedItem) => {
-    setBusyId(entry.id)
-    setError(null)
-    try {
-      await api.deleteEntry(entry.id)
-      setEntries((current) => current?.filter((e) => e.id !== entry.id) ?? null)
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not remove that.')
-    } finally {
-      setBusyId(null)
-    }
-  }
-
-  const mine = entries?.filter((entry) => entry.mediaType === active.mediaType) ?? []
-  const byStatus = (status: TrackingStatus) => mine.filter((entry) => entry.status === status)
+  const sections =
+    filters.status === 'ALL' ? active.statusOrder : [filters.status as TrackingStatus]
 
   return (
     <AppShell module={module}>
@@ -71,70 +80,58 @@ export const LibraryPage = () => {
 
       {entries === null && !error && <p className="muted">Loading your library…</p>}
 
-      {entries !== null && mine.length === 0 && (
-        <p className="muted">
-          {module.emptyHint}{' '}
-          <Link to={`/search?module=${module.slug}&type=${active.slug}`}>
-            {active.searchPlaceholder}
-          </Link>
-        </p>
-      )}
+      <div className="list-layout">
+        <ListSidebar type={active} entries={mine} filters={filters} onChange={setFilters} />
 
-      {active.statusOrder.map((status) => {
-        const group = byStatus(status)
-        if (group.length === 0) return null
-
-        return (
-          <section key={status} className="status-section">
-            <h2>
-              {active.statusLabels[status]}{' '}
-              <span className="muted">({group.length})</span>
-            </h2>
-
-            <div className="cover-grid">
-              {group.map((entry) => (
-                <article key={entry.id} className="card cover-card">
-                  {/* The cover and title are one link: a title-only target is too small
-                      to be the obvious way in, and the cover is what people click. The
-                      status picker and remove button stay outside it, since nesting
-                      controls inside an anchor breaks both clicking and keyboard use. */}
-                  <Link className="cover-link" to={`/entries/${entry.id}`}>
-                    {entry.coverUrl ? (
-                      <img src={entry.coverUrl} alt="" loading="lazy" />
-                    ) : (
-                      <div className="cover-placeholder" aria-hidden="true" />
-                    )}
-                    <div className="cover-heading">
-                      <h3>{entry.title}</h3>
-                      <p className="muted">
-                        {entry.releaseDate?.slice(0, 4) ?? 'Unreleased'}
-                        {entry.rating !== null && ` · ${toDisplayScore(entry.rating)}`}
-                      </p>
-                    </div>
+        <div className="list-main">
+          {entries !== null && shown.length === 0 && (
+            <p className="muted">
+              {mine.length === 0 ? (
+                <>
+                  {module.emptyHint}{' '}
+                  <Link to={`/search?module=${module.slug}&type=${active.slug}`}>
+                    {active.searchPlaceholder}
                   </Link>
-                  <div className="cover-body">
-                    <StatusPicker
-                      value={entry.status}
-                      mediaType={entry.mediaType}
-                      disabled={busyId === entry.id}
-                      aria-label={`Status for ${entry.title}`}
-                      onChange={(next) => void changeStatus(entry, next)}
-                    />
-                    <button
-                      type="button"
-                      className="ghost small"
-                      disabled={busyId === entry.id}
-                      onClick={() => void remove(entry)}
-                    >
-                      Remove
-                    </button>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
-        )
-      })}
+                </>
+              ) : (
+                'Nothing matches those filters.'
+              )}
+            </p>
+          )}
+
+          {sections.map((status) => {
+            const group = shown.filter((entry) => entry.status === status)
+            if (group.length === 0) return null
+
+            return (
+              <section key={status} className="status-section">
+                <h2>
+                  {active.statusLabels[status]} <span className="muted">({group.length})</span>
+                </h2>
+
+                <div className="cover-grid">
+                  {group.map((entry) => (
+                    <EntryCard key={entry.id} entry={entry} onEdit={() => setEditing(entry)} />
+                  ))}
+                </div>
+              </section>
+            )
+          })}
+        </div>
+      </div>
+
+      {editing && (
+        <EntryEditDialog
+          entry={editing}
+          onClose={() => setEditing(null)}
+          onSaved={(updated) =>
+            setEntries((current) => current?.map((e) => (e.id === updated.id ? updated : e)) ?? null)
+          }
+          onDeleted={(id) =>
+            setEntries((current) => current?.filter((e) => e.id !== id) ?? null)
+          }
+        />
+      )}
     </AppShell>
   )
 }

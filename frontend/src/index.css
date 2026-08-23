@@ -352,6 +352,52 @@ button.small {
   transform: translateY(-2px);
 }
 
+.cover-art {
+  position: relative;
+}
+
+/* Only shows itself on hover or keyboard focus: forty cards should read as forty covers. */
+.card-menu {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border-radius: var(--radius-sm);
+  background: var(--banner-bg);
+  color: var(--banner-text);
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease);
+}
+
+.cover-card:hover .card-menu,
+.card-menu:focus-visible {
+  opacity: 1;
+}
+
+.cover-stats {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-sm);
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+
+.cover-heading h3 a {
+  color: inherit;
+}
+
+.cover-heading h3 a:hover {
+  color: var(--accent);
+  text-decoration: none;
+}
+
 .cover-card img,
 .cover-placeholder {
   width: 100%;
@@ -445,6 +491,156 @@ button.small {
   margin-top: auto;
   padding: 0 var(--space-3) var(--space-3);
   gap: var(--space-2);
+}
+
+/* --- list layout --- */
+
+.list-layout {
+  display: grid;
+  grid-template-columns: 13rem 1fr;
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.list-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  position: sticky;
+  top: 4.5rem;
+}
+
+.list-sidebar section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.list-sidebar h2 {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--text-muted);
+}
+
+.list-links {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.list-link {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-body);
+  font-weight: 500;
+}
+
+.list-link:hover:not(:disabled) {
+  background: var(--surface-raised);
+  color: var(--text);
+}
+
+.list-link.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.list-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+/* --- edit dialog --- */
+
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+  background: rgb(11 18 32 / 55%);
+}
+
+.dialog {
+  width: min(100%, 44rem);
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
+}
+
+.dialog-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.dialog-head h2 {
+  flex: 1;
+  min-width: 0;
+}
+
+.dialog-cover {
+  width: 3rem;
+  height: 4rem;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+}
+
+.dialog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--space-3);
+}
+
+.dialog-foot {
+  display: flex;
+  justify-content: flex-end;
+}
+
+button.ghost.danger {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+button.ghost.danger:hover:not(:disabled) {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.favorite.on {
+  color: var(--danger);
+}
+
+@media (max-width: 52rem) {
+  .list-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .list-sidebar {
+    position: static;
+  }
 }
 
 /* --- dashboard sections --- */
