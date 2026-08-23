@@ -66,9 +66,14 @@ export const SettingsPage = () => {
     setBusy({ provider, action: 'import' })
     setError(null)
     setReport(null)
+    setJob(null)
     try {
-      setReport(await api.importLibrary(provider))
+      const result = await api.importLibrary(provider)
+      setReport(result)
       load()
+      if (result.followUpJobId) {
+        await watchFollowUp(result.followUpJobId)
+      }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'The import could not be completed.')
     } finally {
@@ -77,29 +82,25 @@ export const SettingsPage = () => {
   }
 
   /**
-   * Achievements are one Steam request per game, so the server returns a job immediately
-   * and this polls it rather than holding a request open for a minute.
+   * Follow-up work runs in the background — Steam's achievements are one request per game,
+   * far too slow to hold a request open for — so the import hands back a job to watch.
    */
-  const syncAchievements = async () => {
-    setBusy({ provider: 'STEAM', action: 'achievements' })
-    setError(null)
+  const watchFollowUp = async (jobId: string) => {
     try {
-      let current = await api.syncAchievements()
+      let current = await api.syncJob(jobId)
       setJob(current)
 
       while (current.state === 'RUNNING') {
         await new Promise((resolve) => setTimeout(resolve, 1000))
-        current = await api.syncJob(current.id)
+        current = await api.syncJob(jobId)
         setJob(current)
       }
 
       if (current.state === 'FAILED') {
-        setError(current.message ?? 'The achievement sync failed.')
+        setError(current.message ?? 'The follow-up sync failed.')
       }
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not sync achievements.')
-    } finally {
-      setBusy(null)
+    } catch {
+      // The library is already imported; losing sight of the follow-up is not worth an alarm.
     }
   }
 
@@ -206,14 +207,6 @@ export const SettingsPage = () => {
               type="button"
               className="ghost"
               disabled={busy !== null}
-              onClick={() => void syncAchievements()}
-            >
-              {working('STEAM', 'achievements') ? 'Syncing…' : 'Sync achievements'}
-            </button>
-            <button
-              type="button"
-              className="ghost"
-              disabled={busy !== null}
               onClick={() => void disconnect('STEAM')}
             >
               Disconnect
@@ -239,9 +232,9 @@ export const SettingsPage = () => {
         <>
           <p className="muted">
             {job.state === 'RUNNING'
-              ? `Checking ${job.processed} of ${job.total} games…`
+              ? `Syncing achievements — ${job.processed} of ${job.total} games…`
               : job.state === 'COMPLETE'
-                ? `Achievements done — ${job.changed} of ${job.total} games updated.`
+                ? `Achievements synced — ${job.changed} of ${job.total} games updated.`
                 : 'Achievement sync failed.'}
           </p>
           {job.total > 0 && (

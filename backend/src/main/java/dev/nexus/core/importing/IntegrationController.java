@@ -8,7 +8,6 @@ import dev.nexus.core.web.RateLimiter;
 import dev.nexus.core.jobs.JobRegistry;
 import dev.nexus.core.jobs.SyncJob;
 import dev.nexus.modules.anime.AniListOAuthService;
-import dev.nexus.modules.games.AchievementSyncService;
 import dev.nexus.modules.games.SteamOpenIdService;
 import jakarta.validation.constraints.NotEmpty;
 import java.time.Instant;
@@ -42,6 +41,19 @@ public class IntegrationController {
 
     public record AuthorizeUrlResponse(String url) {}
 
+    /**
+     * What an import did, plus the job any follow-up work is running under — Steam's
+     * achievements, which start on their own once the library has landed.
+     */
+    public record ImportResponse(
+            int created, int updated, java.util.List<ImportReport.UnmatchedItem> unmatched, String followUpJobId) {
+
+        static ImportResponse of(ImportReport report, String followUpJobId) {
+            return new ImportResponse(
+                    report.created(), report.updated(), report.unmatched(), followUpJobId);
+        }
+    }
+
     public record SyncJobResponse(
             String id, String state, int total, int processed, int changed, String message) {
 
@@ -66,7 +78,7 @@ public class IntegrationController {
     private final LibraryImportService importService;
     private final SteamOpenIdService steamOpenId;
     private final AniListOAuthService anilistOAuth;
-    private final AchievementSyncService achievements;
+    private final List<PostImportSync> postImportSyncs;
     private final JobRegistry jobs;
     private final RateLimiter rateLimiter;
     private final String frontendUrl;
@@ -77,7 +89,7 @@ public class IntegrationController {
             LibraryImportService importService,
             SteamOpenIdService steamOpenId,
             AniListOAuthService anilistOAuth,
-            AchievementSyncService achievements,
+            List<PostImportSync> postImportSyncs,
             JobRegistry jobs,
             RateLimiter rateLimiter,
             NexusProperties properties) {
@@ -85,7 +97,7 @@ public class IntegrationController {
         this.importService = importService;
         this.steamOpenId = steamOpenId;
         this.anilistOAuth = anilistOAuth;
-        this.achievements = achievements;
+        this.postImportSyncs = List.copyOf(postImportSyncs);
         this.jobs = jobs;
         this.rateLimiter = rateLimiter;
         this.frontendUrl = properties.security().frontendUrl();
@@ -158,23 +170,27 @@ public class IntegrationController {
         return frontendUrl + "/settings/anilist/callback";
     }
 
+    /**
+     * Pulls the library, then hands back whatever follow-up work the module started. That
+     * work runs in the background: Steam has no bulk achievements endpoint, so it is one
+     * request per game and far too slow to hold a connection open for.
+     */
     @PostMapping("/{provider}/import")
-    public ImportReport importLibrary(@AuthenticationPrincipal CurrentUser user, @PathVariable Provider provider) {
+    public ImportResponse importLibrary(@AuthenticationPrincipal CurrentUser user, @PathVariable Provider provider) {
         // Throttled hard: each run costs external API budget and touches the whole library.
         rateLimiter.check("import:" + user.id(), importsPerMinute);
 
-        return importService.importLibrary(accounts.requireConnected(user.id(), provider));
-    }
+        ExternalAccount account = accounts.requireConnected(user.id(), provider);
+        ImportReport report = importService.importLibrary(account);
 
-    /**
-     * Kicks off an achievement sync and returns immediately. Steam has no bulk endpoint
-     * here, so this is one request per game and far too slow to hold a connection open for.
-     */
-    @PostMapping("/steam/achievements")
-    public SyncJobResponse syncAchievements(@AuthenticationPrincipal CurrentUser user) {
-        rateLimiter.check("achievements:" + user.id(), importsPerMinute);
+        String followUpJobId = postImportSyncs.stream()
+                .filter(sync -> sync.provider() == provider)
+                .findFirst()
+                .flatMap(sync -> sync.startAfter(account))
+                .map(SyncJob::getId)
+                .orElse(null);
 
-        return SyncJobResponse.from(achievements.start(accounts.requireConnected(user.id(), Provider.STEAM)));
+        return ImportResponse.of(report, followUpJobId);
     }
 
     @GetMapping("/jobs/{jobId}")

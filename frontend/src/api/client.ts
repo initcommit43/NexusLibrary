@@ -58,6 +58,8 @@ export type UnmatchedItem = {
 }
 
 export type ImportReport = {
+  /** Set when the module started background work after the import — Steam's achievements. */
+  followUpJobId?: string | null
   created: number
   updated: number
   unmatched: UnmatchedItem[]
@@ -260,9 +262,6 @@ export const api = {
 
   disconnect: (provider: Provider) =>
     request<void>(`/integrations/${provider}`, { method: 'DELETE' }),
-
-  syncAchievements: () =>
-    request<SyncJob>('/integrations/steam/achievements', { method: 'POST' }),
 
   syncJob: (jobId: string) => request<SyncJob>(`/integrations/jobs/${jobId}`),
 
