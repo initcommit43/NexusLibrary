@@ -3,6 +3,7 @@ import { useAuth } from '../auth/useAuth'
 import { ModuleSwitcher } from './ModuleSwitcher'
 import { ThemeToggle } from './ThemeToggle'
 import { useCurrentModule } from '../modules/useCurrentModule'
+import { useHideOnScroll } from './useHideOnScroll'
 import type { ModuleDefinition } from '../modules/registry'
 
 const CogIcon = () => (
@@ -31,10 +32,11 @@ export const AppShell = ({
 }) => {
   const { user, logout } = useAuth()
   const current = useCurrentModule(module)
+  const hidden = useHideOnScroll()
 
   return (
     <div className="shell">
-      <header className="shell-header">
+      <header className={hidden ? 'shell-header hidden' : 'shell-header'}>
         <div className="brand">
           <img src="/pwa-192x192.png" alt="" width={28} height={28} />
           <span>Nexus</span>

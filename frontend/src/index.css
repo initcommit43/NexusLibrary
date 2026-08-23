@@ -155,6 +155,7 @@ button.small {
   position: sticky;
   top: 0;
   z-index: 10;
+  transition: transform var(--duration-base) var(--ease);
   display: flex;
   align-items: center;
   gap: var(--space-4);
@@ -162,6 +163,11 @@ button.small {
   height: 3.5rem;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
+}
+
+/* Slides out of the way while reading down, and returns the moment you scroll up. */
+.shell-header.hidden {
+  transform: translateY(-100%);
 }
 
 .brand {
