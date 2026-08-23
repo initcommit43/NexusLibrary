@@ -1456,12 +1456,14 @@ button.ghost.danger:hover:not(:disabled) {
 }
 
 /* Square ghost button for icon-only controls, sized to stay a comfortable tap target. */
+/* Radius lives here rather than on the element: one of these is a link, not a button. */
 .icon-button {
   display: inline-grid;
   place-items: center;
   width: 2rem;
   height: 2rem;
   padding: 0;
+  border-radius: var(--radius-sm);
   color: var(--text-muted);
 }
 
