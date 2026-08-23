@@ -1,0 +1,99 @@
+/*
+ * Element defaults. Inter sets headings, titles and numerals; Krub carries body copy,
+ * metadata and UI labels.
+ */
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text-body);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  font-family: var(--font-display);
+  color: var(--text);
+  line-height: var(--leading-tight);
+}
+
+h1 {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+}
+
+h2 {
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+h3 {
+  font-size: var(--text-md);
+  font-weight: 600;
+}
+
+p {
+  margin: 0;
+  text-wrap: pretty;
+}
+
+/* Figures line up in columns and stop jittering as they count up. */
+time,
+output,
+.figure {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+img {
+  max-width: 100%;
+}
+
+/* Motion is decoration here; none of it carries meaning that would be lost. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

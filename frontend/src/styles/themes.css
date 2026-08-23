@@ -1,0 +1,16 @@
+/*
+ * Per-module accents.
+ *
+ * The shell puts data-module on the element wrapping a module's pages, and a module may
+ * repoint --module-accent inside that scope. Only progress bars and module badges read it,
+ * so a module tints its own surfaces without recolouring buttons, links or focus rings —
+ * navigation and state stay one blue everywhere, as the direction asks.
+ *
+ * Games takes the cyan the direction already uses for a game's progress. The other modules
+ * inherit the primary until their palettes are decided; delete this file and nothing breaks.
+ */
+
+[data-module='games'] {
+  --module-accent: var(--accent-alt);
+  --module-accent-soft: var(--accent-alt-soft);
+}

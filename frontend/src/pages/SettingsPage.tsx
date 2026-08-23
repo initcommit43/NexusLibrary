@@ -110,7 +110,7 @@ export const SettingsPage = () => {
         <h2>Connections</h2>
 
         <article className="card integration-card">
-          <div className="integration-head">
+          <div className={steam ? 'integration-head' : 'integration-head banner'}>
             <div>
               <h3>Steam</h3>
               <p className="muted">

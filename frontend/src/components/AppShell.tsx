@@ -29,7 +29,10 @@ export const AppShell = ({ children }: { children: React.ReactNode }) => {
         </div>
       </header>
 
-      <main className="shell-main">{children}</main>
+      {/* The module comes from the route once the registry lands; games is all there is today. */}
+      <main className="shell-main" data-module="games">
+        {children}
+      </main>
     </div>
   )
 }
