@@ -70,8 +70,8 @@ export const SearchPage = () => {
         <input
           type="search"
           value={query}
-          placeholder="Search IGDB…"
-          aria-label="Search games"
+          placeholder={module.searchPlaceholder}
+          aria-label={`Search ${module.label}`}
           onChange={(e) => setQuery(e.target.value)}
         />
         <select

@@ -839,6 +839,21 @@ button.small {
   color: var(--text-muted);
 }
 
+/* The cog is a link, so it needs the surface and border a button gets for free. */
+a.icon-button {
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  color: var(--text-muted);
+}
+
+a.icon-button:hover,
+a.icon-button.active {
+  background: var(--surface-raised);
+  border-color: var(--accent);
+  color: var(--accent);
+  text-decoration: none;
+}
+
 .icon-button:hover:not(:disabled) {
   color: var(--text);
 }

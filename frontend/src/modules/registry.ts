@@ -1,6 +1,13 @@
-import type { MediaType, TrackingStatus } from '../api/client'
+import type { MediaType, Provider, TrackingStatus } from '../api/client'
 
 export type ModuleSlug = 'games' | 'anime' | 'film' | 'books'
+
+/** An external service this module can pull a library from. */
+export interface ModuleProvider {
+  provider: Provider
+  label: string
+  blurb: string
+}
 
 /**
  * What a module contributes to the shared UI, mirroring the backend's adapter registry:
@@ -16,6 +23,10 @@ export interface ModuleDefinition {
   /** The domain is shared; the words are not. */
   statusLabels: Record<TrackingStatus, string>
   emptyHint: string
+  /** What the search box invites you to type, in the module's own words. */
+  searchPlaceholder: string
+  /** Where this module's connect and import controls live in settings. */
+  providers: ModuleProvider[]
 }
 
 export const MODULES: ModuleDefinition[] = [
@@ -32,6 +43,8 @@ export const MODULES: ModuleDefinition[] = [
       DROPPED: 'Dropped',
     },
     emptyHint: 'Nothing tracked yet. Connect Steam in settings, or find a game to get started.',
+    searchPlaceholder: 'Search games…',
+    providers: [{ provider: 'STEAM', label: 'Steam', blurb: 'Import your games and playtime.' }],
   },
   {
     slug: 'anime',
@@ -46,6 +59,15 @@ export const MODULES: ModuleDefinition[] = [
       DROPPED: 'Dropped',
     },
     emptyHint: 'Nothing tracked yet. Connect AniList or MyAnimeList in settings to fill this in.',
+    searchPlaceholder: 'Search titles…',
+    providers: [
+      { provider: 'ANILIST', label: 'AniList', blurb: 'Import your anime and manga lists.' },
+      {
+        provider: 'MAL',
+        label: 'MyAnimeList',
+        blurb: 'Import your lists; entries resolve onto their AniList titles.',
+      },
+    ],
   },
   {
     slug: 'film',
@@ -60,6 +82,8 @@ export const MODULES: ModuleDefinition[] = [
       DROPPED: 'Dropped',
     },
     emptyHint: 'Nothing tracked yet. Connect Trakt in settings to fill this in.',
+    searchPlaceholder: 'Search films and shows…',
+    providers: [{ provider: 'TRAKT', label: 'Trakt', blurb: 'Import your watched films and shows.' }],
   },
   {
     slug: 'books',
@@ -74,6 +98,8 @@ export const MODULES: ModuleDefinition[] = [
       DROPPED: 'Abandoned',
     },
     emptyHint: 'Nothing tracked yet. Upload a Goodreads export in settings to fill this in.',
+    searchPlaceholder: 'Search books…',
+    providers: [],
   },
 ]
 

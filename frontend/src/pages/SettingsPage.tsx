@@ -7,8 +7,15 @@ import {
   type SyncJob,
 } from '../api/client'
 import { AppShell } from '../components/AppShell'
+import { MODULES, type ModuleDefinition, type ModuleProvider } from '../modules/registry'
+import { useModules } from '../modules/useModules'
 
+/**
+ * Settings spans every module rather than belonging to one: connections sit under the
+ * module they feed, so a new module brings its own box instead of a new page.
+ */
 export const SettingsPage = () => {
+  const { isAvailable } = useModules()
   const [accounts, setAccounts] = useState<ConnectedAccount[] | null>(null)
   const [report, setReport] = useState<ImportReport | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -96,81 +103,60 @@ export const SettingsPage = () => {
     }
   }
 
-  return (
-    <AppShell>
-      <h1>Settings</h1>
+  const steamCard = (provider: ModuleProvider) => (
+    <article key={provider.provider} className="card integration-card">
+      <div className={steam ? 'integration-head' : 'integration-head banner'}>
+        <div>
+          <h3>{provider.label}</h3>
+          <p className="muted">{steam ? `Connected as ${steam.externalUserId}` : provider.blurb}</p>
+        </div>
 
-      {error && (
-        <p className="alert" role="alert">
-          {error}
-        </p>
+        {steam ? (
+          <div className="integration-actions">
+            <button type="button" disabled={busy !== null} onClick={() => void runImport()}>
+              {busy === 'import' ? 'Importing…' : 'Import library'}
+            </button>
+            <button
+              type="button"
+              className="ghost"
+              disabled={busy !== null}
+              onClick={() => void syncAchievements()}
+            >
+              {busy === 'achievements' ? 'Syncing…' : 'Sync achievements'}
+            </button>
+            <button
+              type="button"
+              className="ghost"
+              disabled={busy !== null}
+              onClick={() => void disconnectSteam()}
+            >
+              Disconnect
+            </button>
+          </div>
+        ) : (
+          <button type="button" disabled={busy !== null} onClick={() => void connectSteam()}>
+            {busy === 'connect' ? 'Redirecting…' : 'Connect Steam'}
+          </button>
+        )}
+      </div>
+
+      <p className="muted note">
+        Your Steam profile must have <strong>Game details</strong> set to Public, otherwise Steam
+        returns an empty library. Signing in cannot override that setting.
+      </p>
+
+      {steam?.lastSyncedAt && (
+        <p className="muted">Last imported {new Date(steam.lastSyncedAt).toLocaleString()}.</p>
       )}
 
-      <section className="status-section">
-        <h2>Connections</h2>
-
-        <article className="card integration-card">
-          <div className={steam ? 'integration-head' : 'integration-head banner'}>
-            <div>
-              <h3>Steam</h3>
-              <p className="muted">
-                {steam
-                  ? `Connected as ${steam.externalUserId}`
-                  : 'Import your games and playtime.'}
-              </p>
-            </div>
-
-            {steam ? (
-              <div className="integration-actions">
-                <button type="button" disabled={busy !== null} onClick={() => void runImport()}>
-                  {busy === 'import' ? 'Importing…' : 'Import library'}
-                </button>
-                <button
-                  type="button"
-                  className="ghost"
-                  disabled={busy !== null}
-                  onClick={() => void syncAchievements()}
-                >
-                  {busy === 'achievements' ? 'Syncing…' : 'Sync achievements'}
-                </button>
-                <button
-                  type="button"
-                  className="ghost"
-                  disabled={busy !== null}
-                  onClick={() => void disconnectSteam()}
-                >
-                  Disconnect
-                </button>
-              </div>
-            ) : (
-              <button type="button" disabled={busy !== null} onClick={() => void connectSteam()}>
-                {busy === 'connect' ? 'Redirecting…' : 'Connect Steam'}
-              </button>
-            )}
-          </div>
-
-          <p className="muted note">
-            Your Steam profile must have <strong>Game details</strong> set to Public, otherwise
-            Steam returns an empty library. Signing in cannot override that setting.
-          </p>
-
-          {steam?.lastSyncedAt && (
-            <p className="muted">
-              Last imported {new Date(steam.lastSyncedAt).toLocaleString()}.
-            </p>
-          )}
-        </article>
-      </section>
-
       {job && (
-        <section className="status-section">
-          <h2>Achievement sync</h2>
+        <>
           <p className="muted">
             {job.state === 'RUNNING'
               ? `Checking ${job.processed} of ${job.total} games…`
               : job.state === 'COMPLETE'
-                ? `Done — ${job.changed} of ${job.total} games updated.`
-                : 'Sync failed.'}
+                ? `Achievements done — ${job.changed} of ${job.total} games updated.`
+                : 'Achievement sync failed.'}
           </p>
           {job.total > 0 && (
             <div className="achievement-bar">
@@ -180,19 +166,18 @@ export const SettingsPage = () => {
               />
             </div>
           )}
-        </section>
+        </>
       )}
 
       {report && (
-        <section className="status-section">
-          <h2>Import result</h2>
+        <>
           <p className="muted">
             {report.created} added, {report.updated} updated
             {report.unmatched.length > 0 && `, ${report.unmatched.length} not matched`}.
           </p>
 
           {report.unmatched.length > 0 && (
-            <details className="card unmatched">
+            <details className="unmatched">
               <summary>Titles we could not match ({report.unmatched.length})</summary>
               <ul>
                 {report.unmatched.map((item) => (
@@ -203,8 +188,55 @@ export const SettingsPage = () => {
               </ul>
             </details>
           )}
-        </section>
+        </>
       )}
+    </article>
+  )
+
+  /** Providers whose flow is not built yet, listed so the shape of the app stays visible. */
+  const pendingCard = (provider: ModuleProvider) => (
+    <article key={provider.provider} className="card integration-card">
+      <div className="integration-head">
+        <div>
+          <h3>{provider.label}</h3>
+          <p className="muted">{provider.blurb}</p>
+        </div>
+        <button type="button" disabled>
+          Not built yet
+        </button>
+      </div>
+    </article>
+  )
+
+  const moduleSection = (module: ModuleDefinition) => (
+    <section key={module.slug} className="status-section">
+      <h2>
+        {module.label} {!isAvailable(module.slug) && <span className="muted">— not built yet</span>}
+      </h2>
+
+      {module.providers.length === 0 ? (
+        <p className="muted">
+          Nothing to connect: this module imports from a file rather than an account.
+        </p>
+      ) : (
+        module.providers.map((provider) =>
+          provider.provider === 'STEAM' ? steamCard(provider) : pendingCard(provider),
+        )
+      )}
+    </section>
+  )
+
+  return (
+    <AppShell>
+      <h1>Settings</h1>
+
+      {error && (
+        <p className="alert" role="alert">
+          {error}
+        </p>
+      )}
+
+      {MODULES.map(moduleSection)}
     </AppShell>
   )
 }
