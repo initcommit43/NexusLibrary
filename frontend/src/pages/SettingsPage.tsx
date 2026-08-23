@@ -18,6 +18,11 @@ export const SettingsPage = () => {
   const { isAvailable } = useModules()
   const [accounts, setAccounts] = useState<ConnectedAccount[] | null>(null)
   const [report, setReport] = useState<ImportReport | null>(null)
+  /**
+   * Which provider the run on screen belongs to. Progress and results are page state, but
+   * they describe one connection — shown under any other, they say that one is importing.
+   */
+  const [runningFor, setRunningFor] = useState<ModuleProvider['provider'] | null>(null)
   const [error, setError] = useState<string | null>(null)
   /**
    * Which provider is working, and at what. One flag for the whole page made every card
@@ -67,6 +72,7 @@ export const SettingsPage = () => {
     setError(null)
     setReport(null)
     setJob(null)
+    setRunningFor(provider)
     try {
       const started = await api.importLibrary(provider)
       const finished = await watchJob(started.id)
@@ -164,7 +170,7 @@ export const SettingsPage = () => {
         <p className="muted">Last imported {new Date(anilist.lastSyncedAt).toLocaleString()}.</p>
       )}
 
-      {report && (
+      {report && runningFor === provider.provider && (
         <>
           <p className="muted">
             {report.created} added, {report.updated} updated
@@ -240,7 +246,7 @@ export const SettingsPage = () => {
         <p className="muted">Last imported {new Date(steam.lastSyncedAt).toLocaleString()}.</p>
       )}
 
-      {job && (
+      {job && runningFor === provider.provider && (
         <>
           <p className="muted">
             {job.state === 'RUNNING'
@@ -268,7 +274,7 @@ export const SettingsPage = () => {
         </>
       )}
 
-      {report && (
+      {report && runningFor === provider.provider && (
         <>
           <p className="muted">
             {report.created} added, {report.updated} updated
