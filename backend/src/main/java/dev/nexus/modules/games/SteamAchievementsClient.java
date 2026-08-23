@@ -1,5 +1,6 @@
 package dev.nexus.modules.games;
 
+import dev.nexus.core.web.OutboundRateLimiter;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;

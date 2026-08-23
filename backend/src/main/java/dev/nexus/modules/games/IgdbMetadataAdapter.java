@@ -47,7 +47,7 @@ public class IgdbMetadataAdapter implements MetadataAdapter {
     }
 
     @Override
-    public List<ItemSearchResult> search(String query, int limit) {
+    public List<ItemSearchResult> search(MediaType mediaType, String query, int limit) {
         return client.searchGames(query, limit).stream()
                 .map(game -> new ItemSearchResult(
                         MediaType.GAME,

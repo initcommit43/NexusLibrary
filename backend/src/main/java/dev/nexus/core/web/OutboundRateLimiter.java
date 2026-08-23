@@ -1,9 +1,10 @@
-package dev.nexus.modules.games;
+package dev.nexus.core.web;
 
 import java.util.concurrent.TimeUnit;
 
 /**
- * Blocking token bucket for calls we make out to IGDB, which permits 4 requests per second.
+ * Blocking token bucket for calls out to an external API, each of which publishes its own
+ * ceiling: IGDB permits four requests a second, AniList ninety a minute.
  *
  * <p>Distinct from {@code core.web.RateLimiter}, which rejects excess inbound requests. Here
  * rejecting would turn a busy moment into a user-visible failure, so callers wait instead.
@@ -35,7 +36,7 @@ public class OutboundRateLimiter {
             TimeUnit.NANOSECONDS.sleep(waitNanos);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new IllegalStateException("Interrupted while waiting for an IGDB request slot", e);
+            throw new IllegalStateException("Interrupted while waiting for an outbound request slot", e);
         }
     }
 }

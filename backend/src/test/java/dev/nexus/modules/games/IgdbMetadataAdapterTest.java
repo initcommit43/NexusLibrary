@@ -45,7 +45,7 @@ class IgdbMetadataAdapterTest {
     void mapsSearchResults() {
         when(client.searchGames(anyString(), anyInt())).thenReturn(List.of(game()));
 
-        var results = adapter.search("zelda", 10);
+        var results = adapter.search(MediaType.GAME, "zelda", 10);
 
         assertThat(results).hasSize(1);
         assertThat(results.getFirst().externalId()).isEqualTo("7346");

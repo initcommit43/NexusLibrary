@@ -48,7 +48,7 @@ public class CatalogController {
         // about protecting the external API budget as about abuse.
         rateLimiter.check("search:" + user.id(), searchesPerMinute);
 
-        return adapters.requireForMediaType(mediaType).search(query.trim(), MAX_RESULTS);
+        return adapters.requireForMediaType(mediaType).search(mediaType, query.trim(), MAX_RESULTS);
     }
 
     @GetMapping("/modules")

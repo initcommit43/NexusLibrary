@@ -22,7 +22,7 @@ public interface MetadataAdapter {
 
     Source source();
 
-    List<ItemSearchResult> search(String query, int limit);
+    List<ItemSearchResult> search(MediaType mediaType, String query, int limit);
 
     Optional<TrackableItemData> fetchById(String externalId);
 
