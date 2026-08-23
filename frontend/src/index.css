@@ -1233,6 +1233,11 @@ button.ghost.danger:hover:not(:disabled) {
   color: var(--accent);
 }
 
+.achievement-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
 .achievement-bar {
   width: 100%;
   height: 5px;

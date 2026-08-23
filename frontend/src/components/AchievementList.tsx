@@ -5,8 +5,16 @@ import { achievementCatalogue, achievementProgress, completionPercent } from './
 /** How many unlocked achievements the collapsed list shows before "show all" is needed. */
 const PREVIEW_COUNT = 6
 
-/** Unlocked first, so the list opens on what you actually did rather than what you missed. */
+/**
+ * What you unlocked, and — only if you ask — what you have not.
+ *
+ * <p>Locked achievements are hidden by default because their names give the game away: a
+ * list of everything you have yet to do is a list of what happens later. How much of the
+ * list is shown and whether it includes locked ones are separate choices, since wanting to
+ * see more of your own progress is not the same as wanting to be told the rest.
+ */
 export const AchievementList = ({ entry }: { entry: TrackedItem }) => {
+  const [expanded, setExpanded] = useState(false)
   const [showLocked, setShowLocked] = useState(false)
 
   const progress = achievementProgress(entry)
@@ -18,11 +26,12 @@ export const AchievementList = ({ entry }: { entry: TrackedItem }) => {
 
   const unlocked = new Set(progress.unlocked)
   const percent = completionPercent(progress)
-  const unlockedOnly = catalogue.filter((a) => unlocked.has(a.id))
+  const visible = showLocked ? catalogue : catalogue.filter((a) => unlocked.has(a.id))
+  const lockedCount = catalogue.length - progress.unlocked.length
   // Collapsed is a preview: a handful of rows at full height, nothing to scroll. Expanding
   // is what turns it into the long, scrollable list.
-  const shown = showLocked ? catalogue : unlockedOnly.slice(0, PREVIEW_COUNT)
-  const hiddenCount = unlockedOnly.length - shown.length
+  const shown = expanded ? visible : visible.slice(0, PREVIEW_COUNT)
+  const hiddenCount = visible.length - shown.length
 
   return (
     <section className="status-section">
@@ -47,11 +56,19 @@ export const AchievementList = ({ entry }: { entry: TrackedItem }) => {
           <div className="achievement-bar-fill" style={{ width: `${percent}%` }} />
         </div>
 
-        <button type="button" className="ghost small" onClick={() => setShowLocked((v) => !v)}>
-          {showLocked ? `Show ${PREVIEW_COUNT} unlocked` : `Show all ${progress.total}`}
-        </button>
+        <div className="achievement-actions">
+          <button type="button" className="ghost small" onClick={() => setExpanded((v) => !v)}>
+            {expanded ? `Show ${PREVIEW_COUNT}` : `Show all ${visible.length}`}
+          </button>
 
-        <ul className={showLocked ? 'achievement-list expanded' : 'achievement-list'}>
+          {lockedCount > 0 && (
+            <button type="button" className="ghost small" onClick={() => setShowLocked((v) => !v)}>
+              {showLocked ? 'Hide locked' : `Show ${lockedCount} locked`}
+            </button>
+          )}
+        </div>
+
+        <ul className={expanded ? 'achievement-list expanded' : 'achievement-list'}>
           {shown.map((achievement) => {
             const isUnlocked = unlocked.has(achievement.id)
             const at = progress.unlockedAt[achievement.id]
@@ -87,9 +104,7 @@ export const AchievementList = ({ entry }: { entry: TrackedItem }) => {
           })}
         </ul>
 
-        {!showLocked && hiddenCount > 0 && (
-          <p className="muted">and {hiddenCount} more unlocked</p>
-        )}
+        {!expanded && hiddenCount > 0 && <p className="muted">and {hiddenCount} more</p>}
       </div>
     </section>
   )
