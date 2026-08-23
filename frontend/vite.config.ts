@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => {
           name: 'Nexus Media Tracker',
           short_name: 'Nexus',
           description: 'One dashboard for the games, films, shows, anime and books you track.',
-          theme_color: '#1f6fff',
+          theme_color: '#e8edf7',
           background_color: '#e8edf7',
           display: 'standalone',
           start_url: '/',

@@ -38,14 +38,6 @@
   --text-muted: #5a6880;
   --text-inverse: #ffffff;
 
-  /* The header wears the primary itself. */
-  --header-bg: #1f6fff;
-  --header-text: #ffffff;
-  --header-muted: #cfe0ff;
-  --header-border: #1a5fe0;
-  --header-hover: #0a4fd1;
-  --header-active: #ffffff;
-
   /* 10 — primary: navigation, state, card outlines */
   --accent: #1f6fff;
   --accent-hover: #0a4fd1;
@@ -147,13 +139,6 @@
     --text-muted: #7c8ca6;
     --text-inverse: #06101f;
 
-    --header-bg: #1c2b4a;
-    --header-text: #eef3fa;
-    --header-muted: #a3b2c8;
-    --header-border: #2b4272;
-    --header-hover: #223763;
-    --header-active: #8fb6ff;
-
     --accent: #4c8dff;
     --accent-hover: #6fa5ff;
     --accent-contrast: #06101f;
@@ -193,13 +178,6 @@
   --text-body: #a3b2c8;
   --text-muted: #7c8ca6;
   --text-inverse: #06101f;
-
-  --header-bg: #1c2b4a;
-  --header-text: #eef3fa;
-  --header-muted: #a3b2c8;
-  --header-border: #2b4272;
-  --header-hover: #223763;
-  --header-active: #8fb6ff;
 
   --accent: #4c8dff;
   --accent-hover: #6fa5ff;

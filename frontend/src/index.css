@@ -13,7 +13,7 @@
 
 .card {
   background: var(--surface);
-  border: 1px solid var(--card-border);
+  border: 2px solid var(--card-border);
   border-radius: var(--radius-lg);
   padding: var(--space-6);
   box-shadow: var(--shadow-1);
@@ -160,29 +160,8 @@ button.small {
   gap: var(--space-6);
   padding: 0 var(--space-6);
   height: 3.5rem;
-  background: var(--header-bg);
-  border-bottom: 1px solid var(--header-border);
-}
-
-/* Everything in the header sits on the primary, so it takes its colours from that family. */
-.shell-header .muted {
-  color: var(--header-muted);
-}
-
-.shell-header button.ghost {
-  background: transparent;
-  border-color: var(--header-border);
-  color: var(--header-muted);
-}
-
-.shell-header button.ghost:hover:not(:disabled) {
-  background: var(--header-hover);
-  border-color: var(--header-muted);
-  color: var(--header-text);
-}
-
-.shell-header :focus-visible {
-  outline-color: var(--header-text);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
 }
 
 .brand {
@@ -193,7 +172,7 @@ button.small {
   font-weight: 700;
   font-size: var(--text-md);
   letter-spacing: var(--tracking-tight);
-  color: var(--header-text);
+  color: var(--text);
 }
 
 .brand img {
@@ -208,20 +187,20 @@ button.small {
 }
 
 .shell-nav a {
-  color: var(--header-muted);
+  color: var(--text-muted);
   padding: var(--space-1) 0;
   border-bottom: 2px solid transparent;
   font-weight: 500;
 }
 
 .shell-nav a:hover {
-  color: var(--header-text);
+  color: var(--text);
   text-decoration: none;
 }
 
 .shell-nav a.active {
-  color: var(--header-active);
-  border-bottom-color: var(--header-active);
+  color: var(--accent);
+  border-bottom-color: var(--accent);
 }
 
 .header-right {
@@ -526,7 +505,7 @@ button.small {
   gap: var(--space-4);
   padding: var(--space-3);
   background: var(--surface);
-  border: 1px solid var(--card-border);
+  border: 2px solid var(--card-border);
   border-radius: var(--radius-md);
 }
 
