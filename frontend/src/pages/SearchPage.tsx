@@ -4,15 +4,15 @@ import { ApiError, api, type SearchResult, type TrackingStatus } from '../api/cl
 import { AppShell } from '../components/AppShell'
 import { STATUS_ORDER } from '../components/trackingStatus'
 import { moduleBySlug } from '../modules/registry'
-import { useModules } from '../modules/useModules'
+import { useCurrentModule } from '../modules/useCurrentModule'
 
 type TrackState = Record<string, 'idle' | 'saving' | 'tracked'>
 
 export const SearchPage = () => {
-  // Search is always inside a module: the catalogue endpoint requires a media type.
+  // Search is always inside a module: the catalogue endpoint requires a media type. The
+  // query string wins when it names one, otherwise this searches wherever you already are.
   const [params] = useSearchParams()
-  const { firstAvailable } = useModules()
-  const module = moduleBySlug(params.get('module') ?? undefined) ?? firstAvailable
+  const module = useCurrentModule(moduleBySlug(params.get('module') ?? undefined))
 
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[] | null>(null)

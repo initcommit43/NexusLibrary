@@ -68,6 +68,7 @@ export type ActivityType = 'ADDED' | 'STATUS_CHANGE' | 'PROGRESS' | 'RATED' | 'R
 export type ActivityEntry = {
   id: number
   type: ActivityType
+  mediaType: MediaType
   title: string
   coverUrl: string | null
   externalId: string

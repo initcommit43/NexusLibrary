@@ -3,6 +3,7 @@ package dev.nexus.core.activity;
 import dev.nexus.auth.CurrentUser;
 import dev.nexus.core.domain.Activity;
 import dev.nexus.core.domain.ActivityType;
+import dev.nexus.core.domain.MediaType;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Positive;
 import java.time.Instant;
@@ -25,6 +26,7 @@ public class ActivityController {
     public record ActivityResponse(
             Long id,
             ActivityType type,
+            MediaType mediaType,
             String title,
             String coverUrl,
             String externalId,
@@ -35,6 +37,7 @@ public class ActivityController {
             return new ActivityResponse(
                     activity.getId(),
                     activity.getType(),
+                    activity.getItem().getMediaType(),
                     activity.getItem().getTitle(),
                     activity.getItem().getCoverUrl(),
                     activity.getItem().getExternalId(),

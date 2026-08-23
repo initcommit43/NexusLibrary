@@ -3,14 +3,14 @@ import { Link } from 'react-router-dom'
 import { ApiError, api, type ActivityEntry } from '../api/client'
 import { AppShell } from '../components/AppShell'
 import { toDisplayScore } from '../components/rating'
-import { STATUS_LABELS } from '../components/trackingStatus'
+import { useCurrentModule } from '../modules/useCurrentModule'
+import type { ModuleDefinition } from '../modules/registry'
 import type { TrackingStatus } from '../api/client'
 
-const statusLabel = (raw?: string | null) =>
-  raw && raw in STATUS_LABELS ? STATUS_LABELS[raw as TrackingStatus] : raw
-
-/** Reads the stored old-to-new payload back as a sentence. */
-const describe = (activity: ActivityEntry): string => {
+/** Reads the stored old-to-new payload back as a sentence, in the module's own words. */
+const describe = (activity: ActivityEntry, module: ModuleDefinition): string => {
+  const statusLabel = (raw?: string | null) =>
+    raw && raw in module.statusLabels ? module.statusLabels[raw as TrackingStatus] : raw
   const { from, to, unit } = activity.payload
 
   switch (activity.type) {
@@ -40,6 +40,7 @@ const relative = (iso: string) => {
 }
 
 export const ActivityPage = () => {
+  const module = useCurrentModule()
   const [feed, setFeed] = useState<ActivityEntry[] | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -52,9 +53,12 @@ export const ActivityPage = () => {
       )
   }, [])
 
+  // One feed comes back for everything tracked; the module decides what belongs on it.
+  const mine = feed?.filter((entry) => module.mediaTypes.includes(entry.mediaType)) ?? []
+
   return (
     <AppShell>
-      <h1>Activity</h1>
+      <h1>{module.label} activity</h1>
 
       {error && (
         <p className="alert" role="alert">
@@ -64,14 +68,16 @@ export const ActivityPage = () => {
 
       {feed === null && !error && <p className="muted">Loading…</p>}
 
-      {feed?.length === 0 && (
+      {feed !== null && mine.length === 0 && (
         <p className="muted">
-          Nothing yet. <Link to="/search">Track a game</Link> and your history shows up here.
+          Nothing yet.{' '}
+          <Link to={`/search?module=${module.slug}`}>Track something</Link> and your history
+          shows up here.
         </p>
       )}
 
       <ul className="activity-feed">
-        {feed?.map((activity) => (
+        {mine.map((activity) => (
           <li key={activity.id} className="activity-row">
             {activity.coverUrl ? (
               <img src={activity.coverUrl} alt="" loading="lazy" />
@@ -80,7 +86,7 @@ export const ActivityPage = () => {
             )}
             <div className="activity-text">
               <strong>{activity.title}</strong>
-              <span className="muted">{describe(activity)}</span>
+              <span className="muted">{describe(activity, module)}</span>
             </div>
             <time className="muted" dateTime={activity.createdAt}>
               {relative(activity.createdAt)}
