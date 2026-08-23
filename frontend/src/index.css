@@ -151,27 +151,17 @@ button.small {
 
 /* --- app shell --- */
 
-/*
- * A rail beside the content rather than a bar above it: four modules plus the pages that
- * span them do not fit a header, and the rail gives the module you are in somewhere to be
- * named.
- */
-.shell {
-  display: grid;
-  grid-template-columns: 13rem 1fr;
-  min-height: 100vh;
-}
-
-.shell-rail {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-5);
-  padding: var(--space-5) var(--space-4);
-  background: var(--surface);
-  border-right: 1px solid var(--border);
+.shell-header {
   position: sticky;
   top: 0;
-  height: 100vh;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: 0 var(--space-6);
+  height: 3.5rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
 }
 
 .brand {
@@ -196,33 +186,31 @@ button.small {
 }
 
 .module-trigger {
-  width: 100%;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-2);
-  padding: var(--space-3);
+  padding: var(--space-1) var(--space-3);
   background: var(--surface-raised);
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-full);
   color: var(--text);
   font-family: var(--font-display);
-  font-size: var(--text-md);
+  font-size: var(--text-base);
   font-weight: 600;
-  text-align: left;
 }
 
 .module-trigger:hover:not(:disabled) {
   background: var(--surface-raised);
   border-color: var(--accent);
+  color: var(--accent);
 }
 
 .module-menu {
   position: absolute;
   z-index: 20;
-  top: calc(100% + var(--space-1));
+  top: calc(100% + var(--space-2));
   left: 0;
-  right: 0;
+  min-width: 13rem;
   margin: 0;
   padding: var(--space-1);
   list-style: none;
@@ -263,46 +251,36 @@ button.small {
   color: var(--accent);
 }
 
-/* --- rail navigation --- */
+/* --- header navigation --- */
 
 .shell-nav {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-5);
   font-size: var(--text-base);
+  margin-right: auto;
 }
 
 .shell-nav a {
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-sm);
-  color: var(--text-body);
+  color: var(--text-muted);
+  padding: var(--space-1) 0;
+  border-bottom: 2px solid transparent;
   font-weight: 500;
 }
 
 .shell-nav a:hover {
-  background: var(--surface-raised);
   color: var(--text);
   text-decoration: none;
 }
 
 .shell-nav a.active {
-  background: var(--accent-soft);
   color: var(--accent);
+  border-bottom-color: var(--accent);
 }
 
-.rail-footer {
-  margin-top: auto;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--border);
-}
-
-.rail-actions {
+.header-right {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-3);
 }
 
 .shell-main {
@@ -797,41 +775,14 @@ button.small {
 }
 
 @media (max-width: 40rem) {
-  /* The rail becomes a band above the content rather than a column beside it. */
-  .shell {
-    grid-template-columns: 1fr;
-  }
-
-  .shell-rail {
-    position: static;
-    height: auto;
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
+  .shell-header {
     gap: var(--space-3);
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-    padding: var(--space-3) var(--space-4);
-  }
-
-  .module-switcher {
-    flex: 1 1 12rem;
+    padding: 0 var(--space-4);
   }
 
   .shell-nav {
-    flex-direction: row;
-    order: 3;
-    width: 100%;
+    gap: var(--space-4);
     overflow-x: auto;
-  }
-
-  .rail-footer {
-    margin-top: 0;
-    flex-direction: row;
-    align-items: center;
-    gap: var(--space-3);
-    padding-top: 0;
-    border-top: none;
   }
 
   .shell-main {

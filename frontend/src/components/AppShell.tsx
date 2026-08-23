@@ -5,9 +5,8 @@ import { ThemeToggle } from './ThemeToggle'
 import type { ModuleDefinition } from '../modules/registry'
 
 /**
- * The rail names the module you are in and carries the pages that span all of them. Pages
- * that belong to a module pass it in; the cross-module ones leave it out and the switcher
- * stays hidden rather than claiming a module you are not looking at.
+ * Pages that belong to a module pass it in, which names it in the switcher; the pages that
+ * span every module leave it out rather than claiming one you are not looking at.
  */
 export const AppShell = ({
   children,
@@ -20,7 +19,7 @@ export const AppShell = ({
 
   return (
     <div className="shell">
-      <aside className="shell-rail">
+      <header className="shell-header">
         <div className="brand">
           <img src="/pwa-192x192.png" alt="" width={28} height={28} />
           <span>Nexus</span>
@@ -37,16 +36,14 @@ export const AppShell = ({
           <NavLink to="/settings">Settings</NavLink>
         </nav>
 
-        <div className="rail-footer">
+        <div className="header-right">
           <span className="muted">{user?.username}</span>
-          <div className="rail-actions">
-            <ThemeToggle />
-            <button type="button" className="ghost small" onClick={() => void logout()}>
-              Sign out
-            </button>
-          </div>
+          <ThemeToggle />
+          <button type="button" className="ghost small" onClick={() => void logout()}>
+            Sign out
+          </button>
         </div>
-      </aside>
+      </header>
 
       <main className="shell-main" data-module={module?.slug}>
         {children}
