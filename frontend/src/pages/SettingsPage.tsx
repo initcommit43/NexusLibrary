@@ -259,9 +259,11 @@ export const SettingsPage = () => {
                 ? job.kind === 'IMPORT'
                   ? `Imported ${job.total} titles.`
                   : `Achievements synced — ${job.changed} of ${job.total} games updated.`
-                : job.kind === 'IMPORT'
-                  ? 'The import stopped early.'
-                  : 'Achievement sync failed.'}
+                : job.state === 'CANCELLED'
+                  ? `Stopped after ${job.processed} of ${job.total}. What was imported was kept.`
+                  : job.kind === 'IMPORT'
+                    ? 'The import stopped early.'
+                    : 'Achievement sync failed.'}
           </p>
           {job.total > 0 && (
             <div className="achievement-bar">

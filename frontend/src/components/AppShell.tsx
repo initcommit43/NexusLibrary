@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
 import { ModuleSwitcher } from './ModuleSwitcher'
+import { ImportIndicator } from './ImportIndicator'
 import { ThemeToggle } from './ThemeToggle'
 import { useCurrentModule } from '../modules/useCurrentModule'
 import { useHideOnScroll } from './useHideOnScroll'
@@ -73,6 +74,9 @@ export const AppShell = ({
       <main className="shell-main" data-module={current.slug}>
         {children}
       </main>
+
+      {/* Sits outside the page, since a run outlives whichever page started it. */}
+      <ImportIndicator />
     </div>
   )
 }

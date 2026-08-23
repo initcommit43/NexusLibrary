@@ -584,6 +584,36 @@ button.small {
   min-width: 0;
 }
 
+/* --- running work --- */
+
+/* Bottom left, out of the way of everything and readable from anywhere. */
+.import-indicator {
+  position: fixed;
+  bottom: var(--space-3);
+  left: var(--space-3);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 16rem;
+  max-width: min(24rem, calc(100vw - var(--space-5)));
+  padding: var(--space-3);
+  background: var(--surface);
+  border: 2px solid var(--card-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-2);
+  font-size: var(--text-sm);
+}
+
+.import-indicator-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  color: var(--text-body);
+}
+
 /* --- media page --- */
 
 /*

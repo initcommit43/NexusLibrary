@@ -95,6 +95,11 @@ public class LibraryImportService {
         int updated = 0;
 
         for (ImportedEntry entry : library) {
+            if (job != null && job.isCancelled()) {
+                log.debug("Import cancelled after {} of {}", created + updated, library.size());
+                break;
+            }
+
             CanonicalRef ref = resolved.get(entry.itemRef());
             if (ref == null) {
                 unmatched.add(unmatchedItem(entry, "No match in the catalogue"));

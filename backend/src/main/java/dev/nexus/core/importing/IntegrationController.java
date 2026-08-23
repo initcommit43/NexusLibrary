@@ -46,6 +46,8 @@ public class IntegrationController {
             String id,
             String kind,
             String state,
+            /** Which connection this run belongs to, so its progress is shown under that one. */
+            String provider,
             int total,
             int processed,
             int changed,
@@ -60,6 +62,7 @@ public class IntegrationController {
                     job.getId(),
                     job.getKind().name(),
                     job.getState().name(),
+                    job.getProvider() == null ? null : job.getProvider().name(),
                     job.getTotal(),
                     job.getProcessed(),
                     job.getChanged(),
@@ -191,13 +194,30 @@ public class IntegrationController {
 
         ExternalAccount account = accounts.requireConnected(user.id(), provider);
 
-        SyncJob job = jobs.runningFor(user.id(), SyncJob.Kind.IMPORT)
+        SyncJob job = jobs.runningFor(user.id(), SyncJob.Kind.IMPORT, provider)
                 .orElseGet(() -> {
-                    SyncJob started = jobs.start(user.id(), SyncJob.Kind.IMPORT, 0);
+                    SyncJob started = jobs.start(user.id(), SyncJob.Kind.IMPORT, provider, 0);
                     runner.run(started, account);
                     return started;
                 });
 
+        return SyncJobResponse.from(job);
+    }
+
+    /** Whatever this reader has running, for an indicator that follows them across pages. */
+    @GetMapping("/jobs/current")
+    public SyncJobResponse currentJob(@AuthenticationPrincipal CurrentUser user) {
+        return jobs.anyRunningFor(user.id()).map(SyncJobResponse::from).orElse(null);
+    }
+
+    /**
+     * Calls off a running job. The work stops between items rather than mid-write, so
+     * everything already imported stays imported.
+     */
+    @DeleteMapping("/jobs/{jobId}")
+    public SyncJobResponse cancelJob(@AuthenticationPrincipal CurrentUser user, @PathVariable String jobId) {
+        SyncJob job = jobs.find(jobId, user.id()).orElseThrow(SyncJobNotFoundException::new);
+        job.cancel();
         return SyncJobResponse.from(job);
     }
 

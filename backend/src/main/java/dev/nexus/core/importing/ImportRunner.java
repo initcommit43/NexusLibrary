@@ -36,6 +36,13 @@ public class ImportRunner {
         try {
             ImportReport report = importService.importLibrary(account, job);
             job.setReport(report);
+
+            if (job.isCancelled()) {
+                job.markCancelled("Import stopped. What had already been imported was kept.");
+                return;
+            }
+
+            // Follow-up work belongs to the provider that was imported, and to no other.
             followUps.ifPresent(sync -> sync.startAfter(account).ifPresent(job::setFollowUp));
             job.complete();
         } catch (RuntimeException e) {

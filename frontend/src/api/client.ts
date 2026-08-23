@@ -108,7 +108,9 @@ export type Review = {
 export type SyncJob = {
   id: string
   kind: 'IMPORT' | 'ACHIEVEMENTS'
-  state: 'RUNNING' | 'COMPLETE' | 'FAILED'
+  /** Which connection the run belongs to, so its progress shows under that one. */
+  provider: Provider | null
+  state: 'RUNNING' | 'COMPLETE' | 'FAILED' | 'CANCELLED'
   total: number
   processed: number
   changed: number
@@ -294,6 +296,12 @@ export const api = {
     request<void>(`/integrations/${provider}`, { method: 'DELETE' }),
 
   syncJob: (jobId: string) => request<SyncJob>(`/integrations/jobs/${jobId}`),
+
+  /** Whatever this reader has running, for the indicator that follows them around. */
+  currentJob: () => request<SyncJob | null>('/integrations/jobs/current'),
+
+  cancelJob: (jobId: string) =>
+    request<SyncJob>(`/integrations/jobs/${jobId}`, { method: 'DELETE' }),
 
   activityFeed: (limit = 50) => request<ActivityEntry[]>(`/activity?limit=${limit}`),
 

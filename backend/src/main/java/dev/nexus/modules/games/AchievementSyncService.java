@@ -1,6 +1,7 @@
 package dev.nexus.modules.games;
 
 import dev.nexus.core.domain.ExternalAccount;
+import dev.nexus.core.domain.Provider;
 import dev.nexus.core.jobs.JobRegistry;
 import dev.nexus.core.jobs.SyncJob;
 import java.util.List;
@@ -26,9 +27,9 @@ public class AchievementSyncService {
      * further result, against a request budget shared by everyone using the app.
      */
     public SyncJob start(ExternalAccount account) {
-        return jobs.runningFor(account.getUserId(), SyncJob.Kind.ACHIEVEMENTS).orElseGet(() -> {
+        return jobs.runningFor(account.getUserId(), SyncJob.Kind.ACHIEVEMENTS, Provider.STEAM).orElseGet(() -> {
             List<Long> entryIds = syncer.steamEntryIds(account.getUserId());
-            SyncJob job = jobs.start(account.getUserId(), SyncJob.Kind.ACHIEVEMENTS, entryIds.size());
+            SyncJob job = jobs.start(account.getUserId(), SyncJob.Kind.ACHIEVEMENTS, Provider.STEAM, entryIds.size());
             runner.run(job, account.getExternalUserId(), entryIds);
             return job;
         });

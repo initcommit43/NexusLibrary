@@ -1,5 +1,6 @@
 package dev.nexus.core.jobs;
 
+import dev.nexus.core.domain.Provider;
 import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -10,7 +11,8 @@ public class SyncJob {
     public enum State {
         RUNNING,
         COMPLETE,
-        FAILED
+        FAILED,
+        CANCELLED
     }
 
     public enum Kind {
@@ -21,6 +23,8 @@ public class SyncJob {
     private final String id = UUID.randomUUID().toString();
     private final Long userId;
     private final Kind kind;
+    /** Which service this run is talking to: two providers' imports are separate work. */
+    private final Provider provider;
     private final Instant startedAt = Instant.now();
     private final AtomicInteger processed = new AtomicInteger();
     private final AtomicInteger changed = new AtomicInteger();
@@ -32,10 +36,35 @@ public class SyncJob {
     private volatile String message;
     private volatile Instant finishedAt;
 
-    public SyncJob(Long userId, Kind kind, int total) {
+    private volatile boolean cancelled;
+
+    public SyncJob(Long userId, Kind kind, Provider provider, int total) {
         this.userId = userId;
         this.kind = kind;
+        this.provider = provider;
         this.total = total;
+    }
+
+    public Provider getProvider() {
+        return provider;
+    }
+
+    /**
+     * Asks the run to stop. It is a request rather than an interruption: the work checks
+     * between items, so whatever already landed stays landed and nothing is half-written.
+     */
+    public void cancel() {
+        this.cancelled = true;
+    }
+
+    public boolean isCancelled() {
+        return cancelled;
+    }
+
+    public void markCancelled(String message) {
+        this.state = State.CANCELLED;
+        this.message = message;
+        this.finishedAt = Instant.now();
     }
 
     public Kind getKind() {
