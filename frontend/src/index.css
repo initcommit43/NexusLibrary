@@ -769,6 +769,14 @@ button.small {
   min-width: 0;
 }
 
+/* A heading can carry one control; it sits at the far end of the rule. */
+.section-action {
+  margin-left: auto;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
 .relation-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));

@@ -6,6 +6,7 @@ import dev.nexus.core.cache.ItemNotFoundException;
 import dev.nexus.core.cache.TrackableItemWriter;
 import dev.nexus.core.domain.Source;
 import dev.nexus.core.domain.TrackableItem;
+import dev.nexus.core.web.ServerTimings;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,12 +39,17 @@ public class MediaDetailService {
     private final ItemCacheService cache;
     private final MetadataAdapterRegistry adapters;
     private final TrackableItemWriter writer;
+    private final ServerTimings timings;
 
     public MediaDetailService(
-            ItemCacheService cache, MetadataAdapterRegistry adapters, TrackableItemWriter writer) {
+            ItemCacheService cache,
+            MetadataAdapterRegistry adapters,
+            TrackableItemWriter writer,
+            ServerTimings timings) {
         this.cache = cache;
         this.adapters = adapters;
         this.writer = writer;
+        this.timings = timings;
     }
 
     /**
@@ -53,15 +59,18 @@ public class MediaDetailService {
      * item cache itself makes. A source that has nothing extra to say simply has none.
      */
     public TrackableItem findOrFetch(Source source, String externalId) {
-        TrackableItem item = cache.findOrCache(source, externalId);
+        TrackableItem item = timings.time("item", () -> cache.findOrCache(source, externalId));
         if (isCurrent(item.getMetadata().get(DETAIL_KEY))) {
+            // Recorded even at zero: a request with no upstream mark is the interesting case,
+            // because it says the wait was not ours.
+            timings.record("detailCached", 0);
             return item;
         }
 
-        Map<String, Object> detail = adapters
+        Map<String, Object> detail = timings.time("detailFetch", () -> adapters
                 .forSource(source)
                 .flatMap(adapter -> adapter.fetchDetail(externalId))
-                .orElse(Map.of());
+                .orElse(Map.of()));
 
         if (detail.isEmpty()) {
             return item;
@@ -71,8 +80,10 @@ public class MediaDetailService {
         stamped.put(VERSION_KEY, DETAIL_VERSION);
 
         try {
+            timings.record("detailStore", 0);
             writer.storeDetail(source, externalId, stamped);
             item.getMetadata().put(DETAIL_KEY, stamped);
+            log.debug("Fetched detail for {}:{}", source, externalId);
         } catch (RuntimeException e) {
             // The page is perfectly readable without it; losing the write is not worth failing on.
             log.warn("Could not store detail for {}:{}", source, externalId, e);

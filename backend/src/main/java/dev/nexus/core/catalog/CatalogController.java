@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Optional;
 import org.springframework.web.bind.annotation.PathVariable;
 import dev.nexus.core.web.RateLimiter;
+import dev.nexus.core.web.ServerTimings;
 import dev.nexus.config.NexusProperties;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -44,6 +45,7 @@ public class CatalogController {
             TrackedItemResponse entry) {}
 
     private final MetadataAdapterRegistry adapters;
+    private final ServerTimings timings;
     private final MediaDetailService media;
     private final TrackingService tracking;
     private final RateLimiter rateLimiter;
@@ -51,11 +53,13 @@ public class CatalogController {
 
     public CatalogController(
             MetadataAdapterRegistry adapters,
+            ServerTimings timings,
             MediaDetailService media,
             TrackingService tracking,
             RateLimiter rateLimiter,
             NexusProperties properties) {
         this.adapters = adapters;
+        this.timings = timings;
         this.media = media;
         this.tracking = tracking;
         this.rateLimiter = rateLimiter;
@@ -76,7 +80,8 @@ public class CatalogController {
         // about protecting the external API budget as about abuse.
         rateLimiter.check("search:" + user.id(), searchesPerMinute);
 
-        return adapters.requireForMediaType(mediaType).search(mediaType, query.trim(), MAX_RESULTS);
+        return timings.time(
+                "search", () -> adapters.requireForMediaType(mediaType).search(mediaType, query.trim(), MAX_RESULTS));
     }
 
     /**
@@ -91,8 +96,8 @@ public class CatalogController {
             @PathVariable String externalId) {
 
         TrackableItem item = media.require(source, externalId);
-        Optional<TrackedItemResponse> entry =
-                tracking.findByItem(user.id(), item.getId()).map(TrackedItemResponse::from);
+        Optional<TrackedItemResponse> entry = timings.time(
+                "entry", () -> tracking.findByItem(user.id(), item.getId()).map(TrackedItemResponse::from));
 
         return new MediaResponse(
                 item.getMediaType(),

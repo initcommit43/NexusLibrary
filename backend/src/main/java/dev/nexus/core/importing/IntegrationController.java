@@ -5,6 +5,7 @@ import dev.nexus.config.NexusProperties;
 import dev.nexus.core.domain.ExternalAccount;
 import dev.nexus.core.domain.Provider;
 import dev.nexus.core.web.RateLimiter;
+import dev.nexus.core.web.ServerTimings;
 import dev.nexus.core.jobs.JobRegistry;
 import dev.nexus.core.jobs.SyncJob;
 import dev.nexus.modules.anime.AniListOAuthService;
@@ -81,6 +82,7 @@ public class IntegrationController {
     private final List<PostImportSync> postImportSyncs;
     private final JobRegistry jobs;
     private final RateLimiter rateLimiter;
+    private final ServerTimings timings;
     private final String frontendUrl;
     private final int importsPerMinute;
 
@@ -92,6 +94,7 @@ public class IntegrationController {
             List<PostImportSync> postImportSyncs,
             JobRegistry jobs,
             RateLimiter rateLimiter,
+            ServerTimings timings,
             NexusProperties properties) {
         this.accounts = accounts;
         this.importService = importService;
@@ -100,6 +103,7 @@ public class IntegrationController {
         this.postImportSyncs = List.copyOf(postImportSyncs);
         this.jobs = jobs;
         this.rateLimiter = rateLimiter;
+        this.timings = timings;
         this.frontendUrl = properties.security().frontendUrl();
         this.importsPerMinute = properties.rateLimit().importRequestsPerMinute();
     }
@@ -181,7 +185,7 @@ public class IntegrationController {
         rateLimiter.check("import:" + user.id(), importsPerMinute);
 
         ExternalAccount account = accounts.requireConnected(user.id(), provider);
-        ImportReport report = importService.importLibrary(account);
+        ImportReport report = timings.time("import", () -> importService.importLibrary(account));
 
         String followUpJobId = postImportSyncs.stream()
                 .filter(sync -> sync.provider() == provider)

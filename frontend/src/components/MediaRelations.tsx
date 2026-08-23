@@ -1,4 +1,13 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import type { MediaType } from '../api/client'
+
+/**
+ * The relation types that join the two sides of a work: the book a series was adapted from,
+ * and the series made out of it. Everything else — spin-offs, side stories, alternatives —
+ * belongs to whichever side it was made for.
+ */
+const CROSSING_RELATIONS = new Set(['Source', 'Adaptation'])
 
 /** "SIDE_STORY" reads as "Side story"; AniList's own labels are shouted constants. */
 const relationLabel = (raw: unknown): string => {
@@ -12,6 +21,8 @@ interface RelatedMedia {
   title: string
   coverUrl: string | null
   relation: string
+  /** ANIME or MANGA — AniList files light novels under MANGA, by format. */
+  type: string | null
   format: string | null
   year: string | null
 }
@@ -45,6 +56,7 @@ export const readRelations = (detail: Record<string, unknown>): RelatedMedia[] =
         title: readTitle(node),
         coverUrl: typeof cover?.large === 'string' ? cover.large : null,
         relation: relationLabel(edge.relationType),
+        type: typeof node.type === 'string' ? node.type : null,
         format: typeof node.format === 'string' ? node.format : null,
         year: typeof start?.year === 'number' ? String(start.year) : null,
       },
@@ -64,15 +76,44 @@ export const readRelations = (detail: Record<string, unknown>): RelatedMedia[] =
  * Sequels, side stories and adaptations, each linking to its own page whether or not it is
  * on a shelf — following a series through its parts is the whole point of the section.
  */
-export const MediaRelations = ({ detail, source }: { detail: Record<string, unknown>; source: string }) => {
+export const MediaRelations = ({
+  detail,
+  source,
+  mediaType,
+}: {
+  detail: Record<string, unknown>
+  source: string
+  mediaType: MediaType
+}) => {
+  const [showAll, setShowAll] = useState(false)
   const relations = readRelations(detail)
   if (relations.length === 0) return null
 
+  /*
+   * A long-running series drags a dozen printed spin-offs behind it, and none of them are
+   * what someone on the anime page came to find. Its own side is shown in full, and the
+   * other side only where the two actually join — the book it came from, the series made
+   * of it. The rest is a click away rather than gone.
+   */
+  const ownSide = mediaType === 'ANIME' ? 'ANIME' : 'MANGA'
+  const belongs = (relation: RelatedMedia) =>
+    !relation.type || relation.type === ownSide || CROSSING_RELATIONS.has(relation.relation)
+
+  const shown = showAll ? relations : relations.filter(belongs)
+  const hidden = relations.length - relations.filter(belongs).length
+
   return (
     <section className="status-section">
-      <h2>Relations</h2>
+      <h2>
+        Relations
+        {hidden > 0 && (
+          <button type="button" className="ghost small section-action" onClick={() => setShowAll((v) => !v)}>
+            {showAll ? 'Show fewer' : `Show ${hidden} more`}
+          </button>
+        )}
+      </h2>
       <div className="relation-grid">
-        {relations.map((relation) => (
+        {shown.map((relation) => (
           <Link
             key={`${relation.relation}-${relation.id}`}
             className="relation-card"

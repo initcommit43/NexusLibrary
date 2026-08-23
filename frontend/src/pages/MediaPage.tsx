@@ -155,7 +155,7 @@ export const MediaPage = () => {
         </div>
 
         <div className="media-main">
-          <MediaRelations detail={detail} source={media.source} />
+          <MediaRelations detail={detail} source={media.source} mediaType={media.mediaType} />
           <MediaCharacters detail={detail} />
           <MediaStaff detail={detail} />
           <MediaStats detail={detail} />
