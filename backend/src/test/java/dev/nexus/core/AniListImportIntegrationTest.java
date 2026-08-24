@@ -134,6 +134,31 @@ class AniListImportIntegrationTest extends PostgresIntegrationTest {
         assertThat(job.body()).containsEntry("phase", "IMPORTING");
     }
 
+    /**
+     * A run that fails against a dead upstream must say whose outage it is and what the
+     * service said for itself — "please try again" is an instruction to retry something
+     * that cannot succeed. And because the import is one transaction, the failure keeps
+     * nothing, so the message must not pretend anything was saved.
+     */
+    @Test
+    void anAniListOutageIsReportedInAniListsOwnTerms() {
+        when(anilistClient.findMediaByIds(anyCollection()))
+                .thenThrow(new dev.nexus.modules.anime.AniListUnavailableException(
+                        "AniList responded with 403",
+                        403,
+                        "The AniList API has been temporarily disabled due to severe stability issues."));
+
+        Response job = runImport();
+
+        assertThat(job.body().get("state")).isEqualTo("FAILED");
+        assertThat(String.valueOf(job.body().get("message")))
+                .contains("AniList is not answering")
+                .contains("nothing from this run was saved")
+                .contains("temporarily disabled due to severe stability issues")
+                .doesNotContain("Please try again.");
+        assertThat(entries.count()).isZero();
+    }
+
     /** Nothing running is answered with an empty body, which a client has to survive. */
     @Test
     void thereIsNoCurrentJobOnceTheImportHasFinished() {

@@ -45,6 +45,12 @@ public class AchievementSyncRunner {
             // than implying the whole run was lost.
             job.fail("Steam started rate limiting. Progress so far has been saved — run it "
                     + "again in a few minutes to finish the rest.");
+        } catch (SteamUnavailableException e) {
+            // An outage, not a fault to retry into: each game commits on its own, so what
+            // landed stays landed and the honest advice is to wait, not to try again now.
+            log.warn("Achievement sync lost Steam for job {}", job.getId(), e);
+            job.fail("Steam stopped answering. Progress so far has been saved — run it "
+                    + "again once Steam is back to finish the rest.");
         } catch (RuntimeException e) {
             log.warn("Achievement sync failed for job {}", job.getId(), e);
             job.fail("The achievement sync could not be completed. Please try again.");

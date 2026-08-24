@@ -309,7 +309,9 @@ public class AniListClient {
                                 return Map.<String, Object>of();
                             }
                             throw new AniListUnavailableException(
-                                    "AniList responded with " + status.value(), status.value());
+                                    "AniList responded with " + status.value(),
+                                    status.value(),
+                                    graphqlErrorMessage(response));
                         }
                         return (Map<String, Object>) response.bodyTo(Map.class);
                     });
@@ -330,6 +332,40 @@ public class AniListClient {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new AniListUnavailableException("Interrupted while waiting to retry AniList", e, false);
+        }
+    }
+
+    /** A refusal explains itself far better in the service's words than in a status code. */
+    private static final int MAX_UPSTREAM_MESSAGE_LENGTH = 300;
+
+    /**
+     * AniList's own words from an error body, or null when it said nothing readable.
+     *
+     * <p>When AniList refuses on purpose it says why in a GraphQL error — "temporarily
+     * disabled due to severe stability issues", once, for weeks — and those words explain
+     * the failure better than anything written on this side could. Only a parsed GraphQL
+     * message counts: a Cloudflare error page is the gateway talking, not AniList, and
+     * repeating its HTML to a reader would be worse than silence.
+     */
+    private static String graphqlErrorMessage(
+            RestClient.RequestHeadersSpec.ConvertibleClientHttpResponse response) {
+        try {
+            Map<?, ?> body = response.bodyTo(Map.class);
+            if (body == null
+                    || !(body.get("errors") instanceof List<?> errors)
+                    || errors.isEmpty()
+                    || !(errors.getFirst() instanceof Map<?, ?> error)
+                    || !(error.get("message") instanceof String message)
+                    || message.isBlank()) {
+                return null;
+            }
+            String trimmed = message.strip();
+            return trimmed.length() <= MAX_UPSTREAM_MESSAGE_LENGTH
+                    ? trimmed
+                    : trimmed.substring(0, MAX_UPSTREAM_MESSAGE_LENGTH) + "…";
+        } catch (RuntimeException e) {
+            // Not JSON at all — a gateway's error page. There are no words worth keeping.
+            return null;
         }
     }
 }

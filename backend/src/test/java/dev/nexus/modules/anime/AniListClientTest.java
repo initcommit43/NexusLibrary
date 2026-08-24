@@ -146,6 +146,46 @@ class AniListClientTest {
         server.verify();
     }
 
+    /**
+     * When AniList refuses on purpose it says why — "temporarily disabled due to severe
+     * stability issues", once, for weeks — and those words explain the failure better than
+     * anything we could write. They must survive onto the exception.
+     */
+    @Test
+    void aRefusalCarriesAniListsOwnWords() {
+        server.expect(requestTo(ENDPOINT))
+                .andRespond(org.springframework.test.web.client.response.MockRestResponseCreators
+                        .withStatus(org.springframework.http.HttpStatus.FORBIDDEN)
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .body("{\"errors\":[{\"message\":\"The AniList API has been temporarily "
+                                + "disabled due to severe stability issues.\",\"status\":403}],\"data\":null}"));
+
+        org.assertj.core.api.Assertions.assertThatExceptionOfType(AniListUnavailableException.class)
+                .isThrownBy(() -> client.findMediaById("21"))
+                .satisfies(e -> assertThat(e.serviceSays())
+                        .hasValueSatisfying(words -> assertThat(words).contains("temporarily disabled")));
+
+        server.verify();
+    }
+
+    /** A Cloudflare error page is the gateway talking, not AniList: no words worth quoting. */
+    @Test
+    void aGatewaysErrorPageIsNotMistakenForAniListSpeaking() {
+        server.expect(
+                        org.springframework.test.web.client.ExpectedCount.times(3),
+                        requestTo(ENDPOINT))
+                .andRespond(org.springframework.test.web.client.response.MockRestResponseCreators
+                        .withStatus(org.springframework.http.HttpStatus.BAD_GATEWAY)
+                        .contentType(org.springframework.http.MediaType.TEXT_HTML)
+                        .body("<html><body><h1>502 Bad Gateway</h1></body></html>"));
+
+        org.assertj.core.api.Assertions.assertThatExceptionOfType(AniListUnavailableException.class)
+                .isThrownBy(() -> client.findMediaById("21"))
+                .satisfies(e -> assertThat(e.serviceSays()).isEmpty());
+
+        server.verify();
+    }
+
     private static String page(String mediaJson) {
         return "{\"data\":{\"Page\":{\"media\":%s}}}".formatted(mediaJson);
     }

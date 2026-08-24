@@ -52,8 +52,30 @@ public class ImportRunner {
                 job.fail(fixable.advice());
                 return;
             }
+            // An outage is not theirs to fix either, but it is theirs to know about:
+            // "please try again" against a service that is down is an instruction to
+            // retry something that cannot succeed.
+            if (e instanceof UpstreamUnavailableException down) {
+                log.warn("Import failed for {}: upstream unavailable", account.getProvider(), e);
+                job.fail(outageMessage(down));
+                return;
+            }
             log.warn("Import failed for {}", account.getProvider(), e);
             job.fail("The import could not be completed. Please try again.");
         }
+    }
+
+    /**
+     * Names the service, quotes what it said for itself when it said anything, and is
+     * straight about the rollback: the import is one transaction, so unlike a cancel —
+     * which stops between items and keeps them — a failure keeps nothing.
+     */
+    private static String outageMessage(UpstreamUnavailableException down) {
+        String message = down.serviceName()
+                + " is not answering right now, so the import could not finish and nothing "
+                + "from this run was saved. Try again once it is back.";
+        return down.serviceSays()
+                .map(words -> message + " " + down.serviceName() + " says: “" + words + "”")
+                .orElse(message);
     }
 }

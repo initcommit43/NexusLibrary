@@ -8,6 +8,7 @@ import dev.nexus.core.importing.ExternalAccountNotConnectedException;
 import dev.nexus.core.importing.ImportNotSupportedException;
 import dev.nexus.core.importing.SteamVerificationFailedException;
 import dev.nexus.core.importing.SyncJobNotFoundException;
+import dev.nexus.core.importing.UpstreamUnavailableException;
 import dev.nexus.core.review.ReviewNotFoundException;
 import dev.nexus.core.tracking.EntryNotFoundException;
 import dev.nexus.modules.anime.AniListNotConfiguredException;
@@ -108,13 +109,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ApiError(e.getMessage()));
     }
 
-    @ExceptionHandler(SteamUnavailableException.class)
-    public ResponseEntity<ApiError> handleSteamUnavailable(SteamUnavailableException e) {
-        log.warn("Steam unavailable: {}", e.getMessage());
-        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
-                .body(new ApiError("Steam is unavailable right now. Please try again."));
-    }
-
     @ExceptionHandler(ImportNotSupportedException.class)
     public ResponseEntity<ApiError> handleImportUnsupported(ImportNotSupportedException e) {
         return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED)
@@ -138,19 +132,27 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 .body(new ApiError("That module is not available yet."));
     }
 
-    /** An upstream outage is not the client's fault, and its detail is not their business. */
-    @ExceptionHandler(IgdbUnavailableException.class)
-    public ResponseEntity<ApiError> handleUpstreamUnavailable(IgdbUnavailableException e) {
-        log.warn("IGDB unavailable: {}", e.getMessage());
-        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
-                .body(new ApiError("The game database is unavailable right now. Please try again."));
-    }
+    /**
+     * An upstream outage is not the client's fault, and the technical detail is not their
+     * business — but whose outage it is, and what the service said for itself, are. One
+     * handler for every provider, so a new module's outage speaks the same way by
+     * implementing the interface rather than by editing core.
+     */
+    @ExceptionHandler({
+        IgdbUnavailableException.class,
+        AniListUnavailableException.class,
+        SteamUnavailableException.class
+    })
+    public ResponseEntity<ApiError> handleUpstreamUnavailable(RuntimeException e) {
+        UpstreamUnavailableException down = (UpstreamUnavailableException) e;
+        log.warn("{} unavailable: {}", down.serviceName(), e.getMessage());
 
-    @ExceptionHandler(AniListUnavailableException.class)
-    public ResponseEntity<ApiError> handleAniListUnavailable(AniListUnavailableException e) {
-        log.warn("AniList unavailable: {}", e.getMessage());
-        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
-                .body(new ApiError("AniList is unavailable right now. Please try again."));
+        String message = down.serviceName() + " is not answering right now. Please try again later.";
+        String withWords = down.serviceSays()
+                .map(words -> message + " " + down.serviceName() + " says: “" + words + "”")
+                .orElse(message);
+
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(new ApiError(withWords));
     }
 
     /**
