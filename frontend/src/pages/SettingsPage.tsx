@@ -77,6 +77,8 @@ export const SettingsPage = () => {
 
   const steam = connected('STEAM')
   const anilist = connected('ANILIST')
+  const mal = connected('MAL')
+  const [malUsername, setMalUsername] = useState('')
 
   const load = useCallback(() => {
     api
@@ -319,6 +321,115 @@ export const SettingsPage = () => {
     </article>
   )
 
+  const connectMal = async () => {
+    setBusy({ provider: 'MAL', action: 'connect' })
+    setError(null)
+    try {
+      await api.connectMal(malUsername.trim())
+      setMalUsername('')
+      load()
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not link the MyAnimeList account.')
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  /** No OAuth here: a public MAL list reads by username, so connecting is typing one. */
+  const malCard = (provider: ModuleProvider) => (
+    <article key={provider.provider} className="card integration-card">
+      <div className={mal ? 'integration-head' : 'integration-head banner'}>
+        <div>
+          <h3>{provider.label}</h3>
+          <p className="muted">{mal ? `Connected as ${mal.externalUserId}` : provider.blurb}</p>
+        </div>
+
+        {mal ? (
+          <div className="integration-actions">
+            <button type="button" disabled={busy !== null} onClick={() => void runImport('MAL')}>
+              {working('MAL', 'import') ? 'Importing…' : 'Import lists'}
+            </button>
+            <button
+              type="button"
+              className="ghost"
+              disabled={busy !== null}
+              onClick={() => void disconnect('MAL')}
+            >
+              Disconnect
+            </button>
+          </div>
+        ) : (
+          <form
+            className="integration-actions"
+            onSubmit={(event) => {
+              event.preventDefault()
+              void connectMal()
+            }}
+          >
+            <input
+              type="text"
+              value={malUsername}
+              onChange={(event) => setMalUsername(event.target.value)}
+              placeholder="MAL username"
+              aria-label="MyAnimeList username"
+              disabled={busy !== null}
+            />
+            <button type="submit" disabled={busy !== null || malUsername.trim() === ''}>
+              {working('MAL', 'connect') ? 'Checking…' : 'Connect'}
+            </button>
+          </form>
+        )}
+      </div>
+
+      {!mal && (
+        <p className="muted note">
+          Your anime and manga lists must be set to <strong>Public</strong> in MAL&apos;s privacy
+          settings — a username alone cannot read a private list.
+        </p>
+      )}
+
+      {mal?.lastSyncedAt && (
+        <p className="muted">Last imported {new Date(mal.lastSyncedAt).toLocaleString()}.</p>
+      )}
+
+      {job && runningFor === provider.provider && (
+        <>
+          <p className="muted">{jobLabel(job)}</p>
+          {job.total > 0 && (
+            <div className="achievement-bar">
+              <div
+                className="achievement-bar-fill"
+                style={{ width: `${Math.round((job.processed / job.total) * 100)}%` }}
+              />
+            </div>
+          )}
+        </>
+      )}
+
+      {report && runningFor === provider.provider && (
+        <>
+          <p className="muted">
+            {report.created} added, {report.updated} updated
+            {report.unmatched.length > 0 && `, ${report.unmatched.length} not matched`}.
+          </p>
+
+          {report.unmatched.length > 0 && (
+            <details className="unmatched">
+              <summary>Titles we could not match ({report.unmatched.length})</summary>
+              <ul>
+                {report.unmatched.map((item) => (
+                  <li key={item.providerItemId}>
+                    {item.title} <span className="muted">— {item.reason}</span>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+        </>
+      )}
+    </article>
+  )
+
   /** Providers whose flow is not built yet, listed so the shape of the app stays visible. */
   const pendingCard = (provider: ModuleProvider) => (
     <article key={provider.provider} className="card integration-card">
@@ -348,6 +459,7 @@ export const SettingsPage = () => {
         module.providers.map((provider) => {
           if (provider.provider === 'STEAM') return steamCard(provider)
           if (provider.provider === 'ANILIST') return anilistCard(provider)
+          if (provider.provider === 'MAL') return malCard(provider)
           return pendingCard(provider)
         })
       )}

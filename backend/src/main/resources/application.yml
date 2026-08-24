@@ -74,6 +74,13 @@ nexus:
     token-url: https://anilist.co/api/v2/oauth/token
     requests-per-minute: 90
     retry-backoff-ms: 1500
+  mal:
+    api-url: https://api.myanimelist.net/v2
+    # Public lists read with just this id in a header — no per-user OAuth, since the
+    # import is pull-only. Registered at myanimelist.net/apiconfig.
+    client-id: ${MAL_CLIENT_ID:}
+    requests-per-second: 1
+    retry-backoff-ms: 1500
   steam:
     api-key: ${STEAM_API_KEY:}
     api-base-url: https://api.steampowered.com

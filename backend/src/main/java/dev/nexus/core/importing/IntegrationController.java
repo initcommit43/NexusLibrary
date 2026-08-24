@@ -84,10 +84,14 @@ public class IntegrationController {
     /** The authorization code AniList hands back, forwarded for exchange server-side. */
     public record AniListCallbackRequest(@jakarta.validation.constraints.NotBlank String code) {}
 
+    /** MAL needs only a username: public lists read with the app's own credential. */
+    public record MalConnectRequest(@jakarta.validation.constraints.NotBlank String username) {}
+
     private final ExternalAccountService accounts;
     private final LibraryImportService importService;
     private final SteamOpenIdService steamOpenId;
     private final AniListOAuthService anilistOAuth;
+    private final dev.nexus.modules.anime.MalClient malClient;
     private final ImportRunner runner;
     private final JobRegistry jobs;
     private final RateLimiter rateLimiter;
@@ -100,6 +104,7 @@ public class IntegrationController {
             LibraryImportService importService,
             SteamOpenIdService steamOpenId,
             AniListOAuthService anilistOAuth,
+            dev.nexus.modules.anime.MalClient malClient,
             ImportRunner runner,
             JobRegistry jobs,
             RateLimiter rateLimiter,
@@ -109,6 +114,7 @@ public class IntegrationController {
         this.importService = importService;
         this.steamOpenId = steamOpenId;
         this.anilistOAuth = anilistOAuth;
+        this.malClient = malClient;
         this.runner = runner;
         this.jobs = jobs;
         this.rateLimiter = rateLimiter;
@@ -181,6 +187,22 @@ public class IntegrationController {
 
     private String anilistRedirectUri() {
         return frontendUrl + "/settings/anilist/callback";
+    }
+
+    /**
+     * Links a MAL account by username — no OAuth, because the import is pull-only and
+     * reads public lists with the application's credential, the way Steam does. The
+     * username is proved before it is saved: a typo or a private list fails here, with
+     * advice, rather than at import time.
+     */
+    @PostMapping("/mal/connect")
+    public ConnectedAccount connectMal(
+            @AuthenticationPrincipal CurrentUser user,
+            @org.springframework.validation.annotation.Validated @RequestBody MalConnectRequest request) {
+
+        String username = request.username().strip();
+        malClient.probeUser(username);
+        return ConnectedAccount.from(accounts.connect(user.id(), Provider.MAL, username));
     }
 
     /**

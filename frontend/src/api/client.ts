@@ -305,6 +305,13 @@ export const api = {
       body: JSON.stringify({ code }),
     }),
 
+  /** MAL links by username alone: public lists read with the app's own credential. */
+  connectMal: (username: string) =>
+    request<ConnectedAccount>('/integrations/mal/connect', {
+      method: 'POST',
+      body: JSON.stringify({ username }),
+    }),
+
   completeSteamConnect: (params: Record<string, string>) =>
     request<ConnectedAccount>('/integrations/steam/callback', {
       method: 'POST',

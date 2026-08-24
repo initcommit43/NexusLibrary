@@ -34,6 +34,12 @@ nexus:
     token-url: https://anilist.test/oauth/token
     requests-per-minute: 6000
     retry-backoff-ms: 1
+  mal:
+    # Tests stub the transport; this never reaches the real MyAnimeList.
+    api-url: https://mal.test/v2
+    client-id: test-mal-client
+    requests-per-second: 1000
+    retry-backoff-ms: 1
   steam:
     api-key: test-steam-key
     api-base-url: https://steam.test

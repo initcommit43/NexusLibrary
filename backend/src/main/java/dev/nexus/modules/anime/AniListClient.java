@@ -83,6 +83,20 @@ public class AniListClient {
             """
                     .formatted(MEDIA_FIELDS);
 
+    /**
+     * The type is required: MAL numbers anime and manga separately, so a bare idMal is
+     * ambiguous in a way an AniList id never is.
+     */
+    private static final String BY_MAL_IDS_QUERY =
+            """
+            query ($idsMal: [Int], $type: MediaType, $perPage: Int) {
+              Page(page: 1, perPage: $perPage) {
+                media(idMal_in: $idsMal, type: $type) { %s }
+              }
+            }
+            """
+                    .formatted(MEDIA_FIELDS);
+
     private static final String BY_MAL_ID_QUERY =
             """
             query ($idMal: Int, $type: MediaType) {
@@ -195,6 +209,21 @@ public class AniListClient {
     public List<Map<String, Object>> findMediaByIds(Collection<String> externalIds) {
         List<Integer> ids = externalIds.stream().map(Integer::parseInt).toList();
         return pageMedia(post(BY_IDS_QUERY, Map.of("ids", ids, "perPage", MAX_BATCH)));
+    }
+
+    /**
+     * The hard ID join in bulk: AniList stores the MAL id of the same work, so most of a
+     * MAL list resolves fifty at a time with no title guessing at all.
+     */
+    public List<Map<String, Object>> findMediaByMalIds(MediaType mediaType, Collection<String> malIds) {
+        List<Map<String, Object>> media = new java.util.ArrayList<>();
+        for (List<String> batch : partition(malIds)) {
+            List<Integer> ids = batch.stream().map(Integer::parseInt).toList();
+            media.addAll(pageMedia(post(
+                    BY_MAL_IDS_QUERY,
+                    Map.of("idsMal", ids, "type", anilistType(mediaType), "perPage", MAX_BATCH))));
+        }
+        return media;
     }
 
     /**

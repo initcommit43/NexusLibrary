@@ -141,7 +141,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler({
         IgdbUnavailableException.class,
         AniListUnavailableException.class,
-        SteamUnavailableException.class
+        SteamUnavailableException.class,
+        dev.nexus.modules.anime.MalUnavailableException.class
     })
     public ResponseEntity<ApiError> handleUpstreamUnavailable(RuntimeException e) {
         UpstreamUnavailableException down = (UpstreamUnavailableException) e;
@@ -166,6 +167,24 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<ApiError> handleAniListNotConfigured(AniListNotConfiguredException e) {
         return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED)
                 .body(new ApiError("AniList is not configured on this server, so accounts cannot be connected."));
+    }
+
+    @ExceptionHandler(dev.nexus.modules.anime.MalNotConfiguredException.class)
+    public ResponseEntity<ApiError> handleMalNotConfigured(dev.nexus.modules.anime.MalNotConfiguredException e) {
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED)
+                .body(new ApiError("MyAnimeList is not configured on this server, so accounts cannot be connected."));
+    }
+
+    /** A typo in the username; 404 because the name, not the endpoint, was not found. */
+    @ExceptionHandler(dev.nexus.modules.anime.MalUserNotFoundException.class)
+    public ResponseEntity<ApiError> handleMalUserNotFound(dev.nexus.modules.anime.MalUserNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiError(e.advice()));
+    }
+
+    /** Like Steam's private profile: a setting only the user can change, named exactly. */
+    @ExceptionHandler(dev.nexus.modules.anime.MalListPrivateException.class)
+    public ResponseEntity<ApiError> handleMalListPrivate(dev.nexus.modules.anime.MalListPrivateException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ApiError(e.advice()));
     }
 
     @ExceptionHandler(RateLimitExceededException.class)
