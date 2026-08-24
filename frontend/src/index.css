@@ -27,6 +27,25 @@
   color: var(--text-muted);
 }
 
+/* Where a render crash lands instead of a blank page; see ErrorBoundary. */
+.crash-card {
+  width: min(100%, 26rem);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.crash-card h1 {
+  font-size: var(--text-lg);
+  color: var(--text);
+}
+
+.crash-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
 /* --- forms --- */
 
 .auth-form {

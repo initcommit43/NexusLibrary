@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { App } from './App'
 import { AuthProvider } from './auth/AuthProvider'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { applyTheme, storedTheme } from './theme'
 
 // Self-hosted rather than loaded from Google Fonts: hotlinking sends every visitor's IP to
@@ -24,9 +25,12 @@ applyTheme(storedTheme())
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
-      <AuthProvider>
-        <App />
-      </AuthProvider>
+      {/* Outside the providers, so a crash in one of them still leaves a page standing. */}
+      <ErrorBoundary>
+        <AuthProvider>
+          <App />
+        </AuthProvider>
+      </ErrorBoundary>
     </BrowserRouter>
   </StrictMode>,
 )
