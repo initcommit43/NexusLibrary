@@ -2,6 +2,7 @@ package dev.nexus.core.importing;
 
 import dev.nexus.core.adapter.CanonicalRef;
 import dev.nexus.core.adapter.ExternalItemRef;
+import dev.nexus.core.adapter.FetchProgress;
 import dev.nexus.core.adapter.ImportedEntry;
 import dev.nexus.core.adapter.LibraryImportAdapter;
 import dev.nexus.core.adapter.ItemResolver;
@@ -65,9 +66,9 @@ public class LibraryImportService {
     }
 
     /**
-     * @param job optional, reporting progress as the library is walked. Pulling and
-     *     resolving happen before the first item is counted, so the count starts once there
-     *     is something to count.
+     * @param job optional, reporting progress as the library is walked. It moves through
+     *     three phases rather than one, because writing the entries — the only part a
+     *     single counter used to cover — is the shortest of them by a wide margin.
      */
     @Transactional
     public ImportReport importLibrary(ExternalAccount account, SyncJob job) {
@@ -76,23 +77,29 @@ public class LibraryImportService {
                 require(adapters, LibraryImportAdapter::provider, provider, "import adapter");
         ItemResolver resolver = require(resolvers, ItemResolver::provider, provider, "item resolver");
 
+        // Nothing to count yet: how long a list is is the first thing the pull tells us.
+        if (job != null) {
+            job.beginPhase(SyncJob.Phase.FETCHING, 0);
+        }
+
         List<ImportedEntry> library = adapter.pullLibrary(account);
         log.debug("Pulled {} items from {}", library.size(), provider);
-        if (job != null) {
-            job.setTotal(library.size());
-        }
 
         Map<ExternalItemRef, CanonicalRef> resolved =
                 resolver.resolveAll(library.stream().map(ImportedEntry::itemRef).toList());
 
         // One batch per catalogue: already-cached titles cost nothing, and a title another
         // user cached earlier costs nothing either.
-        Map<Source, Map<String, TrackableItem>> cached = cacheResolvedItems(resolved.values());
+        Map<Source, Map<String, TrackableItem>> cached = cacheResolvedItems(resolved.values(), job);
         recordProviderIds(provider, resolved, cached);
 
         List<ImportReport.UnmatchedItem> unmatched = new ArrayList<>();
         int created = 0;
         int updated = 0;
+
+        if (job != null) {
+            job.beginPhase(SyncJob.Phase.IMPORTING, library.size());
+        }
 
         for (ImportedEntry entry : library) {
             if (job != null && job.isCancelled()) {
@@ -161,14 +168,25 @@ public class LibraryImportService {
         }
     }
 
-    private Map<Source, Map<String, TrackableItem>> cacheResolvedItems(Iterable<CanonicalRef> refs) {
+    /**
+     * Caches every title the library resolved to, counting the fetch onto the job.
+     *
+     * <p>A provider spanning two catalogues counts each separately, so the total moves when
+     * the second starts. That is honest about what is left rather than pretending to know
+     * up front how many of the second are already cached.
+     */
+    private Map<Source, Map<String, TrackableItem>> cacheResolvedItems(Iterable<CanonicalRef> refs, SyncJob job) {
         Map<Source, List<String>> idsBySource = new LinkedHashMap<>();
         refs.forEach(ref -> idsBySource
                 .computeIfAbsent(ref.source(), source -> new ArrayList<>())
                 .add(ref.externalId()));
 
+        FetchProgress progress = job == null
+                ? FetchProgress.IGNORED
+                : (fetched, total) -> job.reportPhase(SyncJob.Phase.MATCHING, fetched, total);
+
         Map<Source, Map<String, TrackableItem>> cached = new LinkedHashMap<>();
-        idsBySource.forEach((source, ids) -> cached.put(source, itemCache.findOrCacheAll(source, ids)));
+        idsBySource.forEach((source, ids) -> cached.put(source, itemCache.findOrCacheAll(source, ids, progress)));
         return cached;
     }
 

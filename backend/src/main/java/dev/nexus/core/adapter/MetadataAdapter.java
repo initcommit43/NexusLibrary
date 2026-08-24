@@ -48,4 +48,18 @@ public interface MetadataAdapter {
     default List<TrackableItemData> fetchByIds(Collection<String> externalIds) {
         return externalIds.stream().map(this::fetchById).flatMap(Optional::stream).toList();
     }
+
+    /**
+     * The same fetch, reporting how far through it is.
+     *
+     * <p>The default reports once at the end, which is honest for a source that answers in
+     * one call and no worse than silence for one that does not. A source batching hundreds
+     * of ids should override this and report per batch, since that is the wait a reader is
+     * actually sitting through.
+     */
+    default List<TrackableItemData> fetchByIds(Collection<String> externalIds, FetchProgress progress) {
+        List<TrackableItemData> fetched = fetchByIds(externalIds);
+        progress.report(externalIds.size(), externalIds.size());
+        return fetched;
+    }
 }

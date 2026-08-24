@@ -116,6 +116,35 @@ class AniListImportIntegrationTest extends PostgresIntegrationTest {
     }
 
     /**
+     * Caching unseen titles is the long part of an import and the writes are the short one,
+     * so the run has to say which it is doing. Reporting only the writes left a reader
+     * watching a still label for the whole wait and a bar that crossed in one step.
+     */
+    @Test
+    void theCatalogueFetchIsCountedUnderItsOwnPhase() {
+        List<String> phasesWhileFetching = new java.util.concurrent.CopyOnWriteArrayList<>();
+        when(anilistClient.findMediaByIds(anyCollection())).thenAnswer(call -> {
+            phasesWhileFetching.add(currentPhase());
+            return List.of(media(21, "ANIME"), media(30013, "MANGA"));
+        });
+
+        Response job = runImport();
+
+        assertThat(phasesWhileFetching).containsExactly("MATCHING");
+        assertThat(job.body()).containsEntry("phase", "IMPORTING");
+    }
+
+    /** Nothing running is answered with an empty body, which a client has to survive. */
+    @Test
+    void thereIsNoCurrentJobOnceTheImportHasFinished() {
+        runImport();
+
+        Response current = http.get("/integrations/jobs/current", "Authorization", "Bearer " + token);
+        assertThat(current.status()).isEqualTo(200);
+        assertThat(current.rawBody()).isNullOrEmpty();
+    }
+
+    /**
      * The whole point of separating the runs: importing one connection must not reach for
      * another's catalogue, or the reader gets a library they did not ask for.
      */
@@ -151,6 +180,13 @@ class AniListImportIntegrationTest extends PostgresIntegrationTest {
         Response started = http.post("/integrations/ANILIST/import", "Authorization", "Bearer " + token);
         assertThat(started.status()).isEqualTo(200);
         return awaitJob(String.valueOf(started.body().get("id")));
+    }
+
+    /** What the indicator would see right now, read from the import's own thread. */
+    private String currentPhase() {
+        Response current = http.get("/integrations/jobs/current", "Authorization", "Bearer " + token);
+        Object phase = current.body().get("phase");
+        return phase == null ? null : String.valueOf(phase);
     }
 
     /** The run answers immediately and works in the background, so a test has to wait for it. */

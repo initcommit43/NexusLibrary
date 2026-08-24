@@ -8,13 +8,25 @@ const PROVIDER_LABELS: Record<string, string> = {
   TRAKT: 'Trakt',
 }
 
+/**
+ * An import runs in three stretches of very different length, and each counts its own
+ * units. Naming the stretch is what stops a bar that restarts from looking like a bar that
+ * went backwards.
+ */
+const PHASE_VERBS: Record<string, string> = {
+  MATCHING: 'Matching',
+  IMPORTING: 'Importing',
+}
+
 const describe = (job: SyncJob): string => {
   const who = PROVIDER_LABELS[job.provider ?? ''] ?? 'library'
   if (job.kind === 'ACHIEVEMENTS') {
     return `${who} achievements — ${job.processed} of ${job.total}`
   }
-  return job.total > 0
-    ? `Importing ${who} — ${job.processed} of ${job.total}`
+
+  const verb = PHASE_VERBS[job.phase ?? '']
+  return verb && job.total > 0
+    ? `${verb} ${who} — ${job.processed} of ${job.total}`
     : `Fetching your ${who} list…`
 }
 

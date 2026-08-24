@@ -110,6 +110,8 @@ export type SyncJob = {
   kind: 'IMPORT' | 'ACHIEVEMENTS'
   /** Which connection the run belongs to, so its progress shows under that one. */
   provider: Provider | null
+  /** Which stretch of an import the count belongs to; null for work with only one. */
+  phase: 'FETCHING' | 'MATCHING' | 'IMPORTING' | null
   state: 'RUNNING' | 'COMPLETE' | 'FAILED' | 'CANCELLED'
   total: number
   processed: number
@@ -230,7 +232,12 @@ const request = async <T>(path: string, init: RequestInit = {}, allowRetry = tru
 
   if (!res.ok) throw await parseError(res)
   if (res.status === 204) return undefined as T
-  return res.json() as Promise<T>
+
+  // An endpoint answering "nothing" — no job is running — returns 200 with no body at all.
+  // Handing that to res.json() throws, and a caller that treats a failed poll as no news
+  // would then sit on its last value forever rather than noticing the run had finished.
+  const body = await res.text()
+  return (body ? JSON.parse(body) : null) as T
 }
 
 export const api = {

@@ -20,6 +20,19 @@ public class SyncJob {
         ACHIEVEMENTS
     }
 
+    /**
+     * Which stretch of an import a run is in. The three cost wildly different amounts of
+     * time and none of them can stand for the others: pulling a list is two calls, matching
+     * it against the catalogue is one call per fifty unseen titles, and writing the entries
+     * is local. A single bar over all three would spend a minute at nothing and then cross
+     * the finish in one step, which is what a reader would call frozen.
+     */
+    public enum Phase {
+        FETCHING,
+        MATCHING,
+        IMPORTING
+    }
+
     private final String id = UUID.randomUUID().toString();
     private final Long userId;
     private final Kind kind;
@@ -30,6 +43,7 @@ public class SyncJob {
     private final AtomicInteger changed = new AtomicInteger();
 
     private volatile int total;
+    private volatile Phase phase;
     private volatile State state = State.RUNNING;
     private volatile Object report;
     private volatile String followUpJobId;
@@ -106,8 +120,24 @@ public class SyncJob {
         return total;
     }
 
-    public void setTotal(int total) {
+    public Phase getPhase() {
+        return phase;
+    }
+
+    /**
+     * Moves the run into a phase and starts its count again from nothing. Each phase counts
+     * its own units — titles pulled, titles matched, entries written — so carrying the
+     * previous count over would only misreport the new one.
+     */
+    public void beginPhase(Phase phase, int total) {
+        reportPhase(phase, 0, total);
+    }
+
+    /** Where a phase has got to, for work counted somewhere other than {@link #advance}. */
+    public void reportPhase(Phase phase, int processed, int total) {
+        this.phase = phase;
         this.total = total;
+        this.processed.set(processed);
     }
 
     public int getProcessed() {

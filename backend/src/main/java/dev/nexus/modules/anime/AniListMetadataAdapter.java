@@ -1,5 +1,6 @@
 package dev.nexus.modules.anime;
 
+import dev.nexus.core.adapter.FetchProgress;
 import dev.nexus.core.adapter.ItemSearchResult;
 import dev.nexus.core.adapter.MetadataAdapter;
 import dev.nexus.core.adapter.TrackableItemData;
@@ -58,9 +59,21 @@ public class AniListMetadataAdapter implements MetadataAdapter {
 
     @Override
     public List<TrackableItemData> fetchByIds(Collection<String> externalIds) {
+        return fetchByIds(externalIds, FetchProgress.IGNORED);
+    }
+
+    /**
+     * Fifty ids a call, paced against AniList's rate limit — a first import of several
+     * hundred titles is most of the wait, so it is counted a batch at a time.
+     */
+    @Override
+    public List<TrackableItemData> fetchByIds(Collection<String> externalIds, FetchProgress progress) {
         List<TrackableItemData> items = new ArrayList<>();
+        int fetched = 0;
         for (List<String> batch : AniListClient.partition(externalIds)) {
             client.findMediaByIds(batch).stream().map(this::toItemData).forEach(items::add);
+            fetched += batch.size();
+            progress.report(fetched, externalIds.size());
         }
         return items;
     }

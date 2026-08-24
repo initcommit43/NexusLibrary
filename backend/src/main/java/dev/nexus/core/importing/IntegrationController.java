@@ -48,6 +48,8 @@ public class IntegrationController {
             String state,
             /** Which connection this run belongs to, so its progress is shown under that one. */
             String provider,
+            /** Which stretch of the run the count belongs to; null for work with only one. */
+            String phase,
             int total,
             int processed,
             int changed,
@@ -63,6 +65,7 @@ public class IntegrationController {
                     job.getKind().name(),
                     job.getState().name(),
                     job.getProvider() == null ? null : job.getProvider().name(),
+                    job.getPhase() == null ? null : job.getPhase().name(),
                     job.getTotal(),
                     job.getProcessed(),
                     job.getChanged(),

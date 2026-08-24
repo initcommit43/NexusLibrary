@@ -11,6 +11,41 @@ import { MODULES, type ModuleDefinition, type ModuleProvider } from '../modules/
 import { useModules } from '../modules/useModules'
 
 /**
+ * An import runs in three stretches of very different length — pulling the list, matching
+ * it against the catalogue, writing the entries — and each counts its own units. Naming
+ * the stretch is what stops a bar that restarts from reading as a bar that went backwards.
+ */
+const PHASE_VERBS: Record<string, string> = {
+  MATCHING: 'Matching',
+  IMPORTING: 'Importing',
+}
+
+/** What a run says about itself, running or finished. */
+const jobLabel = (job: SyncJob): string => {
+  const isImport = job.kind === 'IMPORT'
+
+  if (job.state === 'RUNNING') {
+    if (!isImport) return `Syncing achievements — ${job.processed} of ${job.total} games…`
+    const verb = PHASE_VERBS[job.phase ?? '']
+    return verb && job.total > 0
+      ? `${verb} — ${job.processed} of ${job.total} titles…`
+      : 'Fetching your list…'
+  }
+
+  if (job.state === 'COMPLETE') {
+    return isImport
+      ? `Imported ${job.total} titles.`
+      : `Achievements synced — ${job.changed} of ${job.total} games updated.`
+  }
+
+  if (job.state === 'CANCELLED') {
+    return `Stopped after ${job.processed} of ${job.total}. What was imported was kept.`
+  }
+
+  return isImport ? 'The import stopped early.' : 'Achievement sync failed.'
+}
+
+/**
  * Settings spans every module rather than belonging to one: connections sit under the
  * module they feed, so a new module brings its own box instead of a new page.
  */
@@ -248,23 +283,7 @@ export const SettingsPage = () => {
 
       {job && runningFor === provider.provider && (
         <>
-          <p className="muted">
-            {job.state === 'RUNNING'
-              ? job.kind === 'IMPORT'
-                ? job.total > 0
-                  ? `Importing — ${job.processed} of ${job.total} titles…`
-                  : 'Fetching your list…'
-                : `Syncing achievements — ${job.processed} of ${job.total} games…`
-              : job.state === 'COMPLETE'
-                ? job.kind === 'IMPORT'
-                  ? `Imported ${job.total} titles.`
-                  : `Achievements synced — ${job.changed} of ${job.total} games updated.`
-                : job.state === 'CANCELLED'
-                  ? `Stopped after ${job.processed} of ${job.total}. What was imported was kept.`
-                  : job.kind === 'IMPORT'
-                    ? 'The import stopped early.'
-                    : 'Achievement sync failed.'}
-          </p>
+          <p className="muted">{jobLabel(job)}</p>
           {job.total > 0 && (
             <div className="achievement-bar">
               <div

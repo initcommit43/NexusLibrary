@@ -1,5 +1,6 @@
 package dev.nexus.core.cache;
 
+import dev.nexus.core.adapter.FetchProgress;
 import dev.nexus.core.adapter.MetadataAdapter;
 import dev.nexus.core.adapter.MetadataAdapterRegistry;
 import dev.nexus.core.adapter.TrackableItemData;
@@ -60,6 +61,17 @@ public class ItemCacheService {
      *     are simply absent
      */
     public Map<String, TrackableItem> findOrCacheAll(Source source, Collection<String> externalIds) {
+        return findOrCacheAll(source, externalIds, FetchProgress.IGNORED);
+    }
+
+    /**
+     * The same, for a caller that wants to be told how the fetch is going. Only what was
+     * missing is counted: titles already cached cost nothing and finish before the count
+     * starts, so reporting them would claim credit for work nobody waited on.
+     */
+    public Map<String, TrackableItem> findOrCacheAll(
+            Source source, Collection<String> externalIds, FetchProgress progress) {
+
         if (externalIds.isEmpty()) {
             return Map.of();
         }
@@ -78,7 +90,11 @@ public class ItemCacheService {
                 .forSource(source)
                 .orElseThrow(() -> new ItemNotFoundException("No adapter registered for source " + source));
 
-        List<TrackableItemData> fetched = adapter.fetchByIds(missing);
+        // Announced before the first call rather than after it: a source that answers the
+        // whole batch in one go would otherwise spend the entire wait still claiming to be
+        // doing the previous thing, and only say what it was doing once it had stopped.
+        progress.report(0, missing.size());
+        List<TrackableItemData> fetched = adapter.fetchByIds(missing, progress);
 
         Map<String, TrackableItem> result = new LinkedHashMap<>(found);
         try {
