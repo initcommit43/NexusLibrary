@@ -78,7 +78,6 @@ export const SettingsPage = () => {
   const steam = connected('STEAM')
   const anilist = connected('ANILIST')
   const mal = connected('MAL')
-  const [malUsername, setMalUsername] = useState('')
 
   const load = useCallback(() => {
     api
@@ -325,17 +324,15 @@ export const SettingsPage = () => {
     setBusy({ provider: 'MAL', action: 'connect' })
     setError(null)
     try {
-      await api.connectMal(malUsername.trim())
-      setMalUsername('')
-      load()
+      const { url } = await api.malAuthorizeUrl()
+      // Full-page navigation: the approval screen is MAL's, not ours to embed.
+      window.location.href = url
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not link the MyAnimeList account.')
-    } finally {
       setBusy(null)
+      setError(err instanceof ApiError ? err.message : 'Could not start the MyAnimeList link.')
     }
   }
 
-  /** No OAuth here: a public MAL list reads by username, so connecting is typing one. */
   const malCard = (provider: ModuleProvider) => (
     <article key={provider.provider} className="card integration-card">
       <div className={mal ? 'integration-head' : 'integration-head banner'}>
@@ -359,34 +356,11 @@ export const SettingsPage = () => {
             </button>
           </div>
         ) : (
-          <form
-            className="integration-actions"
-            onSubmit={(event) => {
-              event.preventDefault()
-              void connectMal()
-            }}
-          >
-            <input
-              type="text"
-              value={malUsername}
-              onChange={(event) => setMalUsername(event.target.value)}
-              placeholder="MAL username"
-              aria-label="MyAnimeList username"
-              disabled={busy !== null}
-            />
-            <button type="submit" disabled={busy !== null || malUsername.trim() === ''}>
-              {working('MAL', 'connect') ? 'Checking…' : 'Connect'}
-            </button>
-          </form>
+          <button type="button" disabled={busy !== null} onClick={() => void connectMal()}>
+            {working('MAL', 'connect') ? 'Redirecting…' : 'Connect MyAnimeList'}
+          </button>
         )}
       </div>
-
-      {!mal && (
-        <p className="muted note">
-          Your anime and manga lists must be set to <strong>Public</strong> in MAL&apos;s privacy
-          settings — a username alone cannot read a private list.
-        </p>
-      )}
 
       {mal?.lastSyncedAt && (
         <p className="muted">Last imported {new Date(mal.lastSyncedAt).toLocaleString()}.</p>

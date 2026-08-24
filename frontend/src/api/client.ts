@@ -305,11 +305,14 @@ export const api = {
       body: JSON.stringify({ code }),
     }),
 
-  /** MAL links by username alone: public lists read with the app's own credential. */
-  connectMal: (username: string) =>
-    request<ConnectedAccount>('/integrations/mal/connect', {
+  malAuthorizeUrl: () =>
+    request<{ url: string }>('/integrations/mal/authorize', { method: 'POST' }),
+
+  /** OAuth like AniList's, so a private MAL list imports the same as a public one. */
+  completeMalConnect: (code: string) =>
+    request<ConnectedAccount>('/integrations/mal/callback', {
       method: 'POST',
-      body: JSON.stringify({ username }),
+      body: JSON.stringify({ code }),
     }),
 
   completeSteamConnect: (params: Record<string, string>) =>

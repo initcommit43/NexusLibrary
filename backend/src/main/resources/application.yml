@@ -76,9 +76,12 @@ nexus:
     retry-backoff-ms: 1500
   mal:
     api-url: https://api.myanimelist.net/v2
-    # Public lists read with just this id in a header — no per-user OAuth, since the
-    # import is pull-only. Registered at myanimelist.net/apiconfig.
+    # Registered at myanimelist.net/apiconfig. OAuth like AniList's, but not its flow:
+    # PKCE is mandatory (plain only) and tokens live about a month, so refresh is real.
     client-id: ${MAL_CLIENT_ID:}
+    client-secret: ${MAL_CLIENT_SECRET:}
+    authorize-url: https://myanimelist.net/v1/oauth2/authorize
+    token-url: https://myanimelist.net/v1/oauth2/token
     requests-per-second: 1
     retry-backoff-ms: 1500
   steam:

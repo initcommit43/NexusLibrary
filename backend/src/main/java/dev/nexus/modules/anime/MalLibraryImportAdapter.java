@@ -50,14 +50,12 @@ public class MalLibraryImportAdapter implements LibraryImportAdapter {
 
     @Override
     public List<ImportedEntry> pullLibrary(ExternalAccount account) {
-        String username = account.getExternalUserId();
-
         List<ImportedEntry> entries = new ArrayList<>();
-        client.fetchAnimeList(username).stream()
+        client.fetchAnimeList(account).stream()
                 .map(row -> toEntry(row, MediaType.ANIME))
                 .filter(java.util.Objects::nonNull)
                 .forEach(entries::add);
-        client.fetchMangaList(username).stream()
+        client.fetchMangaList(account).stream()
                 .map(row -> toEntry(row, MediaType.MANGA))
                 .filter(java.util.Objects::nonNull)
                 .forEach(entries::add);

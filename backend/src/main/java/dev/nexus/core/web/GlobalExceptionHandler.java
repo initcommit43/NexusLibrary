@@ -175,15 +175,18 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 .body(new ApiError("MyAnimeList is not configured on this server, so accounts cannot be connected."));
     }
 
-    /** A typo in the username; 404 because the name, not the endpoint, was not found. */
-    @ExceptionHandler(dev.nexus.modules.anime.MalUserNotFoundException.class)
-    public ResponseEntity<ApiError> handleMalUserNotFound(dev.nexus.modules.anime.MalUserNotFoundException e) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiError(e.advice()));
+    /** The PKCE verifier is gone — expired or already spent. Starting over mints a new one. */
+    @ExceptionHandler(dev.nexus.modules.anime.MalAuthorizationExpiredException.class)
+    public ResponseEntity<ApiError> handleMalAuthorizationExpired(
+            dev.nexus.modules.anime.MalAuthorizationExpiredException e) {
+        return ResponseEntity.badRequest()
+                .body(new ApiError("The MyAnimeList link attempt expired. Start it again from settings."));
     }
 
-    /** Like Steam's private profile: a setting only the user can change, named exactly. */
-    @ExceptionHandler(dev.nexus.modules.anime.MalListPrivateException.class)
-    public ResponseEntity<ApiError> handleMalListPrivate(dev.nexus.modules.anime.MalListPrivateException e) {
+    /** Dead tokens are the reader's to renew: only they can go through the approval again. */
+    @ExceptionHandler(dev.nexus.modules.anime.MalReconnectRequiredException.class)
+    public ResponseEntity<ApiError> handleMalReconnectRequired(
+            dev.nexus.modules.anime.MalReconnectRequiredException e) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(new ApiError(e.advice()));
     }
 

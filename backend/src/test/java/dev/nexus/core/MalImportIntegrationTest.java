@@ -6,7 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doThrow;
+
 import static org.mockito.Mockito.when;
 
 import dev.nexus.auth.AppUserRepository;
@@ -17,7 +17,7 @@ import dev.nexus.core.domain.UserEntryRepository;
 import dev.nexus.core.importing.ExternalAccountService;
 import dev.nexus.modules.anime.AniListClient;
 import dev.nexus.modules.anime.MalClient;
-import dev.nexus.modules.anime.MalUserNotFoundException;
+
 import dev.nexus.support.HttpTestClient;
 import dev.nexus.support.HttpTestClient.Response;
 import dev.nexus.support.PostgresIntegrationTest;
@@ -71,41 +71,30 @@ class MalImportIntegrationTest extends PostgresIntegrationTest {
         token = registerAndGetToken(http, "reader@example.com", "reader");
         userId = users.findByEmail("reader@example.com").orElseThrow().getId();
 
-        when(malClient.fetchAnimeList(anyString())).thenReturn(List.of());
-        when(malClient.fetchMangaList(anyString())).thenReturn(List.of());
+        when(malClient.fetchAnimeList(any())).thenReturn(List.of());
+        when(malClient.fetchMangaList(any())).thenReturn(List.of());
         when(anilistClient.findMediaByMalIds(any(), anyCollection())).thenReturn(List.of());
         when(anilistClient.searchMedia(any(), anyString(), anyInt())).thenReturn(List.of());
         when(anilistClient.findMediaByIds(anyCollection())).thenReturn(List.of());
     }
 
+    /** MAL demands PKCE with the plain method; the URL must carry the challenge. */
     @Test
-    void connectingStoresTheUsernameOnceMalConfirmsIt() {
-        Response connected =
-                http.postJson("/integrations/mal/connect", Map.of("username", "reader"), "Authorization", "Bearer " + token);
+    void theAuthorizeUrlCarriesThePkceChallenge() {
+        Response authorize = http.post("/integrations/mal/authorize", "Authorization", "Bearer " + token);
 
-        assertThat(connected.status()).isEqualTo(200);
-        assertThat(connected.body()).containsEntry("provider", "MAL");
-        assertThat(connected.body()).containsEntry("externalUserId", "reader");
-    }
-
-    /** A typo fails at connect time with the reason, not at import time with a mystery. */
-    @Test
-    void connectingAnUnknownUsernameFailsWithAdvice() {
-        doThrow(new MalUserNotFoundException("ghost")).when(malClient).probeUser("ghost");
-
-        Response refused =
-                http.postJson("/integrations/mal/connect", Map.of("username", "ghost"), "Authorization", "Bearer " + token);
-
-        assertThat(refused.status()).isEqualTo(404);
-        assertThat(String.valueOf(refused.body().get("message"))).contains("ghost");
-        assertThat(accounts.listFor(userId)).isEmpty();
+        assertThat(authorize.status()).isEqualTo(200);
+        assertThat(String.valueOf(authorize.body().get("url")))
+                .contains("code_challenge=")
+                .contains("code_challenge_method=plain")
+                .contains("settings%2Fmal%2Fcallback");
     }
 
     @Test
     void entriesLandOnTheirAniListCanonicalsThroughTheIdJoin() {
         connectMal();
-        when(malClient.fetchAnimeList("reader")).thenReturn(List.of(malAnimeRow(20, "Naruto", 220, "completed", 220, 8)));
-        when(malClient.fetchMangaList("reader")).thenReturn(List.of(malMangaRow(2, "Berserk", 0, "reading", 120, 10)));
+        when(malClient.fetchAnimeList(any())).thenReturn(List.of(malAnimeRow(20, "Naruto", 220, "completed", 220, 8)));
+        when(malClient.fetchMangaList(any())).thenReturn(List.of(malMangaRow(2, "Berserk", 0, "reading", 120, 10)));
 
         // AniList knows both MAL ids, so the whole list resolves by the join.
         when(anilistClient.findMediaByMalIds(any(), anyCollection())).thenAnswer(call -> {
@@ -136,7 +125,7 @@ class MalImportIntegrationTest extends PostgresIntegrationTest {
     @Test
     void aTitleAniListHasNoMalIdForFallsBackToTheSearch() {
         connectMal();
-        when(malClient.fetchAnimeList("reader"))
+        when(malClient.fetchAnimeList(any()))
                 .thenReturn(List.of(malAnimeRow(999, "Fullmetal Alchemist Brotherhood", 64, "completed", 64, 9)));
 
         // The join finds nothing; the search offers a candidate with no MAL id but an
@@ -158,7 +147,7 @@ class MalImportIntegrationTest extends PostgresIntegrationTest {
     @Test
     void whatNothingMatchesLandsInTheUnmatchedReport() {
         connectMal();
-        when(malClient.fetchAnimeList("reader"))
+        when(malClient.fetchAnimeList(any()))
                 .thenReturn(List.of(malAnimeRow(777, "Some Obscure Special", 1, "completed", 1, 0)));
 
         Response job = runImport();
@@ -188,7 +177,7 @@ class MalImportIntegrationTest extends PostgresIntegrationTest {
 
         // Now the same work arrives from MAL, resolving through the join onto id 21.
         connectMal();
-        when(malClient.fetchAnimeList("reader")).thenReturn(List.of(malAnimeRow(20, "Naruto", 220, "completed", 220, 8)));
+        when(malClient.fetchAnimeList(any())).thenReturn(List.of(malAnimeRow(20, "Naruto", 220, "completed", 220, 8)));
         when(anilistClient.findMediaByMalIds(any(), anyCollection()))
                 .thenAnswer(call -> call.getArgument(0) == MediaType.ANIME
                         ? List.of(anilistMedia(21, 20, "ANIME", "Naruto"))
@@ -204,10 +193,10 @@ class MalImportIntegrationTest extends PostgresIntegrationTest {
                 .satisfies(entry -> assertThat(entry.getImportedFrom()).isEqualTo(Provider.ANILIST));
     }
 
+    /** The OAuth exchange is the service's own test; here the tokens are simply on file. */
     private void connectMal() {
-        Response connected =
-                http.postJson("/integrations/mal/connect", Map.of("username", "reader"), "Authorization", "Bearer " + token);
-        assertThat(connected.status()).isEqualTo(200);
+        accounts.connect(
+                userId, Provider.MAL, "reader", "mal-tok", "mal-refresh", Instant.now().plusSeconds(3600));
     }
 
     private Response runImport() {

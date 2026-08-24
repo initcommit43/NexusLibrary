@@ -38,6 +38,9 @@ nexus:
     # Tests stub the transport; this never reaches the real MyAnimeList.
     api-url: https://mal.test/v2
     client-id: test-mal-client
+    client-secret: test-mal-secret
+    authorize-url: https://mal.test/oauth2/authorize
+    token-url: https://mal.test/oauth2/token
     requests-per-second: 1000
     retry-backoff-ms: 1
   steam:

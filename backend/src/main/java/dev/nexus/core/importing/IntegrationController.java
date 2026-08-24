@@ -84,14 +84,14 @@ public class IntegrationController {
     /** The authorization code AniList hands back, forwarded for exchange server-side. */
     public record AniListCallbackRequest(@jakarta.validation.constraints.NotBlank String code) {}
 
-    /** MAL needs only a username: public lists read with the app's own credential. */
-    public record MalConnectRequest(@jakarta.validation.constraints.NotBlank String username) {}
+    /** The authorization code MAL hands back, forwarded for exchange server-side. */
+    public record MalCallbackRequest(@jakarta.validation.constraints.NotBlank String code) {}
 
     private final ExternalAccountService accounts;
     private final LibraryImportService importService;
     private final SteamOpenIdService steamOpenId;
     private final AniListOAuthService anilistOAuth;
-    private final dev.nexus.modules.anime.MalClient malClient;
+    private final dev.nexus.modules.anime.MalOAuthService malOAuth;
     private final ImportRunner runner;
     private final JobRegistry jobs;
     private final RateLimiter rateLimiter;
@@ -104,7 +104,7 @@ public class IntegrationController {
             LibraryImportService importService,
             SteamOpenIdService steamOpenId,
             AniListOAuthService anilistOAuth,
-            dev.nexus.modules.anime.MalClient malClient,
+            dev.nexus.modules.anime.MalOAuthService malOAuth,
             ImportRunner runner,
             JobRegistry jobs,
             RateLimiter rateLimiter,
@@ -114,7 +114,7 @@ public class IntegrationController {
         this.importService = importService;
         this.steamOpenId = steamOpenId;
         this.anilistOAuth = anilistOAuth;
-        this.malClient = malClient;
+        this.malOAuth = malOAuth;
         this.runner = runner;
         this.jobs = jobs;
         this.rateLimiter = rateLimiter;
@@ -190,19 +190,39 @@ public class IntegrationController {
     }
 
     /**
-     * Links a MAL account by username — no OAuth, because the import is pull-only and
-     * reads public lists with the application's credential, the way Steam does. The
-     * username is proved before it is saved: a typo or a private list fails here, with
-     * advice, rather than at import time.
+     * Where to send the reader to approve the MAL link. Stateful, unlike AniList's: MAL
+     * demands PKCE, so this mints a verifier the callback will need to present.
      */
-    @PostMapping("/mal/connect")
-    public ConnectedAccount connectMal(
-            @AuthenticationPrincipal CurrentUser user,
-            @org.springframework.validation.annotation.Validated @RequestBody MalConnectRequest request) {
+    @PostMapping("/mal/authorize")
+    public AuthorizeUrlResponse authorizeMal(@AuthenticationPrincipal CurrentUser user) {
+        return new AuthorizeUrlResponse(malOAuth.authorizationUrl(user.id(), malRedirectUri()));
+    }
 
-        String username = request.username().strip();
-        malClient.probeUser(username);
-        return ConnectedAccount.from(accounts.connect(user.id(), Provider.MAL, username));
+    /**
+     * Completes the link. MAL redirects the browser back with no Authorization header, so
+     * the frontend forwards the code here on an authenticated request — which binds the
+     * new link to the session that started it, and hands the exchange the verifier that
+     * session minted. Reading the list through OAuth is what lets a private list import.
+     */
+    @PostMapping("/mal/callback")
+    public ConnectedAccount completeMal(
+            @AuthenticationPrincipal CurrentUser user,
+            @org.springframework.validation.annotation.Validated @RequestBody MalCallbackRequest request) {
+
+        dev.nexus.modules.anime.MalOAuthService.Connection connection =
+                malOAuth.exchangeCode(user.id(), request.code(), malRedirectUri());
+
+        return ConnectedAccount.from(accounts.connect(
+                user.id(),
+                Provider.MAL,
+                connection.externalUserId(),
+                connection.accessToken(),
+                connection.refreshToken(),
+                connection.expiresAt()));
+    }
+
+    private String malRedirectUri() {
+        return frontendUrl + "/settings/mal/callback";
     }
 
     /**
