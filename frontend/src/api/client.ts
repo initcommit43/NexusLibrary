@@ -1,3 +1,5 @@
+import { reportOutage } from './outages'
+
 const BASE = '/api'
 
 export type User = {
@@ -117,6 +119,8 @@ export type SyncJob = {
   processed: number
   changed: number
   message: string | null
+  /** Named when the failure was an upstream outage, so the banner can rise from a job too. */
+  unavailableService: string | null
   /** What the run produced, once it has — an import's counts and unmatched titles. */
   report: ImportReport | null
   /** Work that started when this one finished, such as Steam's achievements. */
@@ -191,6 +195,9 @@ const parseError = async (res: Response): Promise<ApiError> => {
     const body = await res.json()
     if (typeof body.message === 'string') message = body.message
     if (body.fieldErrors && typeof body.fieldErrors === 'object') fieldErrors = body.fieldErrors
+    // The server names the service when a failure is an upstream outage; every such
+    // sighting feeds the one banner, whatever feature happened to hit it first.
+    if (typeof body.unavailableService === 'string') reportOutage(body.unavailableService)
   } catch {
     // Non-JSON body (proxy error, gateway timeout) — the default message stands.
   }
@@ -238,6 +245,15 @@ const request = async <T>(path: string, init: RequestInit = {}, allowRetry = tru
   // would then sit on its last value forever rather than noticing the run had finished.
   const body = await res.text()
   return (body ? JSON.parse(body) : null) as T
+}
+
+/**
+ * A background job that failed against a dead upstream feeds the same banner as a failed
+ * request: the import is where an outage is most likely to be met first.
+ */
+const trackJobOutage = <T extends SyncJob | null>(job: T): T => {
+  if (job?.state === 'FAILED' && job.unavailableService) reportOutage(job.unavailableService)
+  return job
 }
 
 export const api = {
@@ -302,10 +318,10 @@ export const api = {
   disconnect: (provider: Provider) =>
     request<void>(`/integrations/${provider}`, { method: 'DELETE' }),
 
-  syncJob: (jobId: string) => request<SyncJob>(`/integrations/jobs/${jobId}`),
+  syncJob: (jobId: string) => request<SyncJob>(`/integrations/jobs/${jobId}`).then(trackJobOutage),
 
   /** Whatever this reader has running, for the indicator that follows them around. */
-  currentJob: () => request<SyncJob | null>('/integrations/jobs/current'),
+  currentJob: () => request<SyncJob | null>('/integrations/jobs/current').then(trackJobOutage),
 
   cancelJob: (jobId: string) =>
     request<SyncJob>(`/integrations/jobs/${jobId}`, { method: 'DELETE' }),

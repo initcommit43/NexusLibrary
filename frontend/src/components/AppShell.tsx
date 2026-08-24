@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
 import { ModuleSwitcher } from './ModuleSwitcher'
 import { ImportIndicator } from './ImportIndicator'
+import { OutageBanner } from './OutageBanner'
 import { ThemeToggle } from './ThemeToggle'
 import { useCurrentModule } from '../modules/useCurrentModule'
 import { useHideOnScroll } from './useHideOnScroll'
@@ -70,6 +71,9 @@ export const AppShell = ({
           </button>
         </div>
       </header>
+
+      {/* Above the page, not inside it: an outage is app-wide news, not one page's. */}
+      <OutageBanner />
 
       <main className="shell-main" data-module={current.slug}>
         {children}

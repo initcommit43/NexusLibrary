@@ -152,7 +152,10 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 .map(words -> message + " " + down.serviceName() + " says: “" + words + "”")
                 .orElse(message);
 
-        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(new ApiError(withWords));
+        // The service travels as data too, so the client can raise its outage banner
+        // without parsing the sentence it shows the reader.
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(ApiError.upstreamOutage(withWords, down.serviceName()));
     }
 
     /**

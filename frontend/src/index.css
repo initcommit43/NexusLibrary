@@ -27,6 +27,27 @@
   color: var(--text-muted);
 }
 
+/* One per service that is down; see OutageBanner. Warning, not danger: nothing broke here. */
+.outage-banners {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-4) 0;
+}
+
+.outage-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--warning);
+  border-radius: var(--radius-sm);
+  background: var(--warning-soft);
+  color: var(--text);
+  font-size: var(--text-sm);
+}
+
 /* Where a render crash lands instead of a blank page; see ErrorBoundary. */
 .crash-card {
   width: min(100%, 26rem);

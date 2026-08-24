@@ -57,7 +57,7 @@ public class ImportRunner {
             // retry something that cannot succeed.
             if (e instanceof UpstreamUnavailableException down) {
                 log.warn("Import failed for {}: upstream unavailable", account.getProvider(), e);
-                job.fail(outageMessage(down));
+                job.failUpstream(down.serviceName(), outageMessage(down));
                 return;
             }
             log.warn("Import failed for {}", account.getProvider(), e);

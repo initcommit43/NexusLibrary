@@ -151,6 +151,8 @@ class AniListImportIntegrationTest extends PostgresIntegrationTest {
         Response job = runImport();
 
         assertThat(job.body().get("state")).isEqualTo("FAILED");
+        // As data, not only prose: the client's outage banner keys off this field.
+        assertThat(job.body().get("unavailableService")).isEqualTo("AniList");
         assertThat(String.valueOf(job.body().get("message")))
                 .contains("AniList is not answering")
                 .contains("nothing from this run was saved")

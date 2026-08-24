@@ -48,6 +48,8 @@ public class SyncJob {
     private volatile Object report;
     private volatile String followUpJobId;
     private volatile String message;
+    /** Set when the failure was an upstream outage: the service's name, in the reader's terms. */
+    private volatile String unavailableService;
     private volatile Instant finishedAt;
 
     private volatile boolean cancelled;
@@ -102,6 +104,19 @@ public class SyncJob {
         this.state = State.FAILED;
         this.message = message;
         this.finishedAt = Instant.now();
+    }
+
+    /**
+     * A failure that was the upstream's outage rather than anyone's mistake. Recorded as
+     * data alongside the message so a client can raise its banner without parsing prose.
+     */
+    public void failUpstream(String serviceName, String message) {
+        this.unavailableService = serviceName;
+        fail(message);
+    }
+
+    public String getUnavailableService() {
+        return unavailableService;
     }
 
     public String getId() {

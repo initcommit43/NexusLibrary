@@ -54,6 +54,8 @@ public class IntegrationController {
             int processed,
             int changed,
             String message,
+            /** Named when the failure was an upstream outage, so the client can raise its banner. */
+            String unavailableService,
             /** What the run produced, once it has. */
             Object report,
             /** Work that started when this finished — Steam's achievements after an import. */
@@ -70,6 +72,7 @@ public class IntegrationController {
                     job.getProcessed(),
                     job.getChanged(),
                     job.getMessage(),
+                    job.getUnavailableService(),
                     job.getReport(),
                     job.getFollowUpJobId());
         }
