@@ -67,7 +67,7 @@ public class SimklLibraryImportAdapter implements LibraryImportAdapter {
 
     private ImportedEntry toEntry(Map<String, Object> row, TmdbKind kind, String nodeKey) {
         Map<String, Object> item = node(row, nodeKey);
-        String simklId = id(item, "simkl");
+        String simklId = id(item, "simkl", "simkl_id");
         if (simklId == null) {
             return null;
         }
@@ -132,12 +132,23 @@ public class SimklLibraryImportAdapter implements LibraryImportAdapter {
         return row.get(key) instanceof Map<?, ?> node ? (Map<String, Object>) node : Map.of();
     }
 
-    private String id(Map<String, Object> item, String key) {
-        if (!(item.get("ids") instanceof Map<?, ?> ids) || ids.get(key) == null) {
+    /**
+     * The first of these keys the ids object actually carries.
+     *
+     * <p>Simkl is not consistent about its own id across endpoints — search answers with
+     * {@code simkl_id} where sync documents {@code simkl} — and reading only one of them
+     * would drop every row on the endpoint that spells it the other way.
+     */
+    private String id(Map<String, Object> item, String... keys) {
+        if (!(item.get("ids") instanceof Map<?, ?> ids)) {
             return null;
         }
-        String value = ids.get(key).toString();
-        return value.isBlank() ? null : value;
+        for (String key : keys) {
+            if (ids.get(key) != null && !ids.get(key).toString().isBlank()) {
+                return ids.get(key).toString();
+            }
+        }
+        return null;
     }
 
     /** Simkl timestamps are ISO-8601 instants; a shelf only cares about the day. */
