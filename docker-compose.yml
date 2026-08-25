@@ -46,6 +46,7 @@ services:
       ANILIST_CLIENT_SECRET: ${ANILIST_CLIENT_SECRET:-}
       MAL_CLIENT_ID: ${MAL_CLIENT_ID:-}
       MAL_CLIENT_SECRET: ${MAL_CLIENT_SECRET:-}
+      TMDB_ACCESS_TOKEN: ${TMDB_ACCESS_TOKEN:-}
       # One origin serves both halves, so this is where Steam returns the browser.
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8080}
     ports:

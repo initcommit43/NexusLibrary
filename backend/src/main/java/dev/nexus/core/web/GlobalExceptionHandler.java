@@ -13,6 +13,7 @@ import dev.nexus.core.review.ReviewNotFoundException;
 import dev.nexus.core.tracking.EntryNotFoundException;
 import dev.nexus.modules.anime.AniListNotConfiguredException;
 import dev.nexus.modules.anime.AniListUnavailableException;
+import dev.nexus.modules.film.TmdbUnavailableException;
 import dev.nexus.modules.games.IgdbUnavailableException;
 import dev.nexus.modules.games.SteamProfileNotPublicException;
 import dev.nexus.modules.games.SteamProfilePrivateException;
@@ -142,7 +143,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         IgdbUnavailableException.class,
         AniListUnavailableException.class,
         SteamUnavailableException.class,
-        dev.nexus.modules.anime.MalUnavailableException.class
+        dev.nexus.modules.anime.MalUnavailableException.class,
+        TmdbUnavailableException.class
     })
     public ResponseEntity<ApiError> handleUpstreamUnavailable(RuntimeException e) {
         UpstreamUnavailableException down = (UpstreamUnavailableException) e;

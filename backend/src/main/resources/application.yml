@@ -84,6 +84,15 @@ nexus:
     token-url: https://myanimelist.net/v1/oauth2/token
     requests-per-second: 1
     retry-backoff-ms: 1500
+  tmdb:
+    api-base-url: https://api.themoviedb.org/3
+    image-base-url: https://image.tmdb.org/t/p/
+    poster-size: w500
+    # The v4 "API Read Access Token" from themoviedb.org/settings/api, sent as a bearer.
+    # Application-wide and non-expiring, so films and shows need no per-user OAuth at all.
+    access-token: ${TMDB_ACCESS_TOKEN:}
+    # TMDB publishes no hard ceiling any more; this keeps an import from finding one.
+    requests-per-second: 20
   steam:
     api-key: ${STEAM_API_KEY:}
     api-base-url: https://api.steampowered.com
