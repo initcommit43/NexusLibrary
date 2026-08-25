@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import type { ChangeEvent } from 'react'
 import {
   ApiError,
   api,
@@ -172,6 +173,66 @@ export const SettingsPage = () => {
     }
   }
 
+  /**
+   * One file input for the whole page rather than one per card. The picker is the same
+   * dialog whichever card opened it, and which provider asked is a fact about the click,
+   * not about the markup.
+   */
+  const csvInput = useRef<HTMLInputElement | null>(null)
+  const [csvProvider, setCsvProvider] = useState<ModuleProvider['provider'] | null>(null)
+
+  const pickCsv = (provider: ModuleProvider['provider']) => {
+    setError(null)
+    setCsvProvider(provider)
+    csvInput.current?.click()
+  }
+
+  const onCsvPicked = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    // Cleared straight away, so picking the same file twice in a row still fires a change.
+    event.target.value = ''
+    if (file && csvProvider) void runCsvImport(csvProvider, file)
+  }
+
+  /** The upload route, watched exactly like the account import it stands in for. */
+  const runCsvImport = async (provider: ModuleProvider['provider'], file: File) => {
+    setBusy({ provider, action: 'import' })
+    setError(null)
+    setReport(null)
+    setJob(null)
+    setRunningFor(provider)
+    try {
+      const started = await api.importCsv(provider, file)
+      const finished = await watchJob(started.id)
+      load()
+      if (finished?.report) {
+        setReport(finished.report)
+      }
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'That file could not be imported.')
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  /**
+   * The way in that needs no account: upload what the service exported. Sits under the
+   * connection buttons on every card, because it is the alternative to using them.
+   */
+  const csvRow = (provider: ModuleProvider) => (
+    <div className="integration-csv">
+      <button
+        type="button"
+        className="ghost"
+        disabled={busy !== null}
+        onClick={() => pickCsv(provider.provider)}
+      >
+        {working(provider.provider, 'import') ? 'Importing…' : 'Import from CSV'}
+      </button>
+      {provider.csvHint && <span className="muted csv-hint">{provider.csvHint}</span>}
+    </div>
+  )
+
   const anilistCard = (provider: ModuleProvider) => (
     <article key={provider.provider} className="card integration-card">
       <div className={anilist ? 'integration-head' : 'integration-head banner'}>
@@ -202,6 +263,8 @@ export const SettingsPage = () => {
           </button>
         )}
       </div>
+
+      {csvRow(provider)}
 
       {anilist?.lastSyncedAt && (
         <p className="muted">Last imported {new Date(anilist.lastSyncedAt).toLocaleString()}.</p>
@@ -278,6 +341,8 @@ export const SettingsPage = () => {
         Your Steam profile must have <strong>Game details</strong> set to Public, otherwise Steam
         returns an empty library. Signing in cannot override that setting.
       </p>
+
+      {csvRow(provider)}
 
       {steam?.lastSyncedAt && (
         <p className="muted">Last imported {new Date(steam.lastSyncedAt).toLocaleString()}.</p>
@@ -362,6 +427,8 @@ export const SettingsPage = () => {
           </button>
         )}
       </div>
+
+      {csvRow(provider)}
 
       {mal?.lastSyncedAt && (
         <p className="muted">Last imported {new Date(mal.lastSyncedAt).toLocaleString()}.</p>
@@ -449,6 +516,8 @@ export const SettingsPage = () => {
         )}
       </div>
 
+      {csvRow(provider)}
+
       {simkl?.lastSyncedAt && (
         <p className="muted">Last imported {new Date(simkl.lastSyncedAt).toLocaleString()}.</p>
       )}
@@ -531,6 +600,14 @@ export const SettingsPage = () => {
   return (
     <AppShell>
       <h1>Settings</h1>
+
+      <input
+        ref={csvInput}
+        type="file"
+        accept=".csv,text/csv"
+        hidden
+        onChange={onCsvPicked}
+      />
 
       {error && (
         <p className="alert" role="alert">

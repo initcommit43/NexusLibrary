@@ -225,7 +225,9 @@ const refreshAccessToken = (): Promise<string | null> => {
 
 const request = async <T>(path: string, init: RequestInit = {}, allowRetry = true): Promise<T> => {
   const headers = new Headers(init.headers)
-  if (init.body) headers.set('Content-Type', 'application/json')
+  // FormData sets its own content type, boundary and all; overriding it makes the upload
+  // unparseable on the other end.
+  if (init.body && !(init.body instanceof FormData)) headers.set('Content-Type', 'application/json')
   if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`)
 
   const res = await fetch(BASE + path, { ...init, headers, credentials: 'include' })
@@ -334,6 +336,16 @@ export const api = {
   /** Answers immediately with a job to watch: an import is minutes of background work. */
   importLibrary: (provider: Provider) =>
     request<SyncJob>(`/integrations/${provider}/import`, { method: 'POST' }),
+
+  /**
+   * The same import from an exported file rather than a connected account. Answers with a
+   * job to watch, exactly as the account import does.
+   */
+  importCsv: (provider: Provider, file: File) => {
+    const body = new FormData()
+    body.append('file', file)
+    return request<SyncJob>(`/integrations/${provider}/import/csv`, { method: 'POST', body })
+  },
 
   disconnect: (provider: Provider) =>
     request<void>(`/integrations/${provider}`, { method: 'DELETE' }),

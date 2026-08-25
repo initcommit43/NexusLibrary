@@ -75,7 +75,6 @@ public class LibraryImportService {
         Provider provider = account.getProvider();
         LibraryImportAdapter adapter =
                 require(adapters, LibraryImportAdapter::provider, provider, "import adapter");
-        ItemResolver resolver = require(resolvers, ItemResolver::provider, provider, "item resolver");
 
         // Nothing to count yet: how long a list is is the first thing the pull tells us.
         if (job != null) {
@@ -84,6 +83,27 @@ public class LibraryImportService {
 
         List<ImportedEntry> library = adapter.pullLibrary(account);
         log.debug("Pulled {} items from {}", library.size(), provider);
+
+        ImportReport report = importEntries(account.getUserId(), provider, library, job);
+        account.markSynced();
+        return report;
+    }
+
+    /**
+     * The same import, for a library that arrived some other way than by asking the provider
+     * for it — an exported CSV, uploaded because the API is paywalled or not worth
+     * connecting for one run.
+     *
+     * <p>Everything downstream of the pull is shared, which is the point: a CSV row carries
+     * the same hints the live adapter sets, so it goes through that provider's own resolver
+     * and lands in the same unmatched report. Nothing here knows which route the rows took.
+     *
+     * <p>No account is touched, so nothing is marked as synced: an upload is not a link, and
+     * claiming a connection was refreshed by it would be a lie on the settings card.
+     */
+    @Transactional
+    public ImportReport importEntries(Long userId, Provider provider, List<ImportedEntry> library, SyncJob job) {
+        ItemResolver resolver = require(resolvers, ItemResolver::provider, provider, "item resolver");
 
         Map<ExternalItemRef, CanonicalRef> resolved =
                 resolver.resolveAll(library.stream().map(ImportedEntry::itemRef).toList());
@@ -125,7 +145,7 @@ public class LibraryImportService {
                 continue;
             }
 
-            boolean isNew = upsert(account.getUserId(), provider, item, entry);
+            boolean isNew = upsert(userId, provider, item, entry);
             if (isNew) {
                 created++;
             } else {
@@ -136,7 +156,6 @@ public class LibraryImportService {
             }
         }
 
-        account.markSynced();
         return new ImportReport(created, updated, unmatched);
     }
 

@@ -7,6 +7,8 @@ export interface ModuleProvider {
   provider: Provider
   label: string
   blurb: string
+  /** What an uploaded export needs in it, for the CSV route that needs no account. */
+  csvHint?: string
 }
 
 /**
@@ -78,7 +80,12 @@ export const MODULES: ModuleDefinition[] = [
     ],
     emptyHint: 'Nothing tracked yet. Connect Steam in settings, or search for a game.',
     hasMediaPages: false,
-    providers: [{ provider: 'STEAM', label: 'Steam', blurb: 'Import your games and playtime.' }],
+    providers: [{
+        provider: 'STEAM',
+        label: 'Steam',
+        blurb: 'Import your games and playtime.',
+        csvHint: 'Needs an appid column; name and playtime are used when present.',
+      }],
   },
   {
     slug: 'anime',
@@ -115,11 +122,17 @@ export const MODULES: ModuleDefinition[] = [
     emptyHint: 'Nothing tracked yet. Connect AniList or MyAnimeList in settings.',
     hasMediaPages: true,
     providers: [
-      { provider: 'ANILIST', label: 'AniList', blurb: 'Import your anime and manga lists.' },
+      {
+        provider: 'ANILIST',
+        label: 'AniList',
+        blurb: 'Import your anime and manga lists.',
+        csvHint: 'Needs an anilist_id column — an id from anywhere else would match the wrong title.',
+      },
       {
         provider: 'MAL',
         label: 'MyAnimeList',
         blurb: 'Import your lists; entries resolve onto their AniList titles.',
+        csvHint: 'Needs a MyAnimeList id column, such as series_animedb_id or mal_id.',
       },
     ],
   },
@@ -156,6 +169,7 @@ export const MODULES: ModuleDefinition[] = [
         provider: 'SIMKL',
         label: 'Simkl',
         blurb: 'Import your films and shows, with what you are part way through.',
+        csvHint: "Needs a TMDB or IMDb id column, both of which Simkl's CSV backup carries.",
       },
     ],
   },

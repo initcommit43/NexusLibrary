@@ -11,6 +11,12 @@ spring:
     open-in-view: false
   flyway:
     enabled: true
+  servlet:
+    multipart:
+      # A CSV export of a large library is a few hundred kilobytes; this is generous for
+      # that and still small enough that nobody can post a film through the upload field.
+      max-file-size: 5MB
+      max-request-size: 6MB
   web:
     # Pin validation messages to English; otherwise they follow the server's system
     # locale and the API answers in whatever language the host happens to run in.

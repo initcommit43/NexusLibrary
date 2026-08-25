@@ -3,6 +3,7 @@ package dev.nexus.core.importing;
 import dev.nexus.auth.CurrentUser;
 import dev.nexus.config.NexusProperties;
 import dev.nexus.core.domain.ExternalAccount;
+import dev.nexus.core.adapter.ImportedEntry;
 import dev.nexus.core.domain.Provider;
 import dev.nexus.core.web.RateLimiter;
 import dev.nexus.core.web.ServerTimings;
@@ -24,7 +25,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/integrations")
@@ -98,6 +101,7 @@ public class IntegrationController {
     private final dev.nexus.modules.anime.MalOAuthService malOAuth;
     private final SimklOAuthService simklOAuth;
     private final ImportRunner runner;
+    private final CsvImportService csvImports;
     private final JobRegistry jobs;
     private final RateLimiter rateLimiter;
     private final ServerTimings timings;
@@ -112,6 +116,7 @@ public class IntegrationController {
             dev.nexus.modules.anime.MalOAuthService malOAuth,
             SimklOAuthService simklOAuth,
             ImportRunner runner,
+            CsvImportService csvImports,
             JobRegistry jobs,
             RateLimiter rateLimiter,
             ServerTimings timings,
@@ -123,6 +128,7 @@ public class IntegrationController {
         this.malOAuth = malOAuth;
         this.simklOAuth = simklOAuth;
         this.runner = runner;
+        this.csvImports = csvImports;
         this.jobs = jobs;
         this.rateLimiter = rateLimiter;
         this.timings = timings;
@@ -286,6 +292,48 @@ public class IntegrationController {
                 });
 
         return SyncJobResponse.from(job);
+    }
+
+    /**
+     * The same import from an uploaded export instead of a connected account — for a service
+     * whose API is paywalled, rate limited into uselessness, or simply not worth linking for
+     * one run. No account is required, and none is touched.
+     *
+     * <p>The file is parsed here rather than in the background job: a file with the wrong
+     * columns is the reader's to fix, and telling them so while they are still looking at the
+     * upload button beats reporting it minutes later as a failed import.
+     */
+    @PostMapping(value = "/{provider}/import/csv", consumes = "multipart/form-data")
+    public SyncJobResponse importCsv(
+            @AuthenticationPrincipal CurrentUser user,
+            @PathVariable Provider provider,
+            @RequestParam("file") MultipartFile file) {
+
+        // Throttled with the account import: both walk a whole library and cache what it names.
+        rateLimiter.check("import:" + user.id(), importsPerMinute);
+
+        if (file == null || file.isEmpty()) {
+            throw new CsvFormatException("No file was uploaded.");
+        }
+
+        List<ImportedEntry> library = csvImports.parse(provider, read(file));
+
+        SyncJob job = jobs.runningFor(user.id(), SyncJob.Kind.IMPORT, provider)
+                .orElseGet(() -> {
+                    SyncJob started = jobs.start(user.id(), SyncJob.Kind.IMPORT, provider, library.size());
+                    runner.run(started, user.id(), provider, library);
+                    return started;
+                });
+
+        return SyncJobResponse.from(job);
+    }
+
+    private byte[] read(MultipartFile file) {
+        try {
+            return file.getBytes();
+        } catch (java.io.IOException e) {
+            throw new CsvFormatException("That file could not be read. Please try uploading it again.");
+        }
     }
 
     /** Whatever this reader has running, for an indicator that follows them across pages. */

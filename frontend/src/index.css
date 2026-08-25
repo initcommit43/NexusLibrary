@@ -1218,6 +1218,24 @@ button.ghost.danger:hover:not(:disabled) {
   gap: var(--space-2);
 }
 
+/*
+ * The upload route, under the connection buttons and quieter than them: it is what someone
+ * reaches for when linking an account is impossible rather than the thing to do first.
+ */
+.integration-csv {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+}
+
+.csv-hint {
+  font-size: var(--text-sm);
+  flex: 1 1 16rem;
+}
+
 .note {
   padding: var(--space-3);
   border-left: 2px solid var(--accent);

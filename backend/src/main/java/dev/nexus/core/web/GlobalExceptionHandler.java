@@ -5,6 +5,7 @@ import dev.nexus.auth.RegistrationConflictException;
 import dev.nexus.core.adapter.MetadataAdapterNotAvailableException;
 import dev.nexus.core.cache.ItemNotFoundException;
 import dev.nexus.core.importing.ExternalAccountNotConnectedException;
+import dev.nexus.core.importing.CsvFormatException;
 import dev.nexus.core.importing.ImportNotSupportedException;
 import dev.nexus.core.importing.SteamVerificationFailedException;
 import dev.nexus.core.importing.SyncJobNotFoundException;
@@ -111,6 +112,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(SteamVerificationFailedException.class)
     public ResponseEntity<ApiError> handleSteamVerification(SteamVerificationFailedException e) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ApiError(e.getMessage()));
+    }
+
+    /**
+     * A file the reader can replace, so it says which columns were wanted rather than only
+     * that parsing failed — and it answers now, while they are still looking at the upload
+     * button, instead of minutes later as a failed background job.
+     */
+    @ExceptionHandler(CsvFormatException.class)
+    public ResponseEntity<ApiError> handleCsvFormat(CsvFormatException e) {
+        return ResponseEntity.badRequest().body(new ApiError(e.advice()));
     }
 
     @ExceptionHandler(ImportNotSupportedException.class)
