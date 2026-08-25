@@ -9,6 +9,7 @@ import dev.nexus.core.web.ServerTimings;
 import dev.nexus.core.jobs.JobRegistry;
 import dev.nexus.core.jobs.SyncJob;
 import dev.nexus.modules.anime.AniListOAuthService;
+import dev.nexus.modules.film.TraktOAuthService;
 import dev.nexus.modules.games.SteamOpenIdService;
 import jakarta.validation.constraints.NotEmpty;
 import java.time.Instant;
@@ -87,11 +88,15 @@ public class IntegrationController {
     /** The authorization code MAL hands back, forwarded for exchange server-side. */
     public record MalCallbackRequest(@jakarta.validation.constraints.NotBlank String code) {}
 
+    /** The authorization code Trakt hands back, forwarded for exchange server-side. */
+    public record TraktCallbackRequest(@jakarta.validation.constraints.NotBlank String code) {}
+
     private final ExternalAccountService accounts;
     private final LibraryImportService importService;
     private final SteamOpenIdService steamOpenId;
     private final AniListOAuthService anilistOAuth;
     private final dev.nexus.modules.anime.MalOAuthService malOAuth;
+    private final TraktOAuthService traktOAuth;
     private final ImportRunner runner;
     private final JobRegistry jobs;
     private final RateLimiter rateLimiter;
@@ -105,6 +110,7 @@ public class IntegrationController {
             SteamOpenIdService steamOpenId,
             AniListOAuthService anilistOAuth,
             dev.nexus.modules.anime.MalOAuthService malOAuth,
+            TraktOAuthService traktOAuth,
             ImportRunner runner,
             JobRegistry jobs,
             RateLimiter rateLimiter,
@@ -115,6 +121,7 @@ public class IntegrationController {
         this.steamOpenId = steamOpenId;
         this.anilistOAuth = anilistOAuth;
         this.malOAuth = malOAuth;
+        this.traktOAuth = traktOAuth;
         this.runner = runner;
         this.jobs = jobs;
         this.rateLimiter = rateLimiter;
@@ -223,6 +230,37 @@ public class IntegrationController {
 
     private String malRedirectUri() {
         return frontendUrl + "/settings/mal/callback";
+    }
+
+    /** Where to send the reader to approve the Trakt link. Stateless: Trakt wants no PKCE. */
+    @PostMapping("/trakt/authorize")
+    public AuthorizeUrlResponse authorizeTrakt(@AuthenticationPrincipal CurrentUser user) {
+        return new AuthorizeUrlResponse(traktOAuth.authorizationUrl(traktRedirectUri()));
+    }
+
+    /**
+     * Completes the link, the same way the other three do: Trakt redirects the browser back
+     * with no Authorization header, so the frontend forwards the code here on an
+     * authenticated request and the link binds to the session that started it.
+     */
+    @PostMapping("/trakt/callback")
+    public ConnectedAccount completeTrakt(
+            @AuthenticationPrincipal CurrentUser user,
+            @org.springframework.validation.annotation.Validated @RequestBody TraktCallbackRequest request) {
+
+        TraktOAuthService.Connection connection = traktOAuth.exchangeCode(request.code(), traktRedirectUri());
+
+        return ConnectedAccount.from(accounts.connect(
+                user.id(),
+                Provider.TRAKT,
+                connection.externalUserId(),
+                connection.accessToken(),
+                connection.refreshToken(),
+                connection.expiresAt()));
+    }
+
+    private String traktRedirectUri() {
+        return frontendUrl + TraktOAuthService.CALLBACK_PATH;
     }
 
     /**

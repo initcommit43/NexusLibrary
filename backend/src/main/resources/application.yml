@@ -93,6 +93,16 @@ nexus:
     access-token: ${TMDB_ACCESS_TOKEN:}
     # TMDB publishes no hard ceiling any more; this keeps an import from finding one.
     requests-per-second: 20
+  trakt:
+    api-base-url: https://api.trakt.tv
+    # Registered at trakt.tv/oauth/applications. The redirect URI registered there must be
+    # <FRONTEND_URL>/settings/trakt/callback, and a refresh has to present the same value.
+    client-id: ${TRAKT_CLIENT_ID:}
+    client-secret: ${TRAKT_CLIENT_SECRET:}
+    authorize-url: https://trakt.tv/oauth/authorize
+    token-url: https://api.trakt.tv/oauth/token
+    # Trakt documents 1000 calls every 5 minutes; a whole import spends six of them.
+    requests-per-second: 3
   steam:
     api-key: ${STEAM_API_KEY:}
     api-base-url: https://api.steampowered.com

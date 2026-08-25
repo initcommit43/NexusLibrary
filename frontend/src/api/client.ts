@@ -315,6 +315,16 @@ export const api = {
       body: JSON.stringify({ code }),
     }),
 
+  traktAuthorizeUrl: () =>
+    request<{ url: string }>('/integrations/trakt/authorize', { method: 'POST' }),
+
+  /** Trakt's watched history is the list; the TMDB ids in it are what make it resolvable. */
+  completeTraktConnect: (code: string) =>
+    request<ConnectedAccount>('/integrations/trakt/callback', {
+      method: 'POST',
+      body: JSON.stringify({ code }),
+    }),
+
   completeSteamConnect: (params: Record<string, string>) =>
     request<ConnectedAccount>('/integrations/steam/callback', {
       method: 'POST',

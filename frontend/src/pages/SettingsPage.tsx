@@ -78,6 +78,7 @@ export const SettingsPage = () => {
   const steam = connected('STEAM')
   const anilist = connected('ANILIST')
   const mal = connected('MAL')
+  const trakt = connected('TRAKT')
 
   const load = useCallback(() => {
     api
@@ -404,6 +405,90 @@ export const SettingsPage = () => {
     </article>
   )
 
+  const connectTrakt = async () => {
+    setBusy({ provider: 'TRAKT', action: 'connect' })
+    setError(null)
+    try {
+      const { url } = await api.traktAuthorizeUrl()
+      // Full-page navigation: the approval screen is Trakt's, not ours to embed.
+      window.location.href = url
+    } catch (err) {
+      setBusy(null)
+      setError(err instanceof ApiError ? err.message : 'Could not start the Trakt link.')
+    }
+  }
+
+  const traktCard = (provider: ModuleProvider) => (
+    <article key={provider.provider} className="card integration-card">
+      <div className={trakt ? 'integration-head' : 'integration-head banner'}>
+        <div>
+          <h3>{provider.label}</h3>
+          <p className="muted">{trakt ? `Connected as ${trakt.externalUserId}` : provider.blurb}</p>
+        </div>
+
+        {trakt ? (
+          <div className="integration-actions">
+            <button type="button" disabled={busy !== null} onClick={() => void runImport('TRAKT')}>
+              {working('TRAKT', 'import') ? 'Importing…' : 'Import history'}
+            </button>
+            <button
+              type="button"
+              className="ghost"
+              disabled={busy !== null}
+              onClick={() => void disconnect('TRAKT')}
+            >
+              Disconnect
+            </button>
+          </div>
+        ) : (
+          <button type="button" disabled={busy !== null} onClick={() => void connectTrakt()}>
+            {working('TRAKT', 'connect') ? 'Redirecting…' : 'Connect Trakt'}
+          </button>
+        )}
+      </div>
+
+      {trakt?.lastSyncedAt && (
+        <p className="muted">Last imported {new Date(trakt.lastSyncedAt).toLocaleString()}.</p>
+      )}
+
+      {job && runningFor === provider.provider && (
+        <>
+          <p className="muted">{jobLabel(job)}</p>
+          {job.total > 0 && (
+            <div className="achievement-bar">
+              <div
+                className="achievement-bar-fill"
+                style={{ width: `${Math.round((job.processed / job.total) * 100)}%` }}
+              />
+            </div>
+          )}
+        </>
+      )}
+
+      {report && runningFor === provider.provider && (
+        <>
+          <p className="muted">
+            {report.created} added, {report.updated} updated
+            {report.unmatched.length > 0 && `, ${report.unmatched.length} not matched`}.
+          </p>
+
+          {report.unmatched.length > 0 && (
+            <details className="unmatched">
+              <summary>Titles we could not match ({report.unmatched.length})</summary>
+              <ul>
+                {report.unmatched.map((item) => (
+                  <li key={item.providerItemId}>
+                    {item.title} <span className="muted">— {item.reason}</span>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+        </>
+      )}
+    </article>
+  )
+
   /** Providers whose flow is not built yet, listed so the shape of the app stays visible. */
   const pendingCard = (provider: ModuleProvider) => (
     <article key={provider.provider} className="card integration-card">
@@ -434,6 +519,7 @@ export const SettingsPage = () => {
           if (provider.provider === 'STEAM') return steamCard(provider)
           if (provider.provider === 'ANILIST') return anilistCard(provider)
           if (provider.provider === 'MAL') return malCard(provider)
+          if (provider.provider === 'TRAKT') return traktCard(provider)
           return pendingCard(provider)
         })
       )}

@@ -14,6 +14,9 @@ import dev.nexus.core.tracking.EntryNotFoundException;
 import dev.nexus.modules.anime.AniListNotConfiguredException;
 import dev.nexus.modules.anime.AniListUnavailableException;
 import dev.nexus.modules.film.TmdbUnavailableException;
+import dev.nexus.modules.film.TraktNotConfiguredException;
+import dev.nexus.modules.film.TraktReconnectRequiredException;
+import dev.nexus.modules.film.TraktUnavailableException;
 import dev.nexus.modules.games.IgdbUnavailableException;
 import dev.nexus.modules.games.SteamProfileNotPublicException;
 import dev.nexus.modules.games.SteamProfilePrivateException;
@@ -144,7 +147,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         AniListUnavailableException.class,
         SteamUnavailableException.class,
         dev.nexus.modules.anime.MalUnavailableException.class,
-        TmdbUnavailableException.class
+        TmdbUnavailableException.class,
+        TraktUnavailableException.class
     })
     public ResponseEntity<ApiError> handleUpstreamUnavailable(RuntimeException e) {
         UpstreamUnavailableException down = (UpstreamUnavailableException) e;
@@ -186,6 +190,17 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     /** Dead tokens are the reader's to renew: only they can go through the approval again. */
+    @ExceptionHandler(TraktNotConfiguredException.class)
+    public ResponseEntity<ApiError> handleTraktNotConfigured(TraktNotConfiguredException e) {
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED)
+                .body(new ApiError("Trakt is not configured on this server, so accounts cannot be connected."));
+    }
+
+    @ExceptionHandler(TraktReconnectRequiredException.class)
+    public ResponseEntity<ApiError> handleTraktReconnectRequired(TraktReconnectRequiredException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ApiError(e.advice()));
+    }
+
     @ExceptionHandler(dev.nexus.modules.anime.MalReconnectRequiredException.class)
     public ResponseEntity<ApiError> handleMalReconnectRequired(
             dev.nexus.modules.anime.MalReconnectRequiredException e) {
