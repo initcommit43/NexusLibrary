@@ -5,7 +5,7 @@ const PROVIDER_LABELS: Record<string, string> = {
   STEAM: 'Steam',
   ANILIST: 'AniList',
   MAL: 'MyAnimeList',
-  TRAKT: 'Trakt',
+  SIMKL: 'Simkl',
 }
 
 /**

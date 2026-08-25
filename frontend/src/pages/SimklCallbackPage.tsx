@@ -4,14 +4,14 @@ import { ApiError, api } from '../api/client'
 import { AppShell } from '../components/AppShell'
 
 /**
- * Where Trakt sends the browser back to.
+ * Where Simkl sends the browser back to.
  *
  * The code is forwarded to the backend rather than exchanged here, for the same reason
  * AniList's is: the exchange needs the client secret, which has no business in a browser.
  * Posting it from the session that started the flow also keeps the new link bound to that
  * account rather than to whoever happens to open the callback URL.
  */
-export const TraktCallbackPage = () => {
+export const SimklCallbackPage = () => {
   const [params] = useSearchParams()
   const navigate = useNavigate()
   const [failure, setFailure] = useState<string | null>(null)
@@ -26,22 +26,22 @@ export const TraktCallbackPage = () => {
     submitted.current = true
 
     api
-      .completeTraktConnect(code)
+      .completeSimklConnect(code)
       .then(() => navigate('/settings', { replace: true }))
       .catch((err) =>
-        setFailure(err instanceof ApiError ? err.message : 'Could not complete the Trakt link.'),
+        setFailure(err instanceof ApiError ? err.message : 'Could not complete the Simkl link.'),
       )
   }, [code, navigate])
 
   const error = denied
-    ? 'Trakt did not approve the link.'
+    ? 'Simkl did not approve the link.'
     : code
       ? failure
-      : 'That link is missing its Trakt authorization code.'
+      : 'That link is missing its Simkl authorization code.'
 
   return (
     <AppShell>
-      <h1>Connecting Trakt</h1>
+      <h1>Connecting Simkl</h1>
       {error ? (
         <>
           <p className="alert" role="alert">
@@ -52,7 +52,7 @@ export const TraktCallbackPage = () => {
           </button>
         </>
       ) : (
-        <p className="muted">Finishing the link with Trakt…</p>
+        <p className="muted">Finishing the link with Simkl…</p>
       )}
     </AppShell>
   )

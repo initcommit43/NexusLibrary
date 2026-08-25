@@ -9,7 +9,7 @@ import dev.nexus.core.web.ServerTimings;
 import dev.nexus.core.jobs.JobRegistry;
 import dev.nexus.core.jobs.SyncJob;
 import dev.nexus.modules.anime.AniListOAuthService;
-import dev.nexus.modules.film.TraktOAuthService;
+import dev.nexus.modules.film.SimklOAuthService;
 import dev.nexus.modules.games.SteamOpenIdService;
 import jakarta.validation.constraints.NotEmpty;
 import java.time.Instant;
@@ -88,15 +88,15 @@ public class IntegrationController {
     /** The authorization code MAL hands back, forwarded for exchange server-side. */
     public record MalCallbackRequest(@jakarta.validation.constraints.NotBlank String code) {}
 
-    /** The authorization code Trakt hands back, forwarded for exchange server-side. */
-    public record TraktCallbackRequest(@jakarta.validation.constraints.NotBlank String code) {}
+    /** The authorization code Simkl hands back, forwarded for exchange server-side. */
+    public record SimklCallbackRequest(@jakarta.validation.constraints.NotBlank String code) {}
 
     private final ExternalAccountService accounts;
     private final LibraryImportService importService;
     private final SteamOpenIdService steamOpenId;
     private final AniListOAuthService anilistOAuth;
     private final dev.nexus.modules.anime.MalOAuthService malOAuth;
-    private final TraktOAuthService traktOAuth;
+    private final SimklOAuthService simklOAuth;
     private final ImportRunner runner;
     private final JobRegistry jobs;
     private final RateLimiter rateLimiter;
@@ -110,7 +110,7 @@ public class IntegrationController {
             SteamOpenIdService steamOpenId,
             AniListOAuthService anilistOAuth,
             dev.nexus.modules.anime.MalOAuthService malOAuth,
-            TraktOAuthService traktOAuth,
+            SimklOAuthService simklOAuth,
             ImportRunner runner,
             JobRegistry jobs,
             RateLimiter rateLimiter,
@@ -121,7 +121,7 @@ public class IntegrationController {
         this.steamOpenId = steamOpenId;
         this.anilistOAuth = anilistOAuth;
         this.malOAuth = malOAuth;
-        this.traktOAuth = traktOAuth;
+        this.simklOAuth = simklOAuth;
         this.runner = runner;
         this.jobs = jobs;
         this.rateLimiter = rateLimiter;
@@ -232,35 +232,33 @@ public class IntegrationController {
         return frontendUrl + "/settings/mal/callback";
     }
 
-    /** Where to send the reader to approve the Trakt link. Stateless: Trakt wants no PKCE. */
-    @PostMapping("/trakt/authorize")
-    public AuthorizeUrlResponse authorizeTrakt(@AuthenticationPrincipal CurrentUser user) {
-        return new AuthorizeUrlResponse(traktOAuth.authorizationUrl(traktRedirectUri()));
+    /** Where to send the reader to approve the Simkl link. Stateless: Simkl wants no PKCE. */
+    @PostMapping("/simkl/authorize")
+    public AuthorizeUrlResponse authorizeSimkl(@AuthenticationPrincipal CurrentUser user) {
+        return new AuthorizeUrlResponse(simklOAuth.authorizationUrl(simklRedirectUri()));
     }
 
     /**
-     * Completes the link, the same way the other three do: Trakt redirects the browser back
+     * Completes the link, the same way the other three do: Simkl redirects the browser back
      * with no Authorization header, so the frontend forwards the code here on an
      * authenticated request and the link binds to the session that started it.
+     *
+     * <p>No expiry travels with it. A Simkl token lives until the reader revokes the app, so
+     * there is nothing to refresh and nothing to record a deadline for.
      */
-    @PostMapping("/trakt/callback")
-    public ConnectedAccount completeTrakt(
+    @PostMapping("/simkl/callback")
+    public ConnectedAccount completeSimkl(
             @AuthenticationPrincipal CurrentUser user,
-            @org.springframework.validation.annotation.Validated @RequestBody TraktCallbackRequest request) {
+            @org.springframework.validation.annotation.Validated @RequestBody SimklCallbackRequest request) {
 
-        TraktOAuthService.Connection connection = traktOAuth.exchangeCode(request.code(), traktRedirectUri());
+        SimklOAuthService.Connection connection = simklOAuth.exchangeCode(request.code(), simklRedirectUri());
 
         return ConnectedAccount.from(accounts.connect(
-                user.id(),
-                Provider.TRAKT,
-                connection.externalUserId(),
-                connection.accessToken(),
-                connection.refreshToken(),
-                connection.expiresAt()));
+                user.id(), Provider.SIMKL, connection.externalUserId(), connection.accessToken(), null, null));
     }
 
-    private String traktRedirectUri() {
-        return frontendUrl + TraktOAuthService.CALLBACK_PATH;
+    private String simklRedirectUri() {
+        return frontendUrl + SimklOAuthService.CALLBACK_PATH;
     }
 
     /**

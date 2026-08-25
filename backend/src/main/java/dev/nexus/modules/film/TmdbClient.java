@@ -43,9 +43,32 @@ public class TmdbClient {
         return get("/{kind}/{id}", kind.path(), tmdbId);
     }
 
+    /**
+     * The TMDB id behind an IMDb one, for the kind asked for. TMDB indexes both, which is
+     * what lets a library whose provider only knew an IMDb id still land on a canonical.
+     *
+     * <p>Costs one call per lookup, so it belongs in a resolver fallback rather than on the
+     * main path — a whole library resolved this way would be a request per title.
+     */
+    public Optional<String> findIdByImdbId(TmdbKind kind, String imdbId) {
+        Map<String, Object> body = get("/find/{imdbId}?external_source=imdb_id", imdbId).orElse(Map.of());
+        String key = kind == TmdbKind.MOVIE ? "movie_results" : "tv_results";
+
+        return results(body, key).stream()
+                .map(result -> result.get("id"))
+                .filter(java.util.Objects::nonNull)
+                .map(Object::toString)
+                .findFirst();
+    }
+
     @SuppressWarnings("unchecked")
     private List<Map<String, Object>> results(Map<String, Object> body) {
-        return body.get("results") instanceof List<?> results
+        return results(body, "results");
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> results(Map<String, Object> body, String key) {
+        return body.get(key) instanceof List<?> results
                 ? results.stream()
                         .filter(Map.class::isInstance)
                         .map(result -> (Map<String, Object>) result)

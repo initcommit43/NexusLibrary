@@ -31,7 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <p>Everything provider-specific is delegated: the adapter fetches, the resolver maps ids
  * onto a canonical catalogue. What stays here is the part worth writing once — resolve,
- * cache on miss, upsert, and report what did not match. Adding MAL or Trakt later means
+ * cache on miss, upsert, and report what did not match. Adding MAL or Simkl later means
  * contributing two beans and changing nothing in this class.
  */
 @Service

@@ -5,5 +5,5 @@ public enum Provider {
     STEAM,
     ANILIST,
     MAL,
-    TRAKT
+    SIMKL
 }

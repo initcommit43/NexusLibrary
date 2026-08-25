@@ -61,9 +61,13 @@ public enum TmdbKind {
         if (separator < 0) {
             return Optional.empty();
         }
-        String prefix = externalId.substring(0, separator);
+        return ofPath(externalId.substring(0, separator));
+    }
+
+    /** The kind named by TMDB's own word for it, {@code movie} or {@code tv}. */
+    public static Optional<TmdbKind> ofPath(String path) {
         for (TmdbKind kind : values()) {
-            if (kind.path.equals(prefix)) {
+            if (kind.path.equals(path)) {
                 return Optional.of(kind);
             }
         }

@@ -93,15 +93,18 @@ nexus:
     access-token: ${TMDB_ACCESS_TOKEN:}
     # TMDB publishes no hard ceiling any more; this keeps an import from finding one.
     requests-per-second: 20
-  trakt:
-    api-base-url: https://api.trakt.tv
-    # Registered at trakt.tv/oauth/applications. The redirect URI registered there must be
-    # <FRONTEND_URL>/settings/trakt/callback, and a refresh has to present the same value.
-    client-id: ${TRAKT_CLIENT_ID:}
-    client-secret: ${TRAKT_CLIENT_SECRET:}
-    authorize-url: https://trakt.tv/oauth/authorize
-    token-url: https://api.trakt.tv/oauth/token
-    # Trakt documents 1000 calls every 5 minutes; a whole import spends six of them.
+  simkl:
+    api-base-url: https://api.simkl.com
+    # Registered at simkl.com/settings/developer. The redirect URI registered there must be
+    # <FRONTEND_URL>/settings/simkl/callback, and the exchange has to present the same value.
+    client-id: ${SIMKL_CLIENT_ID:}
+    client-secret: ${SIMKL_CLIENT_SECRET:}
+    authorize-url: https://simkl.com/oauth/authorize
+    token-url: https://api.simkl.com/oauth/token
+    # Simkl identifies the caller on every request, not only at authorization.
+    app-name: nexus-media-tracker
+    app-version: "1.0"
+    # A whole import is two calls; this is only here so a retry storm cannot become one.
     requests-per-second: 3
   steam:
     api-key: ${STEAM_API_KEY:}

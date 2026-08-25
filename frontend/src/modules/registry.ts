@@ -149,9 +149,15 @@ export const MODULES: ModuleDefinition[] = [
         statusLabels: { ...watching, PLANNING: 'Watchlist', COMPLETED: 'Watched' },
       },
     ],
-    emptyHint: 'Nothing tracked yet. Connect Trakt in settings.',
+    emptyHint: 'Nothing tracked yet. Connect Simkl in settings, or search for a film.',
     hasMediaPages: false,
-    providers: [{ provider: 'TRAKT', label: 'Trakt', blurb: 'Import your watched films and shows.' }],
+    providers: [
+      {
+        provider: 'SIMKL',
+        label: 'Simkl',
+        blurb: 'Import your films and shows, with what you are part way through.',
+      },
+    ],
   },
   {
     slug: 'books',

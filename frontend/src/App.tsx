@@ -10,7 +10,7 @@ import { SearchPage } from './pages/SearchPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { AniListCallbackPage } from './pages/AniListCallbackPage'
 import { MalCallbackPage } from './pages/MalCallbackPage'
-import { TraktCallbackPage } from './pages/TraktCallbackPage'
+import { SimklCallbackPage } from './pages/SimklCallbackPage'
 import { SteamCallbackPage } from './pages/SteamCallbackPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { useCurrentModule } from './modules/useCurrentModule'
@@ -42,7 +42,7 @@ export const App = () => (
       <Route path="/settings/steam/callback" element={<SteamCallbackPage />} />
       <Route path="/settings/anilist/callback" element={<AniListCallbackPage />} />
       <Route path="/settings/mal/callback" element={<MalCallbackPage />} />
-      <Route path="/settings/trakt/callback" element={<TraktCallbackPage />} />
+      <Route path="/settings/simkl/callback" element={<SimklCallbackPage />} />
     </Route>
     <Route path="*" element={<Navigate to="/" replace />} />
   </Routes>

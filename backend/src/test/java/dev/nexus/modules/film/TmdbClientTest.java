@@ -106,6 +106,37 @@ class TmdbClientTest {
                 .satisfies(thrown -> assertThat(((TmdbUnavailableException) thrown).serviceSays()).isEmpty());
     }
 
+    /** The IMDb index is the resolver fallback, so the kind decides which result list to read. */
+    @Test
+    void findsATmdbIdThroughTheImdbIndex() {
+        server.expect(requestTo("https://tmdb.test/3/find/tt0903747?external_source=imdb_id"))
+                .andRespond(withSuccess(
+                        "{\"movie_results\":[],\"tv_results\":[{\"id\":1396,\"name\":\"Breaking Bad\"}]}",
+                        MediaType.APPLICATION_JSON));
+
+        assertThat(client.findIdByImdbId(TmdbKind.SHOW, "tt0903747")).contains("1396");
+        server.verify();
+    }
+
+    /** A film's IMDb id must not be answered with a show of the same name, or the reverse. */
+    @Test
+    void readsOnlyTheResultListForTheKindAskedFor() {
+        server.expect(requestTo(org.hamcrest.Matchers.startsWith("https://tmdb.test/3/find/tt0137523")))
+                .andRespond(withSuccess(
+                        "{\"movie_results\":[{\"id\":550}],\"tv_results\":[{\"id\":999}]}",
+                        MediaType.APPLICATION_JSON));
+
+        assertThat(client.findIdByImdbId(TmdbKind.MOVIE, "tt0137523")).contains("550");
+    }
+
+    @Test
+    void anImdbIdTmdbDoesNotKnowFindsNothing() {
+        server.expect(requestTo(org.hamcrest.Matchers.startsWith("https://tmdb.test/3/find/tt9999999")))
+                .andRespond(withSuccess("{\"movie_results\":[],\"tv_results\":[]}", MediaType.APPLICATION_JSON));
+
+        assertThat(client.findIdByImdbId(TmdbKind.MOVIE, "tt9999999")).isEmpty();
+    }
+
     /** No token configured disables film search; it must not look like TMDB being down. */
     @Test
     void saysSoWhenNoTokenIsConfigured() {

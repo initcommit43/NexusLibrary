@@ -78,7 +78,7 @@ export const SettingsPage = () => {
   const steam = connected('STEAM')
   const anilist = connected('ANILIST')
   const mal = connected('MAL')
-  const trakt = connected('TRAKT')
+  const simkl = connected('SIMKL')
 
   const load = useCallback(() => {
     api
@@ -405,50 +405,52 @@ export const SettingsPage = () => {
     </article>
   )
 
-  const connectTrakt = async () => {
-    setBusy({ provider: 'TRAKT', action: 'connect' })
+  const connectSimkl = async () => {
+    setBusy({ provider: 'SIMKL', action: 'connect' })
     setError(null)
     try {
-      const { url } = await api.traktAuthorizeUrl()
-      // Full-page navigation: the approval screen is Trakt's, not ours to embed.
+      const { url } = await api.simklAuthorizeUrl()
+      // Full-page navigation: the approval screen is Simkl's, not ours to embed.
       window.location.href = url
     } catch (err) {
       setBusy(null)
-      setError(err instanceof ApiError ? err.message : 'Could not start the Trakt link.')
+      setError(err instanceof ApiError ? err.message : 'Could not start the Simkl link.')
     }
   }
 
-  const traktCard = (provider: ModuleProvider) => (
+  const simklCard = (provider: ModuleProvider) => (
     <article key={provider.provider} className="card integration-card">
-      <div className={trakt ? 'integration-head' : 'integration-head banner'}>
+      <div className={simkl ? 'integration-head' : 'integration-head banner'}>
         <div>
           <h3>{provider.label}</h3>
-          <p className="muted">{trakt ? `Connected as ${trakt.externalUserId}` : provider.blurb}</p>
+          <p className="muted">
+            {simkl ? `Connected as ${simkl.externalUserId}` : provider.blurb}
+          </p>
         </div>
 
-        {trakt ? (
+        {simkl ? (
           <div className="integration-actions">
-            <button type="button" disabled={busy !== null} onClick={() => void runImport('TRAKT')}>
-              {working('TRAKT', 'import') ? 'Importing…' : 'Import history'}
+            <button type="button" disabled={busy !== null} onClick={() => void runImport('SIMKL')}>
+              {working('SIMKL', 'import') ? 'Importing…' : 'Import library'}
             </button>
             <button
               type="button"
               className="ghost"
               disabled={busy !== null}
-              onClick={() => void disconnect('TRAKT')}
+              onClick={() => void disconnect('SIMKL')}
             >
               Disconnect
             </button>
           </div>
         ) : (
-          <button type="button" disabled={busy !== null} onClick={() => void connectTrakt()}>
-            {working('TRAKT', 'connect') ? 'Redirecting…' : 'Connect Trakt'}
+          <button type="button" disabled={busy !== null} onClick={() => void connectSimkl()}>
+            {working('SIMKL', 'connect') ? 'Redirecting…' : 'Connect Simkl'}
           </button>
         )}
       </div>
 
-      {trakt?.lastSyncedAt && (
-        <p className="muted">Last imported {new Date(trakt.lastSyncedAt).toLocaleString()}.</p>
+      {simkl?.lastSyncedAt && (
+        <p className="muted">Last imported {new Date(simkl.lastSyncedAt).toLocaleString()}.</p>
       )}
 
       {job && runningFor === provider.provider && (
@@ -519,7 +521,7 @@ export const SettingsPage = () => {
           if (provider.provider === 'STEAM') return steamCard(provider)
           if (provider.provider === 'ANILIST') return anilistCard(provider)
           if (provider.provider === 'MAL') return malCard(provider)
-          if (provider.provider === 'TRAKT') return traktCard(provider)
+          if (provider.provider === 'SIMKL') return simklCard(provider)
           return pendingCard(provider)
         })
       )}

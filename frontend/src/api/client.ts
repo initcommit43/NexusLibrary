@@ -62,7 +62,7 @@ export type MediaDetail = {
   entry: TrackedItem | null
 }
 
-export type Provider = 'STEAM' | 'ANILIST' | 'MAL' | 'TRAKT'
+export type Provider = 'STEAM' | 'ANILIST' | 'MAL' | 'SIMKL'
 
 export type ConnectedAccount = {
   provider: Provider
@@ -315,12 +315,12 @@ export const api = {
       body: JSON.stringify({ code }),
     }),
 
-  traktAuthorizeUrl: () =>
-    request<{ url: string }>('/integrations/trakt/authorize', { method: 'POST' }),
+  simklAuthorizeUrl: () =>
+    request<{ url: string }>('/integrations/simkl/authorize', { method: 'POST' }),
 
-  /** Trakt's watched history is the list; the TMDB ids in it are what make it resolvable. */
-  completeTraktConnect: (code: string) =>
-    request<ConnectedAccount>('/integrations/trakt/callback', {
+  /** Simkl keeps a status per title, so an imported shelf arrives as the reader arranged it. */
+  completeSimklConnect: (code: string) =>
+    request<ConnectedAccount>('/integrations/simkl/callback', {
       method: 'POST',
       body: JSON.stringify({ code }),
     }),
