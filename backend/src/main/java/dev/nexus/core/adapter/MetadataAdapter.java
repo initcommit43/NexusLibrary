@@ -38,14 +38,16 @@ public interface MetadataAdapter {
     }
 
     /**
-     * One shelf's worth of titles. Called with an id this adapter itself returned from
+     * One page of a shelf. Called with an id this adapter itself returned from
      * {@link #browseShelves}, so an unknown id is a bug rather than user input.
      *
-     * <p>Results are the same for everyone, which is what lets core cache them once and serve
-     * every reader from that copy instead of spending a request per visitor.
+     * <p>Results are the same for everyone, which is what lets core cache the first page once
+     * and serve every reader from that copy instead of spending a request per visitor.
+     *
+     * @param page one-based, so the shelf row on a browse page is simply page one
      */
-    default List<ItemSearchResult> browse(MediaType mediaType, String shelfId, int limit) {
-        return List.of();
+    default BrowseResults browse(MediaType mediaType, String shelfId, int page, int size) {
+        return BrowseResults.empty();
     }
 
     /**

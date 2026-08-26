@@ -27,20 +27,20 @@ class IgdbBrowseTest {
     void setUp() {
         client = mock(IgdbClient.class);
         adapter = new IgdbMetadataAdapter(client);
-        when(client.browseGames(anyString(), anyString(), anyInt())).thenReturn(List.of());
+        when(client.browseGames(anyString(), anyString(), anyInt(), anyInt())).thenReturn(List.of());
     }
 
     private String whereFor(String shelfId) {
         ArgumentCaptor<String> where = ArgumentCaptor.forClass(String.class);
-        adapter.browse(MediaType.GAME, shelfId, 20);
-        verify(client).browseGames(where.capture(), anyString(), anyInt());
+        adapter.browse(MediaType.GAME, shelfId, 1, 20);
+        verify(client).browseGames(where.capture(), anyString(), anyInt(), anyInt());
         return where.getValue();
     }
 
     private String sortFor(String shelfId) {
         ArgumentCaptor<String> sort = ArgumentCaptor.forClass(String.class);
-        adapter.browse(MediaType.GAME, shelfId, 20);
-        verify(client).browseGames(anyString(), sort.capture(), anyInt());
+        adapter.browse(MediaType.GAME, shelfId, 1, 20);
+        verify(client).browseGames(anyString(), sort.capture(), anyInt(), anyInt());
         return sort.getValue();
     }
 
@@ -90,16 +90,16 @@ class IgdbBrowseTest {
     /** An id no shelf claims is a bug, not user input, and must not become a query. */
     @Test
     void asksForNothingWhenTheShelfIsUnknown() {
-        assertThat(adapter.browse(MediaType.GAME, "not-a-shelf", 20)).isEmpty();
-        verify(client, never()).browseGames(anyString(), anyString(), anyInt());
+        assertThat(adapter.browse(MediaType.GAME, "not-a-shelf", 1, 20).items()).isEmpty();
+        verify(client, never()).browseGames(anyString(), anyString(), anyInt(), anyInt());
     }
 
     @Test
     void mapsGamesOntoSearchResults() {
-        when(client.browseGames(anyString(), anyString(), anyInt()))
+        when(client.browseGames(anyString(), anyString(), anyInt(), anyInt()))
                 .thenReturn(List.of(Map.of("id", 1234, "name", "Hades")));
 
-        List<ItemSearchResult> results = adapter.browse(MediaType.GAME, "popular", 20);
+        List<ItemSearchResult> results = adapter.browse(MediaType.GAME, "popular", 1, 20).items();
 
         assertThat(results).hasSize(1);
         assertThat(results.getFirst().title()).isEqualTo("Hades");
@@ -109,9 +109,29 @@ class IgdbBrowseTest {
     /** IGDB carries stub records with no name; a nameless cover is worse than a shorter row. */
     @Test
     void dropsAGameWithNoName() {
-        when(client.browseGames(anyString(), anyString(), anyInt()))
+        when(client.browseGames(anyString(), anyString(), anyInt(), anyInt()))
                 .thenReturn(List.of(Map.of("id", 1), Map.of("id", 2, "name", "Real Game")));
 
-        assertThat(adapter.browse(MediaType.GAME, "popular", 20)).hasSize(1);
+        assertThat(adapter.browse(MediaType.GAME, "popular", 1, 20).items()).hasSize(1);
+    }
+
+    /** Page two skips a page's worth, which is the whole of how a "view all" grid advances. */
+    @Test
+    void turnsAPageNumberIntoAnOffset() {
+        ArgumentCaptor<Integer> offset = ArgumentCaptor.forClass(Integer.class);
+        adapter.browse(MediaType.GAME, "popular", 3, 40);
+        verify(client).browseGames(anyString(), anyString(), offset.capture(), anyInt());
+
+        assertThat(offset.getValue()).isEqualTo(80);
+    }
+
+    /** A full page is the only signal IGDB gives that there is another one behind it. */
+    @Test
+    void reportsMoreOnlyWhenThePageCameBackFull() {
+        when(client.browseGames(anyString(), anyString(), anyInt(), anyInt()))
+                .thenReturn(List.of(Map.of("id", 1, "name", "A"), Map.of("id", 2, "name", "B")));
+
+        assertThat(adapter.browse(MediaType.GAME, "popular", 1, 2).hasMore()).isTrue();
+        assertThat(adapter.browse(MediaType.GAME, "popular", 1, 5).hasMore()).isFalse();
     }
 }

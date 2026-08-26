@@ -1,7 +1,7 @@
 package dev.nexus.core.catalog;
 
+import dev.nexus.core.adapter.BrowseResults;
 import dev.nexus.core.adapter.BrowseShelf;
-import dev.nexus.core.adapter.ItemSearchResult;
 import dev.nexus.core.adapter.MetadataAdapter;
 import dev.nexus.core.adapter.MetadataAdapterRegistry;
 import dev.nexus.core.domain.MediaType;
@@ -29,14 +29,22 @@ import org.springframework.stereotype.Service;
 @Service
 public class BrowseService {
 
-    /** What one shelf holds. Wider than a page shows, so the client can lay it out freely. */
-    private static final int SHELF_SIZE = 20;
+    /** What one shelf row holds. Enough to scroll through without asking for more. */
+    private static final int SHELF_SIZE = 24;
+
+    /** What one page of a "view all" grid holds. */
+    public static final int PAGE_SIZE = 40;
 
     private static final Logger log = LoggerFactory.getLogger(BrowseService.class);
 
-    private record CacheKey(MediaType mediaType, String shelfId) {}
+    /**
+     * The size is part of the key. A shelf row asks for 24 and a grid asks for 40, and serving
+     * one from the other's copy would either truncate the grid or, worse, leave a gap: page two
+     * starts where a page of 40 ended, not where a row of 24 did.
+     */
+    private record CacheKey(MediaType mediaType, String shelfId, int size) {}
 
-    private record CachedShelf(List<ItemSearchResult> results, Instant fetchedAt) {}
+    private record CachedShelf(BrowseResults results, Instant fetchedAt) {}
 
     private final MetadataAdapterRegistry adapters;
     private final Duration ttl;
@@ -59,8 +67,31 @@ public class BrowseService {
      * rather than data anyone depends on being current, and yesterday's popular games are a
      * better answer than an error page.
      */
-    public List<ItemSearchResult> shelf(MediaType mediaType, String shelfId) {
-        CacheKey key = new CacheKey(mediaType, shelfId);
+    public BrowseResults shelf(MediaType mediaType, String shelfId) {
+        return firstPage(mediaType, shelfId, SHELF_SIZE);
+    }
+
+    /**
+     * One page of one shelf, for the grid behind "view all".
+     *
+     * <p>Only the first page is cached. It is what every reader lands on and is worth holding;
+     * page seven is one reader scrolling, and keeping every page anyone ever asks for would
+     * grow without bound for no shared benefit.
+     */
+    public BrowseResults page(MediaType mediaType, String shelfId, int page) {
+        if (page <= 1) {
+            return firstPage(mediaType, shelfId, PAGE_SIZE);
+        }
+        return adapters.requireForMediaType(mediaType).browse(mediaType, shelfId, page, PAGE_SIZE);
+    }
+
+    /**
+     * The cached path. A stale copy is kept and returned if the source is down: a browse page
+     * is discovery rather than data anyone depends on being current, and yesterday's popular
+     * titles are a better answer than an error page.
+     */
+    private BrowseResults firstPage(MediaType mediaType, String shelfId, int size) {
+        CacheKey key = new CacheKey(mediaType, shelfId, size);
         CachedShelf cached = cache.get(key);
 
         if (cached != null && Duration.between(cached.fetchedAt(), Instant.now()).compareTo(ttl) < 0) {
@@ -69,7 +100,7 @@ public class BrowseService {
 
         MetadataAdapter adapter = adapters.requireForMediaType(mediaType);
         try {
-            List<ItemSearchResult> fresh = adapter.browse(mediaType, shelfId, SHELF_SIZE);
+            BrowseResults fresh = adapter.browse(mediaType, shelfId, 1, size);
             cache.put(key, new CachedShelf(fresh, Instant.now()));
             return fresh;
         } catch (RuntimeException e) {

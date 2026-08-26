@@ -1,5 +1,6 @@
 package dev.nexus.modules.games;
 
+import dev.nexus.core.adapter.BrowseResults;
 import dev.nexus.core.adapter.BrowseShelf;
 import dev.nexus.core.adapter.ItemSearchResult;
 import dev.nexus.core.adapter.MetadataAdapter;
@@ -99,31 +100,35 @@ public class IgdbMetadataAdapter implements MetadataAdapter {
      * ten out of ten outranks everything ever made.
      */
     @Override
-    public List<ItemSearchResult> browse(MediaType mediaType, String shelfId, int limit) {
+    public BrowseResults browse(MediaType mediaType, String shelfId, int page, int size) {
         long now = Instant.now().getEpochSecond();
+        int offset = (page - 1) * size;
 
         List<Map<String, Object>> games =
                 switch (shelfId) {
                     case SHELF_POPULAR -> client.browseGames(
                             "total_rating_count > %d & first_release_date < %d".formatted(POPULAR_VOTE_FLOOR, now),
                             "total_rating_count desc",
-                            limit);
+                            offset,
+                            size);
                     case SHELF_TOP_RATED -> client.browseGames(
                             "total_rating_count > %d & first_release_date < %d".formatted(TOP_RATED_VOTE_FLOOR, now),
                             "total_rating desc",
-                            limit);
+                            offset,
+                            size);
                     // Ascending, so the shelf opens on what is out next rather than in 2030.
                     case SHELF_COMING_SOON -> client.browseGames(
-                            "first_release_date > %d".formatted(now), "first_release_date asc", limit);
+                            "first_release_date > %d".formatted(now), "first_release_date asc", offset, size);
                     case SHELF_RECENT -> client.browseGames(
                             "first_release_date > %d & first_release_date < %d"
                                     .formatted(now - RECENT_WINDOW.toSeconds(), now),
                             "first_release_date desc",
-                            limit);
+                            offset,
+                            size);
                     default -> List.of();
                 };
 
-        return games.stream()
+        List<ItemSearchResult> items = games.stream()
                 .map(game -> new ItemSearchResult(
                         MediaType.GAME,
                         Source.IGDB,
@@ -135,6 +140,9 @@ public class IgdbMetadataAdapter implements MetadataAdapter {
                 // worse than a shorter shelf.
                 .filter(result -> result.title() != null && !result.title().isBlank())
                 .toList();
+
+        // A full page is the only signal IGDB gives that there is another one behind it.
+        return new BrowseResults(items, games.size() == size);
     }
 
     /**

@@ -53,10 +53,11 @@ public class IgdbClient {
      *
      * @param where an APIcalypse condition, already written by the caller
      * @param sort the ordering, without the trailing semicolon
+     * @param offset how many rows to skip, which is how a "view all" grid pages through
      */
-    public List<Map<String, Object>> browseGames(String where, String sort, int limit) {
-        return post("where parent_game = null & version_parent = null & %s; sort %s; fields %s; limit %d;"
-                .formatted(where, sort, GAME_FIELDS, limit));
+    public List<Map<String, Object>> browseGames(String where, String sort, int offset, int limit) {
+        return post("where parent_game = null & version_parent = null & %s; sort %s; fields %s; offset %d; limit %d;"
+                .formatted(where, sort, GAME_FIELDS, offset, limit));
     }
 
     public List<Map<String, Object>> findGameById(String externalId) {

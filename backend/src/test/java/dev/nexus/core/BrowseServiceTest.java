@@ -10,6 +10,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import dev.nexus.core.adapter.BrowseResults;
 import dev.nexus.core.adapter.BrowseShelf;
 import dev.nexus.core.adapter.ItemSearchResult;
 import dev.nexus.core.adapter.MetadataAdapter;
@@ -39,6 +40,10 @@ class BrowseServiceTest {
         return new BrowseService(new MetadataAdapterRegistry(List.of(adapter)), new BrowseProperties(ttl));
     }
 
+    private BrowseResults results(ItemSearchResult... items) {
+        return new BrowseResults(List.of(items), false);
+    }
+
     private ItemSearchResult game(String id) {
         return new ItemSearchResult(MediaType.GAME, Source.IGDB, id, "Game " + id, null, null);
     }
@@ -47,35 +52,35 @@ class BrowseServiceTest {
     @Test
     void fetchesAShelfOnceAndServesEveryoneElseFromMemory() {
         BrowseService service = serviceWith(Duration.ofHours(6));
-        when(adapter.browse(any(), anyString(), anyInt())).thenReturn(List.of(game("1")));
+        when(adapter.browse(any(), anyString(), anyInt(), anyInt())).thenReturn(results(game("1")));
 
-        assertThat(service.shelf(MediaType.GAME, "popular")).hasSize(1);
-        assertThat(service.shelf(MediaType.GAME, "popular")).hasSize(1);
-        assertThat(service.shelf(MediaType.GAME, "popular")).hasSize(1);
+        assertThat(service.shelf(MediaType.GAME, "popular").items()).hasSize(1);
+        assertThat(service.shelf(MediaType.GAME, "popular").items()).hasSize(1);
+        assertThat(service.shelf(MediaType.GAME, "popular").items()).hasSize(1);
 
-        verify(adapter, times(1)).browse(MediaType.GAME, "popular", 20);
+        verify(adapter, times(1)).browse(MediaType.GAME, "popular", 1, 24);
     }
 
     /** Two shelves are two answers; caching them under one key would serve the wrong row. */
     @Test
     void cachesEachShelfSeparately() {
         BrowseService service = serviceWith(Duration.ofHours(6));
-        when(adapter.browse(MediaType.GAME, "popular", 20)).thenReturn(List.of(game("1")));
-        when(adapter.browse(MediaType.GAME, "coming-soon", 20)).thenReturn(List.of(game("2"), game("3")));
+        when(adapter.browse(MediaType.GAME, "popular", 1, 24)).thenReturn(results(game("1")));
+        when(adapter.browse(MediaType.GAME, "coming-soon", 1, 24)).thenReturn(results(game("2"), game("3")));
 
-        assertThat(service.shelf(MediaType.GAME, "popular")).hasSize(1);
-        assertThat(service.shelf(MediaType.GAME, "coming-soon")).hasSize(2);
+        assertThat(service.shelf(MediaType.GAME, "popular").items()).hasSize(1);
+        assertThat(service.shelf(MediaType.GAME, "coming-soon").items()).hasSize(2);
     }
 
     @Test
     void fetchesAgainOnceTheEntryHasExpired() {
         BrowseService service = serviceWith(Duration.ZERO);
-        when(adapter.browse(any(), anyString(), anyInt())).thenReturn(List.of(game("1")));
+        when(adapter.browse(any(), anyString(), anyInt(), anyInt())).thenReturn(results(game("1")));
 
         service.shelf(MediaType.GAME, "popular");
         service.shelf(MediaType.GAME, "popular");
 
-        verify(adapter, times(2)).browse(MediaType.GAME, "popular", 20);
+        verify(adapter, times(2)).browse(MediaType.GAME, "popular", 1, 24);
     }
 
     /**
@@ -85,19 +90,19 @@ class BrowseServiceTest {
     @Test
     void keepsServingAStaleShelfWhenTheSourceGoesDown() {
         BrowseService service = serviceWith(Duration.ZERO);
-        when(adapter.browse(any(), anyString(), anyInt()))
-                .thenReturn(List.of(game("1")))
+        when(adapter.browse(any(), anyString(), anyInt(), anyInt()))
+                .thenReturn(results(game("1")))
                 .thenThrow(new IllegalStateException("IGDB is down"));
 
-        assertThat(service.shelf(MediaType.GAME, "popular")).hasSize(1);
-        assertThat(service.shelf(MediaType.GAME, "popular")).hasSize(1);
+        assertThat(service.shelf(MediaType.GAME, "popular").items()).hasSize(1);
+        assertThat(service.shelf(MediaType.GAME, "popular").items()).hasSize(1);
     }
 
     /** With nothing cached there is nothing to fall back to, and the reader should be told. */
     @Test
     void surfacesTheOutageWhenThereIsNoStaleCopyToServe() {
         BrowseService service = serviceWith(Duration.ofHours(6));
-        when(adapter.browse(any(), anyString(), anyInt())).thenThrow(new IllegalStateException("IGDB is down"));
+        when(adapter.browse(any(), anyString(), anyInt(), anyInt())).thenThrow(new IllegalStateException("IGDB is down"));
 
         assertThatThrownBy(() -> service.shelf(MediaType.GAME, "popular"))
                 .isInstanceOf(IllegalStateException.class);
@@ -107,13 +112,13 @@ class BrowseServiceTest {
     @Test
     void doesNotCacheAFailure() {
         BrowseService service = serviceWith(Duration.ofHours(6));
-        when(adapter.browse(any(), anyString(), anyInt()))
+        when(adapter.browse(any(), anyString(), anyInt(), anyInt()))
                 .thenThrow(new IllegalStateException("IGDB is down"))
-                .thenReturn(List.of(game("1")));
+                .thenReturn(results(game("1")));
 
         assertThatThrownBy(() -> service.shelf(MediaType.GAME, "popular"))
                 .isInstanceOf(IllegalStateException.class);
-        assertThat(service.shelf(MediaType.GAME, "popular")).hasSize(1);
+        assertThat(service.shelf(MediaType.GAME, "popular").items()).hasSize(1);
     }
 
     @Test
@@ -154,6 +159,37 @@ class BrowseServiceTest {
                 new BrowseService(new MetadataAdapterRegistry(List.of(plain)), new BrowseProperties(Duration.ZERO));
 
         assertThat(service.shelves(MediaType.BOOK)).isEmpty();
-        assertThat(service.shelf(MediaType.BOOK, "popular")).isEmpty();
+        assertThat(service.shelf(MediaType.BOOK, "popular").items()).isEmpty();
+    }
+
+    /**
+     * A shelf row asks for 24 and a grid page for 40. Serving one from the other's copy would
+     * leave a gap: page two starts where a page of 40 ended, not where a row of 24 did.
+     */
+    @Test
+    void keepsTheShelfRowAndTheGridPageApart() {
+        BrowseService service = serviceWith(Duration.ofHours(6));
+        when(adapter.browse(any(), anyString(), anyInt(), anyInt())).thenReturn(results(game("1")));
+
+        service.shelf(MediaType.GAME, "popular");
+        service.page(MediaType.GAME, "popular", 1);
+
+        verify(adapter).browse(MediaType.GAME, "popular", 1, 24);
+        verify(adapter).browse(MediaType.GAME, "popular", 1, 40);
+    }
+
+    /** Page one is what everyone lands on; page seven is one reader, and is not worth holding. */
+    @Test
+    void cachesTheFirstGridPageButNotTheOnesBehindIt() {
+        BrowseService service = serviceWith(Duration.ofHours(6));
+        when(adapter.browse(any(), anyString(), anyInt(), anyInt())).thenReturn(results(game("1")));
+
+        service.page(MediaType.GAME, "popular", 1);
+        service.page(MediaType.GAME, "popular", 1);
+        service.page(MediaType.GAME, "popular", 4);
+        service.page(MediaType.GAME, "popular", 4);
+
+        verify(adapter, times(1)).browse(MediaType.GAME, "popular", 1, 40);
+        verify(adapter, times(2)).browse(MediaType.GAME, "popular", 4, 40);
     }
 }

@@ -1,6 +1,7 @@
 package dev.nexus.core.catalog;
 
 import dev.nexus.auth.CurrentUser;
+import dev.nexus.core.adapter.BrowseResults;
 import dev.nexus.core.adapter.BrowseShelf;
 import dev.nexus.core.adapter.ItemSearchResult;
 import dev.nexus.core.adapter.MetadataAdapterRegistry;
@@ -17,6 +18,7 @@ import dev.nexus.core.web.RateLimiter;
 import dev.nexus.core.web.ServerTimings;
 import dev.nexus.config.NexusProperties;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -126,10 +128,12 @@ public class CatalogController {
      * and comes from memory, so a reader refreshing the page spends no external budget.
      */
     @GetMapping("/browse")
-    public List<ItemSearchResult> browseShelf(
-            @RequestParam MediaType mediaType, @RequestParam @NotBlank @Size(max = 50) String shelf) {
+    public BrowseResults browseShelf(
+            @RequestParam MediaType mediaType,
+            @RequestParam @NotBlank @Size(max = 50) String shelf,
+            @RequestParam(defaultValue = "1") @Positive int page) {
 
-        return timings.time("browse", () -> browse.shelf(mediaType, shelf));
+        return timings.time("browse", () -> browse.page(mediaType, shelf, page));
     }
 
     @GetMapping("/modules")
