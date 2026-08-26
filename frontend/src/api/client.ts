@@ -26,6 +26,12 @@ export type SearchResult = {
   releaseDate: string | null
 }
 
+/** One row of a module's browse page. Which rows exist is the backend adapter's decision. */
+export type BrowseShelf = {
+  id: string
+  label: string
+}
+
 export type TrackedItem = {
   id: number
   mediaType: MediaType
@@ -277,6 +283,14 @@ export const api = {
     ),
 
   availableModules: () => request<MediaType[]>('/catalog/modules'),
+
+  browseShelves: (mediaType: MediaType) =>
+    request<BrowseShelf[]>(`/catalog/shelves?mediaType=${mediaType}`),
+
+  browse: (mediaType: MediaType, shelf: string) =>
+    request<SearchResult[]>(
+      `/catalog/browse?mediaType=${mediaType}&shelf=${encodeURIComponent(shelf)}`,
+    ),
 
   media: (source: string, externalId: string) =>
     request<MediaDetail>(`/catalog/media/${source}/${encodeURIComponent(externalId)}`),
