@@ -41,6 +41,24 @@ public class IgdbClient {
         return post("search \"%s\"; fields %s; limit %d;".formatted(escaped, GAME_FIELDS, limit));
     }
 
+    /**
+     * One browse shelf's worth of games.
+     *
+     * <p>Every shelf excludes {@code parent_game} and {@code version_parent}, which between
+     * them drop DLC, expansions and the Game of the Year re-releases — a popularity sort
+     * without them returns four editions of the same game. The obvious alternative, IGDB's
+     * {@code category}, is deprecated in favour of {@code game_type}, and IGDB has already
+     * retired {@code category} on {@code external_games} once; these two fields are older
+     * than both and have not moved.
+     *
+     * @param where an APIcalypse condition, already written by the caller
+     * @param sort the ordering, without the trailing semicolon
+     */
+    public List<Map<String, Object>> browseGames(String where, String sort, int limit) {
+        return post("where parent_game = null & version_parent = null & %s; sort %s; fields %s; limit %d;"
+                .formatted(where, sort, GAME_FIELDS, limit));
+    }
+
     public List<Map<String, Object>> findGameById(String externalId) {
         return post("where id = %s; fields %s; limit 1;".formatted(Long.parseLong(externalId), GAME_FIELDS));
     }
