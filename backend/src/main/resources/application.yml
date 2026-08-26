@@ -54,6 +54,10 @@ nexus:
     search-requests-per-minute: 30
     # An import touches a whole library and spends external API budget.
     import-requests-per-minute: 3
+  browse:
+    # A browse shelf is the same list for every reader, so it is fetched once and shared.
+    # Long enough that a page view costs nothing; short enough that "coming soon" stays true.
+    ttl: 6h
   refresh:
     # An ongoing or upcoming title can change any day; a released one is settled and is
     # never refreshed at all, which is what keeps a big library off the API budget.

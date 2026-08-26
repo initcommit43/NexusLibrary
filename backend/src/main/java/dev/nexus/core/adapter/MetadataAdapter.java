@@ -28,6 +28,27 @@ public interface MetadataAdapter {
     Optional<TrackableItemData> fetchById(String externalId);
 
     /**
+     * The rows this source can fill a browse page with, in the order they should appear.
+     *
+     * <p>Empty by default, which reads as "this module has no browse page yet" rather than as
+     * an error — a source with no notion of popularity should not have to pretend to one.
+     */
+    default List<BrowseShelf> browseShelves(MediaType mediaType) {
+        return List.of();
+    }
+
+    /**
+     * One shelf's worth of titles. Called with an id this adapter itself returned from
+     * {@link #browseShelves}, so an unknown id is a bug rather than user input.
+     *
+     * <p>Results are the same for everyone, which is what lets core cache them once and serve
+     * every reader from that copy instead of spending a request per visitor.
+     */
+    default List<ItemSearchResult> browse(MediaType mediaType, String shelfId, int limit) {
+        return List.of();
+    }
+
+    /**
      * Everything a source knows about one item beyond the fields core models — relations,
      * characters, tags, rankings. Shape is the source's own; only that module's UI reads it.
      *

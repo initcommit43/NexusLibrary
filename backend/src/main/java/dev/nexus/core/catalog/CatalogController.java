@@ -1,6 +1,7 @@
 package dev.nexus.core.catalog;
 
 import dev.nexus.auth.CurrentUser;
+import dev.nexus.core.adapter.BrowseShelf;
 import dev.nexus.core.adapter.ItemSearchResult;
 import dev.nexus.core.adapter.MetadataAdapterRegistry;
 import dev.nexus.core.domain.MediaType;
@@ -47,6 +48,7 @@ public class CatalogController {
     private final MetadataAdapterRegistry adapters;
     private final ServerTimings timings;
     private final MediaDetailService media;
+    private final BrowseService browse;
     private final TrackingService tracking;
     private final RateLimiter rateLimiter;
     private final int searchesPerMinute;
@@ -55,12 +57,14 @@ public class CatalogController {
             MetadataAdapterRegistry adapters,
             ServerTimings timings,
             MediaDetailService media,
+            BrowseService browse,
             TrackingService tracking,
             RateLimiter rateLimiter,
             NexusProperties properties) {
         this.adapters = adapters;
         this.timings = timings;
         this.media = media;
+        this.browse = browse;
         this.tracking = tracking;
         this.rateLimiter = rateLimiter;
         this.searchesPerMinute = properties.rateLimit().searchRequestsPerMinute();
@@ -109,6 +113,23 @@ public class CatalogController {
                 item.getItemState().name(),
                 item.getMetadata(),
                 entry.orElse(null));
+    }
+
+    /** Which rows this module's browse page has, so the client renders what exists. */
+    @GetMapping("/shelves")
+    public List<BrowseShelf> shelves(@RequestParam MediaType mediaType) {
+        return browse.shelves(mediaType);
+    }
+
+    /**
+     * One browse shelf. Not rate-limited like search is: the answer is the same for everyone
+     * and comes from memory, so a reader refreshing the page spends no external budget.
+     */
+    @GetMapping("/browse")
+    public List<ItemSearchResult> browseShelf(
+            @RequestParam MediaType mediaType, @RequestParam @NotBlank @Size(max = 50) String shelf) {
+
+        return timings.time("browse", () -> browse.shelf(mediaType, shelf));
     }
 
     @GetMapping("/modules")
