@@ -575,6 +575,68 @@ export const SettingsPage = () => {
     </article>
   )
 
+  /**
+   * Progress and results for the run this card owns. The connected-account cards each carry
+   * their own copy of this from before there was a card without a connection to show.
+   */
+  const runFeedback = (provider: ModuleProvider) => (
+    <>
+      {job && runningFor === provider.provider && (
+        <>
+          <p className="muted">{jobLabel(job)}</p>
+          {job.total > 0 && (
+            <div className="achievement-bar">
+              <div
+                className="achievement-bar-fill"
+                style={{ width: `${Math.round((job.processed / job.total) * 100)}%` }}
+              />
+            </div>
+          )}
+        </>
+      )}
+
+      {report && runningFor === provider.provider && (
+        <>
+          <p className="muted">
+            {report.created} added, {report.updated} updated
+            {report.unmatched.length > 0 && `, ${report.unmatched.length} not matched`}.
+          </p>
+
+          {report.unmatched.length > 0 && (
+            <details className="unmatched">
+              <summary>Titles we could not match ({report.unmatched.length})</summary>
+              <ul>
+                {report.unmatched.map((item) => (
+                  <li key={item.providerItemId}>
+                    {item.title} <span className="muted">— {item.reason}</span>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+        </>
+      )}
+    </>
+  )
+
+  /**
+   * The only card with no connection to make: Goodreads closed its API to new keys in 2020,
+   * so uploading an export is the whole integration rather than the fallback it is elsewhere.
+   */
+  const goodreadsCard = (provider: ModuleProvider) => (
+    <article key={provider.provider} className="card integration-card">
+      <div className="integration-head">
+        <div>
+          <h3>{provider.label}</h3>
+          <p className="muted">{provider.blurb}</p>
+        </div>
+      </div>
+
+      {csvRow(provider)}
+      {runFeedback(provider)}
+    </article>
+  )
+
   const moduleSection = (module: ModuleDefinition) => (
     <section key={module.slug} className="status-section">
       <h2>
@@ -591,6 +653,7 @@ export const SettingsPage = () => {
           if (provider.provider === 'ANILIST') return anilistCard(provider)
           if (provider.provider === 'MAL') return malCard(provider)
           if (provider.provider === 'SIMKL') return simklCard(provider)
+          if (provider.provider === 'GOODREADS') return goodreadsCard(provider)
           return pendingCard(provider)
         })
       )}

@@ -197,7 +197,14 @@ export const MODULES: ModuleDefinition[] = [
     ],
     emptyHint: 'Nothing tracked yet. Upload a Goodreads export in settings.',
     hasMediaPages: false,
-    providers: [],
+    providers: [
+      {
+        provider: 'GOODREADS',
+        label: 'Goodreads',
+        blurb: 'Import your shelves from an export. Goodreads has no API to connect to.',
+        csvHint: 'Export yours from goodreads.com/review/import — the file it emails you.',
+      },
+    ],
   },
 ]
 

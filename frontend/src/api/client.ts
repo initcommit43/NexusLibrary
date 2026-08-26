@@ -62,7 +62,7 @@ export type MediaDetail = {
   entry: TrackedItem | null
 }
 
-export type Provider = 'STEAM' | 'ANILIST' | 'MAL' | 'SIMKL'
+export type Provider = 'STEAM' | 'ANILIST' | 'MAL' | 'SIMKL' | 'GOODREADS'
 
 export type ConnectedAccount = {
   provider: Provider
