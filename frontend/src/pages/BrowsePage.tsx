@@ -9,7 +9,9 @@ import {
   type TrackingStatus,
 } from '../api/client'
 import { AppShell } from '../components/AppShell'
+import { Carousel } from '../components/Carousel'
 import { CatalogCard } from '../components/CatalogCard'
+import { RankedRow } from '../components/RankedRow'
 import { STATUS_ORDER } from '../components/trackingStatus'
 import { keyOf, useTrackable } from '../components/useTrackable'
 import { defaultTypeOf, moduleBySlug, statusLabelsFor, typeBySlug } from '../modules/registry'
@@ -33,15 +35,19 @@ type Loaded = {
   error: string | null
 }
 
+/** A shelf whose id says it ranks its rows is read down, not across. */
+const isRanked = (shelfId: string) => shelfId === 'top'
+
 /**
- * Discovery — what is popular, what is coming — as opposed to the shelves, which are yours.
+ * Discovery — what is trending, what is coming — as opposed to the shelves, which are yours.
  *
  * <p>Which rows appear is the backend's answer, not this page's: each module's adapter names
  * its own, so a module gains a browse page by implementing two methods and this file does not
- * change. A module whose adapter offers none says so rather than rendering an empty frame.
+ * change. That is also what makes the anime/manga switch cheap — the two are different media
+ * types with different shelves, and switching simply asks for the other one's.
  */
 export const BrowsePage = () => {
-  const [params] = useSearchParams()
+  const [params, setParams] = useSearchParams()
   const module = useCurrentModule(moduleBySlug(params.get('module') ?? undefined))
   const active = typeBySlug(module, params.get('type') ?? undefined) ?? defaultTypeOf(module)
 
@@ -85,7 +91,7 @@ export const BrowsePage = () => {
         found.forEach((shelf) =>
           api
             .browse(mediaType, shelf.id)
-            .then((results) => updateShelf(shelf.id, { results }))
+            .then((page) => updateShelf(shelf.id, { results: page.items }))
             .catch(() => updateShelf(shelf.id, { failed: true })),
         )
       })
@@ -103,22 +109,51 @@ export const BrowsePage = () => {
     }
   }, [mediaType])
 
+  const switchTo = (slug: string) => {
+    const next = new URLSearchParams(params)
+    next.set('module', module.slug)
+    next.set('type', slug)
+    setParams(next, { replace: true })
+  }
+
   return (
     <AppShell module={module}>
       <div className="browse-head">
         <h1>Browse {active.label}</h1>
 
-        <select
-          value={status}
-          aria-label="Status to track as"
-          onChange={(e) => setStatus(e.target.value as TrackingStatus)}
-        >
-          {STATUS_ORDER.map((option) => (
-            <option key={option} value={option}>
-              Add as {statusLabelsFor(active.mediaType)[option]}
-            </option>
-          ))}
-        </select>
+        <div className="browse-controls">
+          <select
+            value={status}
+            aria-label="Status to track as"
+            onChange={(e) => setStatus(e.target.value as TrackingStatus)}
+          >
+            {STATUS_ORDER.map((option) => (
+              <option key={option} value={option}>
+                Add as {statusLabelsFor(active.mediaType)[option]}
+              </option>
+            ))}
+          </select>
+
+          {/*
+           * Only worth showing where a module owns more than one type. Anime and manga are
+           * the case it exists for; games would render a switch with one side.
+           */}
+          {module.types.length > 1 && (
+            <div className="type-switch" role="group" aria-label={`${module.label} type`}>
+              {module.types.map((type) => (
+                <button
+                  key={type.mediaType}
+                  type="button"
+                  className={type.mediaType === active.mediaType ? 'active' : 'ghost'}
+                  aria-pressed={type.mediaType === active.mediaType}
+                  onClick={() => switchTo(type.slug)}
+                >
+                  {type.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {(error || tracking.error) && (
@@ -136,7 +171,15 @@ export const BrowsePage = () => {
 
       {shelves?.map(({ shelf, results, failed }) => (
         <section key={shelf.id} className="browse-shelf">
-          <h2>{shelf.label}</h2>
+          <div className="browse-shelf-head">
+            <h2>{shelf.label}</h2>
+            <Link
+              className="view-all"
+              to={`/browse/${module.slug}/${active.slug}/${shelf.id}`}
+            >
+              View All
+            </Link>
+          </div>
 
           {failed ? (
             <p className="muted">This row could not be loaded.</p>
@@ -150,8 +193,20 @@ export const BrowsePage = () => {
             </div>
           ) : results.length === 0 ? (
             <p className="muted">Nothing here right now.</p>
+          ) : isRanked(shelf.id) ? (
+            <div className="ranked-list">
+              {results.slice(0, 10).map((result, index) => (
+                <RankedRow
+                  key={keyOf(result)}
+                  result={result}
+                  rank={index + 1}
+                  state={tracking.stateOf(result)}
+                  onTrack={() => void tracking.track(result, status)}
+                />
+              ))}
+            </div>
           ) : (
-            <div className="browse-row">
+            <Carousel label={shelf.label}>
               {results.map((result) => (
                 <CatalogCard
                   key={keyOf(result)}
@@ -160,7 +215,7 @@ export const BrowsePage = () => {
                   onTrack={() => void tracking.track(result, status)}
                 />
               ))}
-            </div>
+            </Carousel>
           )}
         </section>
       ))}

@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { ActivityPage } from './pages/ActivityPage'
 import { BrowsePage } from './pages/BrowsePage'
+import { ShelfPage } from './pages/ShelfPage'
 import { LibraryPage } from './pages/LibraryPage'
 import { MediaPage } from './pages/MediaPage'
 import { EntryDetailPage } from './pages/EntryDetailPage'
@@ -34,6 +35,7 @@ export const App = () => (
       <Route path="/library/:module" element={<LibraryPage />} />
       <Route path="/library/:module/:type" element={<LibraryPage />} />
       <Route path="/browse" element={<BrowsePage />} />
+      <Route path="/browse/:moduleSlug/:typeSlug/:shelfId" element={<ShelfPage />} />
       <Route path="/search" element={<SearchPage />} />
       <Route path="/activity" element={<ActivityPage />} />
       <Route path="/entries/:id" element={<EntryDetailPage />} />
