@@ -84,11 +84,11 @@ class OpenLibraryClientTest {
                         org.hamcrest.Matchers.containsString("key:/works/OL1W"),
                         org.hamcrest.Matchers.containsString("key:/works/OL20W"),
                         org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("key:/works/OL21W")))))
-                .andRespond(withSuccess("{\"docs\":[{\"key\":\"/works/OL1W\"}]}", MediaType.APPLICATION_JSON));
+                .andRespond(withSuccess(docsFor(ids.subList(0, 20)), MediaType.APPLICATION_JSON));
         server.expect(requestTo(org.hamcrest.Matchers.containsString("key:/works/OL21W")))
-                .andRespond(withSuccess("{\"docs\":[{\"key\":\"/works/OL21W\"}]}", MediaType.APPLICATION_JSON));
+                .andRespond(withSuccess(docsFor(ids.subList(20, 25)), MediaType.APPLICATION_JSON));
 
-        assertThat(client.findByWorkIds(ids)).hasSize(2);
+        assertThat(client.findByWorkIds(ids)).hasSize(25);
         server.verify();
     }
 
@@ -96,9 +96,53 @@ class OpenLibraryClientTest {
     @Test
     void asksForEachWorkOnlyOnce() {
         server.expect(requestTo(org.hamcrest.Matchers.containsString("key:/works/OL1W")))
-                .andRespond(withSuccess("{\"docs\":[]}", MediaType.APPLICATION_JSON));
+                .andRespond(withSuccess(docsFor(List.of("OL1W")), MediaType.APPLICATION_JSON));
 
         client.findByWorkIds(List.of("OL1W", "OL1W", "OL1W"));
+        server.verify();
+    }
+
+    private String docsFor(List<String> workIds) {
+        return "{\"docs\":["
+                + String.join(
+                        ",", workIds.stream().map(id -> "{\"key\":\"/works/" + id + "\"}").toList())
+                + "]}";
+    }
+
+    /**
+     * Open Library merges duplicate works and leaves the old key as a redirect the search index
+     * no longer carries. A stored canonical goes stale that way, and without the second hop a
+     * tracked book would quietly stop coming back at all.
+     */
+    @Test
+    void followsAWorkThatHasBeenMergedIntoAnother() {
+        server.expect(requestTo(org.hamcrest.Matchers.containsString("key:/works/OL262758W")))
+                .andRespond(withSuccess("{\"docs\":[]}", MediaType.APPLICATION_JSON));
+        server.expect(requestTo("https://ol.test/works/OL262758W.json"))
+                .andRespond(withSuccess(
+                        "{\"key\":\"/works/OL262758W\",\"type\":{\"key\":\"/type/redirect\"},"
+                                + "\"location\":\"/works/OL27482W\"}",
+                        MediaType.APPLICATION_JSON));
+        server.expect(requestTo(org.hamcrest.Matchers.containsString("key:/works/OL27482W")))
+                .andRespond(withSuccess(
+                        "{\"docs\":[{\"key\":\"/works/OL27482W\",\"title\":\"The Hobbit\"}]}",
+                        MediaType.APPLICATION_JSON));
+
+        List<Map<String, Object>> found = client.findByWorkIds(List.of("OL262758W"));
+
+        assertThat(found).hasSize(1);
+        assertThat(found.getFirst()).containsEntry("title", "The Hobbit");
+        server.verify();
+    }
+
+    /** An id that is unknown rather than merged costs one extra call and then gives up. */
+    @Test
+    void stopsAtAWorkThatIsSimplyUnknown() {
+        server.expect(requestTo(org.hamcrest.Matchers.containsString("key:/works/OL999W")))
+                .andRespond(withSuccess("{\"docs\":[]}", MediaType.APPLICATION_JSON));
+        server.expect(requestTo("https://ol.test/works/OL999W.json")).andRespond(withStatus(HttpStatus.NOT_FOUND));
+
+        assertThat(client.findByWorkIds(List.of("OL999W"))).isEmpty();
         server.verify();
     }
 

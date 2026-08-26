@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
@@ -93,8 +94,27 @@ public class OpenLibraryClient {
      */
     public List<Map<String, Object>> findByWorkIds(Collection<String> workIds) {
         List<String> ids = workIds.stream().filter(id -> id != null && !id.isBlank()).distinct().toList();
-        List<Map<String, Object>> found = new ArrayList<>();
+        List<Map<String, Object>> found = searchWorkIds(ids);
 
+        // Open Library merges duplicate works routinely, leaving the old key as a redirect that
+        // the search index no longer carries. Stored canonicals go stale that way, and without
+        // this they would simply stop coming back — a tracked book quietly losing its record.
+        List<String> missing = ids.stream()
+                .filter(id -> found.stream().noneMatch(doc -> id.equals(workIdOf(doc))))
+                .map(this::followRedirect)
+                .filter(Objects::nonNull)
+                .toList();
+
+        if (missing.isEmpty()) {
+            return found;
+        }
+        List<Map<String, Object>> all = new ArrayList<>(found);
+        all.addAll(searchWorkIds(missing));
+        return all;
+    }
+
+    private List<Map<String, Object>> searchWorkIds(List<String> ids) {
+        List<Map<String, Object>> found = new ArrayList<>();
         for (int start = 0; start < ids.size(); start += BATCH_SIZE) {
             List<String> batch = ids.subList(start, Math.min(start + BATCH_SIZE, ids.size()));
             String query = String.join(
@@ -102,6 +122,28 @@ public class OpenLibraryClient {
             found.addAll(docs(searchJson(batch.size(), "q", query)));
         }
         return found;
+    }
+
+    /**
+     * Where a merged work now lives, or null if this id is simply unknown. One hop only:
+     * Open Library collapses chains when it merges, and a loop here would be unbounded.
+     */
+    private String followRedirect(String workId) {
+        Map<String, Object> record = get(UriComponentsBuilder.fromUriString(properties.apiBaseUrl())
+                        .path("/works/{id}.json")
+                        .build(workId))
+                .orElse(Map.of());
+
+        if (!(record.get("type") instanceof Map<?, ?> type) || !"/type/redirect".equals(type.get("key"))) {
+            return null;
+        }
+        Object location = record.get("location");
+        return location == null ? null : location.toString().replace("/works/", "");
+    }
+
+    private String workIdOf(Map<String, Object> doc) {
+        Object key = doc.get("key");
+        return key == null ? null : key.toString().replace("/works/", "");
     }
 
     /**
