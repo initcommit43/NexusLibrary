@@ -105,6 +105,27 @@ public class AniListClient {
             """
                     .formatted(MEDIA_FIELDS);
 
+
+    /**
+     * A browse shelf. Every argument but the type is optional, and AniList reads an absent one
+     * as "no filter" — which is what lets one query serve a seasonal shelf and an all-time one.
+     *
+     * <p>{@code isAdult: false} is pinned rather than exposed: a browse page is what a reader
+     * sees before choosing anything, and it should not be the place that decision gets made.
+     */
+    private static final String BROWSE_QUERY =
+            """
+            query ($type: MediaType, $sort: [MediaSort], $season: MediaSeason, $seasonYear: Int,
+                   $status: MediaStatus, $format: MediaFormat, $page: Int, $perPage: Int) {
+              Page(page: $page, perPage: $perPage) {
+                pageInfo { hasNextPage }
+                media(type: $type, sort: $sort, season: $season, seasonYear: $seasonYear,
+                      status: $status, format: $format, isAdult: false) { %s }
+              }
+            }
+            """
+                    .formatted(MEDIA_FIELDS);
+
     /**
      * A user's own list. Sent with their token, so private lists come back too — without it
      * AniList answers with only what the world can see, which would silently drop entries.
@@ -197,6 +218,42 @@ public class AniListClient {
                 SEARCH_QUERY,
                 Map.of("search", query, "type", anilistType(mediaType), "perPage", Math.min(limit, MAX_BATCH)));
         return pageMedia(data);
+    }
+
+
+    /** One page of a browse shelf, with whether AniList has another behind it. */
+    public MediaPage browseMedia(
+            MediaType mediaType,
+            String sort,
+            String season,
+            Integer seasonYear,
+            String status,
+            String format,
+            int page,
+            int perPage) {
+
+        // Null means "no filter" to AniList, and Map.of will not carry one.
+        Map<String, Object> variables = new java.util.HashMap<>();
+        variables.put("type", anilistType(mediaType));
+        variables.put("sort", List.of(sort));
+        variables.put("season", season);
+        variables.put("seasonYear", seasonYear);
+        variables.put("status", status);
+        variables.put("format", format);
+        variables.put("page", page);
+        variables.put("perPage", Math.min(perPage, MAX_BATCH));
+
+        Map<String, Object> data = post(BROWSE_QUERY, variables);
+        return new MediaPage(pageMedia(data), hasNextPage(data));
+    }
+
+    /** One page of media, and whether asking for the next one is worth a request. */
+    public record MediaPage(List<Map<String, Object>> media, boolean hasNextPage) {}
+
+    private boolean hasNextPage(Map<String, Object> data) {
+        return data.get("Page") instanceof Map<?, ?> page
+                && page.get("pageInfo") instanceof Map<?, ?> info
+                && Boolean.TRUE.equals(info.get("hasNextPage"));
     }
 
     /** Empty when AniList has no such media, which is a miss rather than a failure. */

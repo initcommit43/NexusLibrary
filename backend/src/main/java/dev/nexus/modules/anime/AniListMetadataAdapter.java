@@ -1,5 +1,7 @@
 package dev.nexus.modules.anime;
 
+import dev.nexus.core.adapter.BrowseResults;
+import dev.nexus.core.adapter.BrowseShelf;
 import dev.nexus.core.adapter.FetchProgress;
 import dev.nexus.core.adapter.ItemSearchResult;
 import dev.nexus.core.adapter.MetadataAdapter;
@@ -56,6 +58,61 @@ public class AniListMetadataAdapter implements MetadataAdapter {
     public Optional<TrackableItemData> fetchById(String externalId) {
         return client.findMediaById(externalId).stream().findFirst().map(this::toItemData);
     }
+
+    @Override
+    public List<BrowseShelf> browseShelves(MediaType mediaType) {
+        return AniListShelves.shelvesFor(mediaType);
+    }
+
+    @Override
+    public BrowseResults browse(MediaType mediaType, String shelfId, int page, int size) {
+        AniListShelves.Definition shelf = AniListShelves.find(mediaType, shelfId);
+        if (shelf == null) {
+            return BrowseResults.empty();
+        }
+
+        LocalDate today = LocalDate.now();
+        AniListClient.MediaPage found = client.browseMedia(
+                mediaType,
+                shelf.sort(),
+                shelf.season(today),
+                shelf.seasonYear(today),
+                shelf.status(),
+                shelf.format(),
+                page,
+                size);
+
+        return new BrowseResults(
+                found.media().stream().map(this::toSearchResult).toList(), found.hasNextPage());
+    }
+
+    /**
+     * A browse hit carries a little more than a search hit does: a ranked shelf shows a score
+     * and a format beside the title, and re-fetching each title to find them out would cost a
+     * request per row.
+     */
+    private ItemSearchResult toSearchResult(Map<String, Object> media) {
+        Map<String, Object> facets = new HashMap<>();
+        putIfPresent(facets, "format", string(media.get("format")));
+        putIfPresent(facets, "status", string(media.get("status")));
+        putIfPresent(facets, "episodes", number(media.get("episodes")));
+        putIfPresent(facets, "chapters", number(media.get("chapters")));
+        // Already the 0-100 scale used internally, so nothing to convert.
+        putIfPresent(facets, "score", number(media.get("averageScore")));
+        if (media.get("genres") instanceof List<?> genres && !genres.isEmpty()) {
+            facets.put("genres", genres.stream().limit(4).map(String::valueOf).toList());
+        }
+
+        return new ItemSearchResult(
+                mediaTypeOf(media),
+                Source.ANILIST,
+                string(media.get("id")),
+                title(media),
+                coverUrl(media),
+                releaseDate(media),
+                Map.copyOf(facets));
+    }
+
 
     @Override
     public List<TrackableItemData> fetchByIds(Collection<String> externalIds) {
