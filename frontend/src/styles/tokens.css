@@ -109,6 +109,13 @@
   --space-6: 3rem; /* 48 */
   --space-7: 4rem; /* 64 */
 
+  /*
+   * One width for every catalogue cover card, wherever it appears. A grid can stretch its
+   * columns to fill a row and a carousel cannot, so leaving each to its own sizing made the
+   * same card two different widths on two pages.
+   */
+  --cover-card-width: 11.5rem;
+
   /* --- radius --- */
   --radius-sm: 8px; /* controls, small tiles */
   --radius-md: 14px; /* list rows */

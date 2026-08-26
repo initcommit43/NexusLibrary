@@ -553,7 +553,9 @@ button.small {
 .browse-row {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(10.5rem, 10.5rem);
+  grid-auto-columns: var(--cover-card-width);
+  /* Rows stretch to their tallest card, so every card is told to fill the row's height. */
+  align-items: stretch;
   gap: var(--space-3);
   overflow-x: auto;
   /* Room for the card's hover lift, which a tight overflow box would otherwise clip. */
@@ -595,7 +597,13 @@ button.small {
 
 .cover-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
+  /*
+   * Fixed columns rather than stretching ones. A stretched column is a different width on
+   * every viewport and in every container, which made a grid card and a carousel card two
+   * visibly different sizes; one width means a cover looks the same everywhere it appears.
+   */
+  grid-template-columns: repeat(auto-fill, var(--cover-card-width));
+  justify-content: start;
   gap: var(--space-3);
 }
 
@@ -685,10 +693,23 @@ button.small {
   flex: 1;
 }
 
+/*
+ * Clamped to two lines, with both lines' worth of space reserved whether or not the title
+ * needs them. Without this a shelf of long titles — "recently released" is full of them —
+ * wraps to four lines, and since every card stretches to its tallest sibling that one row
+ * renders much taller than the rest of the page.
+ */
 .cover-body h2,
 .cover-body h3 {
   font-size: var(--text-md);
   font-weight: 600;
+  line-height: 1.3;
+  min-height: 2.6em;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .cover-body .muted {
