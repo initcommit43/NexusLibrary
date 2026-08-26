@@ -204,8 +204,11 @@ public final class CsvTable {
             if (raw == null || raw.startsWith("0000")) {
                 return null;
             }
+            // Goodreads writes 2020/05/12 where everything else writes 2020-05-12. Same
+            // field order either way, so the separator is the whole difference.
+            String isoish = raw.replace('/', '-');
             try {
-                return LocalDate.parse(raw.length() > 10 ? raw.substring(0, 10) : raw);
+                return LocalDate.parse(isoish.length() > 10 ? isoish.substring(0, 10) : isoish);
             } catch (DateTimeParseException e) {
                 // Not a plain date; it may still be an instant.
             }

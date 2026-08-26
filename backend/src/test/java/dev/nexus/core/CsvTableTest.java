@@ -111,6 +111,17 @@ class CsvTableTest {
         assertThat(row.date("finished")).isEqualTo(LocalDate.of(2019, 5, 2));
     }
 
+    /** Goodreads separates a date with slashes where every other export here uses dashes. */
+    @Test
+    void readsSlashSeparatedDates() {
+        CsvTable table = CsvTable.parse("date read,date added\n2021/03/14,2019/12/01\n");
+
+        CsvTable.Row row = table.rows().getFirst();
+
+        assertThat(row.date("date read")).isEqualTo(LocalDate.of(2021, 3, 14));
+        assertThat(row.date("date added")).isEqualTo(LocalDate.of(2019, 12, 1));
+    }
+
     /** MyAnimeList writes an unset date as zeroes rather than leaving the column empty. */
     @Test
     void treatsAZeroDateAsNoDate() {

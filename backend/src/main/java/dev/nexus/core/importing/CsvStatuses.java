@@ -16,6 +16,7 @@ public final class CsvStatuses {
             Map.entry("watching", TrackingStatus.IN_PROGRESS),
             Map.entry("watched", TrackingStatus.COMPLETED),
             Map.entry("reading", TrackingStatus.IN_PROGRESS),
+            Map.entry("currentlyreading", TrackingStatus.IN_PROGRESS),
             Map.entry("playing", TrackingStatus.IN_PROGRESS),
             Map.entry("current", TrackingStatus.IN_PROGRESS),
             Map.entry("inprogress", TrackingStatus.IN_PROGRESS),
