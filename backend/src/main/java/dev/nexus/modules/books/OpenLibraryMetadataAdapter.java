@@ -1,5 +1,7 @@
 package dev.nexus.modules.books;
 
+import dev.nexus.core.adapter.BrowseResults;
+import dev.nexus.core.adapter.BrowseShelf;
 import dev.nexus.core.adapter.FetchProgress;
 import dev.nexus.core.adapter.ItemSearchResult;
 import dev.nexus.core.adapter.MetadataAdapter;
@@ -97,6 +99,49 @@ public class OpenLibraryMetadataAdapter implements MetadataAdapter {
             progress.report(Math.min(start + batch.size(), ids.size()), ids.size());
         }
         return fetched;
+    }
+
+
+    @Override
+    public List<BrowseShelf> browseShelves(MediaType mediaType) {
+        return OpenLibraryShelves.shelves();
+    }
+
+    @Override
+    public BrowseResults browse(MediaType mediaType, String shelfId, int page, int size) {
+        OpenLibraryShelves.Definition shelf = OpenLibraryShelves.find(shelfId);
+        if (shelf == null) {
+            return BrowseResults.empty();
+        }
+
+        List<Map<String, Object>> works = shelf.isTrending()
+                ? client.trending(shelf.window(), page, size)
+                : client.subject(shelf.subject(), (page - 1) * size, size);
+
+        List<ItemSearchResult> items = works.stream()
+                .map(doc -> new ItemSearchResult(
+                        MediaType.BOOK,
+                        Source.OPEN_LIBRARY,
+                        workId(doc),
+                        title(doc),
+                        properties.coverUrl(doc.get("cover_i")),
+                        publishedDate(doc),
+                        facets(doc)))
+                .filter(result -> result.title() != null && result.externalId() != null)
+                .toList();
+
+        // Open Library reports no total on either list, so a full page is the only sign there
+        // is another behind it.
+        return new BrowseResults(items, works.size() >= size);
+    }
+
+    private Map<String, Object> facets(Map<String, Object> doc) {
+        Map<String, Object> facets = new HashMap<>();
+        if (doc.get("ratings_average") instanceof Number rating && rating.doubleValue() > 0) {
+            facets.put("score", Math.round(rating.doubleValue() * RATING_SCALE));
+        }
+        putIfPresent(facets, "authors", strings(doc.get("author_name")));
+        return Map.copyOf(facets);
     }
 
     TrackableItemData toItemData(Map<String, Object> doc, String description) {

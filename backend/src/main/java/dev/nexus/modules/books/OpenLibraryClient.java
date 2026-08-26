@@ -147,6 +147,67 @@ public class OpenLibraryClient {
     }
 
     /**
+     * One page of Open Library's trending list, for a window it publishes — daily, weekly,
+     * monthly or yearly. Answers with the same flattened work records the search endpoint
+     * does, so nothing downstream has to know which produced them.
+     */
+    public List<Map<String, Object>> trending(String window, int page, int limit) {
+        Map<String, Object> body = get(UriComponentsBuilder.fromUriString(properties.apiBaseUrl())
+                        .path("/trending/{window}.json")
+                        .queryParam("page", page)
+                        .queryParam("limit", limit)
+                        .build(window))
+                .orElse(Map.of());
+        return listOf(body, "works");
+    }
+
+    /**
+     * One page of a subject.
+     *
+     * <p>The only shape in this client that differs: a subject's works name their authors as
+     * {@code authors} rather than {@code author_name} and their cover as {@code cover_id}
+     * rather than {@code cover_i}. Normalised here so the adapter maps one shape, not three.
+     */
+    public List<Map<String, Object>> subject(String subject, int offset, int limit) {
+        Map<String, Object> body = get(UriComponentsBuilder.fromUriString(properties.apiBaseUrl())
+                        .path("/subjects/{subject}.json")
+                        .queryParam("offset", offset)
+                        .queryParam("limit", limit)
+                        .build(subject))
+                .orElse(Map.of());
+
+        return listOf(body, "works").stream().map(this::normaliseSubjectWork).toList();
+    }
+
+    private Map<String, Object> normaliseSubjectWork(Map<String, Object> work) {
+        Map<String, Object> normalised = new java.util.HashMap<>(work);
+        if (work.get("cover_id") != null) {
+            normalised.put("cover_i", work.get("cover_id"));
+        }
+        if (work.get("authors") instanceof List<?> authors) {
+            normalised.put(
+                    "author_name",
+                    authors.stream()
+                            .filter(Map.class::isInstance)
+                            .map(author -> ((Map<?, ?>) author).get("name"))
+                            .filter(Objects::nonNull)
+                            .map(Object::toString)
+                            .toList());
+        }
+        return normalised;
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> listOf(Map<String, Object> body, String key) {
+        return body.get(key) instanceof List<?> entries
+                ? entries.stream()
+                        .filter(Map.class::isInstance)
+                        .map(entry -> (Map<String, Object>) entry)
+                        .toList()
+                : List.of();
+    }
+
+    /**
      * The raw work record, for the description alone — the one field the search endpoint does
      * not carry. Empty when Open Library has no such work.
      */
