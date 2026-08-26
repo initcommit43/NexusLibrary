@@ -201,11 +201,6 @@ class GamesTrackingIntegrationTest extends PostgresIntegrationTest {
     }
 
     @Test
-    void aModuleWithoutAnAdapterIsNotImplementedRatherThanAnError() {
-        assertThat(get("/catalog/search?mediaType=BOOK&q=dune").status()).isEqualTo(501);
-    }
-
-    @Test
     void everyTrackingEndpointRequiresAuthentication() {
         assertThat(http.get("/entries").status()).isEqualTo(401);
         assertThat(http.get("/catalog/search?mediaType=GAME&q=zelda").status()).isEqualTo(401);

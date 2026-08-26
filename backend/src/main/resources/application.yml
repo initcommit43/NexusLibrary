@@ -112,6 +112,16 @@ nexus:
     app-version: "1.0"
     # A whole import is two calls; this is only here so a retry storm cannot become one.
     requests-per-second: 3
+  open-library:
+    api-base-url: https://openlibrary.org
+    cover-base-url: https://covers.openlibrary.org
+    cover-size: L
+    # Open Library asks callers to identify themselves and leave a contact address, and
+    # throttles the ones that do not. This is a condition of use, not a nicety.
+    user-agent: ${OPEN_LIBRARY_USER_AGENT:NexusMediaTracker/1.0 (https://github.com/initcommit43/NexusMediaTracker)}
+    # Nothing meters this — there is no account. It is a courtesy to a nonprofit's servers,
+    # so a large import does not arrive looking like an attack.
+    requests-per-second: 10
   steam:
     api-key: ${STEAM_API_KEY:}
     api-base-url: https://api.steampowered.com

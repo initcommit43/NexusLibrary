@@ -5,5 +5,5 @@ public enum Source {
     IGDB,
     TMDB,
     ANILIST,
-    GOOGLE_BOOKS
+    OPEN_LIBRARY
 }
