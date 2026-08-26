@@ -24,12 +24,20 @@ export type SearchResult = {
   title: string
   coverUrl: string | null
   releaseDate: string | null
+  /** What a ranked shelf shows beside the title. Empty for a plain search hit. */
+  facets?: Record<string, unknown>
 }
 
 /** One row of a module's browse page. Which rows exist is the backend adapter's decision. */
 export type BrowseShelf = {
   id: string
   label: string
+}
+
+/** One page of a shelf. `hasMore` is all a "next" button needs, and all every source knows. */
+export type BrowseResults = {
+  items: SearchResult[]
+  hasMore: boolean
 }
 
 export type TrackedItem = {
@@ -287,9 +295,9 @@ export const api = {
   browseShelves: (mediaType: MediaType) =>
     request<BrowseShelf[]>(`/catalog/shelves?mediaType=${mediaType}`),
 
-  browse: (mediaType: MediaType, shelf: string) =>
-    request<SearchResult[]>(
-      `/catalog/browse?mediaType=${mediaType}&shelf=${encodeURIComponent(shelf)}`,
+  browse: (mediaType: MediaType, shelf: string, page = 1) =>
+    request<BrowseResults>(
+      `/catalog/browse?mediaType=${mediaType}&shelf=${encodeURIComponent(shelf)}&page=${page}`,
     ),
 
   media: (source: string, externalId: string) =>
