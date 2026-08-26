@@ -21,6 +21,9 @@ import org.springframework.web.client.RestClientException;
 @Component
 public class TmdbClient {
 
+    /** TMDB refuses a page number above this, whatever total_pages says. */
+    private static final int MAX_PAGE = 500;
+
     private final RestClient restClient;
     private final TmdbProperties properties;
     private final OutboundRateLimiter rateLimiter;
@@ -36,6 +39,40 @@ public class TmdbClient {
         Map<String, Object> body = get("/search/{kind}?query={query}&include_adult=false&page=1", kind.path(), query)
                 .orElse(Map.of());
         return results(body).stream().limit(limit).toList();
+    }
+
+    /**
+     * One page of a browse shelf. Every shelf is one of TMDB's own curated lists, which is
+     * why the path varies rather than a sort parameter: TMDB exposes "popular" and "top
+     * rated" as endpoints, not as orderings of a general query.
+     *
+     * @param path the list's path under the kind, such as {@code popular} or {@code top_rated}
+     */
+    public Map<String, Object> browse(TmdbKind kind, String path, int page) {
+        return get("/{kind}/{path}?page={page}", kind.path(), path, page).orElse(Map.of());
+    }
+
+    /**
+     * Trending sits outside the per-kind lists: it is its own endpoint, addressed by the
+     * media type and a window rather than by a list name.
+     */
+    public Map<String, Object> trending(TmdbKind kind, String window, int page) {
+        return get("/trending/{kind}/{window}?page={page}", kind.path(), window, page)
+                .orElse(Map.of());
+    }
+
+    /** The rows of a paged list response, whatever endpoint produced it. */
+    public List<Map<String, Object>> resultsOf(Map<String, Object> body) {
+        return results(body);
+    }
+
+    /**
+     * Whether a page has another behind it. TMDB reports a total, and also caps paging at 500
+     * pages however many it claims — asking past that is an error rather than an empty page.
+     */
+    public boolean hasMorePages(Map<String, Object> body, int page) {
+        int totalPages = body.get("total_pages") instanceof Number total ? total.intValue() : 0;
+        return page < Math.min(totalPages, MAX_PAGE);
     }
 
     /** Empty when TMDB has no such title — a deleted id, or one that was never ours. */

@@ -1,5 +1,7 @@
 package dev.nexus.modules.film;
 
+import dev.nexus.core.adapter.BrowseResults;
+import dev.nexus.core.adapter.BrowseShelf;
 import dev.nexus.core.adapter.ItemSearchResult;
 import dev.nexus.core.adapter.MetadataAdapter;
 import dev.nexus.core.adapter.TrackableItemData;
@@ -68,6 +70,51 @@ public class TmdbMetadataAdapter implements MetadataAdapter {
         return TmdbKind.ofExternalId(externalId)
                 .flatMap(kind -> client.findById(kind, TmdbKind.tmdbId(externalId))
                         .map(row -> toItemData(kind, row)));
+    }
+
+
+    @Override
+    public List<BrowseShelf> browseShelves(MediaType mediaType) {
+        return TmdbShelves.shelvesFor(TmdbKind.of(mediaType));
+    }
+
+    @Override
+    public BrowseResults browse(MediaType mediaType, String shelfId, int page, int size) {
+        TmdbKind kind = TmdbKind.of(mediaType);
+        TmdbShelves.Definition shelf = TmdbShelves.find(kind, shelfId);
+        if (shelf == null) {
+            return BrowseResults.empty();
+        }
+
+        Map<String, Object> body = shelf.trending()
+                ? client.trending(kind, shelf.path(), page)
+                : client.browse(kind, shelf.path(), page);
+
+        List<ItemSearchResult> items = client.resultsOf(body).stream()
+                .map(row -> new ItemSearchResult(
+                        kind.mediaType(),
+                        Source.TMDB,
+                        kind.externalId(row.get("id")),
+                        title(kind, row),
+                        posterUrl(row),
+                        releaseDate(kind, row),
+                        facets(row)))
+                .filter(result -> result.title() != null && !result.title().isBlank())
+                .toList();
+
+        return new BrowseResults(items, client.hasMorePages(body, page));
+    }
+
+    /**
+     * TMDB's list rows already carry a score and a vote count, so a ranked shelf costs no
+     * extra request. A zero score means unrated rather than terrible, and is left out.
+     */
+    private Map<String, Object> facets(Map<String, Object> row) {
+        Map<String, Object> facets = new HashMap<>();
+        if (row.get("vote_average") instanceof Number rating && rating.doubleValue() > 0) {
+            facets.put("score", Math.round(rating.doubleValue() * RATING_SCALE));
+        }
+        return Map.copyOf(facets);
     }
 
     private TrackableItemData toItemData(TmdbKind kind, Map<String, Object> row) {
