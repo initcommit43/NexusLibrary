@@ -75,7 +75,11 @@ class AniListBrowseTest {
         assertThat(sortFor(MediaType.ANIME, "top")).isEqualTo("SCORE_DESC");
     }
 
-    /** A non-seasonal shelf must send no season at all, not the current one. */
+    /**
+     * A non-seasonal shelf must send no season at all. AniList reads an argument it never
+     * received as "no filter", but one it received as null as a filter for null — so passing
+     * a null season here matched almost no titles rather than ignoring the season.
+     */
     @Test
     void leavesTheSeasonUnsetOnShelvesThatAreNotSeasonal() {
         adapter.browse(MediaType.ANIME, "popular", 1, 24);

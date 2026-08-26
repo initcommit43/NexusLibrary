@@ -189,4 +189,54 @@ class AniListClientTest {
     private static String page(String mediaJson) {
         return "{\"data\":{\"Page\":{\"media\":%s}}}".formatted(mediaJson);
     }
+
+    /**
+     * The regression guard for the bug that made every non-seasonal shelf come back empty.
+     *
+     * <p>AniList reads an argument it never received as "no filter", but one it received as
+     * null as a filter for null. Declaring {@code season} and passing nothing is therefore not
+     * the same as leaving it out, and the difference is invisible until live data is involved:
+     * the query stays valid and AniList answers 200 with almost nothing in it.
+     */
+    @Test
+    void leavesAnUnusedBrowseFilterOutOfTheQueryEntirely() {
+        server.expect(requestTo(ENDPOINT))
+                // Asserted on the argument syntax, not the bare words: "status" and "format"
+                // are also fields this query asks for, and always appear in the body.
+                .andExpect(content().string(org.hamcrest.Matchers.not(containsString("season: $season"))))
+                .andExpect(content().string(org.hamcrest.Matchers.not(containsString("status: $status"))))
+                .andExpect(content().string(org.hamcrest.Matchers.not(containsString("format: $format"))))
+                .andExpect(content().string(org.hamcrest.Matchers.not(containsString("null"))))
+                .andExpect(content().string(containsString("TRENDING_DESC")))
+                .andRespond(withSuccess(page("[]"), org.springframework.http.MediaType.APPLICATION_JSON));
+
+        client.browseMedia(MediaType.ANIME, "TRENDING_DESC", null, null, null, null, 1, 24);
+        server.verify();
+    }
+
+    /** A shelf that does use a filter has to declare it and send it. */
+    @Test
+    void declaresABrowseFilterThatIsActuallyUsed() {
+        server.expect(requestTo(ENDPOINT))
+                .andExpect(content().string(containsString("$season: MediaSeason")))
+                .andExpect(content().string(containsString("season: $season")))
+                .andExpect(content().string(containsString("\"season\":\"SPRING\"")))
+                .andExpect(content().string(containsString("\"seasonYear\":2026")))
+                .andRespond(withSuccess(page("[]"), org.springframework.http.MediaType.APPLICATION_JSON));
+
+        client.browseMedia(MediaType.ANIME, "POPULARITY_DESC", "SPRING", 2026, null, null, 1, 24);
+        server.verify();
+    }
+
+    /** AniList reports whether there is another page, so a grid never guesses at a next button. */
+    @Test
+    void readsWhetherAniListHasAnotherPage() {
+        server.expect(requestTo(ENDPOINT))
+                .andRespond(withSuccess(
+                        "{\"data\":{\"Page\":{\"pageInfo\":{\"hasNextPage\":true},\"media\":[]}}}",
+                        org.springframework.http.MediaType.APPLICATION_JSON));
+
+        assertThat(client.browseMedia(MediaType.ANIME, "TRENDING_DESC", null, null, null, null, 1, 24).hasNextPage())
+                .isTrue();
+    }
 }

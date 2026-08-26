@@ -107,24 +107,28 @@ public class AniListClient {
 
 
     /**
-     * A browse shelf. Every argument but the type is optional, and AniList reads an absent one
-     * as "no filter" — which is what lets one query serve a seasonal shelf and an all-time one.
+     * A browse shelf. Every argument but the type is optional, and an unused one is left out
+     * of the query text entirely rather than declared and passed as null.
+     *
+     * <p>That distinction is the whole reason this query is assembled rather than a constant.
+     * AniList treats an argument it never received as "no filter", but treats one it received
+     * as null as a filter for null — so a shelf that declared {@code season} and passed
+     * nothing matched almost no titles at all instead of ignoring the season.
      *
      * <p>{@code isAdult: false} is pinned rather than exposed: a browse page is what a reader
      * sees before choosing anything, and it should not be the place that decision gets made.
      */
-    private static final String BROWSE_QUERY =
-            """
-            query ($type: MediaType, $sort: [MediaSort], $season: MediaSeason, $seasonYear: Int,
-                   $status: MediaStatus, $format: MediaFormat, $page: Int, $perPage: Int) {
+    private static String browseQuery(List<String> declarations, List<String> arguments) {
+        return """
+            query (%s) {
               Page(page: $page, perPage: $perPage) {
                 pageInfo { hasNextPage }
-                media(type: $type, sort: $sort, season: $season, seasonYear: $seasonYear,
-                      status: $status, format: $format, isAdult: false) { %s }
+                media(%s) { %s }
               }
             }
             """
-                    .formatted(MEDIA_FIELDS);
+                .formatted(String.join(", ", declarations), String.join(", ", arguments), MEDIA_FIELDS);
+    }
 
     /**
      * A user's own list. Sent with their token, so private lists come back too — without it
@@ -232,19 +236,39 @@ public class AniListClient {
             int page,
             int perPage) {
 
-        // Null means "no filter" to AniList, and Map.of will not carry one.
+        List<String> declarations = new java.util.ArrayList<>(
+                List.of("$type: MediaType", "$sort: [MediaSort]", "$page: Int", "$perPage: Int"));
+        List<String> arguments = new java.util.ArrayList<>(List.of("type: $type", "sort: $sort", "isAdult: false"));
         Map<String, Object> variables = new java.util.HashMap<>();
         variables.put("type", anilistType(mediaType));
         variables.put("sort", List.of(sort));
-        variables.put("season", season);
-        variables.put("seasonYear", seasonYear);
-        variables.put("status", status);
-        variables.put("format", format);
         variables.put("page", page);
         variables.put("perPage", Math.min(perPage, MAX_BATCH));
 
-        Map<String, Object> data = post(BROWSE_QUERY, variables);
+        addOptional(declarations, arguments, variables, "season", "MediaSeason", season);
+        addOptional(declarations, arguments, variables, "seasonYear", "Int", seasonYear);
+        addOptional(declarations, arguments, variables, "status", "MediaStatus", status);
+        addOptional(declarations, arguments, variables, "format", "MediaFormat", format);
+
+        Map<String, Object> data = post(browseQuery(declarations, arguments), variables);
         return new MediaPage(pageMedia(data), hasNextPage(data));
+    }
+
+    /** Adds one filter to the query, or leaves no trace of it when there is no value. */
+    private void addOptional(
+            List<String> declarations,
+            List<String> arguments,
+            Map<String, Object> variables,
+            String name,
+            String graphqlType,
+            Object value) {
+
+        if (value == null) {
+            return;
+        }
+        declarations.add("$" + name + ": " + graphqlType);
+        arguments.add(name + ": $" + name);
+        variables.put(name, value);
     }
 
     /** One page of media, and whether asking for the next one is worth a request. */
