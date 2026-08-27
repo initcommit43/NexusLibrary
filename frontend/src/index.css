@@ -1427,6 +1427,14 @@ button.ghost.danger:hover:not(:disabled) {
 
 /* --- dashboard sections --- */
 
+/* Wraps, because a module with two shelves adds two more buttons to this row. */
+.export-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
 .status-section {
   display: flex;
   flex-direction: column;

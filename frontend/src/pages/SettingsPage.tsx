@@ -5,10 +5,17 @@ import {
   api,
   type ConnectedAccount,
   type ImportReport,
+  type MediaType,
   type SyncJob,
 } from '../api/client'
 import { AppShell } from '../components/AppShell'
-import { MODULES, type ModuleDefinition, type ModuleProvider } from '../modules/registry'
+import { saveFile } from '../components/download'
+import {
+  MODULES,
+  type MediaTypeDefinition,
+  type ModuleDefinition,
+  type ModuleProvider,
+} from '../modules/registry'
 import { useModules } from '../modules/useModules'
 
 /**
@@ -635,6 +642,51 @@ export const SettingsPage = () => {
     </article>
   )
 
+  const [exporting, setExporting] = useState<MediaType | null>(null)
+
+  const exportShelf = async (type: MediaTypeDefinition) => {
+    setExporting(type.mediaType)
+    setError(null)
+    try {
+      const { filename, blob } = await api.exportCsv(type.mediaType)
+      saveFile(blob, filename)
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'That shelf could not be exported.')
+    } finally {
+      setExporting(null)
+    }
+  }
+
+  /**
+   * Every shelf that can leave as a file, in one place rather than one button per module
+   * section: taking your lists with you is a thing you do to the whole library at once.
+   */
+  const exportSection = () => (
+    <section className="status-section">
+      <h2>Export</h2>
+      <p className="muted">
+        One file per shelf, with everything this app knows about each entry — status, rating,
+        progress, dates and notes. Opens in any spreadsheet.
+      </p>
+
+      <div className="export-row">
+        {MODULES.filter((module) => module.exportsCsv && isAvailable(module.slug))
+          .flatMap((module) => module.types)
+          .map((type) => (
+            <button
+              key={type.mediaType}
+              type="button"
+              className="ghost"
+              disabled={exporting !== null}
+              onClick={() => void exportShelf(type)}
+            >
+              {exporting === type.mediaType ? 'Preparing…' : `${type.label} CSV`}
+            </button>
+          ))}
+      </div>
+    </section>
+  )
+
   const moduleSection = (module: ModuleDefinition) => (
     <section key={module.slug} className="status-section">
       <h2>
@@ -677,6 +729,7 @@ export const SettingsPage = () => {
       )}
 
       {MODULES.map(moduleSection)}
+      {exportSection()}
     </AppShell>
   )
 }

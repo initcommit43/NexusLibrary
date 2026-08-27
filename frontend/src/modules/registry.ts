@@ -45,6 +45,12 @@ export interface ModuleDefinition {
   providers: ModuleProvider[]
   /** True when the source has a catalogue page worth opening instead of the entry page. */
   hasMediaPages: boolean
+  /**
+   * Whether this module's shelves can be carried out as a CSV. False for games: a Steam
+   * library is not a list anyone keeps by hand, and connecting the account brings the whole
+   * thing back whenever it is wanted.
+   */
+  exportsCsv: boolean
 }
 
 const watching = {
@@ -80,6 +86,7 @@ export const MODULES: ModuleDefinition[] = [
     ],
     emptyHint: 'Nothing tracked yet. Connect Steam in settings, or search for a game.',
     hasMediaPages: false,
+    exportsCsv: false,
     providers: [{
         provider: 'STEAM',
         label: 'Steam',
@@ -120,6 +127,7 @@ export const MODULES: ModuleDefinition[] = [
     ],
     emptyHint: 'Nothing tracked yet. Connect AniList or MyAnimeList in settings.',
     hasMediaPages: true,
+    exportsCsv: true,
     providers: [
       {
         provider: 'ANILIST',
@@ -163,6 +171,7 @@ export const MODULES: ModuleDefinition[] = [
     ],
     emptyHint: 'Nothing tracked yet. Connect Simkl in settings, or search for a film.',
     hasMediaPages: false,
+    exportsCsv: true,
     providers: [
       {
         provider: 'SIMKL',
@@ -196,6 +205,7 @@ export const MODULES: ModuleDefinition[] = [
     ],
     emptyHint: 'Nothing tracked yet. Upload a Goodreads export in settings.',
     hasMediaPages: false,
+    exportsCsv: true,
     providers: [
       {
         provider: 'GOODREADS',
