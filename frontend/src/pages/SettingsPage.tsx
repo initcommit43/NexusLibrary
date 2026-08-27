@@ -342,8 +342,6 @@ export const SettingsPage = () => {
         returns an empty library. Signing in cannot override that setting.
       </p>
 
-      {csvRow(provider)}
-
       {steam?.lastSyncedAt && (
         <p className="muted">Last imported {new Date(steam.lastSyncedAt).toLocaleString()}.</p>
       )}

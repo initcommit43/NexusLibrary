@@ -84,7 +84,6 @@ export const MODULES: ModuleDefinition[] = [
         provider: 'STEAM',
         label: 'Steam',
         blurb: 'Import your games and playtime.',
-        csvHint: 'Needs an appid column; name and playtime are used when present.',
       }],
   },
   {
