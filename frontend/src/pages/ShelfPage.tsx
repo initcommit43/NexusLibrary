@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ApiError, api, type SearchResult, type TrackingStatus } from '../api/client'
+import { ApiError, api, type SearchResult } from '../api/client'
 import { AppShell } from '../components/AppShell'
 import { CatalogCard } from '../components/CatalogCard'
 import { RankedRow } from '../components/RankedRow'
-import { STATUS_ORDER } from '../components/trackingStatus'
 import { keyOf, useTrackable } from '../components/useTrackable'
-import { defaultTypeOf, moduleBySlug, statusLabelsFor, typeBySlug } from '../modules/registry'
+import { defaultTypeOf, moduleBySlug, typeBySlug } from '../modules/registry'
 import { useCurrentModule } from '../modules/useCurrentModule'
 
 const isRanked = (shelfId: string | undefined) => shelfId === 'top'
@@ -43,7 +42,6 @@ export const ShelfPage = () => {
   const [label, setLabel] = useState<string | null>(null)
   const [loaded, setLoaded] = useState<Loaded | null>(null)
   const [page, setPage] = useState(1)
-  const [status, setStatus] = useState<TrackingStatus>('PLANNING')
   const tracking = useTrackable()
 
   const mediaType = active.mediaType
@@ -106,28 +104,12 @@ export const ShelfPage = () => {
 
   return (
     <AppShell module={module}>
-      <div className="browse-head">
-        <div>
-          <p className="muted">
-            <Link to={`/browse?module=${module.slug}&type=${active.slug}`}>
-              ← Browse {active.label}
-            </Link>
-          </p>
-          <h1>{label ?? active.label}</h1>
-        </div>
-
-        <select
-          value={status}
-          aria-label="Status to track as"
-          onChange={(e) => setStatus(e.target.value as TrackingStatus)}
-        >
-          {STATUS_ORDER.map((option) => (
-            <option key={option} value={option}>
-              Add as {statusLabelsFor(active.mediaType)[option]}
-            </option>
-          ))}
-        </select>
-      </div>
+      <p className="muted">
+        <Link to={`/browse?module=${module.slug}&type=${active.slug}`}>
+          ← Browse {active.label}
+        </Link>
+      </p>
+      <h1>{label ?? active.label}</h1>
 
       {(error || tracking.error) && (
         <p className="alert" role="alert">

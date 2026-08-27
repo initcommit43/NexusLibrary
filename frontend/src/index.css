@@ -382,12 +382,6 @@ button.small {
   gap: var(--space-2);
 }
 
-.browse-controls {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
 /* Two buttons reading as one control, the way a segmented switch does. */
 .type-switch {
   display: inline-flex;

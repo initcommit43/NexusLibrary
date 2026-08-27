@@ -1,11 +1,10 @@
 import { useState, type FormEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { ApiError, api, type SearchResult, type TrackingStatus } from '../api/client'
+import { ApiError, api, type SearchResult } from '../api/client'
 import { AppShell } from '../components/AppShell'
 import { CatalogCard } from '../components/CatalogCard'
-import { STATUS_ORDER } from '../components/trackingStatus'
 import { keyOf, useTrackable } from '../components/useTrackable'
-import { defaultTypeOf, moduleBySlug, statusLabelsFor, typeBySlug } from '../modules/registry'
+import { defaultTypeOf, moduleBySlug, typeBySlug } from '../modules/registry'
 import { useCurrentModule } from '../modules/useCurrentModule'
 
 export const SearchPage = () => {
@@ -17,7 +16,6 @@ export const SearchPage = () => {
 
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[] | null>(null)
-  const [status, setStatus] = useState<TrackingStatus>('PLANNING')
   const [error, setError] = useState<string | null>(null)
   const [searching, setSearching] = useState(false)
   const tracking = useTrackable()
@@ -50,17 +48,6 @@ export const SearchPage = () => {
           aria-label={`Search ${active.label}`}
           onChange={(e) => setQuery(e.target.value)}
         />
-        <select
-          value={status}
-          aria-label="Status to track as"
-          onChange={(e) => setStatus(e.target.value as TrackingStatus)}
-        >
-          {STATUS_ORDER.map((option) => (
-            <option key={option} value={option}>
-              Add as {statusLabelsFor(active.mediaType)[option]}
-            </option>
-          ))}
-        </select>
         <button type="submit" disabled={searching || !query.trim()}>
           {searching ? 'Searching…' : 'Search'}
         </button>

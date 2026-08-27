@@ -6,15 +6,13 @@ import {
   type BrowseShelf,
   type MediaType,
   type SearchResult,
-  type TrackingStatus,
 } from '../api/client'
 import { AppShell } from '../components/AppShell'
 import { Carousel } from '../components/Carousel'
 import { CatalogCard } from '../components/CatalogCard'
 import { RankedRow } from '../components/RankedRow'
-import { STATUS_ORDER } from '../components/trackingStatus'
 import { keyOf, useTrackable } from '../components/useTrackable'
-import { defaultTypeOf, moduleBySlug, statusLabelsFor, typeBySlug } from '../modules/registry'
+import { defaultTypeOf, moduleBySlug, typeBySlug } from '../modules/registry'
 import { useCurrentModule } from '../modules/useCurrentModule'
 
 /** A shelf and whatever we know about it so far. */
@@ -52,7 +50,6 @@ export const BrowsePage = () => {
   const active = typeBySlug(module, params.get('type') ?? undefined) ?? defaultTypeOf(module)
 
   const [loaded, setLoaded] = useState<Loaded | null>(null)
-  const [status, setStatus] = useState<TrackingStatus>('PLANNING')
   const tracking = useTrackable()
 
   const mediaType = active.mediaType
@@ -121,39 +118,25 @@ export const BrowsePage = () => {
       <div className="browse-head">
         <h1>Browse {active.label}</h1>
 
-        <div className="browse-controls">
-          <select
-            value={status}
-            aria-label="Status to track as"
-            onChange={(e) => setStatus(e.target.value as TrackingStatus)}
-          >
-            {STATUS_ORDER.map((option) => (
-              <option key={option} value={option}>
-                Add as {statusLabelsFor(active.mediaType)[option]}
-              </option>
+        {/*
+         * Only worth showing where a module owns more than one type. Anime and manga are
+         * the case it exists for; games would render a switch with one side.
+         */}
+        {module.types.length > 1 && (
+          <div className="type-switch" role="group" aria-label={`${module.label} type`}>
+            {module.types.map((type) => (
+              <button
+                key={type.mediaType}
+                type="button"
+                className={type.mediaType === active.mediaType ? 'active' : 'ghost'}
+                aria-pressed={type.mediaType === active.mediaType}
+                onClick={() => switchTo(type.slug)}
+              >
+                {type.label}
+              </button>
             ))}
-          </select>
-
-          {/*
-           * Only worth showing where a module owns more than one type. Anime and manga are
-           * the case it exists for; games would render a switch with one side.
-           */}
-          {module.types.length > 1 && (
-            <div className="type-switch" role="group" aria-label={`${module.label} type`}>
-              {module.types.map((type) => (
-                <button
-                  key={type.mediaType}
-                  type="button"
-                  className={type.mediaType === active.mediaType ? 'active' : 'ghost'}
-                  aria-pressed={type.mediaType === active.mediaType}
-                  onClick={() => switchTo(type.slug)}
-                >
-                  {type.label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {(error || tracking.error) && (
