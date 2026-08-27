@@ -1037,11 +1037,14 @@ button.small {
   opacity: 1;
 }
 
-/* The trigger is an icon; its options are sentences, so they size to themselves. */
+/*
+ * The trigger is an icon; its options are sentences, so they size to their own text. The
+ * cap keeps them inside the card, which hides anything overhanging its rounded corners.
+ */
 .add-menu .status-options {
   left: auto;
   width: max-content;
-  min-width: 11rem;
+  max-width: calc(var(--cover-card-width) - var(--space-3));
 }
 
 /* Same columns as the head, so the facts sit directly beneath the cover. */
