@@ -13,6 +13,9 @@ public interface UserEntryRepository extends JpaRepository<UserEntry, Long> {
 
     List<UserEntry> findByUserIdOrderByUpdatedAtDesc(Long userId);
 
+    /** One shelf, in the order a reader would sort a spreadsheet of it. */
+    List<UserEntry> findByUserIdAndItemMediaTypeOrderByItemTitleAsc(Long userId, MediaType mediaType);
+
     Optional<UserEntry> findByIdAndUserId(Long id, Long userId);
 
     Optional<UserEntry> findByUserIdAndItemId(Long userId, Long itemId);
