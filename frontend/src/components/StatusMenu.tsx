@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { ApiError, api, type TrackedItem, type TrackingStatus } from '../api/client'
 import { statusLabelsFor, typeDefinitionFor } from '../modules/registry'
 import { STATUS_ORDER } from './trackingStatus'
+import { useMenuDismiss } from './useMenuDismiss'
 
 const ChevronIcon = () => (
   <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" aria-hidden>
@@ -25,31 +26,12 @@ export const StatusMenu = ({
   onChanged: () => void
   onOpenEditor: () => void
 }) => {
-  const [open, setOpen] = useState(false)
+  const { open, setOpen, container } = useMenuDismiss<HTMLDivElement>()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const container = useRef<HTMLDivElement>(null)
 
   const labels = statusLabelsFor(entry.mediaType)
   const order = typeDefinitionFor(entry.mediaType)?.statusOrder ?? STATUS_ORDER
-
-  useEffect(() => {
-    if (!open) return
-
-    const onPointerDown = (event: PointerEvent) => {
-      if (!container.current?.contains(event.target as Node)) setOpen(false)
-    }
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false)
-    }
-
-    document.addEventListener('pointerdown', onPointerDown)
-    document.addEventListener('keydown', onKeyDown)
-    return () => {
-      document.removeEventListener('pointerdown', onPointerDown)
-      document.removeEventListener('keydown', onKeyDown)
-    }
-  }, [open])
 
   const moveTo = async (status: TrackingStatus) => {
     setBusy(true)
