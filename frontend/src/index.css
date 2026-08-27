@@ -1019,6 +1019,36 @@ button.small {
   color: var(--accent);
 }
 
+/*
+ * The add menu wraps the trigger rather than being it, so the options anchor to the button
+ * wherever the button sits — pinned to a cover on a grid card, in the flow on a ranked row.
+ */
+.add-menu {
+  position: relative;
+}
+
+.add-menu .card-menu {
+  position: static;
+}
+
+.cover-art .add-menu {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+}
+
+/* Saved and saving are the states worth seeing without hovering to find them. */
+.card-menu:disabled {
+  opacity: 1;
+}
+
+/* The trigger is an icon; its options are sentences, so they size to themselves. */
+.add-menu .status-options {
+  left: auto;
+  width: max-content;
+  min-width: 11rem;
+}
+
 /* Same columns as the head, so the facts sit directly beneath the cover. */
 .media-layout {
   display: grid;
