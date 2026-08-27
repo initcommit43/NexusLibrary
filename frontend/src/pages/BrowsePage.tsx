@@ -212,7 +212,7 @@ export const BrowsePage = () => {
                   key={keyOf(result)}
                   result={result}
                   state={tracking.stateOf(result)}
-                  onTrack={() => void tracking.track(result, status)}
+                  onTrack={(chosen) => void tracking.track(result, chosen)}
                 />
               ))}
             </Carousel>

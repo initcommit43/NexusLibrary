@@ -718,10 +718,6 @@ button.small {
   flex: 1;
 }
 
-.cover-body button {
-  width: 100%;
-}
-
 /* The whole cover plus title is the link into an entry. */
 .cover-link {
   display: block;
