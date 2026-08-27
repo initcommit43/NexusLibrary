@@ -130,6 +130,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 .body(new ApiError("Importing from that service is not available yet."));
     }
 
+    @ExceptionHandler(dev.nexus.core.exporting.ExportNotSupportedException.class)
+    public ResponseEntity<ApiError> handleExportUnsupported(dev.nexus.core.exporting.ExportNotSupportedException e) {
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body(new ApiError(e.getMessage()));
+    }
+
     @ExceptionHandler({
         EntryNotFoundException.class,
         ItemNotFoundException.class,
