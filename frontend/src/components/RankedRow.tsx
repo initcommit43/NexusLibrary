@@ -1,10 +1,11 @@
-import type { SearchResult } from '../api/client'
+import type { SearchResult, TrackingStatus } from '../api/client'
+import { AddToShelfMenu } from './AddToShelfMenu'
 
 interface Props {
   result: SearchResult
   rank: number
   state: 'idle' | 'saving' | 'tracked'
-  onTrack: () => void
+  onTrack: (status: TrackingStatus) => void
 }
 
 const facetText = (value: unknown): string | null =>
@@ -57,14 +58,7 @@ export const RankedRow = ({ result, rank, state, onTrack }: Props) => {
         {result.releaseDate && <span className="muted">{result.releaseDate.slice(0, 4)}</span>}
       </div>
 
-      <button
-        type="button"
-        className={state === 'tracked' ? 'ghost' : ''}
-        disabled={state !== 'idle'}
-        onClick={onTrack}
-      >
-        {state === 'saving' ? 'Saving…' : state === 'tracked' ? 'Tracked' : 'Track'}
-      </button>
+      <AddToShelfMenu result={result} state={state} onAdd={onTrack} />
     </article>
   )
 }

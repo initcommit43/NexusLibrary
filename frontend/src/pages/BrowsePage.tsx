@@ -201,7 +201,7 @@ export const BrowsePage = () => {
                   result={result}
                   rank={index + 1}
                   state={tracking.stateOf(result)}
-                  onTrack={() => void tracking.track(result, status)}
+                  onTrack={(chosen) => void tracking.track(result, chosen)}
                 />
               ))}
             </div>

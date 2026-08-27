@@ -154,7 +154,7 @@ export const ShelfPage = () => {
               // Continues across pages, so #41 is the first row of page two.
               rank={(page - 1) * PAGE_SIZE + index + 1}
               state={tracking.stateOf(result)}
-              onTrack={() => void tracking.track(result, status)}
+              onTrack={(chosen) => void tracking.track(result, chosen)}
             />
           ))}
         </div>

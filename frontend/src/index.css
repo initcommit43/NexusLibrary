@@ -518,6 +518,11 @@ button.small {
   white-space: nowrap;
 }
 
+/* A row has no cover to hover over, and ten of them do not crowd the way forty cards would. */
+.ranked-row .card-menu {
+  opacity: 1;
+}
+
 .ranked-score {
   font-family: var(--font-display);
   font-variant-numeric: tabular-nums;
@@ -533,7 +538,7 @@ button.small {
   }
 
   .ranked-facts,
-  .ranked-row > button {
+  .ranked-row > .add-menu {
     grid-column: 3;
   }
 }
