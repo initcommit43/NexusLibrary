@@ -237,7 +237,13 @@ const refreshAccessToken = (): Promise<string | null> => {
   return refreshInFlight
 }
 
-const request = async <T>(path: string, init: RequestInit = {}, allowRetry = true): Promise<T> => {
+/**
+ * One authenticated call, up to the point where the body starts mattering. Everything that
+ * has to happen to every request — the token, the one silent retry after a refresh, the
+ * error shape — lives here, so a caller wanting a file rather than JSON does not have to
+ * carry a second copy of it.
+ */
+const send = async (path: string, init: RequestInit = {}, allowRetry = true): Promise<Response> => {
   const headers = new Headers(init.headers)
   // FormData sets its own content type, boundary and all; overriding it makes the upload
   // unparseable on the other end.
@@ -248,12 +254,17 @@ const request = async <T>(path: string, init: RequestInit = {}, allowRetry = tru
 
   if (res.status === 401 && allowRetry) {
     const renewed = await refreshAccessToken()
-    if (renewed) return request<T>(path, init, false)
+    if (renewed) return send(path, init, false)
     accessToken = null
     onSessionLost?.()
   }
 
   if (!res.ok) throw await parseError(res)
+  return res
+}
+
+const request = async <T>(path: string, init: RequestInit = {}): Promise<T> => {
+  const res = await send(path, init)
   if (res.status === 204) return undefined as T
 
   // An endpoint answering "nothing" — no job is running — returns 200 with no body at all.
@@ -270,6 +281,14 @@ const request = async <T>(path: string, init: RequestInit = {}, allowRetry = tru
 const trackJobOutage = <T extends SyncJob | null>(job: T): T => {
   if (job?.state === 'FAILED' && job.unavailableService) reportOutage(job.unavailableService)
   return job
+}
+
+export type ExportedCsv = { filename: string; blob: Blob }
+
+/** The filename out of a Content-Disposition, quoted or bare. */
+const filenameFrom = (header: string | null): string | null => {
+  const match = header?.match(/filename="?([^";]+)"?/i)
+  return match ? match[1] : null
 }
 
 export const api = {
@@ -367,6 +386,18 @@ export const api = {
     const body = new FormData()
     body.append('file', file)
     return request<SyncJob>(`/integrations/${provider}/import/csv`, { method: 'POST', body })
+  },
+
+  /**
+   * One shelf as a file. Read as a response rather than parsed: the CSV is the body, and
+   * the name to save it under is a header the server sets.
+   */
+  exportCsv: async (mediaType: MediaType): Promise<ExportedCsv> => {
+    const res = await send(`/exports/${mediaType}`)
+    return {
+      filename: filenameFrom(res.headers.get('Content-Disposition')) ?? `nexus-${mediaType.toLowerCase()}.csv`,
+      blob: await res.blob(),
+    }
   },
 
   disconnect: (provider: Provider) =>
