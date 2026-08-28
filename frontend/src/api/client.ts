@@ -331,6 +331,21 @@ export const api = {
 
   availableModules: () => request<MediaType[]>('/catalog/modules'),
 
+  updateProfile: (payload: { email?: string; username?: string }) =>
+    request<User>('/settings/account', { method: 'PATCH', body: JSON.stringify(payload) }),
+
+  changePassword: (currentPassword: string, newPassword: string) =>
+    request<void>('/settings/account/password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    }),
+
+  deleteAccount: (password: string) =>
+    request<void>('/settings/account', {
+      method: 'DELETE',
+      body: JSON.stringify({ password }),
+    }),
+
   /** The media types this reader switched off. Everything absent from it is on. */
   disabledModules: () =>
     request<{ disabled: MediaType[] }>('/settings/modules').then((body) => body.disabled),
@@ -441,6 +456,16 @@ export const api = {
     const res = await send(`/exports/${mediaType}`)
     return {
       filename: filenameFrom(res.headers.get('Content-Disposition')) ?? `nexus-${mediaType.toLowerCase()}.csv`,
+      blob: await res.blob(),
+    }
+  },
+
+  /** Everything held about this reader, as a file — the same shape the export endpoint sends. */
+  exportAccount: async (): Promise<ExportedCsv> => {
+    const res = await send('/settings/account/export')
+    return {
+      filename:
+        filenameFrom(res.headers.get('Content-Disposition')) ?? 'nexus-data.json',
       blob: await res.blob(),
     }
   },

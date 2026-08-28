@@ -13,10 +13,10 @@ import { saveFile } from '../components/download'
 import {
   MODULES,
   type MediaTypeDefinition,
-  type ModuleDefinition,
   type ModuleProvider,
 } from '../modules/registry'
 import { useModules } from '../modules/useModules'
+import { useAuth } from '../auth/useAuth'
 import { useLocation } from 'react-router-dom'
 
 /**
@@ -60,6 +60,15 @@ const jobLabel = (job: SyncJob): string => {
  */
 export const SettingsPage = () => {
   const { isAvailable, isBuilt, isEnabled, setEnabled } = useModules()
+  const { user, logout, refresh } = useAuth()
+
+  const [profile, setProfile] = useState({ username: '', email: '' })
+  const [passwords, setPasswords] = useState({ current: '', next: '' })
+  const [confirmation, setConfirmation] = useState('')
+  const [accountBusy, setAccountBusy] = useState<'profile' | 'password' | 'data' | 'delete' | null>(
+    null,
+  )
+  const [accountNote, setAccountNote] = useState<string | null>(null)
   const { hash } = useLocation()
   const [accounts, setAccounts] = useState<ConnectedAccount[] | null>(null)
   const [report, setReport] = useState<ImportReport | null>(null)
@@ -243,7 +252,7 @@ export const SettingsPage = () => {
   )
 
   const anilistCard = (provider: ModuleProvider) => (
-    <article key={provider.provider} className="card integration-card">
+    <div key={provider.provider} className="connection">
       <div className={anilist ? 'integration-head' : 'integration-head banner'}>
         <div>
           <h3>{provider.label}</h3>
@@ -300,7 +309,7 @@ export const SettingsPage = () => {
           )}
         </>
       )}
-    </article>
+    </div>
   )
 
   const disconnect = async (provider: ModuleProvider['provider']) => {
@@ -318,7 +327,7 @@ export const SettingsPage = () => {
   }
 
   const steamCard = (provider: ModuleProvider) => (
-    <article key={provider.provider} className="card integration-card">
+    <div key={provider.provider} className="connection">
       <div className={steam ? 'integration-head' : 'integration-head banner'}>
         <div>
           <h3>{provider.label}</h3>
@@ -390,7 +399,7 @@ export const SettingsPage = () => {
           )}
         </>
       )}
-    </article>
+    </div>
   )
 
   const connectMal = async () => {
@@ -407,7 +416,7 @@ export const SettingsPage = () => {
   }
 
   const malCard = (provider: ModuleProvider) => (
-    <article key={provider.provider} className="card integration-card">
+    <div key={provider.provider} className="connection">
       <div className={mal ? 'integration-head' : 'integration-head banner'}>
         <div>
           <h3>{provider.label}</h3>
@@ -476,7 +485,7 @@ export const SettingsPage = () => {
           )}
         </>
       )}
-    </article>
+    </div>
   )
 
   const connectSimkl = async () => {
@@ -493,7 +502,7 @@ export const SettingsPage = () => {
   }
 
   const simklCard = (provider: ModuleProvider) => (
-    <article key={provider.provider} className="card integration-card">
+    <div key={provider.provider} className="connection">
       <div className={simkl ? 'integration-head' : 'integration-head banner'}>
         <div>
           <h3>{provider.label}</h3>
@@ -564,12 +573,12 @@ export const SettingsPage = () => {
           )}
         </>
       )}
-    </article>
+    </div>
   )
 
   /** Providers whose flow is not built yet, listed so the shape of the app stays visible. */
   const pendingCard = (provider: ModuleProvider) => (
-    <article key={provider.provider} className="card integration-card">
+    <div key={provider.provider} className="connection">
       <div className="integration-head">
         <div>
           <h3>{provider.label}</h3>
@@ -579,7 +588,7 @@ export const SettingsPage = () => {
           Not built yet
         </button>
       </div>
-    </article>
+    </div>
   )
 
   /**
@@ -631,7 +640,7 @@ export const SettingsPage = () => {
    * so uploading an export is the whole integration rather than the fallback it is elsewhere.
    */
   const goodreadsCard = (provider: ModuleProvider) => (
-    <article key={provider.provider} className="card integration-card">
+    <div key={provider.provider} className="connection">
       <div className="integration-head">
         <div>
           <h3>{provider.label}</h3>
@@ -641,7 +650,7 @@ export const SettingsPage = () => {
 
       {csvRow(provider)}
       {runFeedback(provider)}
-    </article>
+    </div>
   )
 
   const [exporting, setExporting] = useState<MediaType | null>(null)
@@ -668,7 +677,7 @@ export const SettingsPage = () => {
   const generalSection = () => (
     <section className="settings-section">
       <h2>Modules</h2>
-      <article className="card integration-card">
+      <article className="card">
         <p className="muted">
           Switch off what you do not track. A module you turn off leaves the navigation and its
           shelves entirely; nothing you have already tracked is deleted, and turning it back on
@@ -694,6 +703,220 @@ export const SettingsPage = () => {
             )
           })}
         </ul>
+      </article>
+    </section>
+  )
+
+  const runAccountTask = async (
+    task: 'profile' | 'password' | 'data' | 'delete',
+    done: string,
+    work: () => Promise<void>,
+  ) => {
+    setAccountBusy(task)
+    setError(null)
+    setAccountNote(null)
+    try {
+      await work()
+      setAccountNote(done)
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'That did not work. Please try again.')
+    } finally {
+      setAccountBusy(null)
+    }
+  }
+
+  /**
+   * Who the reader is, how they sign in, and the two rights data protection law gives them.
+   * One card: these are four things you do to one account, not four settings that happen to
+   * sit near each other.
+   */
+  const accountSection = () => (
+    <section className="settings-section">
+      <h2>Account</h2>
+
+      {accountNote && <p className="muted note">{accountNote}</p>}
+
+      <article className="card">
+        <div className="settings-group">
+          <h3>Profile</h3>
+          <p className="muted">Leave a field empty to keep what it already says.</p>
+
+          <div className="field-stack">
+            <label className="field">
+              <span>Username</span>
+              <input
+                type="text"
+                value={profile.username}
+                placeholder={user?.username ?? ''}
+                onChange={(e) => setProfile({ ...profile, username: e.target.value })}
+              />
+            </label>
+
+            <label className="field">
+              <span>Email</span>
+              <input
+                type="email"
+                value={profile.email}
+                placeholder={user?.email ?? ''}
+                onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+              />
+            </label>
+
+            <div className="integration-actions">
+              <button
+                type="button"
+                disabled={accountBusy !== null || (!profile.username && !profile.email)}
+                onClick={() =>
+                  void runAccountTask('profile', 'Saved.', async () => {
+                    await api.updateProfile({
+                      ...(profile.username ? { username: profile.username } : {}),
+                      ...(profile.email ? { email: profile.email } : {}),
+                    })
+                    setProfile({ username: '', email: '' })
+                    // The header still shows the old name until something reads it again.
+                    await refresh()
+                  })
+                }
+              >
+                {accountBusy === 'profile' ? 'Saving…' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="settings-group">
+          <h3>Password</h3>
+          <p className="muted">
+            Your current password is needed as well. Being signed in on this browser is not
+            proof it is you.
+          </p>
+
+          <div className="field-stack">
+            <label className="field">
+              <span>Current password</span>
+              <input
+                type="password"
+                autoComplete="current-password"
+                value={passwords.current}
+                onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
+              />
+            </label>
+
+            <label className="field">
+              <span>New password</span>
+              <input
+                type="password"
+                autoComplete="new-password"
+                value={passwords.next}
+                onChange={(e) => setPasswords({ ...passwords, next: e.target.value })}
+              />
+            </label>
+
+            <div className="integration-actions">
+              <button
+                type="button"
+                disabled={accountBusy !== null || !passwords.current || passwords.next.length < 12}
+                onClick={() =>
+                  void runAccountTask('password', 'Password changed.', async () => {
+                    await api.changePassword(passwords.current, passwords.next)
+                    setPasswords({ current: '', next: '' })
+                  })
+                }
+              >
+                {accountBusy === 'password' ? 'Changing…' : 'Change password'}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="settings-group">
+          <h3>Your data</h3>
+          <p className="muted">
+            One file with everything this app holds about you: your account, every entry with
+            its status, rating, progress, dates and notes, the services you have connected, and
+            your activity. Connected services are listed by name only, never with their access
+            tokens.
+          </p>
+
+          <div className="integration-actions">
+            <button
+              type="button"
+              className="ghost"
+              disabled={accountBusy !== null}
+              onClick={() =>
+                void runAccountTask('data', 'Downloaded.', async () => {
+                  const file = await api.exportAccount()
+                  saveFile(file.blob, file.filename)
+                })
+              }
+            >
+              {accountBusy === 'data' ? 'Preparing…' : 'Download my data'}
+            </button>
+          </div>
+        </div>
+
+        <div className="settings-group">
+          <h3>Delete account</h3>
+
+          <p className="danger-note">
+            <strong>This permanently deletes your account and everything in it.</strong> Your
+            entries, ratings, reviews, notes, activity and connected services are erased at
+            once. Nothing is archived and nothing can be recovered, by you or by anyone else.
+            If you want a copy, download your data before you do this.
+          </p>
+
+          <div className="field-stack">
+            <label className="field">
+              <span>Confirm with your password</span>
+              <input
+                type="password"
+                autoComplete="current-password"
+                value={confirmation}
+                onChange={(e) => setConfirmation(e.target.value)}
+              />
+            </label>
+
+            <div className="integration-actions">
+              <button
+                type="button"
+                className="ghost danger"
+                disabled={accountBusy !== null || !confirmation}
+                onClick={() =>
+                  void runAccountTask('delete', 'Account deleted.', async () => {
+                    await api.deleteAccount(confirmation)
+                    await logout()
+                  })
+                }
+              >
+                {accountBusy === 'delete' ? 'Deleting…' : 'Delete my account'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>
+  )
+
+  /**
+   * Every service that can be connected, in one card. Which module a service belongs to is
+   * not what anyone is after when they come here to reconnect Steam; module sections come
+   * back when a module has settings of its own to hold.
+   */
+  const connectionsSection = () => (
+    <section className="settings-section">
+      <h2>Connections</h2>
+
+      <article className="card">
+        {MODULES.filter((module) => isEnabled(module.slug)).flatMap((module) =>
+          module.providers.map((provider) => {
+            if (provider.provider === 'STEAM') return steamCard(provider)
+            if (provider.provider === 'ANILIST') return anilistCard(provider)
+            if (provider.provider === 'MAL') return malCard(provider)
+            if (provider.provider === 'SIMKL') return simklCard(provider)
+            if (provider.provider === 'GOODREADS') return goodreadsCard(provider)
+            return pendingCard(provider)
+          }),
+        )}
       </article>
     </section>
   )
@@ -728,29 +951,6 @@ export const SettingsPage = () => {
     </section>
   )
 
-  const moduleSection = (module: ModuleDefinition) => (
-    <section key={module.slug} className="settings-section">
-      {/* The rail already names the module; this names what the pane is about. */}
-      <h2>
-        Connections {!isBuilt(module.slug) && <span className="muted">— not built yet</span>}
-      </h2>
-
-      {module.providers.length === 0 ? (
-        <p className="muted">
-          Nothing to connect: this module imports from a file rather than an account.
-        </p>
-      ) : (
-        module.providers.map((provider) => {
-          if (provider.provider === 'STEAM') return steamCard(provider)
-          if (provider.provider === 'ANILIST') return anilistCard(provider)
-          if (provider.provider === 'MAL') return malCard(provider)
-          if (provider.provider === 'SIMKL') return simklCard(provider)
-          if (provider.provider === 'GOODREADS') return goodreadsCard(provider)
-          return pendingCard(provider)
-        })
-      )}
-    </section>
-  )
 
   /*
    * Every section is on the page; the rail is a way down it rather than a set of tabs. The
@@ -762,11 +962,8 @@ export const SettingsPage = () => {
    */
   const panes = [
     { id: 'general', label: 'General', render: generalSection },
-    ...MODULES.filter((module) => isEnabled(module.slug)).map((module) => ({
-      id: module.slug,
-      label: module.label,
-      render: () => moduleSection(module),
-    })),
+    { id: 'account', label: 'Account', render: accountSection },
+    { id: 'connections', label: 'Connections', render: connectionsSection },
     { id: 'export', label: 'Export', render: exportSection },
   ]
 

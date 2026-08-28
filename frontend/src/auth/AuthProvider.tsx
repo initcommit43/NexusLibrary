@@ -60,9 +60,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, [])
 
+  // After settings renames the account, the header is still showing the old name until
+  // something reads it again. This is that something.
+  const refresh = useCallback(async () => {
+    setUser(await api.me())
+  }, [])
+
   const value = useMemo(
-    () => ({ user, status, login, register, logout }),
-    [user, status, login, register, logout],
+    () => ({ user, status, login, register, logout, refresh }),
+    [user, status, login, register, logout, refresh],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
