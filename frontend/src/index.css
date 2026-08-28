@@ -354,6 +354,64 @@ button.small {
   gap: var(--space-4);
 }
 
+/* --- account menu --- */
+
+.account {
+  position: relative;
+}
+
+/*
+ * Hangs off the trigger with no gap between them: the menu opens on hover, and a gap is a
+ * strip of header that closes it again on the way down.
+ */
+.account-menu {
+  position: absolute;
+  z-index: 20;
+  top: 100%;
+  right: 0;
+  padding-top: var(--space-2);
+}
+
+.account-menu ul {
+  min-width: 11rem;
+  margin: 0;
+  padding: var(--space-1);
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-2);
+}
+
+.account-menu a,
+.account-menu button {
+  width: 100%;
+  display: block;
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  text-align: left;
+  font-size: var(--text-base);
+  font-weight: 500;
+}
+
+.account-menu a:hover,
+.account-menu button:hover {
+  background: var(--surface-raised);
+  color: var(--text);
+  text-decoration: none;
+}
+
+/* A label, not a target: it says whose account the two below act on. */
+.account-name {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: var(--space-1);
+}
+
 /* --- profile --- */
 
 .profile-identity {
