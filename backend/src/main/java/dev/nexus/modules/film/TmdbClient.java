@@ -61,6 +61,36 @@ public class TmdbClient {
                 .orElse(Map.of());
     }
 
+    /**
+     * One page of a search, kept whole so the caller can page through it.
+     *
+     * <p>Separate from {@link #search} because that one answers a search box, which wants a
+     * handful of rows and never a second page.
+     */
+    public Map<String, Object> searchPage(TmdbKind kind, String query, int page) {
+        return get("/search/{kind}?query={query}&include_adult=false&page={page}", kind.path(), query, page)
+                .orElse(Map.of());
+    }
+
+    /**
+     * One page of a filtered grid.
+     *
+     * @param query the filters as an already-built query string, without a leading separator
+     */
+    public Map<String, Object> discover(TmdbKind kind, String query, int page) {
+        String filters = query == null || query.isBlank() ? "" : "&" + query;
+        return get(
+                        "/discover/{kind}?include_adult=false&sort_by=popularity.desc&page={page}" + filters,
+                        kind.path(),
+                        page)
+                .orElse(Map.of());
+    }
+
+    /** The genres this kind is filed under. A short fixed list, and not the same one twice. */
+    public List<Map<String, Object>> genres(TmdbKind kind) {
+        return results(get("/genre/{kind}/list", kind.path()).orElse(Map.of()), "genres");
+    }
+
     /** The rows of a paged list response, whatever endpoint produced it. */
     public List<Map<String, Object>> resultsOf(Map<String, Object> body) {
         return results(body);
