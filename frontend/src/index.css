@@ -579,9 +579,38 @@ button.small {
   background: rgb(11 18 32 / 55%);
 }
 
-.search-overlay-panel,
-.search-results {
+.search-overlay-panel {
   width: min(100%, 34rem);
+}
+
+/* Wide enough for two cards abreast, and centred on the field whether it holds one or two. */
+.search-results {
+  width: min(100%, 52rem);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--space-3);
+}
+
+.search-card {
+  flex: 0 1 24rem;
+  min-width: 0;
+  padding: var(--space-1);
+  background: var(--surface);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-2);
+}
+
+.search-card h2 {
+  padding: var(--space-2) var(--space-3) var(--space-1);
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
 }
 
 .search-overlay-panel {
@@ -617,41 +646,39 @@ button.small {
   display: none;
 }
 
-.search-clear {
+/* No box: it sits inside the field's own panel, which is already the surface. */
+.search-clear,
+.search-clear:hover:not(:disabled) {
   flex-shrink: 0;
+  background: transparent;
+  border: none;
+}
+
+.search-clear {
   color: var(--text-muted);
+}
+
+.search-clear:hover:not(:disabled) {
+  color: var(--text);
 }
 
 .search-overlay-panel input[type='search']:focus {
   outline: none;
 }
 
-.search-overlay-scope {
-  color: rgb(255 255 255 / 75%);
-  font-size: var(--text-sm);
-}
-
 /*
  * Answers directly under the field, in a panel of the same width: the term and what it
  * found read as one column rather than a form and a page of results.
  */
-.search-results {
-  max-height: min(28rem, calc(100vh - 12rem));
+.search-card ul {
+  max-height: min(26rem, calc(100vh - 14rem));
   overflow-y: auto;
-  padding: var(--space-1);
-  background: var(--surface);
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-2);
-}
-
-.search-results ul {
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.search-results li button {
+.search-card li button {
   width: 100%;
   display: flex;
   align-items: center;
@@ -663,11 +690,11 @@ button.small {
   text-align: left;
 }
 
-.search-results li button:hover:not(:disabled) {
+.search-card li button:hover:not(:disabled) {
   background: var(--surface-raised);
 }
 
-.search-results img,
+.search-card img,
 .search-result-blank {
   flex-shrink: 0;
   width: 2.5rem;
@@ -699,6 +726,7 @@ button.small {
 }
 
 .search-results-note {
+  flex: 1 0 100%;
   padding: var(--space-3);
   color: var(--text-muted);
   font-size: var(--text-sm);
@@ -720,11 +748,6 @@ button.small {
 .search-results-all:hover:not(:disabled) {
   background: transparent;
   color: var(--accent);
-}
-
-.search-overlay-scope strong {
-  color: #fff;
-  font-weight: 600;
 }
 
 

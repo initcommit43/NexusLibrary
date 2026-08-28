@@ -34,15 +34,16 @@ const formatOf = (result: SearchResult) =>
     : null
 
 /**
- * Catalogue search for the shelf you are standing on.
+ * Catalogue search for the module you are standing in.
  *
  * <p>An overlay rather than a field in the header: it matters only for the few seconds you
  * are typing into it, and the header already spends its width on the shelves of whichever
- * module you are in. Scoping it to the current media type is the point — the app knows you
- * are looking at games, so it does not ask.
+ * module you are in. Scoping it to the module is the point — the app knows you are looking
+ * at anime, so it does not ask.
  *
- * <p>Answers arrive under the field as you type, because going to a page to read them costs
- * a navigation for something you are usually about to leave again immediately.
+ * <p>Every media type the module owns is searched at once and answered in its own card, so
+ * a name shared by an anime and its manga comes back as both rather than as whichever shelf
+ * you happened to be on.
  */
 export const HeaderSearch = ({
   module,
@@ -58,16 +59,23 @@ export const HeaderSearch = ({
   const trigger = useRef<HTMLButtonElement>(null)
   const navigate = useNavigate()
 
-  // Held with the question they answer, so a stale or emptied term shows nothing rather
-  // than the last thing that came back.
-  const asked = `${type.mediaType}:${term}`
-  const [answer, setAnswer] = useState<{ asked: string; results: SearchResult[] } | null>(null)
-  const [failure, setFailure] = useState<{ asked: string; message: string } | null>(null)
+  // Answers are filed under the question they answer, so a stale or emptied term shows
+  // nothing rather than the last thing that came back.
+  const [answers, setAnswers] = useState<Record<string, SearchResult[]>>({})
+  const [failures, setFailures] = useState<Record<string, string>>({})
 
-  const results = answer?.asked === asked ? answer.results : null
-  const error = failure?.asked === asked ? failure.message : null
   const ready = term.length >= MIN_TERM
-  const searching = ready && results === null && error === null
+  const askedFor = (media: string) => `${media}:${term}`
+
+  const cards = module.types.map((shelf) => ({
+    shelf,
+    results: answers[askedFor(shelf.mediaType)] ?? null,
+    error: failures[askedFor(shelf.mediaType)] ?? null,
+  }))
+
+  const searching = ready && cards.some((card) => card.results === null && card.error === null)
+  const found = cards.filter((card) => card.results && card.results.length > 0)
+  const error = cards.find((card) => card.error)?.error ?? null
 
   useEffect(() => {
     if (!open) return
@@ -95,22 +103,28 @@ export const HeaderSearch = ({
     if (!ready) return
 
     let current = true
-    api
-      .searchCatalog(type.mediaType, term)
-      .then((found) => current && setAnswer({ asked, results: found }))
-      .catch((err) =>
-        current &&
-        setFailure({
-          asked,
-          message: err instanceof ApiError ? err.message : 'Could not reach the server.',
-        }),
-      )
+    for (const shelf of module.types) {
+      const asked = `${shelf.mediaType}:${term}`
+      api
+        .searchCatalog(shelf.mediaType, term)
+        .then(
+          (hits) => current && setAnswers((held) => ({ ...held, [asked]: hits })),
+        )
+        .catch(
+          (err) =>
+            current &&
+            setFailures((held) => ({
+              ...held,
+              [asked]: err instanceof ApiError ? err.message : 'Could not reach the server.',
+            })),
+        )
+    }
 
-    // A slow answer to a term you have already typed past must not land on the new one.
+    // Slow answers to a term you have already typed past must not land on the new one.
     return () => {
       current = false
     }
-  }, [asked, ready, term, type.mediaType])
+  }, [module, ready, term])
 
   const close = () => {
     setOpen(false)
@@ -118,22 +132,27 @@ export const HeaderSearch = ({
     setTerm('')
   }
 
-  const resultsPath = () =>
-    `/search?module=${module.slug}&type=${type.slug}&q=${encodeURIComponent(term)}`
+  const resultsPath = (shelf: MediaTypeDefinition) =>
+    `/search?module=${module.slug}&type=${shelf.slug}&q=${encodeURIComponent(term)}`
 
-  const viewAll = (event: FormEvent) => {
-    event.preventDefault()
+  const goTo = (shelf: MediaTypeDefinition) => {
     if (!ready) return
     close()
-    navigate(resultsPath())
+    navigate(resultsPath(shelf))
+  }
+
+  // Enter takes the shelf you were already on; the cards each offer their own.
+  const submit = (event: FormEvent) => {
+    event.preventDefault()
+    goTo(type)
   }
 
   // Only some modules have a page for a title nobody tracks yet. The rest have the full
   // results list, which is where such a title can be put on a shelf.
-  const openResult = (result: SearchResult) => {
+  const openResult = (shelf: MediaTypeDefinition, result: SearchResult) => {
     const path = module.hasMediaPages
       ? `/media/${result.source}/${result.externalId}`
-      : resultsPath()
+      : resultsPath(shelf)
     close()
     navigate(path)
   }
@@ -144,8 +163,8 @@ export const HeaderSearch = ({
         ref={trigger}
         type="button"
         className="ghost icon-button"
-        aria-label={`Search ${type.label}`}
-        title={`Search ${type.label}`}
+        aria-label={`Search ${module.label}`}
+        title={`Search ${module.label}`}
         aria-expanded={open}
         onClick={() => setOpen(true)}
       >
@@ -157,12 +176,12 @@ export const HeaderSearch = ({
           className="search-overlay"
           role="dialog"
           aria-modal="true"
-          aria-label={`Search ${type.label}`}
+          aria-label={`Search ${module.label}`}
           onPointerDown={(event) => {
             if (event.target === event.currentTarget) close()
           }}
         >
-          <form className="search-overlay-panel" onSubmit={viewAll}>
+          <form className="search-overlay-panel" onSubmit={submit}>
             <span className="search-overlay-icon">
               <SearchIcon />
             </span>
@@ -171,13 +190,13 @@ export const HeaderSearch = ({
               type="search"
               value={draft}
               placeholder={type.searchPlaceholder}
-              aria-label={`Search ${type.label}`}
+              aria-label={`Search ${module.label}`}
               onChange={(event) => setDraft(event.target.value)}
             />
             {/* Clears the term, or leaves outright once there is nothing left to clear. */}
             <button
               type="button"
-              className="ghost icon-button search-clear"
+              className="icon-button search-clear"
               aria-label={draft ? 'Clear search' : 'Close search'}
               onClick={() => {
                 if (!draft) return close()
@@ -189,12 +208,6 @@ export const HeaderSearch = ({
             </button>
           </form>
 
-          {!ready && (
-            <p className="search-overlay-scope">
-              Searching <strong>{type.label}</strong> in {module.label}
-            </p>
-          )}
-
           {ready && (
             <div className="search-results">
               {error && (
@@ -203,18 +216,22 @@ export const HeaderSearch = ({
                 </p>
               )}
 
-              {searching && <p className="search-results-note">Searching…</p>}
+              {searching && found.length === 0 && (
+                <p className="search-results-note">Searching…</p>
+              )}
 
-              {results?.length === 0 && (
+              {!searching && !error && found.length === 0 && (
                 <p className="search-results-note">Nothing found for “{term}”.</p>
               )}
 
-              {results && results.length > 0 && (
-                <>
+              {found.map(({ shelf, results }) => (
+                <section className="search-card" key={shelf.slug}>
+                  <h2>{shelf.label}</h2>
+
                   <ul>
-                    {results.slice(0, SHOWN).map((result) => (
+                    {results?.slice(0, SHOWN).map((result) => (
                       <li key={keyOf(result)}>
-                        <button type="button" onClick={() => openResult(result)}>
+                        <button type="button" onClick={() => openResult(shelf, result)}>
                           {result.coverUrl ? (
                             <img src={result.coverUrl} alt="" loading="lazy" />
                           ) : (
@@ -224,7 +241,7 @@ export const HeaderSearch = ({
                             <strong>{result.title}</strong>
                             <span className="muted">
                               {[yearOf(result), formatOf(result)].filter(Boolean).join(' ') ||
-                                type.label}
+                                shelf.label}
                             </span>
                           </span>
                         </button>
@@ -232,11 +249,15 @@ export const HeaderSearch = ({
                     ))}
                   </ul>
 
-                  <button type="button" className="search-results-all" onClick={viewAll}>
-                    View all {type.label.toLowerCase()} results
+                  <button
+                    type="button"
+                    className="search-results-all"
+                    onClick={() => goTo(shelf)}
+                  >
+                    View all {shelf.label.toLowerCase()} results
                   </button>
-                </>
-              )}
+                </section>
+              ))}
             </div>
           )}
         </div>
