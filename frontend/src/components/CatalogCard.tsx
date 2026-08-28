@@ -7,6 +7,7 @@ interface Props {
   result: SearchResult
   state: 'idle' | 'saving' | 'tracked'
   onTrack: (status: TrackingStatus) => void
+  onEdit: () => void
 }
 
 /**
@@ -20,7 +21,7 @@ interface Props {
  * than inside the link, so the one place a click does something else is the one place it
  * looks like it would.
  */
-export const CatalogCard = ({ result, state, onTrack }: Props) => {
+export const CatalogCard = ({ result, state, onTrack, onEdit }: Props) => {
   const path = mediaPathFor(result)
 
   return (
@@ -34,7 +35,7 @@ export const CatalogCard = ({ result, state, onTrack }: Props) => {
           )}
         </Link>
 
-        <AddToShelfMenu result={result} state={state} onAdd={onTrack} />
+        <AddToShelfMenu result={result} state={state} onAdd={onTrack} onEdit={onEdit} />
       </div>
 
       <div className="cover-body">

@@ -34,18 +34,19 @@ export const EntryCard = ({ entry, onEdit }: { entry: TrackedItem; onEdit: () =>
           )}
         </Link>
 
-        <button
-          type="button"
-          className="card-menu"
-          aria-label={`Edit ${entry.title}`}
-          onClick={onEdit}
-        >
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden>
-            <circle cx="5" cy="12" r="1.6" />
-            <circle cx="12" cy="12" r="1.6" />
-            <circle cx="19" cy="12" r="1.6" />
-          </svg>
-        </button>
+        <div className="card-actions corner-top">
+          <button
+            type="button"
+            className="card-action"
+            aria-label={`Edit ${entry.title}`}
+            onClick={onEdit}
+          >
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" aria-hidden>
+              <path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17v3Z" strokeWidth="1.8" strokeLinejoin="round" />
+            </svg>
+            <span className="card-action-label">Edit</span>
+          </button>
+        </div>
       </div>
 
       <div className="cover-heading">
@@ -57,8 +58,9 @@ export const EntryCard = ({ entry, onEdit }: { entry: TrackedItem; onEdit: () =>
         </h3>
         {(progress || score) && (
           <p className="cover-stats">
-            <span>{progress}</span>
-            <span>{score}</span>
+            {progress && <span>{progress}</span>}
+            {/* Pushed to the far side itself, so a rating without a count still sits there. */}
+            {score && <span className="cover-score">{score}</span>}
           </p>
         )}
       </div>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ApiError, api, type SearchResult } from '../api/client'
 import { AppShell } from '../components/AppShell'
+import { EntryEditDialog } from '../components/EntryEditDialog'
 import { CatalogCard } from '../components/CatalogCard'
 import { RankedRow } from '../components/RankedRow'
 import { keyOf, useTrackable } from '../components/useTrackable'
@@ -137,6 +138,7 @@ export const ShelfPage = () => {
               rank={(page - 1) * PAGE_SIZE + index + 1}
               state={tracking.stateOf(result)}
               onTrack={(chosen) => void tracking.track(result, chosen)}
+              onEdit={() => void tracking.edit(result)}
             />
           ))}
         </div>
@@ -148,6 +150,7 @@ export const ShelfPage = () => {
               result={result}
               state={tracking.stateOf(result)}
               onTrack={(chosen) => void tracking.track(result, chosen)}
+              onEdit={() => void tracking.edit(result)}
             />
           ))}
         </div>
@@ -163,6 +166,14 @@ export const ShelfPage = () => {
             Next ›
           </button>
         </nav>
+      )}
+      {tracking.editing && (
+        <EntryEditDialog
+          entry={tracking.editing}
+          onClose={tracking.closeEditor}
+          onSaved={tracking.saved}
+          onDeleted={tracking.deleted}
+        />
       )}
     </AppShell>
   )

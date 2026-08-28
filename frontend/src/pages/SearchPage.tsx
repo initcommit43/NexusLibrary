@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { ApiError, api, type SearchResult } from '../api/client'
 import { AppShell } from '../components/AppShell'
+import { EntryEditDialog } from '../components/EntryEditDialog'
 import { CatalogCard } from '../components/CatalogCard'
 import { keyOf, useTrackable } from '../components/useTrackable'
 import { defaultTypeOf, moduleBySlug, typeBySlug } from '../modules/registry'
@@ -97,9 +98,18 @@ export const SearchPage = () => {
             result={result}
             state={tracking.stateOf(result)}
             onTrack={(chosen) => void tracking.track(result, chosen)}
+            onEdit={() => void tracking.edit(result)}
           />
         ))}
       </div>
+      {tracking.editing && (
+        <EntryEditDialog
+          entry={tracking.editing}
+          onClose={tracking.closeEditor}
+          onSaved={tracking.saved}
+          onDeleted={tracking.deleted}
+        />
+      )}
     </AppShell>
   )
 }

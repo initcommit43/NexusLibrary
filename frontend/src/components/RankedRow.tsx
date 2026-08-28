@@ -6,6 +6,7 @@ interface Props {
   rank: number
   state: 'idle' | 'saving' | 'tracked'
   onTrack: (status: TrackingStatus) => void
+  onEdit: () => void
 }
 
 const facetText = (value: unknown): string | null =>
@@ -20,7 +21,7 @@ const facetList = (value: unknown): string[] => (Array.isArray(value) ? value.ma
  * than across, and the score and format that justify the ranking are the whole point of it —
  * as a row of covers it would say nothing about why anything is where it is.
  */
-export const RankedRow = ({ result, rank, state, onTrack }: Props) => {
+export const RankedRow = ({ result, rank, state, onTrack, onEdit }: Props) => {
   const score = typeof result.facets?.score === 'number' ? result.facets.score : null
   const format = facetText(result.facets?.format)
   const genres = facetList(result.facets?.genres)
@@ -58,7 +59,7 @@ export const RankedRow = ({ result, rank, state, onTrack }: Props) => {
         {result.releaseDate && <span className="muted">{result.releaseDate.slice(0, 4)}</span>}
       </div>
 
-      <AddToShelfMenu result={result} state={state} onAdd={onTrack} />
+      <AddToShelfMenu result={result} state={state} onAdd={onTrack} onEdit={onEdit} />
     </article>
   )
 }

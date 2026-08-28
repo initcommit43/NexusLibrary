@@ -10,6 +10,7 @@ import {
   type SearchResult,
 } from '../api/client'
 import { AppShell } from '../components/AppShell'
+import { EntryEditDialog } from '../components/EntryEditDialog'
 import { BrowseFilters } from '../components/BrowseFilters'
 import { Carousel } from '../components/Carousel'
 import { CatalogCard } from '../components/CatalogCard'
@@ -296,6 +297,7 @@ export const BrowsePage = () => {
               result={result}
               state={tracking.stateOf(result)}
               onTrack={(chosen) => void tracking.track(result, chosen)}
+              onEdit={() => void tracking.edit(result)}
             />
           ))}
         </div>
@@ -357,6 +359,7 @@ export const BrowsePage = () => {
                   rank={index + 1}
                   state={tracking.stateOf(result)}
                   onTrack={(chosen) => void tracking.track(result, chosen)}
+                  onEdit={() => void tracking.edit(result)}
                 />
               ))}
             </div>
@@ -368,12 +371,21 @@ export const BrowsePage = () => {
                   result={result}
                   state={tracking.stateOf(result)}
                   onTrack={(chosen) => void tracking.track(result, chosen)}
+                  onEdit={() => void tracking.edit(result)}
                 />
               ))}
             </Carousel>
           )}
         </section>
       ))}
+      {tracking.editing && (
+        <EntryEditDialog
+          entry={tracking.editing}
+          onClose={tracking.closeEditor}
+          onSaved={tracking.saved}
+          onDeleted={tracking.deleted}
+        />
+      )}
     </AppShell>
   )
 }
