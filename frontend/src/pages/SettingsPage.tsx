@@ -58,7 +58,7 @@ const jobLabel = (job: SyncJob): string => {
  * module they feed, so a new module brings its own box instead of a new page.
  */
 export const SettingsPage = () => {
-  const { isAvailable } = useModules()
+  const { isAvailable, isBuilt, isEnabled, setEnabled } = useModules()
   const [accounts, setAccounts] = useState<ConnectedAccount[] | null>(null)
   const [report, setReport] = useState<ImportReport | null>(null)
   /**
@@ -658,11 +658,48 @@ export const SettingsPage = () => {
   }
 
   /**
+   * Which modules this reader wants at all.
+   *
+   * <p>First, because it decides what the rest of the page is even about: there is no reason
+   * to read about connecting Steam on an account that has switched games off.
+   */
+  const generalSection = () => (
+    <section className="settings-section">
+      <h2>General</h2>
+      <p className="muted">
+        Switch off what you do not track. A module you turn off leaves the navigation and its
+        shelves entirely; nothing you have already tracked is deleted, and turning it back on
+        brings it all back.
+      </p>
+
+      <ul className="switch-list">
+        {MODULES.map((module) => {
+          const built = isBuilt(module.slug)
+          return (
+            <li key={module.slug}>
+              <label className={built ? 'switch-row' : 'switch-row disabled'}>
+                <input
+                  type="checkbox"
+                  checked={isEnabled(module.slug)}
+                  disabled={!built}
+                  onChange={(event) => void setEnabled(module.slug, event.target.checked)}
+                />
+                <span>{module.label}</span>
+                {!built && <span className="muted">Not built yet</span>}
+              </label>
+            </li>
+          )
+        })}
+      </ul>
+    </section>
+  )
+
+  /**
    * Every shelf that can leave as a file, in one place rather than one button per module
    * section: taking your lists with you is a thing you do to the whole library at once.
    */
   const exportSection = () => (
-    <section className="status-section">
+    <section className="settings-section">
       <h2>Export</h2>
       <p className="muted">
         One file per shelf, with everything this app knows about each entry — status, rating,
@@ -688,9 +725,9 @@ export const SettingsPage = () => {
   )
 
   const moduleSection = (module: ModuleDefinition) => (
-    <section key={module.slug} className="status-section">
+    <section key={module.slug} className="settings-section">
       <h2>
-        {module.label} {!isAvailable(module.slug) && <span className="muted">— not built yet</span>}
+        {module.label} {!isBuilt(module.slug) && <span className="muted">— not built yet</span>}
       </h2>
 
       {module.providers.length === 0 ? (
@@ -728,7 +765,10 @@ export const SettingsPage = () => {
         </p>
       )}
 
-      {MODULES.map(moduleSection)}
+      {generalSection()}
+      {/* Only for modules still switched on: connecting an account to a shelf nobody has
+          is a row of settings for something that is not on screen anywhere else. */}
+      {MODULES.filter((module) => isEnabled(module.slug)).map(moduleSection)}
       {exportSection()}
     </AppShell>
   )
