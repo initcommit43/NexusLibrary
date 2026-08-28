@@ -350,9 +350,15 @@ button.small {
   margin-right: var(--space-3);
 }
 
-/* The width of the content column, shared so things outside it can line up against it. */
+/*
+ * The width of the content column, shared so things outside it can line up against it.
+ *
+ * Sized so a browse row holds six covers at about the width they have always been. Wider
+ * than this and the column stops being a column: a shelf of forty runs further than the eye
+ * tracks back, and a page of settings becomes a very long line of text.
+ */
 .shell {
-  --shell-max: 88rem;
+  --shell-max: 79rem;
 }
 
 .shell-main {
@@ -1145,18 +1151,43 @@ input.filter-control::-webkit-search-cancel-button {
  * A shelf scrolls sideways rather than wrapping: a browse page is several rows of many
  * titles, and wrapping each one turns four shelves into four screens of grid.
  */
+/*
+ * A whole number of cards across, derived from the width rather than counted into it: a
+ * fixed column width left a sliver of a seventh card hanging off the edge of every row,
+ * which reads as the row being clipped rather than as more of it being available.
+ *
+ * The count drops on narrower screens, and below that keeps a fraction so a part-shown card
+ * says the row scrolls — which is worth saying where there is no room for a scrollbar.
+ */
 .browse-row {
+  --browse-across: 6;
+  --browse-gap: var(--space-4);
+
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: var(--cover-card-width);
+  grid-auto-columns: calc(
+    (100% - (var(--browse-across) - 1) * var(--browse-gap)) / var(--browse-across)
+  );
   /* Rows stretch to their tallest card, so every card is told to fill the row's height. */
   align-items: stretch;
-  gap: var(--space-3);
+  gap: var(--browse-gap);
   overflow-x: auto;
   /* Room for the card's hover lift, which a tight overflow box would otherwise clip. */
   padding: var(--space-1) var(--space-1) var(--space-3);
   scroll-snap-type: x proximity;
   scrollbar-width: thin;
+}
+
+@media (max-width: 64rem) {
+  .browse-row {
+    --browse-across: 4;
+  }
+}
+
+@media (max-width: 48rem) {
+  .browse-row {
+    --browse-across: 2.2;
+  }
 }
 
 .browse-row > * {
