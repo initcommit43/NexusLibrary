@@ -1286,6 +1286,21 @@ input.filter-control::-webkit-search-cancel-button {
   position: relative;
 }
 
+/* The whole cover is the link; the shelf menu sits over it and takes its own clicks. */
+.cover-link {
+  display: block;
+}
+
+/* The title is a link but reads as a title, and says so on approach rather than at rest. */
+.cover-body h2 a {
+  color: inherit;
+}
+
+.cover-body h2 a:hover {
+  color: var(--accent);
+  text-decoration: none;
+}
+
 /* Says where a title came from, since a shelf mixes imported and hand-added freely. */
 /* Only shows itself on hover or keyboard focus: forty cards should read as forty covers. */
 .card-menu {

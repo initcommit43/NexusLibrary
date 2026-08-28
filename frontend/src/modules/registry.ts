@@ -232,6 +232,16 @@ export const detailPathFor = (entry: {
     : `/entries/${entry.id}`
 }
 
+/**
+ * Where a catalogue result opens.
+ *
+ * <p>Unlike an entry, which is a row this reader owns, a result is only a title — so it opens
+ * the catalogue's own page for it. That page resolves anything the source knows about,
+ * tracked or not, which is why this needs no entry to point at.
+ */
+export const mediaPathFor = (result: { source: string; externalId: string }): string =>
+  `/media/${result.source}/${encodeURIComponent(result.externalId)}`
+
 export const moduleBySlug = (slug: string | undefined): ModuleDefinition | undefined =>
   MODULES.find((module) => module.slug === slug)
 

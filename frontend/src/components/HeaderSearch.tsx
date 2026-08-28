@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ApiError, api, type SearchResult } from '../api/client'
 import { keyOf } from './useTrackable'
+import { mediaPathFor } from '../modules/registry'
 import type { MediaTypeDefinition, ModuleDefinition } from '../modules/registry'
 
 /** Below this a term matches most of the catalogue and answers nothing useful. */
@@ -93,6 +94,15 @@ export const HeaderSearch = ({
     else trigger.current?.focus({ preventScroll: true })
   }, [open])
 
+  // The page behind is not what the wheel is for while this is up: scrolling it moves the
+  // results out from under the pointer and leaves the reader somewhere they did not choose.
+  useEffect(() => {
+    if (!open) return
+
+    document.body.classList.add('scroll-locked')
+    return () => document.body.classList.remove('scroll-locked')
+  }, [open])
+
   // A pause in the typing is the question; every keystroke before it was a guess at one.
   useEffect(() => {
     const settling = setTimeout(() => setTerm(draft.trim()), SETTLE_MS)
@@ -147,14 +157,9 @@ export const HeaderSearch = ({
     goTo(type)
   }
 
-  // Only some modules have a page for a title nobody tracks yet. The rest have the full
-  // results list, which is where such a title can be put on a shelf.
-  const openResult = (shelf: MediaTypeDefinition, result: SearchResult) => {
-    const path = module.hasMediaPages
-      ? `/media/${result.source}/${result.externalId}`
-      : resultsPath(shelf)
+  const openResult = (result: SearchResult) => {
     close()
-    navigate(path)
+    navigate(mediaPathFor(result))
   }
 
   return (
@@ -231,7 +236,7 @@ export const HeaderSearch = ({
                   <ul>
                     {results?.slice(0, SHOWN).map((result) => (
                       <li key={keyOf(result)}>
-                        <button type="button" onClick={() => openResult(shelf, result)}>
+                        <button type="button" onClick={() => openResult(result)}>
                           {result.coverUrl ? (
                             <img src={result.coverUrl} alt="" loading="lazy" />
                           ) : (
