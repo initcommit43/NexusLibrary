@@ -54,7 +54,6 @@ export const AppShell = ({
 
         <div className="header-right">
           <HeaderSearch module={current} type={searchable} />
-          <ThemeToggle />
           <AccountMenu />
         </div>
       </header>
@@ -65,6 +64,15 @@ export const AppShell = ({
       <main className="shell-main" data-module={current.slug}>
         {children}
       </main>
+
+      {/*
+        * Pinned to the corner of the viewport rather than carried in the header, which
+        * slides away as you read down. Light or dark is a choice you make about the page
+        * in front of you, so it has to be reachable from wherever that page has got to.
+        */}
+      <div className="theme-dock">
+        <ThemeToggle />
+      </div>
 
       {/* Sits outside the page, since a run outlives whichever page started it. */}
       <ImportIndicator />

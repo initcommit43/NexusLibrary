@@ -354,6 +354,30 @@ button.small {
   gap: var(--space-4);
 }
 
+/* --- theme dock --- */
+
+.theme-dock {
+  position: fixed;
+  right: var(--space-3);
+  bottom: var(--space-3);
+  z-index: 30;
+}
+
+/* Out here it has no header behind it, so it brings its own surface. */
+.theme-dock .icon-button {
+  width: 2.5rem;
+  height: 2.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-2);
+}
+
+.theme-dock .icon-button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 /* --- account menu --- */
 
 .account {
