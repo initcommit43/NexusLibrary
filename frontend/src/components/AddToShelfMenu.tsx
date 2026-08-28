@@ -9,12 +9,6 @@ const PlusIcon = () => (
   </svg>
 )
 
-const CheckIcon = () => (
-  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" aria-hidden>
-    <path d="m5 13 4 4L19 7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-)
-
 interface Props {
   result: SearchResult
   state: 'idle' | 'saving' | 'tracked'
@@ -48,7 +42,7 @@ export const AddToShelfMenu = ({ result, state, onAdd }: Props) => {
         }
         onClick={() => setOpen((wasOpen) => !wasOpen)}
       >
-        {tracked ? <CheckIcon /> : <PlusIcon />}
+        <PlusIcon />
       </button>
 
       {open && (

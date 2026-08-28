@@ -11,6 +11,11 @@ html {
   font-size: 16px;
 }
 
+/* Reserved always, so locking the page behind an overlay does not shift it sideways. */
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   margin: 0;
   /*
@@ -113,4 +118,12 @@ img {
   .shell-header {
     transition-duration: var(--duration-slow) !important;
   }
+}
+
+/*
+ * Set while a modal overlay is up. The viewport takes its overflow from the body when the
+ * root leaves it alone, so this is enough to stop the page moving under the pointer.
+ */
+body.scroll-locked {
+  overflow-y: hidden;
 }
