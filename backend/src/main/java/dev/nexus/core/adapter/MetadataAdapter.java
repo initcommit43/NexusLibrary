@@ -51,6 +51,30 @@ public interface MetadataAdapter {
     }
 
     /**
+     * The filter bar this media type can offer, in the order the controls should appear.
+     *
+     * <p>Empty by default, which reads as "this module cannot be narrowed yet" rather than as
+     * an error — the browse page simply shows its shelves and no bar.
+     */
+    default List<FilterField> discoverFilters(MediaType mediaType) {
+        return List.of();
+    }
+
+    /**
+     * One page of titles matching a filter bar's values.
+     *
+     * <p>Separate from {@link #browse} because the answers are not the same for everyone: a
+     * shelf is one list core can cache once and hand to every reader, while every combination
+     * of filters is a different question. Core spends a request per combination and rate
+     * limits accordingly.
+     *
+     * @param page one-based
+     */
+    default BrowseResults discover(MediaType mediaType, DiscoverFilters filters, int page, int size) {
+        return BrowseResults.empty();
+    }
+
+    /**
      * Everything a source knows about one item beyond the fields core models — relations,
      * characters, tags, rankings. Shape is the source's own; only that module's UI reads it.
      *
