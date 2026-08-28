@@ -218,6 +218,32 @@ public class OpenLibraryClient {
     }
 
     /** Query parameters as alternating name and value, encoded exactly once on the way out. */
+    /**
+     * One page of a filtered grid.
+     *
+     * <p>Open Library takes the filters as parameters beside the term and answers the same
+     * shape with or without one, so unlike the other sources here a search and a filtered
+     * listing are the same request rather than two endpoints that cannot be combined.
+     *
+     * @param queryParams alternating names and values, already chosen from what was offered
+     */
+    public List<Map<String, Object>> discover(List<String> queryParams, int offset, int limit) {
+        UriComponentsBuilder builder =
+                UriComponentsBuilder.fromUriString(properties.apiBaseUrl()).path("/search.json");
+
+        for (int i = 0; i + 1 < queryParams.size(); i += 2) {
+            builder.queryParam(queryParams.get(i), queryParams.get(i + 1));
+        }
+
+        return docs(get(builder.queryParam("fields", FIELDS)
+                        .queryParam("offset", offset)
+                        .queryParam("limit", limit)
+                        .build()
+                        .encode()
+                        .toUri())
+                .orElse(Map.of()));
+    }
+
     private Map<String, Object> searchJson(int limit, String... queryParams) {
         UriComponentsBuilder builder =
                 UriComponentsBuilder.fromUriString(properties.apiBaseUrl()).path("/search.json");
