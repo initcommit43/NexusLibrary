@@ -257,12 +257,7 @@ export const BrowsePage = () => {
       </div>
 
       {fields && fields.length > 0 && (
-        <BrowseFilters
-          fields={fields}
-          values={values}
-          onChange={narrowTo}
-          onClear={() => narrowTo({})}
-        />
+        <BrowseFilters fields={fields} values={values} onChange={narrowTo} />
       )}
 
       {(error || found?.error || tracking.error) && (

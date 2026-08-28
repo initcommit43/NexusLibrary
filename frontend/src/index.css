@@ -532,19 +532,27 @@ button.small {
   font-weight: 600;
 }
 
+/* Clickable, since it is a real label for the control it names. */
+.filter-label {
+  cursor: pointer;
+}
+
 .filter:focus-within .filter-label {
   color: var(--accent);
 }
 
-/* Room at the top for the floated label, and one height for every kind of control. */
+/*
+ * Room at the top for the floated label, room at the right for the chevron or the clear
+ * control, and one height for every kind of control so the bar reads as a single band.
+ */
 .filter-control {
   width: 100%;
   height: 3.25rem;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-2);
-  padding: 1.1rem var(--space-3) 0.4rem;
+  padding: 1.1rem 2.25rem 0.4rem var(--space-3);
+  appearance: none;
   background: var(--surface);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
@@ -566,16 +574,45 @@ button.small {
   white-space: nowrap;
 }
 
-input.filter-control {
+input.filter-control,
+select.filter-control {
   display: block;
 }
 
+/* Ours sits in the same slot and clears the whole filter, not just the text. */
 input.filter-control::-webkit-search-cancel-button {
   display: none;
 }
 
-.filter-multi {
-  display: block;
+/*
+ * Both live in the one slot at the right of the box, so a filter gaining a value swaps one
+ * for the other without the control — or anything beside it on the row — changing size.
+ */
+.filter-chevron,
+.filter-x {
+  position: absolute;
+  right: var(--space-2);
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  color: var(--text-muted);
+}
+
+.filter-x {
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-full);
+  pointer-events: auto;
+}
+
+.filter-x:hover:not(:disabled) {
+  background: var(--surface-raised);
+  color: var(--text);
 }
 
 .filter-options {
@@ -607,10 +644,6 @@ input.filter-control::-webkit-search-cancel-button {
 
 .filter-options label:hover {
   background: var(--surface-raised);
-}
-
-.filter-clear {
-  justify-self: start;
 }
 
 /* --- profile --- */

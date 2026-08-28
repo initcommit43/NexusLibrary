@@ -8,6 +8,44 @@ const ChevronIcon = () => (
   </svg>
 )
 
+const ClearIcon = () => (
+  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" aria-hidden>
+    <path d="m6 6 12 12M18 6 6 18" strokeWidth="2" strokeLinecap="round" />
+  </svg>
+)
+
+/**
+ * The control's right-hand slot: what it does next.
+ *
+ * <p>Empty, that is the chevron saying there is a list behind this. Filled, it becomes the
+ * way back out — undoing one control where a bar-wide reset would undo the lot, and sitting
+ * inside the box rather than beside it, so nothing on the row moves when it appears.
+ */
+const Affordance = ({
+  filled,
+  hasList,
+  label,
+  onClear,
+}: {
+  filled: boolean
+  hasList: boolean
+  label: string
+  onClear: () => void
+}) => {
+  if (filled) {
+    return (
+      <button type="button" className="filter-x" aria-label={`Clear ${label}`} onClick={onClear}>
+        <ClearIcon />
+      </button>
+    )
+  }
+  return hasList ? (
+    <span className="filter-chevron" aria-hidden>
+      <ChevronIcon />
+    </span>
+  ) : null
+}
+
 /**
  * A control that takes any number of its options.
  *
@@ -25,28 +63,30 @@ const MultiSelect = ({
   onChange: (next: string[]) => void
 }) => {
   const { open, setOpen, container } = useMenuDismiss<HTMLDivElement>()
-  const labelId = useId()
+  const id = useId()
+  const filled = chosen.length > 0
 
   const toggle = (value: string) =>
     onChange(chosen.includes(value) ? chosen.filter((held) => held !== value) : [...chosen, value])
 
   return (
-    <div className="filter filter-multi" ref={container} data-float="">
-      <span className="filter-label" id={labelId}>
+    <div className="filter" ref={container} data-float={filled ? '' : undefined}>
+      <label className="filter-label" htmlFor={id}>
         {field.label}
-      </span>
+      </label>
 
       <button
+        id={id}
         type="button"
         className="filter-control"
         aria-haspopup="listbox"
         aria-expanded={open}
-        aria-labelledby={labelId}
         onClick={() => setOpen((wasOpen) => !wasOpen)}
       >
-        <span>{chosen.length === 0 ? 'Any' : chosen.join(', ')}</span>
-        <ChevronIcon />
+        <span>{chosen.join(', ')}</span>
       </button>
+
+      <Affordance filled={filled} hasList label={field.label} onClear={() => onChange([])} />
 
       {open && (
         <ul className="filter-options">
@@ -75,29 +115,25 @@ const MultiSelect = ({
  * multi-selects from a list, and hands back the values by field id. A module gains a filter
  * by declaring one in its adapter, the way it gains a shelf.
  *
- * <p>Labels sit inside their control rather than above it. A select always shows something,
- * so its label is floated from the start; a text box has nothing to show until it is typed
- * in, so its label rests in the middle and does the work of a placeholder until then.
+ * <p>Labels sit inside their control and float up once it holds something. An unset control
+ * shows only its label — no word for "unset", because an empty Year filtering nothing is
+ * what anyone would already assume.
  */
 export const BrowseFilters = ({
   fields,
   values,
   onChange,
-  onClear,
 }: {
   fields: FilterField[]
   values: FilterValues
   onChange: (next: FilterValues) => void
-  onClear: () => void
 }) => {
   const set = (field: string, next: string[]) => onChange({ ...values, [field]: next })
-  const chosenIn = (field: string) => values[field] ?? []
-  const narrowed = fields.some((field) => chosenIn(field.id).some(Boolean))
 
   return (
     <div className="filter-bar">
       {fields.map((field) => {
-        const chosen = chosenIn(field.id)
+        const chosen = values[field.id] ?? []
 
         if (field.kind === 'MULTI') {
           return (
@@ -111,40 +147,69 @@ export const BrowseFilters = ({
         }
 
         return (
-          <label className="filter" key={field.id} data-float={field.kind === 'TEXT' ? undefined : ''}>
-            <span className="filter-label">{field.label}</span>
-
-            {field.kind === 'TEXT' ? (
-              <input
-                className="filter-control"
-                type="search"
-                value={chosen[0] ?? ''}
-                onChange={(event) => set(field.id, event.target.value ? [event.target.value] : [])}
-              />
-            ) : (
-              <select
-                className="filter-control"
-                value={chosen[0] ?? ''}
-                onChange={(event) => set(field.id, event.target.value ? [event.target.value] : [])}
-              >
-                <option value="">Any</option>
-                {field.options.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            )}
-          </label>
+          <Single
+            key={field.id}
+            field={field}
+            chosen={chosen}
+            onChange={(next) => set(field.id, next)}
+          />
         )
       })}
+    </div>
+  )
+}
 
-      {/* Only once there is something to clear: an always-on reset is a permanent dead button. */}
-      {narrowed && (
-        <button type="button" className="ghost small filter-clear" onClick={onClear}>
-          Clear
-        </button>
+/** A text box or a select: one value, or none. */
+const Single = ({
+  field,
+  chosen,
+  onChange,
+}: {
+  field: FilterField
+  chosen: string[]
+  onChange: (next: string[]) => void
+}) => {
+  const id = useId()
+  const value = chosen[0] ?? ''
+  const filled = value !== ''
+
+  return (
+    <div className="filter" data-float={filled ? '' : undefined}>
+      <label className="filter-label" htmlFor={id}>
+        {field.label}
+      </label>
+
+      {field.kind === 'TEXT' ? (
+        <input
+          id={id}
+          className="filter-control"
+          type="search"
+          value={value}
+          onChange={(event) => onChange(event.target.value ? [event.target.value] : [])}
+        />
+      ) : (
+        <select
+          id={id}
+          className="filter-control"
+          value={value}
+          onChange={(event) => onChange(event.target.value ? [event.target.value] : [])}
+        >
+          {/* Unlabelled on purpose: unset should read as empty, not as a value called "Any". */}
+          <option value="" />
+          {field.options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
       )}
+
+      <Affordance
+        filled={filled}
+        hasList={field.kind !== 'TEXT'}
+        label={field.label}
+        onClear={() => onChange([])}
+      />
     </div>
   )
 }
