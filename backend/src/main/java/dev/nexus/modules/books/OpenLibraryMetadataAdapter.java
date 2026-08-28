@@ -2,6 +2,8 @@ package dev.nexus.modules.books;
 
 import dev.nexus.core.adapter.BrowseResults;
 import dev.nexus.core.adapter.BrowseShelf;
+import dev.nexus.core.adapter.DiscoverFilters;
+import dev.nexus.core.adapter.FilterField;
 import dev.nexus.core.adapter.FetchProgress;
 import dev.nexus.core.adapter.ItemSearchResult;
 import dev.nexus.core.adapter.MetadataAdapter;
@@ -118,7 +120,27 @@ public class OpenLibraryMetadataAdapter implements MetadataAdapter {
                 ? client.trending(shelf.window(), page, size)
                 : client.subject(shelf.subject(), (page - 1) * size, size);
 
-        List<ItemSearchResult> items = works.stream()
+        // Open Library reports no total on either list, so a full page is the only sign there
+        // is another behind it.
+        return new BrowseResults(toSearchResults(works), works.size() >= size);
+    }
+
+    @Override
+    public List<FilterField> discoverFilters(MediaType mediaType) {
+        return OpenLibraryFilters.fields(LocalDate.now());
+    }
+
+    @Override
+    public BrowseResults discover(MediaType mediaType, DiscoverFilters filters, int page, int size) {
+        List<Map<String, Object>> works =
+                client.discover(OpenLibraryFilters.query(filters), (page - 1) * size, size);
+
+        return new BrowseResults(toSearchResults(works), works.size() >= size);
+    }
+
+    /** Search docs as the shared shape, shared by the shelves and the filtered grid. */
+    private List<ItemSearchResult> toSearchResults(List<Map<String, Object>> works) {
+        return works.stream()
                 .map(doc -> new ItemSearchResult(
                         MediaType.BOOK,
                         Source.OPEN_LIBRARY,
@@ -129,10 +151,6 @@ public class OpenLibraryMetadataAdapter implements MetadataAdapter {
                         facets(doc)))
                 .filter(result -> result.title() != null && result.externalId() != null)
                 .toList();
-
-        // Open Library reports no total on either list, so a full page is the only sign there
-        // is another behind it.
-        return new BrowseResults(items, works.size() >= size);
     }
 
     private Map<String, Object> facets(Map<String, Object> doc) {
