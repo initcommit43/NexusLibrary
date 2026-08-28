@@ -17,7 +17,7 @@ import {
   type ModuleProvider,
 } from '../modules/registry'
 import { useModules } from '../modules/useModules'
-import { useSearchParams } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 
 /**
  * An import runs in three stretches of very different length — pulling the list, matching
@@ -60,7 +60,7 @@ const jobLabel = (job: SyncJob): string => {
  */
 export const SettingsPage = () => {
   const { isAvailable, isBuilt, isEnabled, setEnabled } = useModules()
-  const [params, setParams] = useSearchParams()
+  const { hash } = useLocation()
   const [accounts, setAccounts] = useState<ConnectedAccount[] | null>(null)
   const [report, setReport] = useState<ImportReport | null>(null)
   /**
@@ -753,12 +753,12 @@ export const SettingsPage = () => {
   )
 
   /*
-   * One page of settings is a scroll; a rail of them is a place. The groups are the same
-   * shape as a shelf's own rail, and named the same way, because they are the same idea:
-   * a short list of everything there is, with the one you are reading marked.
+   * Every section is on the page; the rail is a way down it rather than a set of tabs. The
+   * groups are the same shape as a shelf's own rail, and named the same way, because they
+   * are the same idea: a short list of everything there is, with a way to each.
    *
    * Only modules still switched on appear — connecting an account to a shelf nobody has is
-   * a page of settings for something that is not on screen anywhere else.
+   * a row of settings for something that is not on screen anywhere else.
    */
   const panes = [
     { id: 'general', label: 'General', render: generalSection },
@@ -769,9 +769,6 @@ export const SettingsPage = () => {
     })),
     { id: 'export', label: 'Export', render: exportSection },
   ]
-
-  // In the URL, so a section can be linked and survives the round trip out to an OAuth screen.
-  const showing = panes.find((pane) => pane.id === params.get('section')) ?? panes[0]
 
   return (
     <AppShell>
@@ -793,26 +790,27 @@ export const SettingsPage = () => {
 
       <div className="list-layout">
         <aside className="list-sidebar">
-          <section>
-            <h2>Settings</h2>
-            <ul className="list-links">
-              {panes.map((pane) => (
-                <li key={pane.id}>
-                  <button
-                    type="button"
-                    className={pane.id === showing.id ? 'list-link active' : 'list-link'}
-                    aria-current={pane.id === showing.id}
-                    onClick={() => setParams({ section: pane.id }, { replace: true })}
-                  >
-                    {pane.label}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </section>
+          <ul className="list-links">
+            {panes.map((pane) => (
+              <li key={pane.id}>
+                <a
+                  className={hash === `#${pane.id}` ? 'list-link active' : 'list-link'}
+                  href={`#${pane.id}`}
+                >
+                  {pane.label}
+                </a>
+              </li>
+            ))}
+          </ul>
         </aside>
 
-        <div className="list-main">{showing.render()}</div>
+        <div className="list-main">
+          {panes.map((pane) => (
+            <div key={pane.id} id={pane.id} className="settings-anchor">
+              {pane.render()}
+            </div>
+          ))}
+        </div>
       </div>
     </AppShell>
   )

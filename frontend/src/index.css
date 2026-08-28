@@ -498,6 +498,15 @@ button.small {
   gap: var(--space-3);
 }
 
+/* Clears the sticky header, which would otherwise sit over whatever the rail jumped to. */
+.settings-anchor {
+  scroll-margin-top: 4.5rem;
+}
+
+a.list-link:hover {
+  text-decoration: none;
+}
+
 /*
  * Titled the way the shelf rail titles its own groups — small, spaced capitals over a rule.
  * A settings page is the same shape of thing: a few named groups read down rather than a
