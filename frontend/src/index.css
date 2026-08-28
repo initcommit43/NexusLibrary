@@ -1027,6 +1027,9 @@ input.filter-control::-webkit-search-cancel-button {
 
 /* The arrows sit over the row's edges rather than beside it, so the row keeps full width. */
 .carousel {
+  /* One number for both sides, so the two arrows cannot drift apart. */
+  --carousel-arrow-inset: calc(var(--space-2) * -1);
+
   position: relative;
 }
 
@@ -1044,14 +1047,22 @@ input.filter-control::-webkit-search-cancel-button {
   line-height: 1;
   border-radius: 50%;
   box-shadow: var(--shadow-2);
+  /* Quiet at rest: it sits over the covers, which are what the row is for. */
+  opacity: 0.7;
+  transition: opacity var(--duration-fast) var(--ease);
+}
+
+.carousel-arrow:hover:not(:disabled),
+.carousel-arrow:focus-visible {
+  opacity: 1;
 }
 
 .carousel-arrow.start {
-  left: calc(var(--space-2) * -1);
+  left: var(--carousel-arrow-inset);
 }
 
 .carousel-arrow.end {
-  right: calc(var(--space-2) * -1);
+  right: var(--carousel-arrow-inset);
 }
 
 .carousel-arrow[hidden] {
@@ -1173,8 +1184,13 @@ input.filter-control::-webkit-search-cancel-button {
   align-items: stretch;
   gap: var(--browse-gap);
   overflow-x: auto;
-  /* Room for the card's hover lift, which a tight overflow box would otherwise clip. */
-  padding: var(--space-1) var(--space-1) var(--space-2);
+  /*
+   * Room above and below for the card's hover lift, and none at the ends. A scroll container
+   * shows its start padding at rest and runs flush to its far edge, so any inline padding is
+   * space on one side that is not there on the other — which the arrows then sit unevenly
+   * against.
+   */
+  padding: var(--space-1) 0 var(--space-2);
   scroll-snap-type: x proximity;
   /* Hidden, not disabled: the row still scrolls by wheel, drag, and keyboard. */
   scrollbar-width: none;

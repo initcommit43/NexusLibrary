@@ -7,6 +7,15 @@ interface Props {
 }
 
 /**
+ * How far from an edge still counts as being at it.
+ *
+ * <p>Wider than a pixel because nothing here lands on one: the columns are a calc of a
+ * percentage, the row carries padding, and proximity snapping settles wherever it likes. A
+ * pixel of slack left the forward arrow showing at a shelf's end, pointing at nothing.
+ */
+const SLACK = 4
+
+/**
  * A shelf you can step through, rather than six covers and a "view all".
  *
  * <p>The row is a real scroll container, so a trackpad, a touchscreen and the keyboard all
@@ -21,9 +30,10 @@ export const Carousel = ({ children, label }: Props) => {
   const readPosition = () => {
     const element = row.current
     if (!element) return
-    // A page of slack, because sub-pixel widths mean the end is rarely reached exactly.
-    setAtStart(element.scrollLeft <= 1)
-    setAtEnd(element.scrollLeft + element.clientWidth >= element.scrollWidth - 1)
+
+    const left = element.scrollLeft
+    setAtStart(left <= SLACK)
+    setAtEnd(left + element.clientWidth >= element.scrollWidth - SLACK)
   }
 
   useEffect(() => {
@@ -31,10 +41,19 @@ export const Carousel = ({ children, label }: Props) => {
     const element = row.current
     if (!element) return
 
-    // Covers arriving, and the window changing shape, both move the far end.
+    // Covers arriving, and the window changing shape, both move the far end. The observer
+    // watches the row's own box; the children are a dependency because a shelf filling in
+    // changes how far it scrolls without changing that box at all.
     const observer = new ResizeObserver(readPosition)
     observer.observe(element)
-    return () => observer.disconnect()
+
+    // A smooth step ends after the last scroll event, and snapping can settle a pixel or two
+    // past where it landed — without this the far end is read from midway through the move.
+    element.addEventListener('scrollend', readPosition)
+    return () => {
+      observer.disconnect()
+      element.removeEventListener('scrollend', readPosition)
+    }
   }, [children])
 
   /** Just under a full row, so one card stays on screen as an anchor between steps. */
