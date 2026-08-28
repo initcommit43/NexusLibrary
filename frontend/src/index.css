@@ -539,6 +539,7 @@ button.small {
   width: min(100%, 34rem);
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: var(--space-2);
   padding: var(--space-2);
   background: var(--surface);
@@ -550,16 +551,20 @@ button.small {
 .search-overlay-icon {
   display: grid;
   place-items: center;
-  padding-left: var(--space-2);
   color: var(--text-muted);
 }
 
-/* Borderless: the panel around it already reads as the input. */
+/*
+ * Borderless: the panel around it already reads as the input. It takes only the width it
+ * needs rather than all of it, so the magnifier stays beside the words instead of being
+ * pushed out to the panel's edge.
+ */
 .search-overlay-panel input[type='search'] {
-  flex: 1;
+  flex: 0 1 18rem;
   min-width: 0;
   background: transparent;
   border: none;
+  text-align: center;
   font-size: var(--text-md);
 }
 
