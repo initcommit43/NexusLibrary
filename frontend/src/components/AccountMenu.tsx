@@ -56,7 +56,12 @@ export const AccountMenu = () => {
               </Link>
             </li>
             <li role="none">
-              <button type="button" role="menuitem" onClick={() => void logout()}>
+              <button
+                type="button"
+                role="menuitem"
+                className="danger"
+                onClick={() => void logout()}
+              >
                 Sign out
               </button>
             </li>

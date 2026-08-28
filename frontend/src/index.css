@@ -416,7 +416,7 @@ button.small {
   border: none;
   border-radius: var(--radius-sm);
   color: var(--text);
-  text-align: left;
+  text-align: center;
   font-size: var(--text-base);
   font-weight: 500;
 }
@@ -428,10 +428,21 @@ button.small {
   text-decoration: none;
 }
 
+/* Signing out is the one thing in here you cannot undo by clicking again. */
+.account-menu button.danger,
+.account-menu button.danger:hover {
+  color: var(--danger);
+}
+
+.account-menu button.danger:hover {
+  background: var(--danger-soft);
+}
+
 /* A label, not a target: it says whose account the two below act on. */
 .account-name {
   padding: var(--space-2) var(--space-3);
   font-size: var(--text-sm);
+  text-align: center;
   border-bottom: 1px solid var(--border);
   margin-bottom: var(--space-1);
 }
