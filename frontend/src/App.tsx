@@ -5,6 +5,7 @@ import { BrowsePage } from './pages/BrowsePage'
 import { ShelfPage } from './pages/ShelfPage'
 import { LibraryPage } from './pages/LibraryPage'
 import { MediaPage } from './pages/MediaPage'
+import { ProfilePage } from './pages/ProfilePage'
 import { EntryDetailPage } from './pages/EntryDetailPage'
 import { LoginPage } from './pages/LoginPage'
 import { SearchPage } from './pages/SearchPage'
@@ -49,6 +50,7 @@ export const App = () => (
       <Route path="/browse/:moduleSlug/:typeSlug/:shelfId" element={<ShelfPage />} />
       <Route path="/search" element={<SearchPage />} />
       <Route path="/activity" element={<ActivityPage />} />
+      <Route path="/profile" element={<ProfilePage />} />
       <Route path="/entries/:id" element={<EntryDetailPage />} />
       <Route path="/media/:source/:externalId" element={<MediaPage />} />
       <Route path="/settings" element={<SettingsPage />} />
