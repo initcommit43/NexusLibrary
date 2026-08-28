@@ -293,7 +293,7 @@ public class AniListClient {
                 "genre_in",
                 "[String]",
                 genres == null || genres.isEmpty() ? null : List.copyOf(genres));
-        addOptional(declarations, arguments, variables, "seasonYear", "Int", year);
+        addYear(declarations, arguments, variables, mediaType, year);
         addOptional(declarations, arguments, variables, "season", "MediaSeason", blankToNull(season));
         addOptional(declarations, arguments, variables, "format", "MediaFormat", blankToNull(format));
         addOptional(declarations, arguments, variables, "status", "MediaStatus", blankToNull(status));
@@ -315,6 +315,34 @@ public class AniListClient {
 
     private static String blankToNull(String value) {
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    /**
+     * Narrows to a year, by whichever field the medium actually carries one in.
+     *
+     * <p>AniList files a season — and so a {@code seasonYear} — against anime only. Manga has
+     * neither, so asking it for a season year matches nothing at all rather than everything
+     * from that year; its year lives in the start date, which has to be asked for as a range
+     * across the whole of it.
+     */
+    private void addYear(
+            List<String> declarations,
+            List<String> arguments,
+            Map<String, Object> variables,
+            MediaType mediaType,
+            Integer year) {
+
+        if (year == null) {
+            return;
+        }
+
+        if (mediaType == MediaType.ANIME) {
+            addOptional(declarations, arguments, variables, "seasonYear", "Int", year);
+            return;
+        }
+
+        addOptional(declarations, arguments, variables, "startDate_greater", "FuzzyDateInt", year * 10000);
+        addOptional(declarations, arguments, variables, "startDate_lesser", "FuzzyDateInt", (year + 1) * 10000);
     }
 
     /** Adds one filter to the query, or leaves no trace of it when there is no value. */
