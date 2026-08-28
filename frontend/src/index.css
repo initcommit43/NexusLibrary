@@ -812,7 +812,6 @@ input.filter-control::-webkit-search-cancel-button {
 .search-overlay-panel {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: var(--space-2);
   padding: var(--space-2);
   background: var(--surface);
@@ -833,7 +832,6 @@ input.filter-control::-webkit-search-cancel-button {
   min-width: 0;
   background: transparent;
   border: none;
-  text-align: center;
   font-size: var(--text-md);
 }
 
@@ -1176,9 +1174,14 @@ input.filter-control::-webkit-search-cancel-button {
   gap: var(--browse-gap);
   overflow-x: auto;
   /* Room for the card's hover lift, which a tight overflow box would otherwise clip. */
-  padding: var(--space-1) var(--space-1) var(--space-3);
+  padding: var(--space-1) var(--space-1) var(--space-2);
   scroll-snap-type: x proximity;
-  scrollbar-width: thin;
+  /* Hidden, not disabled: the row still scrolls by wheel, drag, and keyboard. */
+  scrollbar-width: none;
+}
+
+.browse-row::-webkit-scrollbar {
+  display: none;
 }
 
 @media (max-width: 64rem) {

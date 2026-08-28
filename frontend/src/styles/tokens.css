@@ -118,9 +118,9 @@
 
   /* --- radius --- */
   --radius-sm: 8px; /* controls, small tiles */
-  --radius-md: 14px; /* list rows */
-  --radius-lg: 22px; /* cards */
-  --radius-panel: 16px; /* inset panels */
+  --radius-md: 10px; /* list rows */
+  --radius-lg: 14px; /* cards */
+  --radius-panel: 12px; /* inset panels */
   --radius-full: 999px;
 
   /* --- elevation --- */
