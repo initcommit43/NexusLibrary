@@ -336,12 +336,18 @@ button.small {
   border-bottom-color: var(--accent);
 }
 
+/*
+ * Shrunk to its two icons rather than filling the track, so it can anchor the account menu:
+ * the menu centres on this box, which means it centres under the pair. The extra margin is
+ * what buys the centred menu room to hang past the icons without reaching the window edge.
+ */
 .header-right {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
   gap: var(--space-3);
-  min-width: 0;
+  justify-self: end;
+  position: relative;
+  margin-right: var(--space-3);
 }
 
 .shell-main {
@@ -380,8 +386,9 @@ button.small {
 
 /* --- account menu --- */
 
+/* Static: the menu anchors to the icon pair in the header, not to this trigger alone. */
 .account {
-  position: relative;
+  position: static;
 }
 
 /*
@@ -392,12 +399,14 @@ button.small {
   position: absolute;
   z-index: 20;
   top: 100%;
-  right: 0;
+  left: 50%;
+  transform: translateX(-50%);
   padding-top: var(--space-2);
 }
 
+/* A set width, so a long username cannot widen the menu out over the window edge. */
 .account-menu ul {
-  min-width: 11rem;
+  width: 9rem;
   margin: 0;
   padding: var(--space-1);
   list-style: none;
@@ -446,6 +455,9 @@ button.small {
   padding: var(--space-2) var(--space-3);
   font-size: var(--text-sm);
   text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   border-bottom: 1px solid var(--border);
   margin-bottom: var(--space-1);
 }
