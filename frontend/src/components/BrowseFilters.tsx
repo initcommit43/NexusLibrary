@@ -47,27 +47,38 @@ const Affordance = ({
 }
 
 /**
- * A control that takes any number of its options.
+ * A list of options, taking one value or several.
  *
- * <p>Not a native multiple select: that renders as a scrolling list box which takes as much
- * height as the rest of the bar and needs a modifier key to add a second value, neither of
- * which a reader picking two genres expects.
+ * <p>Written rather than left to a native select for two reasons. A native select shows its
+ * chosen option's text when closed, so the only way to have an "Any" entry in the list is to
+ * have the word sitting in the box before anyone has chosen anything — and a native multiple
+ * select renders as a list box the height of the whole bar that needs a modifier key to add
+ * a second value. Both are answered by owning the menu.
  */
-const MultiSelect = ({
+const Dropdown = ({
   field,
   chosen,
+  multiple,
   onChange,
 }: {
   field: FilterField
   chosen: string[]
+  multiple: boolean
   onChange: (next: string[]) => void
 }) => {
   const { open, setOpen, container } = useMenuDismiss<HTMLDivElement>()
   const id = useId()
   const filled = chosen.length > 0
 
-  const toggle = (value: string) =>
+  const pick = (value: string) => {
+    if (!multiple) {
+      onChange([value])
+      setOpen(false)
+      return
+    }
+    // A second genre is a further question, not a different one, so the list stays open.
     onChange(chosen.includes(value) ? chosen.filter((held) => held !== value) : [...chosen, value])
+  }
 
   return (
     <div className="filter" ref={container} data-float={filled ? '' : undefined}>
@@ -90,20 +101,86 @@ const MultiSelect = ({
 
       {open && (
         <ul className="filter-options">
-          {field.options.map((option) => (
-            <li key={option.value}>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={chosen.includes(option.value)}
-                  onChange={() => toggle(option.value)}
-                />
-                <span>{option.label}</span>
-              </label>
+          {/* Named here, where it is a choice among others, rather than in the closed box,
+              where it would be a word standing in for the nothing it means. */}
+          {!multiple && (
+            <li>
+              <button
+                type="button"
+                className={filled ? undefined : 'chosen'}
+                onClick={() => {
+                  onChange([])
+                  setOpen(false)
+                }}
+              >
+                Any
+              </button>
             </li>
-          ))}
+          )}
+
+          {field.options.map((option) =>
+            multiple ? (
+              <li key={option.value}>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={chosen.includes(option.value)}
+                    onChange={() => pick(option.value)}
+                  />
+                  <span>{option.label}</span>
+                </label>
+              </li>
+            ) : (
+              <li key={option.value}>
+                <button
+                  type="button"
+                  className={chosen[0] === option.value ? 'chosen' : undefined}
+                  onClick={() => pick(option.value)}
+                >
+                  {option.label}
+                </button>
+              </li>
+            ),
+          )}
         </ul>
       )}
+    </div>
+  )
+}
+
+/** A free-text box. Its label rests where the value will be until there is one. */
+const TextFilter = ({
+  field,
+  chosen,
+  onChange,
+}: {
+  field: FilterField
+  chosen: string[]
+  onChange: (next: string[]) => void
+}) => {
+  const id = useId()
+  const value = chosen[0] ?? ''
+
+  return (
+    <div className="filter" data-float={value ? '' : undefined}>
+      <label className="filter-label" htmlFor={id}>
+        {field.label}
+      </label>
+
+      <input
+        id={id}
+        className="filter-control"
+        type="search"
+        value={value}
+        onChange={(event) => onChange(event.target.value ? [event.target.value] : [])}
+      />
+
+      <Affordance
+        filled={value !== ''}
+        hasList={false}
+        label={field.label}
+        onClear={() => onChange([])}
+      />
     </div>
   )
 }
@@ -111,13 +188,9 @@ const MultiSelect = ({
 /**
  * The bar above a browse page, built from whatever the module's adapter said it can answer.
  *
- * <p>This file knows nothing about seasons or genres: it renders text boxes, selects and
- * multi-selects from a list, and hands back the values by field id. A module gains a filter
- * by declaring one in its adapter, the way it gains a shelf.
- *
- * <p>Labels sit inside their control and float up once it holds something. An unset control
- * shows only its label — no word for "unset", because an empty Year filtering nothing is
- * what anyone would already assume.
+ * <p>This file knows nothing about seasons or genres: it renders text boxes and option lists
+ * from a list of fields, and hands back the values by field id. A module gains a filter by
+ * declaring one in its adapter, the way it gains a shelf.
  */
 export const BrowseFilters = ({
   fields,
@@ -134,82 +207,20 @@ export const BrowseFilters = ({
     <div className="filter-bar">
       {fields.map((field) => {
         const chosen = values[field.id] ?? []
+        const change = (next: string[]) => set(field.id, next)
 
-        if (field.kind === 'MULTI') {
-          return (
-            <MultiSelect
-              key={field.id}
-              field={field}
-              chosen={chosen}
-              onChange={(next) => set(field.id, next)}
-            />
-          )
-        }
-
-        return (
-          <Single
+        return field.kind === 'TEXT' ? (
+          <TextFilter key={field.id} field={field} chosen={chosen} onChange={change} />
+        ) : (
+          <Dropdown
             key={field.id}
             field={field}
             chosen={chosen}
-            onChange={(next) => set(field.id, next)}
+            multiple={field.kind === 'MULTI'}
+            onChange={change}
           />
         )
       })}
-    </div>
-  )
-}
-
-/** A text box or a select: one value, or none. */
-const Single = ({
-  field,
-  chosen,
-  onChange,
-}: {
-  field: FilterField
-  chosen: string[]
-  onChange: (next: string[]) => void
-}) => {
-  const id = useId()
-  const value = chosen[0] ?? ''
-  const filled = value !== ''
-
-  return (
-    <div className="filter" data-float={filled ? '' : undefined}>
-      <label className="filter-label" htmlFor={id}>
-        {field.label}
-      </label>
-
-      {field.kind === 'TEXT' ? (
-        <input
-          id={id}
-          className="filter-control"
-          type="search"
-          value={value}
-          onChange={(event) => onChange(event.target.value ? [event.target.value] : [])}
-        />
-      ) : (
-        <select
-          id={id}
-          className="filter-control"
-          value={value}
-          onChange={(event) => onChange(event.target.value ? [event.target.value] : [])}
-        >
-          {/* Unlabelled on purpose: unset should read as empty, not as a value called "Any". */}
-          <option value="" />
-          {field.options.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      )}
-
-      <Affordance
-        filled={filled}
-        hasList={field.kind !== 'TEXT'}
-        label={field.label}
-        onClear={() => onChange([])}
-      />
     </div>
   )
 }

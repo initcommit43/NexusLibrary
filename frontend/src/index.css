@@ -488,6 +488,8 @@ button.small {
  * get two controls stretched across the page.
  */
 .filter-bar {
+  --filter-height: 3.25rem;
+
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
   align-items: center;
@@ -512,33 +514,37 @@ button.small {
 .filter-label {
   position: absolute;
   left: calc(var(--space-3) + 1px);
-  top: 50%;
-  transform: translateY(-50%);
+  top: 0;
+  /* The control's own height, so the label is centred on the box rather than near it. */
+  height: var(--filter-height);
+  display: flex;
+  align-items: center;
   pointer-events: none;
+  transform-origin: left center;
   color: var(--text-muted);
   font-size: var(--text-base);
+  /*
+   * One property carries the whole move. Animating top and font-size instead reflows the
+   * label on every frame and steps between whole pixel sizes, which is what made it judder.
+   */
   transition:
-    top var(--duration-fast) var(--ease),
-    transform var(--duration-fast) var(--ease),
-    font-size var(--duration-fast) var(--ease),
-    color var(--duration-fast) var(--ease);
+    transform var(--duration-base) var(--ease),
+    color var(--duration-base) var(--ease);
 }
 
 .filter[data-float] .filter-label,
 .filter:focus-within .filter-label {
-  top: 0.4rem;
-  transform: none;
-  font-size: var(--text-xs);
-  font-weight: 600;
-}
-
-/* Clickable, since it is a real label for the control it names. */
-.filter-label {
-  cursor: pointer;
+  transform: translateY(-0.8rem) scale(0.78);
 }
 
 .filter:focus-within .filter-label {
   color: var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .filter-label {
+    transition: none;
+  }
 }
 
 /*
@@ -547,7 +553,7 @@ button.small {
  */
 .filter-control {
   width: 100%;
-  height: 3.25rem;
+  height: var(--filter-height);
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -632,18 +638,32 @@ input.filter-control::-webkit-search-cancel-button {
   box-shadow: var(--shadow-2);
 }
 
-.filter-options label {
+.filter-options label,
+.filter-options button {
+  width: 100%;
   display: flex;
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-2);
+  background: transparent;
+  border: none;
   border-radius: var(--radius-sm);
+  color: var(--text);
+  text-align: left;
   font-size: var(--text-base);
+  font-weight: 500;
   cursor: pointer;
 }
 
-.filter-options label:hover {
+.filter-options label:hover,
+.filter-options button:hover:not(:disabled) {
   background: var(--surface-raised);
+  color: var(--text);
+}
+
+/* Says which one is standing, since a closed box shows the value but not where it sat. */
+.filter-options .chosen {
+  color: var(--accent);
 }
 
 /* --- profile --- */
