@@ -2,6 +2,8 @@ package dev.nexus.modules.anime;
 
 import dev.nexus.core.adapter.BrowseResults;
 import dev.nexus.core.adapter.BrowseShelf;
+import dev.nexus.core.adapter.DiscoverFilters;
+import dev.nexus.core.adapter.FilterField;
 import dev.nexus.core.adapter.FetchProgress;
 import dev.nexus.core.adapter.ItemSearchResult;
 import dev.nexus.core.adapter.MetadataAdapter;
@@ -25,7 +27,16 @@ import java.util.Set;
 @org.springframework.stereotype.Component
 public class AniListMetadataAdapter implements MetadataAdapter {
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(AniListMetadataAdapter.class);
+
     private final AniListClient client;
+
+    /**
+     * The genre list, fetched once and kept. It is the same answer for everyone and changes
+     * about never, so asking AniList for it on every visit to a browse page would spend a
+     * request to be told the same eighteen words.
+     */
+    private volatile List<String> genres;
 
     public AniListMetadataAdapter(AniListClient client) {
         this.client = client;
@@ -84,6 +95,51 @@ public class AniListMetadataAdapter implements MetadataAdapter {
 
         return new BrowseResults(
                 found.media().stream().map(this::toSearchResult).toList(), found.hasNextPage());
+    }
+
+    @Override
+    public List<FilterField> discoverFilters(MediaType mediaType) {
+        return AniListFilters.forMediaType(mediaType, genres(), LocalDate.now());
+    }
+
+    @Override
+    public BrowseResults discover(MediaType mediaType, DiscoverFilters filters, int page, int size) {
+        AniListClient.MediaPage found = client.discoverMedia(
+                mediaType,
+                filters.query(),
+                filters.genres(),
+                filters.year(),
+                filters.season(),
+                filters.format(),
+                filters.status(),
+                page,
+                size);
+
+        return new BrowseResults(
+                found.media().stream().map(this::toSearchResult).toList(), found.hasNextPage());
+    }
+
+    /**
+     * A missing genre list must not cost the reader the whole filter bar, so a failure falls
+     * back to the known list rather than propagating. It is not cached, so the next visit
+     * tries again.
+     */
+    private List<String> genres() {
+        List<String> known = genres;
+        if (known != null) {
+            return known;
+        }
+
+        try {
+            List<String> fetched = client.genres();
+            if (!fetched.isEmpty()) {
+                genres = fetched;
+                return fetched;
+            }
+        } catch (RuntimeException e) {
+            log.warn("Could not fetch the AniList genre list, using the known one: {}", e.toString());
+        }
+        return AniListFilters.FALLBACK_GENRES;
     }
 
     /**
