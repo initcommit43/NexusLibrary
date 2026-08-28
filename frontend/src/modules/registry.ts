@@ -151,10 +151,10 @@ export const MODULES: ModuleDefinition[] = [
       {
         mediaType: 'MOVIE',
         label: 'Movies',
-        listLabel: 'Film List',
+        listLabel: 'Movie List',
         slug: 'movies',
         progressLabel: 'Progress',
-        searchPlaceholder: 'Search films…',
+        searchPlaceholder: 'Search movies…',
         statusOrder: ['IN_PROGRESS', 'COMPLETED', 'PAUSED', 'DROPPED', 'PLANNING'],
         statusLabels: { ...watching, PLANNING: 'Watchlist', COMPLETED: 'Watched' },
       },
@@ -169,7 +169,7 @@ export const MODULES: ModuleDefinition[] = [
         statusLabels: { ...watching, PLANNING: 'Watchlist', COMPLETED: 'Watched' },
       },
     ],
-    emptyHint: 'Nothing tracked yet. Connect Simkl in settings, or search for a film.',
+    emptyHint: 'Nothing tracked yet. Connect Simkl in settings, or search for a movie.',
     hasMediaPages: false,
     exportsCsv: true,
     providers: [
