@@ -2,6 +2,9 @@ package dev.nexus.modules.games;
 
 import dev.nexus.core.adapter.BrowseResults;
 import dev.nexus.core.adapter.BrowseShelf;
+import dev.nexus.core.adapter.DiscoverFilters;
+import dev.nexus.core.adapter.FilterField;
+import dev.nexus.core.adapter.FilterField.FilterOption;
 import dev.nexus.core.adapter.ItemSearchResult;
 import dev.nexus.core.adapter.MetadataAdapter;
 import dev.nexus.core.adapter.TrackableItemData;
@@ -19,6 +22,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -50,7 +57,14 @@ public class IgdbMetadataAdapter implements MetadataAdapter {
     private static final int STATUS_BETA = 3;
     private static final int STATUS_EARLY_ACCESS = 4;
 
+    private static final Logger log = LoggerFactory.getLogger(IgdbMetadataAdapter.class);
+
     private final IgdbClient client;
+
+    /** Lookup lists for the filter bar, each fetched at most once per run. */
+    private final AtomicReference<List<FilterOption>> genres = new AtomicReference<>();
+
+    private final AtomicReference<List<FilterOption>> platforms = new AtomicReference<>();
 
     public IgdbMetadataAdapter(IgdbClient client) {
         this.client = client;
@@ -100,6 +114,57 @@ public class IgdbMetadataAdapter implements MetadataAdapter {
      * ten out of ten outranks everything ever made.
      */
     @Override
+    public List<FilterField> discoverFilters(MediaType mediaType) {
+        return IgdbFilters.fields(named(genres, client::genres), named(platforms, this::fetchPlatforms), LocalDate.now());
+    }
+
+    @Override
+    public BrowseResults discover(MediaType mediaType, DiscoverFilters filters, int page, int size) {
+        List<Map<String, Object>> games = client.discoverGames(
+                filters.one("q"),
+                IgdbFilters.where(filters, Instant.now().getEpochSecond()),
+                (page - 1) * size,
+                size);
+
+        // A filtered page is one request, so hasMore is whether it came back full.
+        return new BrowseResults(toSearchResults(games), games.size() == size);
+    }
+
+    private List<Map<String, Object>> fetchPlatforms() {
+        return client.platforms(IgdbFilters.PLATFORM_IDS);
+    }
+
+    /**
+     * A lookup's options, fetched once and kept. They are the same answer for everyone and
+     * change about never, so asking IGDB again on every visit spends a request from a budget
+     * of four a second to be told the same two dozen names.
+     *
+     * <p>A failure leaves the list empty and uncached, which drops that one control from the
+     * bar rather than showing an empty one; the next visit tries again.
+     */
+    private List<FilterOption> named(AtomicReference<List<FilterOption>> held, Supplier<List<Map<String, Object>>> fetch) {
+        List<FilterOption> known = held.get();
+        if (known != null) {
+            return known;
+        }
+
+        try {
+            List<FilterOption> options = fetch.get().stream()
+                    .map(row -> new FilterOption(string(row.get("id")), string(row.get("name"))))
+                    .filter(option -> option.value() != null && option.label() != null)
+                    .toList();
+
+            if (!options.isEmpty()) {
+                held.set(options);
+            }
+            return options;
+        } catch (RuntimeException e) {
+            log.warn("Could not fetch an IGDB filter list, leaving that filter out: {}", e.toString());
+            return List.of();
+        }
+    }
+
+    @Override
     public BrowseResults browse(MediaType mediaType, String shelfId, int page, int size) {
         long now = Instant.now().getEpochSecond();
         int offset = (page - 1) * size;
@@ -128,7 +193,18 @@ public class IgdbMetadataAdapter implements MetadataAdapter {
                     default -> List.of();
                 };
 
-        List<ItemSearchResult> items = games.stream()
+        // A full page is the only signal IGDB gives that there is another one behind it.
+        return new BrowseResults(toSearchResults(games), games.size() == size);
+    }
+
+    /**
+     * Listing rows as the shared shape, shared by the shelves and the filtered grid.
+     *
+     * <p>A game IGDB lists with no name is a stub record, and a nameless cover is worse than
+     * a shorter shelf.
+     */
+    private List<ItemSearchResult> toSearchResults(List<Map<String, Object>> games) {
+        return games.stream()
                 .map(game -> new ItemSearchResult(
                         MediaType.GAME,
                         Source.IGDB,
@@ -136,13 +212,8 @@ public class IgdbMetadataAdapter implements MetadataAdapter {
                         string(game.get("name")),
                         coverUrl(game),
                         releaseDate(game)))
-                // A game IGDB lists with no name is a stub record, and a nameless cover is
-                // worse than a shorter shelf.
                 .filter(result -> result.title() != null && !result.title().isBlank())
                 .toList();
-
-        // A full page is the only signal IGDB gives that there is another one behind it.
-        return new BrowseResults(items, games.size() == size);
     }
 
     /**
