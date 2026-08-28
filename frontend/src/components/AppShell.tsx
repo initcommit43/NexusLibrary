@@ -45,12 +45,14 @@ export const AppShell = ({
   return (
     <div className="shell">
       <header className={hidden ? 'shell-header hidden' : 'shell-header'}>
-        <div className="brand">
-          <img src="/pwa-192x192.png" alt="" width={28} height={28} />
-          <span>Nexus</span>
-        </div>
+        <div className="header-left">
+          <div className="brand">
+            <img src="/pwa-192x192.png" alt="" width={28} height={28} />
+            <span>Nexus</span>
+          </div>
 
-        <ModuleSwitcher current={current} />
+          <ModuleSwitcher current={current} />
+        </div>
 
         {/* A module contributes its own shelves; the rest of the header is the same everywhere. */}
         <nav className="shell-nav">
