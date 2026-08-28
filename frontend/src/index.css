@@ -1199,12 +1199,18 @@ input.filter-control::-webkit-search-cancel-button {
 .cover-grid {
   display: grid;
   /*
-   * Fixed columns rather than stretching ones. A stretched column is a different width on
-   * every viewport and in every container, which made a grid card and a carousel card two
-   * visibly different sizes; one width means a cover looks the same everywhere it appears.
+   * Columns that fill the row, asked for just under the card width so that one more fits and
+   * the stretch left over is small. Fixed columns kept every cover identical but left up to a
+   * whole column of dead space on the right — which the section rule above them spanned and
+   * the cards did not, and which read as the grid being misaligned rather than merely packed.
+   *
+   * The floor stays close to --cover-card-width on purpose: it is what keeps a grid card and
+   * a carousel card, which is still fixed, near enough the same size to read as one thing.
    */
-  grid-template-columns: repeat(auto-fill, var(--cover-card-width));
-  justify-content: start;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(calc(var(--cover-card-width) - var(--space-3)), 1fr)
+  );
   gap: var(--space-3);
 }
 
