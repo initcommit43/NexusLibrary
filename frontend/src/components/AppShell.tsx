@@ -1,10 +1,12 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useParams } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
 import { ModuleSwitcher } from './ModuleSwitcher'
+import { HeaderSearch } from './HeaderSearch'
 import { ImportIndicator } from './ImportIndicator'
 import { OutageBanner } from './OutageBanner'
 import { ThemeToggle } from './ThemeToggle'
 import { useCurrentModule } from '../modules/useCurrentModule'
+import { defaultTypeOf, typeBySlug } from '../modules/registry'
 import { useHideOnScroll } from './useHideOnScroll'
 import type { ModuleDefinition } from '../modules/registry'
 
@@ -36,6 +38,10 @@ export const AppShell = ({
   const current = useCurrentModule(module)
   const hidden = useHideOnScroll()
 
+  // Which shelf search will cover. Pages that span modules carry no type, so they get the
+  // module's first — the same shelf its bare path opens.
+  const searchable = typeBySlug(current, useParams().type) ?? defaultTypeOf(current)
+
   return (
     <div className="shell">
       <header className={hidden ? 'shell-header hidden' : 'shell-header'}>
@@ -48,7 +54,6 @@ export const AppShell = ({
 
         {/* A module contributes its own shelves; the rest of the header is the same everywhere. */}
         <nav className="shell-nav">
-          <NavLink to="/search">Search</NavLink>
           {current.types.map((type) => (
             <NavLink key={type.slug} to={`/library/${current.slug}/${type.slug}`}>
               {type.listLabel}
@@ -58,6 +63,7 @@ export const AppShell = ({
         </nav>
 
         <div className="header-right">
+          <HeaderSearch module={current} type={searchable} />
           <span className="muted">{user?.username}</span>
           <ThemeToggle />
           <NavLink className="ghost icon-button" to="/settings" aria-label="Settings" title="Settings">
