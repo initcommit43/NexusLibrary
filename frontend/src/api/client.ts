@@ -40,6 +40,26 @@ export type BrowseResults = {
   hasMore: boolean
 }
 
+export type FilterOption = {
+  value: string
+  label: string
+}
+
+/**
+ * One control on a browse page's filter bar. Which controls exist is the adapter's answer,
+ * not this app's — a season is AniList's idea and a platform is IGDB's — so the bar renders
+ * whatever list it is handed.
+ */
+export type FilterField = {
+  id: string
+  label: string
+  kind: 'TEXT' | 'SELECT' | 'MULTI'
+  options: FilterOption[]
+}
+
+/** The chosen value of every control, by field id. A multi holds several. */
+export type FilterValues = Record<string, string[]>
+
 export type TrackedItem = {
   id: number
   mediaType: MediaType
@@ -318,6 +338,21 @@ export const api = {
     request<BrowseResults>(
       `/catalog/browse?mediaType=${mediaType}&shelf=${encodeURIComponent(shelf)}&page=${page}`,
     ),
+
+  browseFilters: (mediaType: MediaType) =>
+    request<FilterField[]>(`/catalog/filters?mediaType=${mediaType}`),
+
+  discover: (mediaType: MediaType, values: FilterValues, page = 1) => {
+    const params = new URLSearchParams({ mediaType, page: String(page) })
+    // Repeated rather than joined: a multi-select is several values of one name, and a genre
+    // is free to contain the character any separator would have to pick.
+    for (const [field, chosen] of Object.entries(values)) {
+      for (const value of chosen) {
+        if (value) params.append(field, value)
+      }
+    }
+    return request<BrowseResults>(`/catalog/discover?${params}`)
+  },
 
   media: (source: string, externalId: string) =>
     request<MediaDetail>(`/catalog/media/${source}/${encodeURIComponent(externalId)}`),
