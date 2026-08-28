@@ -254,6 +254,69 @@ public class AniListClient {
         return new MediaPage(pageMedia(data), hasNextPage(data));
     }
 
+    /**
+     * One page of a filtered browse grid.
+     *
+     * <p>Shares {@link #browseQuery} with the shelves, and for the same reason: an argument
+     * AniList never received is no filter, while one it received as null is a filter for null.
+     *
+     * <p>Sorted by how well a title matches when there is a term to match, and by popularity
+     * when there is not — an unranked list of everything in a genre is not an answer.
+     */
+    public MediaPage discoverMedia(
+            MediaType mediaType,
+            String search,
+            List<String> genres,
+            Integer year,
+            String season,
+            String format,
+            String status,
+            int page,
+            int perPage) {
+
+        String term = blankToNull(search);
+
+        List<String> declarations = new java.util.ArrayList<>(
+                List.of("$type: MediaType", "$sort: [MediaSort]", "$page: Int", "$perPage: Int"));
+        List<String> arguments = new java.util.ArrayList<>(List.of("type: $type", "sort: $sort", "isAdult: false"));
+        Map<String, Object> variables = new java.util.HashMap<>();
+        variables.put("type", anilistType(mediaType));
+        variables.put("sort", List.of(term == null ? "POPULARITY_DESC" : "SEARCH_MATCH"));
+        variables.put("page", page);
+        variables.put("perPage", Math.min(perPage, MAX_BATCH));
+
+        addOptional(declarations, arguments, variables, "search", "String", term);
+        addOptional(
+                declarations,
+                arguments,
+                variables,
+                "genre_in",
+                "[String]",
+                genres == null || genres.isEmpty() ? null : List.copyOf(genres));
+        addOptional(declarations, arguments, variables, "seasonYear", "Int", year);
+        addOptional(declarations, arguments, variables, "season", "MediaSeason", blankToNull(season));
+        addOptional(declarations, arguments, variables, "format", "MediaFormat", blankToNull(format));
+        addOptional(declarations, arguments, variables, "status", "MediaStatus", blankToNull(status));
+
+        Map<String, Object> data = post(browseQuery(declarations, arguments), variables);
+        return new MediaPage(pageMedia(data), hasNextPage(data));
+    }
+
+    /**
+     * Every genre AniList files anything under. A short, slow-moving list, which is why the
+     * caller holds on to it rather than asking per page view.
+     */
+    public List<String> genres() {
+        Map<String, Object> data = post("query { GenreCollection }", Map.of());
+        return data.get("GenreCollection") instanceof List<?> collection
+                ? collection.stream().map(String::valueOf).filter(genre -> !genre.isBlank()).toList()
+                : List.of();
+    }
+
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
+    }
+
     /** Adds one filter to the query, or leaves no trace of it when there is no value. */
     private void addOptional(
             List<String> declarations,
