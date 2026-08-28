@@ -2,13 +2,6 @@ import { useId } from 'react'
 import type { FilterField, FilterValues } from '../api/client'
 import { useMenuDismiss } from './useMenuDismiss'
 
-const SearchIcon = () => (
-  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" aria-hidden>
-    <circle cx="11" cy="11" r="7" strokeWidth="1.8" />
-    <path d="m20 20-3.5-3.5" strokeWidth="1.8" strokeLinecap="round" />
-  </svg>
-)
-
 const ChevronIcon = () => (
   <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" aria-hidden>
     <path d="m6 9 6 6 6-6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -38,41 +31,39 @@ const MultiSelect = ({
     onChange(chosen.includes(value) ? chosen.filter((held) => held !== value) : [...chosen, value])
 
   return (
-    <div className="filter" ref={container}>
+    <div className="filter filter-multi" ref={container} data-float="">
       <span className="filter-label" id={labelId}>
         {field.label}
       </span>
 
-      <div className="filter-multi">
-        <button
-          type="button"
-          className="filter-control"
-          aria-haspopup="listbox"
-          aria-expanded={open}
-          aria-labelledby={labelId}
-          onClick={() => setOpen((wasOpen) => !wasOpen)}
-        >
-          <span>{chosen.length === 0 ? 'Any' : chosen.join(', ')}</span>
-          <ChevronIcon />
-        </button>
+      <button
+        type="button"
+        className="filter-control"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-labelledby={labelId}
+        onClick={() => setOpen((wasOpen) => !wasOpen)}
+      >
+        <span>{chosen.length === 0 ? 'Any' : chosen.join(', ')}</span>
+        <ChevronIcon />
+      </button>
 
-        {open && (
-          <ul className="filter-options">
-            {field.options.map((option) => (
-              <li key={option.value}>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={chosen.includes(option.value)}
-                    onChange={() => toggle(option.value)}
-                  />
-                  <span>{option.label}</span>
-                </label>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      {open && (
+        <ul className="filter-options">
+          {field.options.map((option) => (
+            <li key={option.value}>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={chosen.includes(option.value)}
+                  onChange={() => toggle(option.value)}
+                />
+                <span>{option.label}</span>
+              </label>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   )
 }
@@ -83,6 +74,10 @@ const MultiSelect = ({
  * <p>This file knows nothing about seasons or genres: it renders text boxes, selects and
  * multi-selects from a list, and hands back the values by field id. A module gains a filter
  * by declaring one in its adapter, the way it gains a shelf.
+ *
+ * <p>Labels sit inside their control rather than above it. A select always shows something,
+ * so its label is floated from the start; a text box has nothing to show until it is typed
+ * in, so its label rests in the middle and does the work of a placeholder until then.
  */
 export const BrowseFilters = ({
   fields,
@@ -116,18 +111,16 @@ export const BrowseFilters = ({
         }
 
         return (
-          <label className="filter" key={field.id}>
+          <label className="filter" key={field.id} data-float={field.kind === 'TEXT' ? undefined : ''}>
             <span className="filter-label">{field.label}</span>
 
             {field.kind === 'TEXT' ? (
-              <span className="filter-text">
-                <SearchIcon />
-                <input
-                  type="search"
-                  value={chosen[0] ?? ''}
-                  onChange={(event) => set(field.id, event.target.value ? [event.target.value] : [])}
-                />
-              </span>
+              <input
+                className="filter-control"
+                type="search"
+                value={chosen[0] ?? ''}
+                onChange={(event) => set(field.id, event.target.value ? [event.target.value] : [])}
+              />
             ) : (
               <select
                 className="filter-control"
