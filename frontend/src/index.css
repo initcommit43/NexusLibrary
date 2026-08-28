@@ -1425,7 +1425,7 @@ button.ghost.danger:hover:not(:disabled) {
   }
 }
 
-/* --- dashboard sections --- */
+/* --- shelf sections --- */
 
 /* Wraps, because a module with two shelves adds two more buttons to this row. */
 .export-row {

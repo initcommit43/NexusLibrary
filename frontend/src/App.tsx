@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes, useParams } from 'react-router-dom'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { ActivityPage } from './pages/ActivityPage'
 import { BrowsePage } from './pages/BrowsePage'
@@ -14,6 +14,7 @@ import { MalCallbackPage } from './pages/MalCallbackPage'
 import { SimklCallbackPage } from './pages/SimklCallbackPage'
 import { SteamCallbackPage } from './pages/SteamCallbackPage'
 import { RegisterPage } from './pages/RegisterPage'
+import { defaultTypeOf, moduleBySlug } from './modules/registry'
 import { useCurrentModule } from './modules/useCurrentModule'
 import { useModules } from './modules/useModules'
 
@@ -25,6 +26,16 @@ const LandingRedirect = () => {
   return <Navigate to={`/library/${current.slug}`} replace />
 }
 
+/**
+ * A module has no page of its own — it is only a set of shelves — so the bare path opens the
+ * first one. Callers link here rather than to a shelf so that which shelf comes first stays
+ * the registry's business.
+ */
+const ModuleRedirect = () => {
+  const module = moduleBySlug(useParams().module)
+  if (!module) return <Navigate to="/" replace />
+  return <Navigate to={`/library/${module.slug}/${defaultTypeOf(module).slug}`} replace />
+}
 
 export const App = () => (
   <Routes>
@@ -32,7 +43,7 @@ export const App = () => (
     <Route path="/register" element={<RegisterPage />} />
     <Route element={<ProtectedRoute />}>
       <Route path="/" element={<LandingRedirect />} />
-      <Route path="/library/:module" element={<LibraryPage />} />
+      <Route path="/library/:module" element={<ModuleRedirect />} />
       <Route path="/library/:module/:type" element={<LibraryPage />} />
       <Route path="/browse" element={<BrowsePage />} />
       <Route path="/browse/:moduleSlug/:typeSlug/:shelfId" element={<ShelfPage />} />

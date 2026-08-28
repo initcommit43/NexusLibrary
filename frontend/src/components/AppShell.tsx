@@ -22,8 +22,8 @@ const CogIcon = () => (
 
 /**
  * The switcher names the module you are in and stays put on every page: settings and
- * activity span modules, but you are still somewhere, and leaving on the last module you
- * picked is what makes Dashboard go back where you were.
+ * activity span modules, but you are still somewhere, and remembering the last module you
+ * picked is what keeps the right shelves in the header while you are there.
  */
 export const AppShell = ({
   children,
@@ -48,9 +48,6 @@ export const AppShell = ({
 
         {/* A module contributes its own shelves; the rest of the header is the same everywhere. */}
         <nav className="shell-nav">
-          <NavLink to={`/library/${current.slug}`} end>
-            Dashboard
-          </NavLink>
           <NavLink to="/search">Search</NavLink>
           {current.types.map((type) => (
             <NavLink key={type.slug} to={`/library/${current.slug}/${type.slug}`}>
