@@ -9,11 +9,45 @@ import type { MediaType } from '../api/client'
  */
 const CROSSING_RELATIONS = new Set(['Source', 'Adaptation'])
 
-/** "SIDE_STORY" reads as "Side story"; AniList's own labels are shouted constants. */
+/**
+ * The order a series reads in: what it came from, then what came before and after, then the
+ * things made alongside it, and last the ones that merely share a face.
+ *
+ * <p>This is what makes a crossover legible. A long-running series is related to titles it
+ * has nothing to do with — One Piece lists Dragon Ball Z, because the two share a special —
+ * and sorted by date that lands among the sequels looking like a mistake. Sorted by kind, it
+ * sits under Character with everything else that is one.
+ */
+const RELATION_ORDER = [
+  'SOURCE',
+  'ADAPTATION',
+  'PARENT',
+  'PREQUEL',
+  'SEQUEL',
+  'ALTERNATIVE',
+  'SIDE_STORY',
+  'SPIN_OFF',
+  'SUMMARY',
+  'COMPILATION',
+  'CONTAINS',
+  'CHARACTER',
+  'OTHER',
+]
+
+const rankOf = (raw: unknown): number => {
+  const found = typeof raw === 'string' ? RELATION_ORDER.indexOf(raw) : -1
+  // Anything AniList adds later sorts after what is named here rather than before it.
+  return found === -1 ? RELATION_ORDER.length : found
+}
+
+/** "SIDE_STORY" reads as "Side Story"; AniList's own labels are shouted constants. */
 const relationLabel = (raw: unknown): string => {
   if (typeof raw !== 'string' || !raw) return 'Related'
-  const words = raw.toLowerCase().replace(/_/g, ' ')
-  return words.charAt(0).toUpperCase() + words.slice(1)
+  return raw
+    .toLowerCase()
+    .split('_')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
 }
 
 interface RelatedMedia {
@@ -21,6 +55,7 @@ interface RelatedMedia {
   title: string
   coverUrl: string | null
   relation: string
+  rank: number
   /** ANIME or MANGA — AniList files light novels under MANGA, by format. */
   type: string | null
   format: string | null
@@ -56,6 +91,7 @@ export const readRelations = (detail: Record<string, unknown>): RelatedMedia[] =
         title: readTitle(node),
         coverUrl: typeof cover?.large === 'string' ? cover.large : null,
         relation: relationLabel(edge.relationType),
+        rank: rankOf(edge.relationType),
         type: typeof node.type === 'string' ? node.type : null,
         format: typeof node.format === 'string' ? node.format : null,
         year: typeof start?.year === 'number' ? String(start.year) : null,
@@ -63,9 +99,10 @@ export const readRelations = (detail: Record<string, unknown>): RelatedMedia[] =
     ]
   })
 
-  // Oldest first: a series reads in the order it came out, and what a thing was adapted
-  // from necessarily predates it. Anything undated sorts last rather than leading.
+  // By kind first, and oldest first inside it: a run of side stories still reads in the
+  // order it came out. Anything undated sorts last within its kind rather than leading it.
   return related.sort((a, b) => {
+    if (a.rank !== b.rank) return a.rank - b.rank
     if (!a.year) return b.year ? 1 : a.title.localeCompare(b.title)
     if (!b.year) return -1
     return Number(a.year) - Number(b.year) || a.title.localeCompare(b.title)
