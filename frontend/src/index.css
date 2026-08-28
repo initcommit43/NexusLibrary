@@ -579,8 +579,12 @@ button.small {
   background: rgb(11 18 32 / 55%);
 }
 
-.search-overlay-panel {
+.search-overlay-panel,
+.search-results {
   width: min(100%, 34rem);
+}
+
+.search-overlay-panel {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -598,18 +602,24 @@ button.small {
   color: var(--text-muted);
 }
 
-/*
- * Borderless: the panel around it already reads as the input. It takes only the width it
- * needs rather than all of it, so the magnifier stays beside the words instead of being
- * pushed out to the panel's edge.
- */
+/* Borderless: the panel around it already reads as the input. */
 .search-overlay-panel input[type='search'] {
-  flex: 0 1 18rem;
+  flex: 1;
   min-width: 0;
   background: transparent;
   border: none;
   text-align: center;
   font-size: var(--text-md);
+}
+
+/* The browser's own clear affordance would sit beside ours and do half the job. */
+.search-overlay-panel input[type='search']::-webkit-search-cancel-button {
+  display: none;
+}
+
+.search-clear {
+  flex-shrink: 0;
+  color: var(--text-muted);
 }
 
 .search-overlay-panel input[type='search']:focus {
@@ -619,6 +629,97 @@ button.small {
 .search-overlay-scope {
   color: rgb(255 255 255 / 75%);
   font-size: var(--text-sm);
+}
+
+/*
+ * Answers directly under the field, in a panel of the same width: the term and what it
+ * found read as one column rather than a form and a page of results.
+ */
+.search-results {
+  max-height: min(28rem, calc(100vh - 12rem));
+  overflow-y: auto;
+  padding: var(--space-1);
+  background: var(--surface);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-2);
+}
+
+.search-results ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.search-results li button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  text-align: left;
+}
+
+.search-results li button:hover:not(:disabled) {
+  background: var(--surface-raised);
+}
+
+.search-results img,
+.search-result-blank {
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 3.5rem;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+}
+
+/* Titles run long and the panel is narrow, so the row clamps rather than growing. */
+.search-result-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.search-result-text strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+  font-size: var(--text-base);
+  font-weight: 600;
+}
+
+.search-result-text .muted {
+  font-size: var(--text-sm);
+}
+
+.search-results-note {
+  padding: var(--space-3);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  text-align: center;
+}
+
+.search-results-all {
+  width: 100%;
+  margin-top: var(--space-1);
+  padding: var(--space-2);
+  background: transparent;
+  border: none;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.search-results-all:hover:not(:disabled) {
+  background: transparent;
+  color: var(--accent);
 }
 
 .search-overlay-scope strong {
