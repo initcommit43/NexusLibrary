@@ -22,6 +22,7 @@ import { useCurrentModule } from '../modules/useCurrentModule'
 type ShelfState = {
   shelf: BrowseShelf
   results: SearchResult[] | null
+  hasMore: boolean
   failed: boolean
 }
 
@@ -184,7 +185,7 @@ export const BrowsePage = () => {
         setLoaded({
           mediaType,
           error: null,
-          shelves: found.map((shelf) => ({ shelf, results: null, failed: false })),
+          shelves: found.map((shelf) => ({ shelf, results: null, hasMore: false, failed: false })),
         })
 
         // Each shelf resolves on its own so the page fills in as answers arrive, and one
@@ -192,7 +193,7 @@ export const BrowsePage = () => {
         found.forEach((shelf) =>
           api
             .browse(mediaType, shelf.id)
-            .then((page) => updateShelf(shelf.id, { results: page.items }))
+            .then((page) => updateShelf(shelf.id, { results: page.items, hasMore: page.hasMore }))
             .catch(() => updateShelf(shelf.id, { failed: true })),
         )
       })
@@ -320,16 +321,19 @@ export const BrowsePage = () => {
       )}
 
       {!narrowed &&
-        shelves?.map(({ shelf, results, failed }) => (
+        shelves?.map(({ shelf, results, hasMore, failed }) => (
         <section key={shelf.id} className="browse-shelf">
           <div className="browse-shelf-head">
             <h2>{shelf.label}</h2>
-            <Link
-              className="view-all"
-              to={`/browse/${module.slug}/${active.slug}/${shelf.id}`}
-            >
-              View All
-            </Link>
+            {/* Only where the row is a window onto more; otherwise it is the whole shelf. */}
+            {hasMore && (
+              <Link
+                className="view-all"
+                to={`/browse/${module.slug}/${active.slug}/${shelf.id}`}
+              >
+                View All
+              </Link>
+            )}
           </div>
 
           {failed ? (
