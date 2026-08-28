@@ -17,6 +17,7 @@ import {
   type ModuleProvider,
 } from '../modules/registry'
 import { useModules } from '../modules/useModules'
+import { useSearchParams } from 'react-router-dom'
 
 /**
  * An import runs in three stretches of very different length — pulling the list, matching
@@ -59,6 +60,7 @@ const jobLabel = (job: SyncJob): string => {
  */
 export const SettingsPage = () => {
   const { isAvailable, isBuilt, isEnabled, setEnabled } = useModules()
+  const [params, setParams] = useSearchParams()
   const [accounts, setAccounts] = useState<ConnectedAccount[] | null>(null)
   const [report, setReport] = useState<ImportReport | null>(null)
   /**
@@ -665,32 +667,34 @@ export const SettingsPage = () => {
    */
   const generalSection = () => (
     <section className="settings-section">
-      <h2>General</h2>
-      <p className="muted">
-        Switch off what you do not track. A module you turn off leaves the navigation and its
-        shelves entirely; nothing you have already tracked is deleted, and turning it back on
-        brings it all back.
-      </p>
+      <h2>Modules</h2>
+      <article className="card integration-card">
+        <p className="muted">
+          Switch off what you do not track. A module you turn off leaves the navigation and its
+          shelves entirely; nothing you have already tracked is deleted, and turning it back on
+          brings it all back.
+        </p>
 
-      <ul className="switch-list">
-        {MODULES.map((module) => {
-          const built = isBuilt(module.slug)
-          return (
-            <li key={module.slug}>
-              <label className={built ? 'switch-row' : 'switch-row disabled'}>
-                <input
-                  type="checkbox"
-                  checked={isEnabled(module.slug)}
-                  disabled={!built}
-                  onChange={(event) => void setEnabled(module.slug, event.target.checked)}
-                />
-                <span>{module.label}</span>
-                {!built && <span className="muted">Not built yet</span>}
-              </label>
-            </li>
-          )
-        })}
-      </ul>
+        <ul className="switch-list">
+          {MODULES.map((module) => {
+            const built = isBuilt(module.slug)
+            return (
+              <li key={module.slug}>
+                <label className={built ? 'switch-row' : 'switch-row disabled'}>
+                  <input
+                    type="checkbox"
+                    checked={isEnabled(module.slug)}
+                    disabled={!built}
+                    onChange={(event) => void setEnabled(module.slug, event.target.checked)}
+                  />
+                  <span>{module.label}</span>
+                  {!built && <span className="muted">Not built yet</span>}
+                </label>
+              </li>
+            )
+          })}
+        </ul>
+      </article>
     </section>
   )
 
@@ -726,8 +730,9 @@ export const SettingsPage = () => {
 
   const moduleSection = (module: ModuleDefinition) => (
     <section key={module.slug} className="settings-section">
+      {/* The rail already names the module; this names what the pane is about. */}
       <h2>
-        {module.label} {!isBuilt(module.slug) && <span className="muted">— not built yet</span>}
+        Connections {!isBuilt(module.slug) && <span className="muted">— not built yet</span>}
       </h2>
 
       {module.providers.length === 0 ? (
@@ -747,6 +752,27 @@ export const SettingsPage = () => {
     </section>
   )
 
+  /*
+   * One page of settings is a scroll; a rail of them is a place. The groups are the same
+   * shape as a shelf's own rail, and named the same way, because they are the same idea:
+   * a short list of everything there is, with the one you are reading marked.
+   *
+   * Only modules still switched on appear — connecting an account to a shelf nobody has is
+   * a page of settings for something that is not on screen anywhere else.
+   */
+  const panes = [
+    { id: 'general', label: 'General', render: generalSection },
+    ...MODULES.filter((module) => isEnabled(module.slug)).map((module) => ({
+      id: module.slug,
+      label: module.label,
+      render: () => moduleSection(module),
+    })),
+    { id: 'export', label: 'Export', render: exportSection },
+  ]
+
+  // In the URL, so a section can be linked and survives the round trip out to an OAuth screen.
+  const showing = panes.find((pane) => pane.id === params.get('section')) ?? panes[0]
+
   return (
     <AppShell>
       <h1>Settings</h1>
@@ -765,11 +791,29 @@ export const SettingsPage = () => {
         </p>
       )}
 
-      {generalSection()}
-      {/* Only for modules still switched on: connecting an account to a shelf nobody has
-          is a row of settings for something that is not on screen anywhere else. */}
-      {MODULES.filter((module) => isEnabled(module.slug)).map(moduleSection)}
-      {exportSection()}
+      <div className="list-layout">
+        <aside className="list-sidebar">
+          <section>
+            <h2>Settings</h2>
+            <ul className="list-links">
+              {panes.map((pane) => (
+                <li key={pane.id}>
+                  <button
+                    type="button"
+                    className={pane.id === showing.id ? 'list-link active' : 'list-link'}
+                    aria-current={pane.id === showing.id}
+                    onClick={() => setParams({ section: pane.id }, { replace: true })}
+                  >
+                    {pane.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </aside>
+
+        <div className="list-main">{showing.render()}</div>
+      </div>
     </AppShell>
   )
 }
