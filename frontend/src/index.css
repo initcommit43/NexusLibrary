@@ -1026,11 +1026,18 @@ input.filter-control::-webkit-search-cancel-button {
 }
 
 /* The arrows sit over the row's edges rather than beside it, so the row keeps full width. */
+/*
+ * The arrows sit in the carousel's own margin rather than over the covers. Overlapping them
+ * put a target on top of a card's controls — the shelf stack grows upward from the cover's
+ * corner into exactly where an arrow was — and the arrow won.
+ */
 .carousel {
+  --carousel-arrow-size: 2.25rem;
   /* One number for both sides, so the two arrows cannot drift apart. */
-  --carousel-arrow-inset: calc(var(--space-2) * -1);
+  --carousel-arrow-lane: calc(var(--carousel-arrow-size) + var(--space-2));
 
   position: relative;
+  padding-inline: var(--carousel-arrow-lane);
 }
 
 .carousel-arrow {
@@ -1038,8 +1045,8 @@ input.filter-control::-webkit-search-cancel-button {
   top: 50%;
   transform: translateY(-50%);
   z-index: 1;
-  width: 2.25rem;
-  height: 2.25rem;
+  width: var(--carousel-arrow-size);
+  height: var(--carousel-arrow-size);
   padding: 0;
   display: grid;
   place-items: center;
@@ -1047,9 +1054,13 @@ input.filter-control::-webkit-search-cancel-button {
   line-height: 1;
   border-radius: 50%;
   box-shadow: var(--shadow-2);
-  /* Quiet at rest: it sits over the covers, which are what the row is for. */
-  opacity: 0.7;
+  /* Nothing until the row is reached for: a shelf at rest is covers and nothing else. */
+  opacity: 0;
   transition: opacity var(--duration-fast) var(--ease);
+}
+
+.carousel:hover .carousel-arrow {
+  opacity: 0.7;
 }
 
 .carousel-arrow:hover:not(:disabled),
@@ -1058,11 +1069,11 @@ input.filter-control::-webkit-search-cancel-button {
 }
 
 .carousel-arrow.start {
-  left: var(--carousel-arrow-inset);
+  left: 0;
 }
 
 .carousel-arrow.end {
-  right: var(--carousel-arrow-inset);
+  right: 0;
 }
 
 .carousel-arrow[hidden] {
