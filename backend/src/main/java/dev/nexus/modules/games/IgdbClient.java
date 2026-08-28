@@ -21,6 +21,9 @@ public class IgdbClient {
     /** IGDB's external_game_source id for Steam. */
     private static final int STEAM_SOURCE_ID = 1;
 
+    /** Drops DLC, expansions and re-releases from anything that lists games. */
+    private static final String BASE_CONDITIONS = "parent_game = null & version_parent = null";
+
     private static final String GAME_FIELDS =
             "id,name,summary,first_release_date,cover.url,platforms.name,genres.name,total_rating,status";
 
@@ -58,6 +61,46 @@ public class IgdbClient {
     public List<Map<String, Object>> browseGames(String where, String sort, int offset, int limit) {
         return post("where parent_game = null & version_parent = null & %s; sort %s; fields %s; offset %d; limit %d;"
                 .formatted(where, sort, GAME_FIELDS, offset, limit));
+    }
+
+    /**
+     * One page of a filtered grid.
+     *
+     * <p>A term and a sort cannot travel together — IGDB answers 406 to a query holding both,
+     * since a search is already ordered by relevance. Without a term there is nothing to order
+     * by but how many people have rated the game.
+     *
+     * @param where the caller's conditions, without the exclusions every query here carries
+     */
+    public List<Map<String, Object>> discoverGames(String search, String where, int offset, int limit) {
+        String conditions = where == null || where.isBlank()
+                ? BASE_CONDITIONS
+                : BASE_CONDITIONS + " & " + where;
+
+        if (search == null || search.isBlank()) {
+            return post("where %s; sort total_rating_count desc; fields %s; offset %d; limit %d;"
+                    .formatted(conditions, GAME_FIELDS, offset, limit));
+        }
+
+        return post("search \"%s\"; where %s; fields %s; offset %d; limit %d;"
+                .formatted(search.replace("\"", "\\\""), conditions, GAME_FIELDS, offset, limit));
+    }
+
+    /** Every genre IGDB files a game under. Two dozen of them, and they do not move. */
+    public List<Map<String, Object>> genres() {
+        return post("fields id,name; sort name asc; limit 50;", "/genres");
+    }
+
+    /**
+     * Names for the platforms worth offering, asked for by id.
+     *
+     * <p>IGDB knows 220 platforms, most of them things nobody is choosing between — the
+     * Advanced Pico Beena is in there. The ids are the caller's shortlist; the names come from
+     * IGDB so they stay whatever IGDB calls them.
+     */
+    public List<Map<String, Object>> platforms(Collection<Integer> ids) {
+        String csv = ids.stream().map(String::valueOf).collect(java.util.stream.Collectors.joining(","));
+        return post("fields id,name; where id = (%s); sort name asc; limit %d;".formatted(csv, ids.size()), "/platforms");
     }
 
     public List<Map<String, Object>> findGameById(String externalId) {
