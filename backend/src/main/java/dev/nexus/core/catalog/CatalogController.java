@@ -3,6 +3,8 @@ package dev.nexus.core.catalog;
 import dev.nexus.auth.CurrentUser;
 import dev.nexus.core.adapter.BrowseResults;
 import dev.nexus.core.adapter.BrowseShelf;
+import dev.nexus.core.adapter.DiscoverFilters;
+import dev.nexus.core.adapter.FilterField;
 import dev.nexus.core.adapter.ItemSearchResult;
 import dev.nexus.core.adapter.MetadataAdapterRegistry;
 import dev.nexus.core.domain.MediaType;
@@ -34,6 +36,9 @@ import org.springframework.web.bind.annotation.RestController;
 public class CatalogController {
 
     private static final int MAX_RESULTS = 20;
+
+    /** More than this is not a narrower question, it is a slower one. */
+    private static final int MAX_GENRES = 10;
 
     /** A catalogue item, plus this reader's own entry for it when they have one. */
     public record MediaResponse(
@@ -134,6 +139,37 @@ public class CatalogController {
             @RequestParam(defaultValue = "1") @Positive int page) {
 
         return timings.time("browse", () -> browse.page(mediaType, shelf, page));
+    }
+
+    /** The controls this media type's browse bar offers, so the client renders what exists. */
+    @GetMapping("/filters")
+    public List<FilterField> filters(@RequestParam MediaType mediaType) {
+        return browse.filters(mediaType);
+    }
+
+    /**
+     * One page of a filtered browse grid.
+     *
+     * <p>Rate-limited the way search is rather than free the way a shelf is: a shelf is one
+     * answer shared by everyone and served from memory, while every combination of filters is
+     * a question only this reader asked, and costs a request to the source to answer.
+     */
+    @GetMapping("/discover")
+    public BrowseResults discover(
+            @AuthenticationPrincipal CurrentUser user,
+            @RequestParam MediaType mediaType,
+            @RequestParam(name = "q", required = false) @Size(max = 200) String query,
+            @RequestParam(required = false) @Size(max = MAX_GENRES) List<String> genres,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) @Size(max = 40) String season,
+            @RequestParam(required = false) @Size(max = 40) String format,
+            @RequestParam(required = false) @Size(max = 40) String status,
+            @RequestParam(defaultValue = "1") @Positive int page) {
+
+        rateLimiter.check("discover:" + user.id(), searchesPerMinute);
+
+        DiscoverFilters filters = new DiscoverFilters(query, genres, year, season, format, status);
+        return timings.time("discover", () -> browse.discover(mediaType, filters, page));
     }
 
     @GetMapping("/modules")

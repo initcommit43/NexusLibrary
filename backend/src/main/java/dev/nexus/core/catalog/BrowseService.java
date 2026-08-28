@@ -2,6 +2,8 @@ package dev.nexus.core.catalog;
 
 import dev.nexus.core.adapter.BrowseResults;
 import dev.nexus.core.adapter.BrowseShelf;
+import dev.nexus.core.adapter.DiscoverFilters;
+import dev.nexus.core.adapter.FilterField;
 import dev.nexus.core.adapter.MetadataAdapter;
 import dev.nexus.core.adapter.MetadataAdapterRegistry;
 import dev.nexus.core.domain.MediaType;
@@ -53,6 +55,22 @@ public class BrowseService {
     public BrowseService(MetadataAdapterRegistry adapters, BrowseProperties properties) {
         this.adapters = adapters;
         this.ttl = properties.ttl();
+    }
+
+    /** The filter bar this media type offers, straight from its adapter. */
+    public List<FilterField> filters(MediaType mediaType) {
+        return adapters.requireForMediaType(mediaType).discoverFilters(mediaType);
+    }
+
+    /**
+     * One page of a filtered grid.
+     *
+     * <p>Deliberately outside the cache above. A shelf is one list every reader asks for, which
+     * is what makes holding a copy worth it; a filter combination is close to unique per reader,
+     * so a cache keyed by all six values would store an answer each and hit almost never.
+     */
+    public BrowseResults discover(MediaType mediaType, DiscoverFilters filters, int page) {
+        return adapters.requireForMediaType(mediaType).discover(mediaType, filters, page, PAGE_SIZE);
     }
 
     /** What this media type can show, straight from its adapter. Never cached: it is a constant. */
