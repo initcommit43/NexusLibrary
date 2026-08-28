@@ -1128,8 +1128,12 @@ input.filter-control::-webkit-search-cancel-button {
 }
 
 /* A row has no cover to hover over, and ten of them do not crowd the way forty cards would. */
-.ranked-row .card-menu {
+.ranked-row .card-action {
   opacity: 1;
+}
+
+.ranked-row .card-actions .status-options {
+  right: 0;
 }
 
 .ranked-score {
@@ -1147,7 +1151,7 @@ input.filter-control::-webkit-search-cancel-button {
   }
 
   .ranked-facts,
-  .ranked-row > .add-menu {
+  .ranked-row > .card-actions {
     grid-column: 3;
   }
 }
@@ -1301,27 +1305,77 @@ input.filter-control::-webkit-search-cancel-button {
   text-decoration: none;
 }
 
-/* Says where a title came from, since a shelf mixes imported and hand-added freely. */
-/* Only shows itself on hover or keyboard focus: forty cards should read as forty covers. */
-.card-menu {
-  position: absolute;
-  top: var(--space-2);
-  right: var(--space-2);
-  display: grid;
-  place-items: center;
-  width: 2rem;
-  height: 2rem;
-  padding: 0;
-  border-radius: var(--radius-sm);
-  background: var(--banner-bg);
-  color: var(--banner-text);
-  opacity: 0;
-  transition: opacity var(--duration-fast) var(--ease);
+/*
+ * The corner of a cover, three deep. Only the pencil is there at rest — forty cards should
+ * read as forty covers — and the two shelves nearly everything goes to rise out of it when
+ * it is reached for.
+ *
+ * <p>The hidden pair collapse their own height rather than merely fading, so the stack is
+ * one button tall until it is wanted and does not sit over the cover it belongs to.
+ */
+.card-actions {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
 }
 
-.cover-card:hover .card-menu,
-.card-menu:focus-visible {
+/* Over the cover on a grid card; in the flow of the row on a ranked one. */
+.cover-art .card-actions {
+  position: absolute;
+  right: var(--space-2);
+  bottom: var(--space-2);
+  z-index: 2;
+}
+
+.card-action {
+  display: grid;
+  place-items: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-full);
+  background: rgb(11 18 32 / 78%);
+  color: #fff;
+  opacity: 0;
+  transition:
+    opacity var(--duration-fast) var(--ease),
+    margin-bottom var(--duration-fast) var(--ease),
+    background var(--duration-fast) var(--ease);
+}
+
+.card-action:hover:not(:disabled) {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.cover-card:hover .card-action,
+.card-actions:focus-within .card-action {
   opacity: 1;
+}
+
+/* Out of the stack's height until the stack is hovered, so it takes no room at rest. */
+.card-action.quick {
+  margin-bottom: -1.9rem;
+  pointer-events: none;
+}
+
+.card-actions:hover .card-action.quick,
+.card-actions:focus-within .card-action.quick {
+  margin-bottom: 0;
+  pointer-events: auto;
+}
+
+/* Hidden is hidden: the pair must not read out or take a tab stop before they are shown. */
+.card-actions:not(:hover):not(:focus-within) .card-action.quick {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.cover-score {
+  margin-left: auto;
 }
 
 .cover-stats {
@@ -1358,10 +1412,10 @@ input.filter-control::-webkit-search-cancel-button {
 }
 
 .cover-body {
-  padding: var(--space-3);
+  padding: var(--space-2);
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-1);
   flex: 1;
 }
 
@@ -1373,7 +1427,7 @@ input.filter-control::-webkit-search-cancel-button {
  */
 .cover-body h2,
 .cover-body h3 {
-  font-size: var(--text-md);
+  font-size: var(--text-sm);
   font-weight: 600;
   line-height: 1.3;
   min-height: 2.6em;
@@ -1409,7 +1463,7 @@ input.filter-control::-webkit-search-cancel-button {
 }
 
 .cover-heading {
-  padding: var(--space-3) var(--space-3) var(--space-1);
+  padding: var(--space-2) var(--space-2) var(--space-1);
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
@@ -1417,13 +1471,13 @@ input.filter-control::-webkit-search-cancel-button {
 
 /* Smaller than a heading elsewhere: two lines of it have to fit a cover's width. */
 .cover-heading h3 {
-  font-size: var(--text-base);
+  font-size: var(--text-sm);
   font-weight: 600;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   overflow: hidden;
-  min-height: calc(2 * var(--leading-tight) * var(--text-base));
+  min-height: calc(2 * var(--leading-tight) * var(--text-sm));
 }
 
 .cover-heading .muted {
@@ -1692,33 +1746,10 @@ input.filter-control::-webkit-search-cancel-button {
 }
 
 /*
- * The add menu wraps the trigger rather than being it, so the options anchor to the button
- * wherever the button sits — pinned to a cover on a grid card, in the flow on a ranked row.
- */
-.add-menu {
-  position: relative;
-}
-
-.add-menu .card-menu {
-  position: static;
-}
-
-.cover-art .add-menu {
-  position: absolute;
-  top: var(--space-2);
-  right: var(--space-2);
-}
-
-/* Saved and saving are the states worth seeing without hovering to find them. */
-.card-menu:disabled {
-  opacity: 1;
-}
-
-/*
  * The trigger is an icon; its options are sentences, so they size to their own text. The
  * cap keeps them inside the card, which hides anything overhanging its rounded corners.
  */
-.add-menu .status-options {
+.card-actions .status-options {
   left: auto;
   width: max-content;
   max-width: calc(var(--cover-card-width) - var(--space-3));
