@@ -358,7 +358,11 @@ button.small {
  * tracks back, and a page of settings becomes a very long line of text.
  */
 .shell {
-  --shell-max: 79rem;
+  --shell-max: 86rem;
+
+  /* A browse row is read across, a shelf is read down; they are not the same card. */
+  --browse-gap: calc(var(--space-5) + var(--space-2));
+  --grid-card-min: 10rem;
 }
 
 .shell-main {
@@ -1161,7 +1165,6 @@ input.filter-control::-webkit-search-cancel-button {
  */
 .browse-row {
   --browse-across: 6;
-  --browse-gap: var(--space-4);
 
   display: grid;
   grid-auto-flow: column;
@@ -1238,11 +1241,8 @@ input.filter-control::-webkit-search-cancel-button {
    * The floor stays close to --cover-card-width on purpose: it is what keeps a grid card and
    * a carousel card, which is still fixed, near enough the same size to read as one thing.
    */
-  grid-template-columns: repeat(
-    auto-fill,
-    minmax(calc(var(--cover-card-width) - var(--space-3)), 1fr)
-  );
-  gap: var(--space-3);
+  grid-template-columns: repeat(auto-fill, minmax(var(--grid-card-min), 1fr));
+  gap: var(--space-4);
 }
 
 .cover-card {
@@ -1417,10 +1417,14 @@ input.filter-control::-webkit-search-cancel-button {
 
 /* --- list layout --- */
 
+/*
+ * A narrower rail than the shelf beside it wants, on purpose: the filters are read once on
+ * the way in, and every rem they do not take is a rem of covers.
+ */
 .list-layout {
   display: grid;
-  grid-template-columns: 13rem 1fr;
-  gap: var(--space-4);
+  grid-template-columns: 11.25rem 1fr;
+  gap: var(--browse-gap);
   align-items: start;
 }
 
