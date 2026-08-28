@@ -9,7 +9,7 @@ import type { ModuleDefinition } from '../modules/registry'
  * once a session.
  */
 export const ModuleSwitcher = ({ current }: { current: ModuleDefinition }) => {
-  const { modules, isAvailable } = useModules()
+  const { modules, isBuilt, isEnabled } = useModules()
   const [open, setOpen] = useState(false)
   const container = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
@@ -54,8 +54,10 @@ export const ModuleSwitcher = ({ current }: { current: ModuleDefinition }) => {
 
       {open && (
         <ul className="module-menu" role="menu">
-          {modules.map((module) => {
-            const available = isAvailable(module.slug)
+          {/* A module switched off in settings is not listed at all; one that is simply not
+              built yet stays, since what is coming is part of what the app is. */}
+          {modules.filter((module) => isEnabled(module.slug)).map((module) => {
+            const available = isBuilt(module.slug)
             return (
               <li key={module.slug} role="none">
                 <button

@@ -331,6 +331,16 @@ export const api = {
 
   availableModules: () => request<MediaType[]>('/catalog/modules'),
 
+  /** The media types this reader switched off. Everything absent from it is on. */
+  disabledModules: () =>
+    request<{ disabled: MediaType[] }>('/settings/modules').then((body) => body.disabled),
+
+  setDisabledModules: (disabled: MediaType[]) =>
+    request<{ disabled: MediaType[] }>('/settings/modules', {
+      method: 'PUT',
+      body: JSON.stringify({ disabled }),
+    }).then((body) => body.disabled),
+
   browseShelves: (mediaType: MediaType) =>
     request<BrowseShelf[]>(`/catalog/shelves?mediaType=${mediaType}`),
 
