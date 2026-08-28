@@ -350,9 +350,14 @@ button.small {
   margin-right: var(--space-3);
 }
 
+/* The width of the content column, shared so things outside it can line up against it. */
+.shell {
+  --shell-max: 88rem;
+}
+
 .shell-main {
   width: 100%;
-  max-width: 88rem;
+  max-width: var(--shell-max);
   margin-inline: auto;
   padding: var(--space-5) var(--space-4) var(--space-6);
   display: flex;
@@ -362,9 +367,17 @@ button.small {
 
 /* --- theme dock --- */
 
+/*
+ * Parked a twelfth of the way in from the window edge towards the content column, rather
+ * than at a fixed inset: on a wide window the gap between the corner and the cards is most
+ * of the margin, and a button pinned to the very edge reads as adrift from the page.
+ */
 .theme-dock {
+  --content-edge: max(var(--space-4), calc((100vw - var(--shell-max)) / 2 + var(--space-4)));
+  --corner: calc(var(--space-3) + 5px);
+
   position: fixed;
-  right: var(--space-3);
+  right: calc(var(--corner) + (var(--content-edge) - var(--corner)) / 12);
   bottom: var(--space-3);
   z-index: 30;
 }
@@ -377,11 +390,16 @@ button.small {
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-full);
   box-shadow: var(--shadow-2);
+  /* It floats over the page it is not part of, so it rests quiet and comes up on approach. */
+  opacity: 0.65;
+  transition: opacity var(--duration-fast) var(--ease);
 }
 
-.theme-dock .icon-button:hover:not(:disabled) {
+.theme-dock .icon-button:hover:not(:disabled),
+.theme-dock .icon-button:focus-visible {
   border-color: var(--accent);
   color: var(--accent);
+  opacity: 1;
 }
 
 /* --- account menu --- */
