@@ -419,6 +419,9 @@ button.small {
   text-align: center;
   font-size: var(--text-base);
   font-weight: 500;
+  /* A button carries its own line-height and a link inherits the body's; without this the
+     two rows are different heights at the same font size, which reads as different sizes. */
+  line-height: var(--leading-normal);
 }
 
 .account-menu a:hover,
