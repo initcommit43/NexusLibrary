@@ -19,39 +19,43 @@ export const SearchPage = () => {
   // one already in hand. The input holds only what has been typed since.
   const query = params.get('q')?.trim() ?? ''
   const [draft, setDraft] = useState(query)
-  const [results, setResults] = useState<SearchResult[] | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [searching, setSearching] = useState(false)
   const tracking = useTrackable()
 
-  useEffect(() => setDraft(query), [query])
+  // What was asked, not just the term: switching shelf re-asks the same words of a
+  // different catalogue, and the previous answer is not an answer to that.
+  const asked = `${active.mediaType}:${query}`
+  const [answer, setAnswer] = useState<{ asked: string; results: SearchResult[] } | null>(null)
+  const [failure, setFailure] = useState<{ asked: string; message: string } | null>(null)
+
+  // Held with the question they answer, so a stale or emptied term shows nothing rather
+  // than the last thing that came back.
+  const results = answer?.asked === asked ? answer.results : null
+  const error = failure?.asked === asked ? failure.message : null
+
+  // A question with neither an answer nor a failure against it is still in flight.
+  const searching = query !== '' && results === null && error === null
 
   useEffect(() => {
-    if (!query) {
-      setResults(null)
-      setError(null)
-      return
-    }
+    if (!query) return
 
     let current = true
-    setSearching(true)
-    setError(null)
 
     api
       .searchCatalog(active.mediaType, query)
-      .then((found) => current && setResults(found))
-      .catch((err) => {
-        if (!current) return
-        setResults(null)
-        setError(err instanceof ApiError ? err.message : 'Could not reach the server.')
-      })
-      .finally(() => current && setSearching(false))
+      .then((found) => current && setAnswer({ asked, results: found }))
+      .catch((err) =>
+        current &&
+        setFailure({
+          asked,
+          message: err instanceof ApiError ? err.message : 'Could not reach the server.',
+        }),
+      )
 
     // A slow answer to a term you have already moved on from must not land on the new one.
     return () => {
       current = false
     }
-  }, [query, active.mediaType])
+  }, [asked, query, active.mediaType])
 
   const submit = (event: FormEvent) => {
     event.preventDefault()
@@ -65,7 +69,7 @@ export const SearchPage = () => {
     <AppShell module={module}>
       <h1>Search {active.label}</h1>
 
-      <form className="search-bar" onSubmit={submit}>
+      <form className="search-bar" key={query} onSubmit={submit}>
         <input
           type="search"
           value={draft}
