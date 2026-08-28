@@ -2,6 +2,8 @@ package dev.nexus.core.web;
 
 import dev.nexus.auth.AuthenticationFailedException;
 import dev.nexus.auth.RegistrationConflictException;
+import dev.nexus.core.account.AccountNotFoundException;
+import dev.nexus.core.account.PasswordMismatchException;
 import dev.nexus.core.adapter.MetadataAdapterNotAvailableException;
 import dev.nexus.core.cache.ItemNotFoundException;
 import dev.nexus.core.importing.ExternalAccountNotConnectedException;
@@ -79,6 +81,25 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(RegistrationConflictException.class)
     public ResponseEntity<ApiError> handleConflict(RegistrationConflictException e) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(new ApiError(e.getMessage(), e.getFieldErrors()));
+    }
+
+    /**
+     * A wrong confirmation password on a change the caller is otherwise entitled to make.
+     * Not a 401: the session is fine, and answering with one would sign them out of a page
+     * they are still signed into.
+     */
+    @ExceptionHandler(PasswordMismatchException.class)
+    public ResponseEntity<ApiError> handlePasswordMismatch(PasswordMismatchException e) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(new ApiError(e.getMessage(), Map.of("password", e.getMessage())));
+    }
+
+    /** A token outliving its account: the session is real, the account behind it is not. */
+    @ExceptionHandler(AccountNotFoundException.class)
+    public ResponseEntity<ApiError> handleMissingAccount(AccountNotFoundException e) {
+        log.warn("Request for an account that no longer exists: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new ApiError("Please sign in again."));
     }
 
     @ExceptionHandler(AuthenticationFailedException.class)

@@ -57,4 +57,16 @@ public class AppUser {
     public Instant getCreatedAt() {
         return createdAt;
     }
+
+    public void rename(String username) {
+        this.username = username;
+    }
+
+    public void changeEmail(String email) {
+        this.email = email;
+    }
+
+    public void changePasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
+    }
 }

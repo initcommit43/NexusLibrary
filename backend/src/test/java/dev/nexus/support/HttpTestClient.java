@@ -82,6 +82,13 @@ public class HttpTestClient {
         return send(request(path, headers).DELETE());
     }
 
+    /** Deleting something that asks to be confirmed first, which needs a body to confirm with. */
+    public Response deleteJson(String path, Map<String, ?> payload, String... headers) {
+        return send(request(path, headers)
+                .header("Content-Type", "application/json")
+                .method("DELETE", HttpRequest.BodyPublishers.ofString(write(payload))));
+    }
+
     public Response postJson(String path, Map<String, ?> payload, String... headers) {
         return send(request(path, headers)
                 .header("Content-Type", "application/json")
