@@ -37,6 +37,16 @@ export const ModuleSwitcher = ({ current }: { current: ModuleDefinition }) => {
     navigate(`/library/${module.slug}`)
   }
 
+  /*
+   * A module switched off in settings is not listed at all; one that is simply not built yet
+   * stays, since what is coming is part of what the app is.
+   */
+  const listed = modules.filter((module) => isEnabled(module.slug))
+
+  // With one module there is nothing to switch between, and a control that only ever names
+  // what you are already looking at is furniture. The shelves in the nav say which it is.
+  if (listed.length <= 1) return null
+
   return (
     <div className="module-switcher" ref={container}>
       <button
@@ -54,9 +64,7 @@ export const ModuleSwitcher = ({ current }: { current: ModuleDefinition }) => {
 
       {open && (
         <ul className="module-menu" role="menu">
-          {/* A module switched off in settings is not listed at all; one that is simply not
-              built yet stays, since what is coming is part of what the app is. */}
-          {modules.filter((module) => isEnabled(module.slug)).map((module) => {
+          {listed.map((module) => {
             const available = isBuilt(module.slug)
             return (
               <li key={module.slug} role="none">
