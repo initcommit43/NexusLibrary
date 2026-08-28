@@ -139,7 +139,13 @@ class AniListFiltersTest {
 
         BrowseResults results = adapter.discover(
                 MediaType.ANIME,
-                new DiscoverFilters("frieren", List.of("Fantasy"), 2023, "FALL", "TV", "FINISHED"),
+                new DiscoverFilters(Map.of(
+                        "q", List.of("frieren"),
+                        "genres", List.of("Fantasy"),
+                        "year", List.of("2023"),
+                        "season", List.of("FALL"),
+                        "format", List.of("TV"),
+                        "status", List.of("FINISHED"))),
                 2,
                 40);
 

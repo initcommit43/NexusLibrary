@@ -106,12 +106,12 @@ public class AniListMetadataAdapter implements MetadataAdapter {
     public BrowseResults discover(MediaType mediaType, DiscoverFilters filters, int page, int size) {
         AniListClient.MediaPage found = client.discoverMedia(
                 mediaType,
-                filters.query(),
-                filters.genres(),
-                filters.year(),
-                filters.season(),
-                filters.format(),
-                filters.status(),
+                filters.one("q"),
+                filters.all("genres"),
+                filters.number("year"),
+                filters.one("season"),
+                filters.one("format"),
+                filters.one("status"),
                 page,
                 size);
 

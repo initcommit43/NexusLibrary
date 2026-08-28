@@ -13,8 +13,11 @@ import dev.nexus.core.domain.TrackableItem;
 import dev.nexus.core.tracking.TrackingService;
 import dev.nexus.core.tracking.dto.TrackedItemResponse;
 import java.time.LocalDate;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.PathVariable;
 import dev.nexus.core.web.RateLimiter;
 import dev.nexus.core.web.ServerTimings;
@@ -37,8 +40,15 @@ public class CatalogController {
 
     private static final int MAX_RESULTS = 20;
 
-    /** More than this is not a narrower question, it is a slower one. */
-    private static final int MAX_GENRES = 10;
+    /** Past these a request is not a narrower question, it is a slower one. */
+    private static final int MAX_FILTERS = 12;
+
+    private static final int MAX_VALUES_PER_FILTER = 12;
+
+    private static final int MAX_VALUE = 200;
+
+    /** Query parameters this endpoint reads itself, and so never treats as a filter. */
+    private static final Set<String> OWN_PARAMS = Set.of("mediaType", "page");
 
     /** A catalogue item, plus this reader's own entry for it when they have one. */
     public record MediaResponse(
@@ -158,18 +168,38 @@ public class CatalogController {
     public BrowseResults discover(
             @AuthenticationPrincipal CurrentUser user,
             @RequestParam MediaType mediaType,
-            @RequestParam(name = "q", required = false) @Size(max = 200) String query,
-            @RequestParam(required = false) @Size(max = MAX_GENRES) List<String> genres,
-            @RequestParam(required = false) Integer year,
-            @RequestParam(required = false) @Size(max = 40) String season,
-            @RequestParam(required = false) @Size(max = 40) String format,
-            @RequestParam(required = false) @Size(max = 40) String status,
-            @RequestParam(defaultValue = "1") @Positive int page) {
+            @RequestParam(defaultValue = "1") @Positive int page,
+            @RequestParam MultiValueMap<String, String> params) {
 
         rateLimiter.check("discover:" + user.id(), searchesPerMinute);
 
-        DiscoverFilters filters = new DiscoverFilters(query, genres, year, season, format, status);
+        DiscoverFilters filters = new DiscoverFilters(filterValues(params));
         return timings.time("discover", () -> browse.discover(mediaType, filters, page));
+    }
+
+    /**
+     * Everything in the query string that is not this endpoint's own, handed on unread.
+     *
+     * <p>The names come from what the adapter published, so there is no list here to keep in
+     * step with it. The caps are the only opinion core has about them: a value long enough to
+     * be a paragraph, or a hundred of them, is not a narrower question but a slower one.
+     */
+    private static Map<String, List<String>> filterValues(MultiValueMap<String, String> params) {
+        Map<String, List<String>> values = new LinkedHashMap<>();
+
+        params.forEach((field, chosen) -> {
+            if (OWN_PARAMS.contains(field) || values.size() >= MAX_FILTERS) {
+                return;
+            }
+            values.put(
+                    field,
+                    chosen.stream()
+                            .filter(value -> value != null && !value.isBlank() && value.length() <= MAX_VALUE)
+                            .limit(MAX_VALUES_PER_FILTER)
+                            .toList());
+        });
+
+        return values;
     }
 
     @GetMapping("/modules")

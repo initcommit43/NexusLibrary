@@ -1,30 +1,50 @@
 package dev.nexus.core.adapter;
 
 import java.util.List;
+import java.util.Map;
 
 /**
- * What a reader narrowed a browse page down to.
+ * What a reader narrowed a browse page down to, keyed by the field ids the adapter published.
  *
- * <p>Every field is optional and a null one means "not filtered" rather than "matches null" —
- * the adapter is what decides how to say that to its own API. Core carries the answer without
- * knowing what a season is, which is what keeps a games module from having to have one.
- *
- * @param query free text, matched against titles
- * @param genres all of which must apply, not any
- * @param year the year the title belongs to, as the source counts it
- * @param season a value from the {@code season} filter this media type declared
- * @param format a value from the {@code format} filter this media type declared
- * @param status a value from the {@code status} filter this media type declared
+ * <p>Deliberately not a record of named fields. A season is AniList's idea, a platform is
+ * IGDB's, and core has no business holding either — it carries whatever the adapter said it
+ * could answer, straight back to the adapter that said it. A module gains a filter without
+ * this class changing.
  */
-public record DiscoverFilters(
-        String query, List<String> genres, Integer year, String season, String format, String status) {
+public record DiscoverFilters(Map<String, List<String>> values) {
 
     public DiscoverFilters {
-        genres = genres == null ? List.of() : List.copyOf(genres);
+        values = values == null ? Map.of() : Map.copyOf(values);
     }
 
     public static DiscoverFilters none() {
-        return new DiscoverFilters(null, List.of(), null, null, null, null);
+        return new DiscoverFilters(Map.of());
+    }
+
+    /** Every value chosen for a field, in the order they arrived. */
+    public List<String> all(String field) {
+        return values.getOrDefault(field, List.of()).stream()
+                .filter(value -> value != null && !value.isBlank())
+                .toList();
+    }
+
+    /** The single value of a field that takes one, or null where it was left alone. */
+    public String one(String field) {
+        return all(field).stream().findFirst().orElse(null);
+    }
+
+    /** The value of a field that takes a number, or null where it was left alone or is not one. */
+    public Integer number(String field) {
+        String value = one(field);
+        if (value == null) {
+            return null;
+        }
+        try {
+            return Integer.valueOf(value.trim());
+        } catch (NumberFormatException e) {
+            // A field that declared years and was handed a word narrows to nothing, not to an error.
+            return null;
+        }
     }
 
     /**
@@ -32,10 +52,6 @@ public record DiscoverFilters(
      * grid of everything the source holds, so core needs to tell the two apart.
      */
     public boolean isEmpty() {
-        return blank(query) && genres.isEmpty() && year == null && blank(season) && blank(format) && blank(status);
-    }
-
-    private static boolean blank(String value) {
-        return value == null || value.isBlank();
+        return values.keySet().stream().allMatch(field -> all(field).isEmpty());
     }
 }
