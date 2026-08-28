@@ -102,6 +102,12 @@ export const BrowsePage = () => {
 
   const found = grid?.asked === settled ? grid : null
 
+  // While the next answer is in flight the previous one stays where it is, dimmed. Swapping a
+  // full grid for a short row of skeletons and back reflows the page twice and moves every
+  // card under the pointer, to say nothing the reader did not already know.
+  const showing = found ?? (grid && grid.results.length > 0 ? grid : null)
+  const awaiting = narrowed && found === null
+
   useEffect(() => {
     const settling = setTimeout(() => setSettled(asked), SETTLE_MS)
     return () => clearTimeout(settling)
@@ -267,7 +273,7 @@ export const BrowsePage = () => {
       )}
 
       {/* Narrowed, the shelves give way: they answer a question nobody is asking any more. */}
-      {narrowed && found === null && !grid?.error && (
+      {narrowed && awaiting && showing === null && !grid?.error && (
         <div className="cover-grid" aria-busy="true">
           {Array.from({ length: 12 }, (_, i) => (
             <div key={i} className="card cover-card browse-skeleton" aria-hidden="true">
@@ -281,9 +287,9 @@ export const BrowsePage = () => {
         <p className="muted">Nothing matches those filters.</p>
       )}
 
-      {narrowed && found && found.results.length > 0 && (
-        <div className="cover-grid">
-          {found.results.map((result) => (
+      {narrowed && showing && showing.results.length > 0 && (
+        <div className={awaiting ? 'cover-grid is-stale' : 'cover-grid'} aria-busy={awaiting}>
+          {showing.results.map((result) => (
             <CatalogCard
               key={keyOf(result)}
               result={result}
@@ -294,13 +300,13 @@ export const BrowsePage = () => {
         </div>
       )}
 
-      {narrowed && (page > 1 || found?.hasMore) && (
+      {narrowed && (page > 1 || showing?.hasMore) && (
         <nav className="pager" aria-label="Pages">
           <button type="button" className="ghost" disabled={page <= 1} onClick={() => turnTo(page - 1)}>
             ‹ Previous
           </button>
           <span className="muted">Page {page}</span>
-          <button type="button" className="ghost" disabled={!found?.hasMore} onClick={() => turnTo(page + 1)}>
+          <button type="button" className="ghost" disabled={!showing?.hasMore} onClick={() => turnTo(page + 1)}>
             Next ›
           </button>
         </nav>

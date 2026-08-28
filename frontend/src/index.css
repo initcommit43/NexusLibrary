@@ -1190,6 +1190,12 @@ input.filter-control::-webkit-search-cancel-button {
 
 /* --- item grid --- */
 
+/* Last answer, while the next one is on its way. Dimmed, but exactly where it was. */
+.cover-grid.is-stale {
+  opacity: 0.45;
+  transition: opacity var(--duration-base) var(--ease);
+}
+
 .cover-grid {
   display: grid;
   /*
