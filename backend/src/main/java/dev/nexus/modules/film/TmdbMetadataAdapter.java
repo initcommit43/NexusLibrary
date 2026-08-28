@@ -2,6 +2,9 @@ package dev.nexus.modules.film;
 
 import dev.nexus.core.adapter.BrowseResults;
 import dev.nexus.core.adapter.BrowseShelf;
+import dev.nexus.core.adapter.DiscoverFilters;
+import dev.nexus.core.adapter.FilterField;
+import dev.nexus.core.adapter.FilterField.FilterOption;
 import dev.nexus.core.adapter.ItemSearchResult;
 import dev.nexus.core.adapter.MetadataAdapter;
 import dev.nexus.core.adapter.TrackableItemData;
@@ -32,7 +35,12 @@ public class TmdbMetadataAdapter implements MetadataAdapter {
     private static final String STATUS_RELEASED = "Released";
     private static final Set<String> FINISHED_SHOW_STATUSES = Set.of("Ended", "Canceled", "Cancelled");
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(TmdbMetadataAdapter.class);
+
     private final TmdbClient client;
+
+    /** Genre lists for the filter bar, one per kind, each fetched at most once per run. */
+    private final Map<TmdbKind, List<FilterOption>> genres = new java.util.concurrent.ConcurrentHashMap<>();
     private final TmdbProperties properties;
 
     public TmdbMetadataAdapter(TmdbClient client, TmdbProperties properties) {
@@ -79,6 +87,75 @@ public class TmdbMetadataAdapter implements MetadataAdapter {
     }
 
     @Override
+    public List<FilterField> discoverFilters(MediaType mediaType) {
+        TmdbKind kind = TmdbKind.of(mediaType);
+        return TmdbFilters.fields(kind, genresFor(kind), LocalDate.now());
+    }
+
+    @Override
+    public BrowseResults discover(MediaType mediaType, DiscoverFilters filters, int page, int size) {
+        TmdbKind kind = TmdbKind.of(mediaType);
+        String term = filters.one("q");
+
+        if (term == null || term.isBlank()) {
+            Map<String, Object> body = client.discover(kind, TmdbFilters.discoverQuery(kind, filters), page);
+            return new BrowseResults(toSearchResults(kind, client.resultsOf(body)), client.hasMorePages(body, page));
+        }
+
+        // Search takes no filters of its own, so the rest are applied to what it answers.
+        Map<String, Object> body = client.searchPage(kind, term, page);
+        List<Map<String, Object>> rows = client.resultsOf(body).stream()
+                .filter(row -> TmdbFilters.matches(kind, row, filters))
+                .toList();
+
+        return new BrowseResults(toSearchResults(kind, rows), client.hasMorePages(body, page));
+    }
+
+    /**
+     * The genre list for one kind, fetched once and kept. Movies and shows have different
+     * lists and neither has changed in years, so a copy each is enough for the run.
+     *
+     * <p>A failure leaves the list empty and uncached, which drops the control from the bar
+     * rather than showing an empty one; the next visit tries again.
+     */
+    private List<FilterOption> genresFor(TmdbKind kind) {
+        List<FilterOption> known = genres.get(kind);
+        if (known != null) {
+            return known;
+        }
+
+        try {
+            List<FilterOption> options = client.genres(kind).stream()
+                    .map(row -> new FilterOption(String.valueOf(row.get("id")), String.valueOf(row.get("name"))))
+                    .filter(option -> !option.value().equals("null") && !option.label().equals("null"))
+                    .toList();
+
+            if (!options.isEmpty()) {
+                genres.put(kind, options);
+            }
+            return options;
+        } catch (RuntimeException e) {
+            log.warn("Could not fetch the TMDB genre list, leaving that filter out: {}", e.toString());
+            return List.of();
+        }
+    }
+
+    /** Listing rows as the shared shape, shared by the shelves, the search and the grid. */
+    private List<ItemSearchResult> toSearchResults(TmdbKind kind, List<Map<String, Object>> rows) {
+        return rows.stream()
+                .map(row -> new ItemSearchResult(
+                        kind.mediaType(),
+                        Source.TMDB,
+                        kind.externalId(row.get("id")),
+                        title(kind, row),
+                        posterUrl(row),
+                        releaseDate(kind, row),
+                        facets(row)))
+                .filter(result -> result.title() != null && !result.title().isBlank())
+                .toList();
+    }
+
+    @Override
     public BrowseResults browse(MediaType mediaType, String shelfId, int page, int size) {
         TmdbKind kind = TmdbKind.of(mediaType);
         TmdbShelves.Definition shelf = TmdbShelves.find(kind, shelfId);
@@ -90,17 +167,7 @@ public class TmdbMetadataAdapter implements MetadataAdapter {
                 ? client.trending(kind, shelf.path(), page)
                 : client.browse(kind, shelf.path(), page);
 
-        List<ItemSearchResult> items = client.resultsOf(body).stream()
-                .map(row -> new ItemSearchResult(
-                        kind.mediaType(),
-                        Source.TMDB,
-                        kind.externalId(row.get("id")),
-                        title(kind, row),
-                        posterUrl(row),
-                        releaseDate(kind, row),
-                        facets(row)))
-                .filter(result -> result.title() != null && !result.title().isBlank())
-                .toList();
+        List<ItemSearchResult> items = toSearchResults(kind, client.resultsOf(body));
 
         return new BrowseResults(items, client.hasMorePages(body, page));
     }
