@@ -4,10 +4,13 @@ import {
   ApiError,
   api,
   type BrowseShelf,
+  type FilterField,
+  type FilterValues,
   type MediaType,
   type SearchResult,
 } from '../api/client'
 import { AppShell } from '../components/AppShell'
+import { BrowseFilters } from '../components/BrowseFilters'
 import { Carousel } from '../components/Carousel'
 import { CatalogCard } from '../components/CatalogCard'
 import { RankedRow } from '../components/RankedRow'
@@ -36,6 +39,26 @@ type Loaded = {
 /** A shelf whose id says it ranks its rows is read down, not across. */
 const isRanked = (shelfId: string) => shelfId === 'top'
 
+/** Search params the page owns itself; everything else in the URL is a filter value. */
+const RESERVED = new Set(['module', 'type', 'page'])
+
+const valuesFrom = (params: URLSearchParams): FilterValues => {
+  const values: FilterValues = {}
+  for (const [field, value] of params) {
+    if (RESERVED.has(field) || !value) continue
+    values[field] = [...(values[field] ?? []), value]
+  }
+  return values
+}
+
+const isNarrowed = (values: FilterValues) =>
+  Object.values(values).some((chosen) => chosen.some(Boolean))
+
+const pageIn = (params: URLSearchParams) => Math.max(1, Number(params.get('page') ?? 1) || 1)
+
+/** Long enough that a typed word is one request rather than one per letter. */
+const SETTLE_MS = 300
+
 /**
  * Discovery — what is trending, what is coming — as opposed to the shelves, which are yours.
  *
@@ -57,7 +80,82 @@ export const BrowsePage = () => {
   const shelves = current?.shelves ?? null
   const error = current?.error ?? null
 
+  // The values live in the URL, so a narrowed page can be linked, reloaded, and stepped back
+  // out of one control at a time.
+  const values = valuesFrom(params)
+  const narrowed = isNarrowed(values)
+  const page = pageIn(params)
+
+  const [bar, setBar] = useState<{ mediaType: MediaType; fields: FilterField[] } | null>(null)
+  const fields = bar?.mediaType === mediaType ? bar.fields : null
+
+  // Typing narrows on every keystroke; asking the source on every keystroke would spend the
+  // rate limit on answers nobody waited to read.
+  const asked = params.toString()
+  const [settled, setSettled] = useState(asked)
+  const [grid, setGrid] = useState<{
+    asked: string
+    results: SearchResult[]
+    hasMore: boolean
+    error: string | null
+  } | null>(null)
+
+  const found = grid?.asked === settled ? grid : null
+
   useEffect(() => {
+    const settling = setTimeout(() => setSettled(asked), SETTLE_MS)
+    return () => clearTimeout(settling)
+  }, [asked])
+
+  useEffect(() => {
+    let cancelled = false
+    api
+      .browseFilters(mediaType)
+      .then((declared) => !cancelled && setBar({ mediaType, fields: declared }))
+      // A bar that cannot be described is a bar the page does without, not a broken page.
+      .catch(() => !cancelled && setBar({ mediaType, fields: [] }))
+
+    return () => {
+      cancelled = true
+    }
+  }, [mediaType])
+
+  useEffect(() => {
+    const asking = new URLSearchParams(settled)
+    if (!isNarrowed(valuesFrom(asking))) return
+
+    let cancelled = false
+    api
+      .discover(mediaType, valuesFrom(asking), pageIn(asking))
+      .then(
+        (results) =>
+          !cancelled &&
+          setGrid({
+            asked: settled,
+            results: results.items,
+            hasMore: results.hasMore,
+            error: null,
+          }),
+      )
+      .catch(
+        (err) =>
+          !cancelled &&
+          setGrid({
+            asked: settled,
+            results: [],
+            hasMore: false,
+            error: err instanceof ApiError ? err.message : 'Could not reach the server.',
+          }),
+      )
+
+    return () => {
+      cancelled = true
+    }
+  }, [mediaType, settled])
+
+  useEffect(() => {
+    if (narrowed) return
+
     let cancelled = false
 
     /** Rewrites one shelf, and only while that shelf still belongs on screen. */
@@ -104,13 +202,32 @@ export const BrowsePage = () => {
     return () => {
       cancelled = true
     }
-  }, [mediaType])
+  }, [mediaType, narrowed])
 
   const switchTo = (slug: string) => {
     const next = new URLSearchParams(params)
     next.set('module', module.slug)
     next.set('type', slug)
     setParams(next, { replace: true })
+  }
+
+  /** Writes the bar back into the URL. Page is dropped: a new question starts at its first. */
+  const narrowTo = (next: FilterValues) => {
+    const search = new URLSearchParams()
+    search.set('module', module.slug)
+    search.set('type', active.slug)
+    for (const [field, chosen] of Object.entries(next)) {
+      for (const value of chosen) {
+        if (value) search.append(field, value)
+      }
+    }
+    setParams(search, { replace: true })
+  }
+
+  const turnTo = (next: number) => {
+    const search = new URLSearchParams(params)
+    search.set('page', String(next))
+    setParams(search)
   }
 
   return (
@@ -139,20 +256,70 @@ export const BrowsePage = () => {
         )}
       </div>
 
-      {(error || tracking.error) && (
+      {fields && fields.length > 0 && (
+        <BrowseFilters
+          fields={fields}
+          values={values}
+          onChange={narrowTo}
+          onClear={() => narrowTo({})}
+        />
+      )}
+
+      {(error || found?.error || tracking.error) && (
         <p className="alert" role="alert">
-          {error ?? tracking.error}
+          {error ?? found?.error ?? tracking.error}
         </p>
       )}
 
-      {shelves !== null && shelves.length === 0 && !error && (
+      {/* Narrowed, the shelves give way: they answer a question nobody is asking any more. */}
+      {narrowed && found === null && !grid?.error && (
+        <div className="cover-grid" aria-busy="true">
+          {Array.from({ length: 12 }, (_, i) => (
+            <div key={i} className="card cover-card browse-skeleton" aria-hidden="true">
+              <div className="cover-placeholder" />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {narrowed && found && found.results.length === 0 && !found.error && (
+        <p className="muted">Nothing matches those filters.</p>
+      )}
+
+      {narrowed && found && found.results.length > 0 && (
+        <div className="cover-grid">
+          {found.results.map((result) => (
+            <CatalogCard
+              key={keyOf(result)}
+              result={result}
+              state={tracking.stateOf(result)}
+              onTrack={(chosen) => void tracking.track(result, chosen)}
+            />
+          ))}
+        </div>
+      )}
+
+      {narrowed && (page > 1 || found?.hasMore) && (
+        <nav className="pager" aria-label="Pages">
+          <button type="button" className="ghost" disabled={page <= 1} onClick={() => turnTo(page - 1)}>
+            ‹ Previous
+          </button>
+          <span className="muted">Page {page}</span>
+          <button type="button" className="ghost" disabled={!found?.hasMore} onClick={() => turnTo(page + 1)}>
+            Next ›
+          </button>
+        </nav>
+      )}
+
+      {!narrowed && shelves !== null && shelves.length === 0 && !error && (
         <p className="muted">
           Nothing to browse here yet. <Link to="/search">Search</Link> to find something by
           name.
         </p>
       )}
 
-      {shelves?.map(({ shelf, results, failed }) => (
+      {!narrowed &&
+        shelves?.map(({ shelf, results, failed }) => (
         <section key={shelf.id} className="browse-shelf">
           <div className="browse-shelf-head">
             <h2>{shelf.label}</h2>
