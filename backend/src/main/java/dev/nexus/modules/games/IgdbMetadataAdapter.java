@@ -145,6 +145,12 @@ public class IgdbMetadataAdapter implements MetadataAdapter {
         return client.findGameDetail(externalId).map(this::toDetail);
     }
 
+    /** A game has no key art of banner shape, so its first screenshot stands in for one. */
+    @Override
+    public Optional<String> bannerFrom(Map<String, Object> detail) {
+        return firstUrl(detail.get("screenshots"));
+    }
+
     private Map<String, Object> toDetail(Map<String, Object> game) {
         Map<String, Object> detail = new LinkedHashMap<>();
 
@@ -466,4 +472,16 @@ public class IgdbMetadataAdapter implements MetadataAdapter {
     private String string(Object value) {
         return value == null ? null : value.toString();
     }
+    /** The first usable url in a list of them, which is where both wide-art keys arrive. */
+    private Optional<String> firstUrl(Object raw) {
+        if (!(raw instanceof List<?> urls)) {
+            return Optional.empty();
+        }
+        return urls.stream()
+                .filter(String.class::isInstance)
+                .map(String.class::cast)
+                .filter(url -> !url.isBlank())
+                .findFirst();
+    }
+
 }

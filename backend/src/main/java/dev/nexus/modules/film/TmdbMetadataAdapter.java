@@ -135,6 +135,15 @@ public class TmdbMetadataAdapter implements MetadataAdapter {
                         .map(row -> toDetail(kind, row)));
     }
 
+    /**
+     * The first backdrop, which is the one the detail page already treats as the banner —
+     * TMDB returns them most-voted first, so it is the still the site itself leads with.
+     */
+    @Override
+    public Optional<String> bannerFrom(Map<String, Object> detail) {
+        return firstUrl(detail.get("backdrops"));
+    }
+
     private Map<String, Object> toDetail(TmdbKind kind, Map<String, Object> row) {
         Map<String, Object> detail = new LinkedHashMap<>();
 
@@ -499,4 +508,16 @@ public class TmdbMetadataAdapter implements MetadataAdapter {
             target.put(key, value);
         }
     }
+    /** The first usable url in a list of them, which is where both wide-art keys arrive. */
+    private Optional<String> firstUrl(Object raw) {
+        if (!(raw instanceof List<?> urls)) {
+            return Optional.empty();
+        }
+        return urls.stream()
+                .filter(String.class::isInstance)
+                .map(String.class::cast)
+                .filter(url -> !url.isBlank())
+                .findFirst();
+    }
+
 }

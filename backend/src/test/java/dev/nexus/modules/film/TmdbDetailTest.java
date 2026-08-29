@@ -250,4 +250,20 @@ class TmdbDetailTest {
         tile.put("image", null);
         return tile;
     }
+    /** The widest still TMDB has, which is the one the film's own page leads with. */
+    @Test
+    void theFirstBackdropIsWhatAFilmOffersAsABanner() {
+        Map<String, Object> detail = detailOf(
+                TmdbKind.MOVIE,
+                movie(Map.of("images", Map.of("backdrops", List.of(
+                        Map.of("file_path", "/one.jpg"), Map.of("file_path", "/two.jpg"))))));
+
+        assertThat(adapter.bannerFrom(detail)).contains("https://image.tmdb.org/t/p/w1280/one.jpg");
+    }
+
+    @Test
+    void aFilmWithNoBackdropsHasNoBanner() {
+        assertThat(adapter.bannerFrom(detailOf(TmdbKind.MOVIE, movie(Map.of())))).isEmpty();
+    }
+
 }

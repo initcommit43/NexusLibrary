@@ -177,4 +177,16 @@ class AniListMetadataAdapterTest {
         media.put("studios", Map.of("nodes", List.of(Map.of("name", "Toei Animation"))));
         return media;
     }
+    /** AniList names its own banner, and leaves the field out for a title that has none. */
+    @Test
+    void aBannerIsReadStraightOffTheDetail() {
+        assertThat(adapter.bannerFrom(Map.of("bannerImage", "https://anilist.co/banner/21.jpg")))
+                .contains("https://anilist.co/banner/21.jpg");
+    }
+
+    @Test
+    void aTitleWithNoBannerHasNone() {
+        assertThat(adapter.bannerFrom(Map.of("title", Map.of("romaji", "One Piece")))).isEmpty();
+    }
+
 }

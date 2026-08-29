@@ -197,6 +197,12 @@ public class AniListMetadataAdapter implements MetadataAdapter {
         return detail.isEmpty() ? Optional.empty() : Optional.of(detail);
     }
 
+    /** AniList names its own banner, and leaves it null for a title that has none. */
+    @Override
+    public Optional<String> bannerFrom(Map<String, Object> detail) {
+        return Optional.ofNullable(string(detail.get("bannerImage"))).filter(url -> !url.isBlank());
+    }
+
     /** The MAL import's hard ID join: one call resolves a MAL id onto its AniList canonical. */
     public Optional<TrackableItemData> fetchByMalId(MediaType mediaType, String malId) {
         return client.findMediaByMalId(mediaType, malId).stream().findFirst().map(this::toItemData);

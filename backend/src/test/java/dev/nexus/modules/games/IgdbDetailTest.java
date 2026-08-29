@@ -110,4 +110,19 @@ class IgdbDetailTest {
                 .containsEntry("criticRatingCount", 26)
                 .containsKeys("rating", "criticRating");
     }
+    /** A game has no key art of banner shape, so a profile borrows its first screenshot. */
+    @Test
+    void theFirstScreenshotIsWhatAGameOffersAsABanner() {
+        Map<String, Object> detail =
+                detailOf(Map.of("screenshots", List.of(Map.of("image_id", "one"), Map.of("image_id", "two"))));
+
+        assertThat(adapter.bannerFrom(detail))
+                .contains("https://images.igdb.com/igdb/image/upload/t_screenshot_big/one.jpg");
+    }
+
+    @Test
+    void aGameWithNoScreenshotsHasNoBanner() {
+        assertThat(adapter.bannerFrom(detailOf(Map.of("storyline", "A story.")))).isEmpty();
+    }
+
 }

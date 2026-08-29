@@ -86,6 +86,18 @@ public interface MetadataAdapter {
     }
 
     /**
+     * The wide key art in a detail this adapter itself wrote, if it has any.
+     *
+     * <p>Where that lives is the source's own business — AniList names a banner outright, a
+     * film has its widest still, a game its first screenshot — and so the reading belongs
+     * here rather than in whatever asks. A source with no wide art has none, which is an
+     * answer rather than a failure.
+     */
+    default Optional<String> bannerFrom(Map<String, Object> detail) {
+        return Optional.empty();
+    }
+
+    /**
      * Fetches many items at once. Importing a library needs hundreds of items, and one
      * request each would spend minutes inside the source's rate limit.
      *
