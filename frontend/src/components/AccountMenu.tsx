@@ -20,7 +20,7 @@ const UserIcon = () => (
  * gesture a touch screen has, and clicking is what a keyboard's Enter arrives as.
  */
 export const AccountMenu = () => {
-  const { user, logout } = useAuth()
+  const { logout } = useAuth()
   const { open, setOpen, container } = useMenuDismiss<HTMLDivElement>()
 
   return (
@@ -45,10 +45,10 @@ export const AccountMenu = () => {
       {open && (
         <div className="account-menu">
           <ul role="menu">
-            {/* Named here rather than in the header bar: which account this signs out of is
-                worth knowing at the moment you are about to do it, and not before. */}
-            <li className="account-name muted" role="none">
-              {user?.username}
+            <li role="none">
+              <Link role="menuitem" to="/profile" onClick={() => setOpen(false)}>
+                Profile
+              </Link>
             </li>
             <li role="none">
               <Link role="menuitem" to="/settings" onClick={() => setOpen(false)}>

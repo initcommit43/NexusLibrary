@@ -478,18 +478,6 @@ button.small {
   background: var(--danger-soft);
 }
 
-/* A label, not a target: it says whose account the two below act on. */
-.account-name {
-  padding: var(--space-2) var(--space-3);
-  font-size: var(--text-sm);
-  text-align: center;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: var(--space-1);
-}
-
 /* --- settings --- */
 
 .settings-section {
