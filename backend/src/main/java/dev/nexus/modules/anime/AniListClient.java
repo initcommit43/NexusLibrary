@@ -53,6 +53,7 @@ public class AniListClient {
             startDate { year month day }
             genres
             studios(isMain: true) { nodes { name } }
+            nextAiringEpisode { episode airingAt }
             """;
 
     private static final String SEARCH_QUERY =

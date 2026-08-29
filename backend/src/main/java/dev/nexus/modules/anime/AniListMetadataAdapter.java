@@ -279,7 +279,36 @@ public class AniListMetadataAdapter implements MetadataAdapter {
 
         // AniList's averageScore is already the 0-100 scale used internally.
         putIfPresent(metadata, "externalRating", number(media.get("averageScore")));
+
+        putIfPresent(metadata, "nextEpisode", nextEpisode(media));
         return metadata;
+    }
+
+    /**
+     * When the next episode lands, on the item rather than only in its detail.
+     *
+     * <p>A page that lists what someone is part-way through wants the countdown beside every
+     * title, and fetching each one's detail to find it would be a request per row. It rides
+     * the list fields instead, which the refresh already re-reads every day for anything still
+     * airing.
+     *
+     * <p>Stored as the absolute time AniList gives, never as a countdown: a duration cached
+     * for a day is wrong by a day, while a timestamp stays true and the counting happens on
+     * screen.
+     */
+    private Map<String, Object> nextEpisode(Map<String, Object> media) {
+        if (!(media.get("nextAiringEpisode") instanceof Map<?, ?> next)) {
+            return null;
+        }
+
+        Object episode = next.get("episode");
+        Object airingAt = next.get("airingAt");
+        if (episode == null || airingAt == null) {
+            return null;
+        }
+        // The time is kept as a long: number() narrows to an int, which an epoch second
+        // outgrows in 2038, and a countdown is exactly the field that would notice.
+        return Map.of("episode", number(episode), "airingAt", epochSeconds(airingAt));
     }
 
     private List<String> studios(Map<String, Object> media) {
@@ -308,6 +337,10 @@ public class AniListMetadataAdapter implements MetadataAdapter {
 
     private Integer number(Object value) {
         return value instanceof Number n ? n.intValue() : null;
+    }
+
+    private Long epochSeconds(Object value) {
+        return value instanceof Number n ? n.longValue() : null;
     }
 
     private String string(Object value) {

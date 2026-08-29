@@ -131,6 +131,29 @@ class AniListMetadataAdapterTest {
         assertThat(adapter.fetchById("999999")).isEmpty();
     }
 
+    /**
+     * A page listing what someone is part-way through wants the countdown beside every title,
+     * and the detail query is one request per row. It rides the list fields instead.
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    void theNextEpisodeRidesTheFieldsEveryListReadShares() {
+        Map<String, Object> media = media();
+        media.put("nextAiringEpisode", Map.of("episode", 1142, "airingAt", 1_756_000_000L));
+
+        Map<String, Object> next =
+                (Map<String, Object>) adapter.toItemData(media).metadata().get("nextEpisode");
+
+        assertThat(next).containsEntry("episode", 1142);
+        assertThat(next.get("airingAt")).isEqualTo(1_756_000_000L);
+    }
+
+    /** A finished series has no next episode, and an absent one is not a countdown of zero. */
+    @Test
+    void aTitleWithNothingLeftToAirCarriesNoCountdown() {
+        assertThat(adapter.toItemData(media()).metadata()).doesNotContainKey("nextEpisode");
+    }
+
     private ItemState stateFor(String status) {
         Map<String, Object> media = media();
         media.put("status", status);
