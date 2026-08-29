@@ -1061,7 +1061,7 @@ input.filter-control::-webkit-search-cancel-button {
  */
 .count-list {
   display: grid;
-  grid-template-columns: 10rem minmax(0, 1fr) auto 2.25rem;
+  grid-template-columns: 10rem minmax(0, 1fr) 3.5rem 2.75rem 3.25rem;
   align-items: center;
   gap: var(--space-2) var(--space-3);
   margin: 0;
@@ -1075,6 +1075,18 @@ input.filter-control::-webkit-search-cancel-button {
   grid-column: 1 / -1;
   grid-template-columns: subgrid;
   align-items: center;
+}
+
+/* Names the two score columns, which are otherwise two unexplained numbers in a row. */
+.count-head {
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+
+.count-head .count-amount,
+.count-head .count-score {
+  text-align: right;
 }
 
 .count-label {
@@ -1107,14 +1119,6 @@ input.filter-control::-webkit-search-cancel-button {
 .count-score {
   font-size: var(--text-sm);
   text-align: right;
-}
-
-/* Long lists halve into two of the same fixed columns; the shared peak keeps one scale. */
-.count-pair {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-2) var(--space-5);
-  align-items: start;
 }
 
 /*
@@ -1390,10 +1394,6 @@ input.filter-control::-webkit-search-cancel-button {
 
 @media (max-width: 52rem) {
   .stats-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .count-pair {
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -2905,8 +2905,14 @@ input.filter-control::-webkit-search-cancel-button {
   opacity: 1;
 }
 
+/*
+ * Reserves its line even when it carries no text. A long axis names only every other bar,
+ * and an empty span draws no line box at all — so the unnamed bars sat a line lower than
+ * the named ones and the chart's foot came out ragged.
+ */
 .bar-label {
   padding-top: 2px;
+  min-height: 1.2em;
   line-height: 1.2;
 }
 
@@ -3527,4 +3533,29 @@ a.icon-button.active {
 
 .icon-button:hover:not(:disabled) {
   color: var(--text);
+}
+
+/* Every section on one page, the rail marking which one is being read. */
+.stats-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  min-width: 0;
+}
+
+.stats-anchor {
+  scroll-margin-top: 4.5rem;
+}
+
+/*
+ * Names the section the rail points at. Smaller than the page's own title and larger than
+ * the panels', so the three levels read as three levels.
+ */
+.stats-heading {
+  margin-bottom: var(--space-4);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--text-muted);
 }

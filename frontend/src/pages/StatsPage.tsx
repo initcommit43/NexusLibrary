@@ -75,111 +75,114 @@ const withLabels = (slices: StatusSlice[], labels: Record<TrackingStatus, string
   slices.map((slice) => ({ label: labels[slice.status], amount: slice.amount }))
 
 /** Which verdict a list can honestly rank by, given how many rows actually carry one. */
-const scoreBasis = (rows: CountRow[]): 'own' | 'public' | null => {
-  if (rows.filter((row) => row.meanScore !== null).length >= 3) return 'own'
-  if (rows.filter((row) => (row.publicScore ?? null) !== null).length >= 3) return 'public'
-  return null
-}
-
 interface SectionProps {
   entries: TrackedItem[]
   mediaType: MediaType | null
 }
 
-/** Past this many rows a single column is a long read where two are a glance. */
-const SPLIT_ABOVE = 6
+/** What a ranked list can be read in order of. */
+type Ordering = 'count' | 'own' | 'public'
+
+const ORDERING_LABELS: Record<Ordering, string> = {
+  count: 'by count',
+  own: 'by your score',
+  public: 'by public score',
+}
 
 /**
- * A ranked list that can be re-read: ordered by how much there is, or by how well it did.
+ * A ranked list of whatever a library is made of, with both verdicts on each row.
  *
- * <p>The bars always draw counts even when the order is by score — a list sorted by score
- * whose bars shrink and grow down the page is the count-against-score tension made visible,
- * which is the very thing worth toggling for.
+ * <p>Both, always: the reader's own score where they gave one and the crowd's beside it. An
+ * earlier version showed whichever it had more of, which meant a column of numbers whose
+ * meaning changed with the shelf you were looking at.
  *
- * <p>Split across two columns, the bars still measure against the one longest row in the
- * whole list, and both columns hold the same fixed label width — two scales or two label
- * widths side by side is how bars end up starting from different places.
+ * <p>One column, however long the list. Split across two, the eye reads along the rows rather
+ * than down the columns, and a list sorted top to bottom looks shuffled.
+ *
+ * <p>Sorting names the column it sorts by for the same reason: "by score" had to guess which
+ * score it meant, and guessed differently from the one the row was showing.
  */
 const RankedPanel = ({
   title,
   rows,
   width = 'half',
-  split = false,
 }: {
   title: string
   rows: CountRow[]
   width?: 'half' | 'full'
-  split?: boolean
 }) => {
-  const [byScore, setByScore] = useState(false)
+  const [order, setOrder] = useState<Ordering>('count')
   if (!discriminates(rows)) return null
 
-  const basis = scoreBasis(rows)
-  const scoreOf = (row: CountRow) =>
-    basis === 'own' ? row.meanScore : basis === 'public' ? (row.publicScore ?? null) : null
+  const scored = (pick: (row: CountRow) => number | null | undefined) =>
+    rows.filter((row) => (pick(row) ?? null) !== null).length
 
+  // A column nobody can sort by is not offered: three rated genres is not an order.
+  const orderings: Ordering[] = [
+    'count',
+    ...(scored((row) => row.meanScore) >= 3 ? (['own'] as Ordering[]) : []),
+    ...(scored((row) => row.publicScore) >= 3 ? (['public'] as Ordering[]) : []),
+  ]
+
+  const key = (row: CountRow) =>
+    order === 'count' ? row.amount : order === 'own' ? row.meanScore : (row.publicScore ?? null)
+
+  // Unrated rows sink rather than scatter: they have no place in an order they cannot join.
   const shown =
-    byScore && basis ? [...rows].sort((a, b) => (scoreOf(b) ?? -1) - (scoreOf(a) ?? -1)) : rows
+    order === 'count' ? rows : [...rows].sort((a, b) => (key(b) ?? -1) - (key(a) ?? -1))
+
   const peak = Math.max(...rows.map((row) => row.amount))
 
-  const halved = split && shown.length > SPLIT_ABOVE
-  const half = Math.ceil(shown.length / 2)
-  const columns = halved ? [shown.slice(0, half), shown.slice(half)] : [shown]
-
   return (
-    <section className={`status-section panel-${halved ? 'full' : width}`}>
+    <section className={`status-section panel-${width}`}>
       <h2>
         {title}
-        {basis && (
+        {orderings.length > 1 && (
           <span className="metric-toggle section-action">
-            <button
-              type="button"
-              className={byScore ? 'ghost small' : 'ghost small on'}
-              aria-pressed={!byScore}
-              onClick={() => setByScore(false)}
-            >
-              by count
-            </button>
-            <button
-              type="button"
-              className={byScore ? 'ghost small on' : 'ghost small'}
-              aria-pressed={byScore}
-              onClick={() => setByScore(true)}
-            >
-              by score
-            </button>
+            {orderings.map((candidate) => (
+              <button
+                key={candidate}
+                type="button"
+                className={order === candidate ? 'ghost small on' : 'ghost small'}
+                aria-pressed={order === candidate}
+                onClick={() => setOrder(candidate)}
+              >
+                {ORDERING_LABELS[candidate]}
+              </button>
+            ))}
           </span>
         )}
       </h2>
-      {basis === 'public' && (
-        <p className="panel-note muted">
-          Scores are the crowd's — you haven't rated enough here for a mean of your own.
-        </p>
-      )}
+
       {/* Not .ranked-list: the browse shelves own that name, and sharing it once broke
           this layout — the flex definition there beat the grid one here and the bars lost
           their common x. */}
-      <div className={halved ? 'count-pair' : undefined}>
-        {columns.map((column, index) => (
-          <ul key={column[0]?.label ?? index} className="count-list">
-            {column.map((row) => (
-              <li key={row.label}>
-                <span className="count-label" title={row.label}>
-                  {row.label}
-                </span>
-                <span className="count-track" aria-hidden="true">
-                  <span
-                    className="count-fill"
-                    style={{ width: `${Math.round((row.amount / peak) * 100)}%` }}
-                  />
-                </span>
-                <span className="count-amount">{row.amount.toLocaleString()}</span>
-                <span className="count-score muted">{scoreOf(row)?.toFixed(1) ?? ''}</span>
-              </li>
-            ))}
-          </ul>
+      <ul className="count-list">
+        <li className="count-head muted" aria-hidden="true">
+          <span className="count-label" />
+          <span className="count-track" />
+          <span className="count-amount">held</span>
+          <span className="count-score">you</span>
+          <span className="count-score">public</span>
+        </li>
+        {shown.map((row) => (
+          <li key={row.label}>
+            <span className="count-label" title={row.label}>
+              {row.label}
+            </span>
+            <span className="count-track" aria-hidden="true">
+              <span
+                className="count-fill"
+                style={{ width: `${Math.round((row.amount / peak) * 100)}%` }}
+              />
+            </span>
+            <span className="count-amount">{row.amount.toLocaleString()}</span>
+            {/* An em dash rather than a nought: unrated is not a rating of zero. */}
+            <span className="count-score">{row.meanScore?.toFixed(1) ?? '—'}</span>
+            <span className="count-score muted">{row.publicScore?.toFixed(1) ?? '—'}</span>
+          </li>
         ))}
-      </div>
+      </ul>
     </section>
   )
 }
@@ -446,7 +449,7 @@ const GenresSection = ({ entries }: SectionProps) => {
   return (
     <>
       {field !== null && field.points.length >= 5 && <GenreFieldPanel field={field} />}
-      <RankedPanel title="Top genres" rows={rows} split />
+      <RankedPanel title="Top genres" rows={rows} width="full" />
     </>
   )
 }
@@ -458,13 +461,14 @@ const CreditsSection = ({ entries, mediaType }: SectionProps) => {
     [entries, credit],
   )
   if (credit === null) return null
-  return <RankedPanel title={credit.title} rows={rows} split />
+  return <RankedPanel title={credit.title} rows={rows} width="full" />
 }
 
 export const StatsPage = () => {
-  const { lens: lensParam, section: sectionParam } = useParams()
+  const { lens: lensParam } = useParams()
   const [entries, setEntries] = useState<TrackedItem[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [reading, setReading] = useState('overview')
 
   useEffect(() => {
     api
@@ -486,14 +490,17 @@ export const StatsPage = () => {
 
   /*
    * The rail is read off the data, never written out: a section that cannot fill itself —
-   * one genre, one platform, a medium with no studios field at all — does not get a link
-   * pointing at a page of nothing.
+   * one genre, one platform, a medium with no studios field at all — is not drawn and gets
+   * no link either.
    */
   const sections = useMemo(() => {
-    if (entries === null || !chosen) return []
+    if (entries === null || !chosen || shown.length === 0) return []
 
-    const list = [{ key: 'overview', label: 'Overview' }]
-    // The same conditions the section's own panels apply, so a link never opens onto nothing.
+    // heading: false where the section holds one panel that already carries the name —
+    // the rail still needs the label, but the page should not say Studios twice.
+    const list: { key: string; label: string; heading?: boolean }[] = [
+      { key: 'overview', label: 'Overview' },
+    ]
     if (discriminates(scoreBuckets(publicScores(shown))) || ownScores(shown).length >= 5) {
       list.push({ key: 'scores', label: 'Scores' })
     }
@@ -502,31 +509,53 @@ export const StatsPage = () => {
     }
     const credit = chosen.mediaType === null ? null : creditKeyFor(chosen.mediaType)
     if (credit !== null && discriminates(countBy(shown, credit.key, 2))) {
-      list.push({ key: credit.key, label: credit.title })
+      list.push({ key: 'credits', label: credit.title, heading: false })
     }
     return list
   }, [entries, chosen, shown])
 
+  const ids = sections.map((section) => section.key).join(',')
+
+  /*
+   * The rail marks where the page is, not the last thing clicked — the same band just under
+   * the header that the settings rail reads, so both pages mark themselves the same way.
+   */
+  useEffect(() => {
+    if (!ids) return
+
+    const observer = new IntersectionObserver(
+      (crossings) => {
+        const crossing = crossings.find((entry) => entry.isIntersecting)
+        if (crossing) setReading(crossing.target.id)
+      },
+      { rootMargin: '-72px 0px -70% 0px' },
+    )
+
+    for (const id of ids.split(',')) {
+      const node = document.getElementById(id)
+      if (node) observer.observe(node)
+    }
+
+    return () => observer.disconnect()
+  }, [ids])
+
   // Anything the URL gets wrong resolves to the nearest page that exists, not an error.
-  if (!chosen) return <Navigate to="/stats/all/overview" replace />
-  if (!sectionParam) return <Navigate to={`/stats/${chosen.key}/overview`} replace />
+  if (!chosen) return <Navigate to="/stats/all" replace />
 
   const loaded = entries !== null
-  const active = sections.find((section) => section.key === sectionParam)
-  if (loaded && shown.length > 0 && !active) {
-    return <Navigate to={`/stats/${chosen.key}/overview`} replace />
-  }
 
-  const body =
-    sectionParam === 'overview' ? (
-      <OverviewSection entries={shown} mediaType={chosen.mediaType} />
-    ) : sectionParam === 'scores' ? (
-      <ScoresSection entries={shown} mediaType={chosen.mediaType} />
-    ) : sectionParam === 'genres' ? (
-      <GenresSection entries={shown} mediaType={chosen.mediaType} />
-    ) : (
-      <CreditsSection entries={shown} mediaType={chosen.mediaType} />
-    )
+  const bodyFor = (key: string) => {
+    switch (key) {
+      case 'overview':
+        return <OverviewSection entries={shown} mediaType={chosen.mediaType} />
+      case 'scores':
+        return <ScoresSection entries={shown} mediaType={chosen.mediaType} />
+      case 'genres':
+        return <GenresSection entries={shown} mediaType={chosen.mediaType} />
+      default:
+        return <CreditsSection entries={shown} mediaType={chosen.mediaType} />
+    }
+  }
 
   return (
     <AppShell>
@@ -547,7 +576,7 @@ export const StatsPage = () => {
             {LENSES.map((candidate) => (
               <NavLink
                 key={candidate.key}
-                to={`/stats/${candidate.key}/${sectionParam}`}
+                to={`/stats/${candidate.key}`}
                 className={({ isActive }) => (isActive ? 'lens-link on' : 'lens-link')}
               >
                 {candidate.label}
@@ -563,12 +592,29 @@ export const StatsPage = () => {
             <div className="stats-layout">
               <nav className="stats-rail" aria-label="Stats sections">
                 {sections.map((section) => (
-                  <NavLink key={section.key} to={`/stats/${chosen.key}/${section.key}`} end>
+                  <a
+                    key={section.key}
+                    href={`#${section.key}`}
+                    className={reading === section.key ? 'active' : undefined}
+                    aria-current={reading === section.key ? 'true' : undefined}
+                  >
                     {section.label}
-                  </NavLink>
+                  </a>
                 ))}
               </nav>
-              <div className="stats-grid">{body}</div>
+
+              {/* Every section on one page: a rail that hides three quarters of the figures
+                  behind clicks makes a reader remember what they came for. */}
+              <div className="stats-main">
+                {sections.map((section) => (
+                  <section key={section.key} id={section.key} className="stats-anchor">
+                    {section.heading !== false && (
+                      <h2 className="stats-heading">{section.label}</h2>
+                    )}
+                    <div className="stats-grid">{bodyFor(section.key)}</div>
+                  </section>
+                ))}
+              </div>
             </div>
           )}
         </>
