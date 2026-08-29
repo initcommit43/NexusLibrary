@@ -32,7 +32,7 @@ public class MediaDetailService {
      */
     static final String VERSION_KEY = "schemaVersion";
 
-    static final int DETAIL_VERSION = 2;
+    static final int DETAIL_VERSION = 3;
 
     private static final Logger log = LoggerFactory.getLogger(MediaDetailService.class);
 
