@@ -29,8 +29,12 @@ public class Activity {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @ManyToOne(fetch = FetchType.EAGER, optional = false)
-    @JoinColumn(name = "trackable_item_id", nullable = false)
+    /**
+     * The title this happened to, where it happened to one. An import or a sync is about a
+     * run rather than a title, and names what it touched in its payload.
+     */
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "trackable_item_id")
     private TrackableItem item;
 
     @Enumerated(EnumType.STRING)

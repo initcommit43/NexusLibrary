@@ -1,5 +1,6 @@
 package dev.nexus.core.importing;
 
+import dev.nexus.core.activity.ActivityRecorder;
 import dev.nexus.core.adapter.CanonicalRef;
 import dev.nexus.core.adapter.ExternalItemRef;
 import dev.nexus.core.adapter.FetchProgress;
@@ -44,13 +45,15 @@ public class LibraryImportService {
     private final ItemCacheService itemCache;
     private final UserEntryRepository entries;
     private final TrackableItemRepository items;
+    private final ActivityRecorder activity;
 
     public LibraryImportService(
             List<LibraryImportAdapter> adapters,
             List<ItemResolver> resolvers,
             ItemCacheService itemCache,
             UserEntryRepository entries,
-            TrackableItemRepository items) {
+            TrackableItemRepository items,
+            ActivityRecorder activity) {
         // Kept as lists and matched on demand: there will only ever be a handful of
         // providers, and indexing them up front would call into every adapter at startup.
         this.adapters = List.copyOf(adapters);
@@ -58,6 +61,7 @@ public class LibraryImportService {
         this.itemCache = itemCache;
         this.entries = entries;
         this.items = items;
+        this.activity = activity;
     }
 
     @Transactional
@@ -114,6 +118,7 @@ public class LibraryImportService {
         recordProviderIds(provider, resolved, cached);
 
         List<ImportReport.UnmatchedItem> unmatched = new ArrayList<>();
+        List<ActivityRecorder.Change> advanced = new ArrayList<>();
         int created = 0;
         int updated = 0;
 
@@ -145,16 +150,26 @@ public class LibraryImportService {
                 continue;
             }
 
-            boolean isNew = upsert(userId, provider, item, entry);
-            if (isNew) {
+            Upserted result = upsert(userId, provider, item, entry);
+            if (result.created()) {
                 created++;
             } else {
                 updated++;
             }
+            if (result.advanced()) {
+                advanced.add(ActivityRecorder.Change.of(item.getTitle(), result.from(), result.to()));
+            }
             if (job != null) {
-                job.advance(isNew);
+                job.advance(result.created());
             }
         }
+
+        /*
+         * One event for the run rather than one per title. A first import would otherwise
+         * write hundreds of rows at a single timestamp and bury everything its owner did by
+         * hand — and a run that changed nothing records nothing at all.
+         */
+        activity.ran(userId, provider, created, advanced);
 
         return new ImportReport(created, updated, unmatched);
     }
@@ -212,7 +227,15 @@ public class LibraryImportService {
     /**
      * @return true when a new entry was created, false when an existing one was updated
      */
-    private boolean upsert(Long userId, Provider provider, TrackableItem item, ImportedEntry imported) {
+    /** What one title's import did, which is what the feed reports about the run. */
+    private record Upserted(boolean created, Integer from, Integer to) {
+
+        boolean advanced() {
+            return !created && !java.util.Objects.equals(from, to);
+        }
+    }
+
+    private Upserted upsert(Long userId, Provider provider, TrackableItem item, ImportedEntry imported) {
         UserEntry existing =
                 entries.findByUserIdAndItemId(userId, item.getId()).orElse(null);
 
@@ -221,7 +244,7 @@ public class LibraryImportService {
             entry.setImportedFrom(provider);
             applyProgress(entry, imported);
             entries.save(entry);
-            return true;
+            return new Upserted(true, null, entry.getProgressCurrent());
         }
 
         // An entry added by hand and later found in an import did come from there too.
@@ -229,12 +252,14 @@ public class LibraryImportService {
             existing.setImportedFrom(provider);
         }
 
+        Integer before = existing.getProgressCurrent();
+
         // An import must not overwrite what the user set by hand. Progress is objective and
         // comes from the provider; status and rating are the user's own judgement, so they
         // are only filled in where the user has expressed nothing.
         applyProgress(existing, imported);
         entries.save(existing);
-        return false;
+        return new Upserted(false, before, existing.getProgressCurrent());
     }
 
     private void applyProgress(UserEntry entry, ImportedEntry imported) {

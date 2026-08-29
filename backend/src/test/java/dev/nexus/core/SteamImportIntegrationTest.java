@@ -271,6 +271,86 @@ class SteamImportIntegrationTest extends PostgresIntegrationTest {
         verify(steamAdapter, never()).pullLibrary(any());
     }
 
+    // --- what a run writes to the history ----------------------------------
+
+    /**
+     * A library arriving is one thing that happened, not four hundred. Written per title, a
+     * first import buries everything its owner did by hand under one timestamp.
+     */
+    @Test
+    void anImportIsOneEventHoweverManyTitlesItBrings() {
+        connect();
+        givenLibrary(playedFor(KNOWN_APPID, 100), playedFor(UNKNOWN_APPID, 200));
+        runImport();
+
+        List<Map<String, Object>> feed = http.get("/activity", "Authorization", "Bearer " + token)
+                .list();
+
+        assertThat(feed).hasSize(1);
+        assertThat(feed.getFirst()).containsEntry("type", "IMPORTED");
+        // The run belongs to no title, so it answers with none and names itself in its payload.
+        assertThat(feed.getFirst().get("title")).isNull();
+        assertThat(payloadOf(feed.getFirst())).containsEntry("provider", "STEAM");
+        assertThat(payloadOf(feed.getFirst())).containsEntry("added", 1);
+    }
+
+    /** A nightly sync that found nothing is not news, and a feed saying so nightly is unread. */
+    @Test
+    void aRunThatChangedNothingWritesNothing() {
+        connect();
+        givenLibrary(playedFor(KNOWN_APPID, 100));
+        runImport();
+
+        runImport();
+
+        assertThat(http.get("/activity", "Authorization", "Bearer " + token).list())
+                .hasSize(1);
+    }
+
+    /** The second run brought no titles, so it reads as a sync rather than an import. */
+    @Test
+    void aRunThatOnlyAdvancesProgressIsASync() {
+        connect();
+        givenLibrary(playedFor(KNOWN_APPID, 100));
+        runImport();
+
+        givenLibrary(playedFor(KNOWN_APPID, 250));
+        runImport();
+
+        Map<String, Object> latest =
+                http.get("/activity", "Authorization", "Bearer " + token).list().getFirst();
+
+        assertThat(latest).containsEntry("type", "SYNCED");
+        assertThat(payloadOf(latest)).containsEntry("advanced", 1);
+    }
+
+    /** What the hover card reads: the titles that moved, and where they moved from and to. */
+    @SuppressWarnings("unchecked")
+    @Test
+    void aSyncNamesTheTitlesItAdvanced() {
+        connect();
+        givenLibrary(playedFor(KNOWN_APPID, 100));
+        runImport();
+
+        givenLibrary(playedFor(KNOWN_APPID, 250));
+        runImport();
+
+        Map<String, Object> latest =
+                http.get("/activity", "Authorization", "Bearer " + token).list().getFirst();
+        List<Map<String, Object>> titles =
+                (List<Map<String, Object>>) payloadOf(latest).get("titles");
+
+        assertThat(titles).hasSize(1);
+        assertThat(titles.getFirst()).containsEntry("title", "The Legend of Zelda: Breath of the Wild");
+        assertThat(titles.getFirst()).containsEntry("from", "100");
+        assertThat(titles.getFirst()).containsEntry("to", "250");
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> payloadOf(Map<String, Object> activity) {
+        return (Map<String, Object>) activity.get("payload");
+    }
+
     private void connect() {
         accountService.connect(userId, Provider.STEAM, STEAM_ID);
     }

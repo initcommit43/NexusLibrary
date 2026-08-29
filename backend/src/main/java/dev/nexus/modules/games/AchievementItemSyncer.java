@@ -1,5 +1,7 @@
 package dev.nexus.modules.games;
 
+import dev.nexus.core.activity.ActivityRecorder;
+import dev.nexus.core.activity.ActivityRecorder.EntrySnapshot;
 import dev.nexus.core.domain.ExternalIds;
 import dev.nexus.core.domain.Provider;
 import dev.nexus.core.domain.TrackingStatus;
@@ -42,12 +44,17 @@ public class AchievementItemSyncer {
     private final UserEntryRepository entries;
     private final SteamAchievementsClient client;
     private final AchievementCatalogue catalogue;
+    private final ActivityRecorder activity;
 
     public AchievementItemSyncer(
-            UserEntryRepository entries, SteamAchievementsClient client, AchievementCatalogue catalogue) {
+            UserEntryRepository entries,
+            SteamAchievementsClient client,
+            AchievementCatalogue catalogue,
+            ActivityRecorder activity) {
         this.entries = entries;
         this.client = client;
         this.catalogue = catalogue;
+        this.activity = activity;
     }
 
     @Transactional(readOnly = true)
@@ -144,7 +151,13 @@ public class AchievementItemSyncer {
         if (!allEarned || wasAllEarned(stored) || entry.getStatus() == TrackingStatus.COMPLETED) {
             return;
         }
+
+        // Recorded rather than done quietly: a game finishing itself is exactly the kind of
+        // thing its owner wants to find in their history, and it is a real change to one
+        // title rather than a fact about the sync that noticed it.
+        EntrySnapshot before = EntrySnapshot.of(entry);
         entry.setStatus(TrackingStatus.COMPLETED);
+        activity.changed(entry, before);
     }
 
     @SuppressWarnings("unchecked")

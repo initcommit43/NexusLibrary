@@ -4,6 +4,7 @@ import dev.nexus.auth.CurrentUser;
 import dev.nexus.core.domain.Activity;
 import dev.nexus.core.domain.ActivityType;
 import dev.nexus.core.domain.MediaType;
+import dev.nexus.core.domain.TrackableItem;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Positive;
 import java.time.Instant;
@@ -33,14 +34,21 @@ public class ActivityController {
             Map<String, Object> payload,
             Instant createdAt) {
 
+        /**
+         * An import or a sync happened to a run rather than to a title, so it carries no item
+         * and answers with nulls where a title's own event answers with its cover and name.
+         * What it touched is in the payload, which every event has.
+         */
         static ActivityResponse from(Activity activity) {
+            TrackableItem item = activity.getItem();
+
             return new ActivityResponse(
                     activity.getId(),
                     activity.getType(),
-                    activity.getItem().getMediaType(),
-                    activity.getItem().getTitle(),
-                    activity.getItem().getCoverUrl(),
-                    activity.getItem().getExternalId(),
+                    item == null ? null : item.getMediaType(),
+                    item == null ? null : item.getTitle(),
+                    item == null ? null : item.getCoverUrl(),
+                    item == null ? null : item.getExternalId(),
                     activity.getPayload(),
                     activity.getCreatedAt());
         }
