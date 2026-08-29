@@ -3109,7 +3109,8 @@ button.ghost.danger:hover:not(:disabled) {
   color: var(--text-muted);
 }
 
-/* The cog is a link, so it needs the surface and border a button gets for free. */
+/* The account icon leads to your profile, so it needs the surface and border a button
+   gets for free and an anchor does not. */
 a.icon-button {
   background: var(--surface);
   border: 1px solid var(--border-strong);

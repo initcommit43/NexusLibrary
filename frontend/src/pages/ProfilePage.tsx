@@ -253,7 +253,7 @@ export const ProfilePage = () => {
                     <th scope="row">
                       <Link to={path}>{label}</Link>
                     </th>
-                    <td>{summary.tracked.toLocaleString()}</td>
+                    <td>{`${summary.tracked.toLocaleString()} entries`}</td>
                     <td className="muted">
                       {summary.completed > 0 ? `${summary.completed.toLocaleString()} completed` : ''}
                     </td>

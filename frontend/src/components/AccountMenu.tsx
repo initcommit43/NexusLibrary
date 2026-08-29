@@ -16,8 +16,12 @@ const UserIcon = () => (
 /**
  * Everything to do with the account, behind one icon.
  *
- * <p>Opens on hover so it costs nothing to look at, and on click as well — hover is not a
- * gesture a touch screen has, and clicking is what a keyboard's Enter arrives as.
+ * <p>The icon is the way to your own profile, because that is what someone reaching for their
+ * own face is nearly always after; the rest of the account opens around it on the way past.
+ *
+ * <p>Opens on hover, and on focus as well: hover is not a gesture a keyboard has, and with the
+ * icon now leading somewhere there is no click left to open it with. Focus travelling into the
+ * menu keeps it open, and leaving the whole thing closes it.
  */
 export const AccountMenu = () => {
   const { logout } = useAuth()
@@ -29,18 +33,23 @@ export const AccountMenu = () => {
       ref={container}
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
+      onFocus={() => setOpen(true)}
+      // Only when focus has left the menu entirely, not while it moves between the items.
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false)
+      }}
     >
-      <button
-        type="button"
-        className="ghost icon-button"
+      <Link
+        className="icon-button"
+        to="/profile"
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label="Account"
-        title="Account"
-        onClick={() => setOpen((wasOpen) => !wasOpen)}
+        aria-label="Your profile"
+        title="Your profile"
+        onClick={() => setOpen(false)}
       >
         <UserIcon />
-      </button>
+      </Link>
 
       {open && (
         <div className="account-menu">
@@ -48,6 +57,11 @@ export const AccountMenu = () => {
             <li role="none">
               <Link role="menuitem" to="/profile" onClick={() => setOpen(false)}>
                 Profile
+              </Link>
+            </li>
+            <li role="none">
+              <Link role="menuitem" to="/stats" onClick={() => setOpen(false)}>
+                Stats
               </Link>
             </li>
             <li role="none">
