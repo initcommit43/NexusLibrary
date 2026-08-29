@@ -12,6 +12,8 @@ import dev.nexus.core.importing.ImportNotSupportedException;
 import dev.nexus.core.importing.SteamVerificationFailedException;
 import dev.nexus.core.importing.SyncJobNotFoundException;
 import dev.nexus.core.importing.UpstreamUnavailableException;
+import dev.nexus.core.preferences.BannerNotSetException;
+import dev.nexus.core.preferences.NoBannerException;
 import dev.nexus.core.review.ReviewNotFoundException;
 import dev.nexus.core.review.ReviewNotStartedException;
 import dev.nexus.core.tracking.EntryNotFoundException;
@@ -162,7 +164,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(new ApiError(e.getMessage()));
     }
 
+    @ExceptionHandler(NoBannerException.class)
+    public ResponseEntity<ApiError> handleNoBanner(NoBannerException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ApiError(e.getMessage()));
+    }
+
     @ExceptionHandler({
+        BannerNotSetException.class,
         EntryNotFoundException.class,
         ItemNotFoundException.class,
         ExternalAccountNotConnectedException.class,
