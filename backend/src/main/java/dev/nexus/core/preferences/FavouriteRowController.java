@@ -23,8 +23,17 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/settings/favourite-rows")
 public class FavouriteRowController {
 
-    /** The rows, first to last. Media types absent from it keep the app's own order. */
-    public record RowOrder(@Size(max = 16) List<MediaType> order) {}
+    /**
+     * The rows, first to last, and which of them share a band with the row before them.
+     * Media types absent from the order keep the app's own.
+     */
+    public record RowOrder(
+            @Size(max = 16) List<MediaType> order, @Size(max = 16) List<MediaType> paired) {
+
+        static RowOrder of(FavouriteRowService.Arrangement arrangement) {
+            return new RowOrder(arrangement.order(), List.copyOf(arrangement.paired()));
+        }
+    }
 
     private final FavouriteRowService rows;
 
@@ -34,11 +43,11 @@ public class FavouriteRowController {
 
     @GetMapping
     public RowOrder order(@AuthenticationPrincipal CurrentUser user) {
-        return new RowOrder(rows.orderFor(user.id()));
+        return RowOrder.of(rows.arrangementFor(user.id()));
     }
 
     @PutMapping
     public RowOrder replace(@AuthenticationPrincipal CurrentUser user, @RequestBody RowOrder body) {
-        return new RowOrder(rows.replaceFor(user.id(), body.order()));
+        return RowOrder.of(rows.replaceFor(user.id(), body.order(), body.paired()));
     }
 }

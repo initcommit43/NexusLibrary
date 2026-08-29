@@ -34,14 +34,22 @@ public class FavouriteRow {
     @Column(name = "sort_order", nullable = false)
     private int sortOrder;
 
+    /**
+     * Whether this row shares its band with the one before it, which is what a pair of rows
+     * side by side is. Never true of the first row, which has nothing to sit beside.
+     */
+    @Column(name = "shares_lane", nullable = false)
+    private boolean sharesLane;
+
     protected FavouriteRow() {
         // JPA
     }
 
-    public FavouriteRow(Long userId, MediaType mediaType, int sortOrder) {
+    public FavouriteRow(Long userId, MediaType mediaType, int sortOrder, boolean sharesLane) {
         this.userId = userId;
         this.mediaType = mediaType;
         this.sortOrder = sortOrder;
+        this.sharesLane = sharesLane;
     }
 
     public Long getId() {
@@ -58,5 +66,9 @@ public class FavouriteRow {
 
     public int getSortOrder() {
         return sortOrder;
+    }
+
+    public boolean sharesLane() {
+        return sharesLane;
     }
 }
