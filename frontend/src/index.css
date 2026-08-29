@@ -1146,9 +1146,12 @@ input.filter-control::-webkit-search-cancel-button {
 
 /* The arrows sit over the row's edges rather than beside it, so the row keeps full width. */
 /*
- * The arrows sit in the carousel's own margin rather than over the covers. Overlapping them
- * put a target on top of a card's controls — the shelf stack grows upward from the cover's
- * corner into exactly where an arrow was — and the arrow won.
+ * The arrows sit clear of the covers, in a lane borrowed from the page's own margin: the
+ * negative margin and the padding cancel, so the row inside keeps the full width of the
+ * column and its covers line up with the headings and the filter bar above them.
+ *
+ * Taking the lane out of the row instead pulled every cover inwards, which left the shelves
+ * ending short of everything else on the page.
  */
 .carousel {
   --carousel-arrow-size: 2.25rem;
@@ -1156,7 +1159,25 @@ input.filter-control::-webkit-search-cancel-button {
   --carousel-arrow-lane: calc(var(--carousel-arrow-size) + var(--space-2));
 
   position: relative;
+  margin-inline: calc(var(--carousel-arrow-lane) * -1);
   padding-inline: var(--carousel-arrow-lane);
+}
+
+/*
+ * Below the width where the page has margin to lend, the lane is given back and the arrows
+ * lie over the outermost covers. A hovered card is lifted over them there, so the controls
+ * in its corner keep taking their own clicks.
+ */
+@media (max-width: 92rem) {
+  .carousel {
+    margin-inline: 0;
+    padding-inline: 0;
+  }
+
+  .cover-card:hover {
+    position: relative;
+    z-index: 3;
+  }
 }
 
 .carousel-arrow {
