@@ -43,8 +43,6 @@ export interface ModuleDefinition {
   emptyHint: string
   /** Where this module's connect and import controls live in settings. */
   providers: ModuleProvider[]
-  /** True when the source has a catalogue page worth opening instead of the entry page. */
-  hasMediaPages: boolean
   /**
    * Whether this module's shelves can be carried out as a CSV. False for games: a Steam
    * library is not a list anyone keeps by hand, and connecting the account brings the whole
@@ -85,7 +83,6 @@ export const MODULES: ModuleDefinition[] = [
       },
     ],
     emptyHint: 'Nothing tracked yet. Connect Steam in settings, or search for a game.',
-    hasMediaPages: false,
     exportsCsv: false,
     providers: [{
         provider: 'STEAM',
@@ -126,7 +123,6 @@ export const MODULES: ModuleDefinition[] = [
       },
     ],
     emptyHint: 'Nothing tracked yet. Connect AniList or MyAnimeList in settings.',
-    hasMediaPages: true,
     exportsCsv: true,
     providers: [
       {
@@ -170,7 +166,6 @@ export const MODULES: ModuleDefinition[] = [
       },
     ],
     emptyHint: 'Nothing tracked yet. Connect Simkl in settings, or search for a movie.',
-    hasMediaPages: false,
     exportsCsv: true,
     providers: [
       {
@@ -204,7 +199,6 @@ export const MODULES: ModuleDefinition[] = [
       },
     ],
     emptyHint: 'Nothing tracked yet. Upload a Goodreads export in settings.',
-    hasMediaPages: false,
     exportsCsv: true,
     providers: [
       {
@@ -217,21 +211,6 @@ export const MODULES: ModuleDefinition[] = [
   },
 ]
 
-/** Where opening this entry should go. */
-export const detailPathFor = (entry: {
-  id: number
-  mediaType: MediaType
-  source: string
-  externalId: string
-}): string => {
-  const module = MODULES.find((candidate) =>
-    candidate.types.some((type) => type.mediaType === entry.mediaType),
-  )
-  return module?.hasMediaPages
-    ? `/media/${entry.source}/${entry.externalId}`
-    : `/entries/${entry.id}`
-}
-
 /**
  * Where a catalogue result opens.
  *
@@ -241,6 +220,16 @@ export const detailPathFor = (entry: {
  */
 export const mediaPathFor = (result: { source: string; externalId: string }): string =>
   `/media/${result.source}/${encodeURIComponent(result.externalId)}`
+
+/**
+ * Where opening this entry goes: the title's own page, whatever it is.
+ *
+ * <p>An entry used to have a page of its own, holding the controls for editing it. Those live
+ * in the dialog behind each card's pencil now, and everything else that page showed — the
+ * achievements, the review — is on the title's page beside what the source knows about it.
+ */
+export const detailPathFor = (entry: { source: string; externalId: string }): string =>
+  mediaPathFor(entry)
 
 export const moduleBySlug = (slug: string | undefined): ModuleDefinition | undefined =>
   MODULES.find((module) => module.slug === slug)
