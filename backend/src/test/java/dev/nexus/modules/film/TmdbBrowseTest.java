@@ -27,7 +27,8 @@ class TmdbBrowseTest {
     void setUp() {
         client = mock(TmdbClient.class);
         adapter = new TmdbMetadataAdapter(
-                client, new TmdbProperties("https://tmdb.test/3", "https://img.test/", "w500", "token", 100));
+                client, new TmdbProperties(
+                        "https://tmdb.test/3", "https://img.test/", "w500", "w1280", "w185", "token", 100));
         when(client.browse(any(), anyString(), anyInt())).thenReturn(Map.of());
         when(client.trending(any(), anyString(), anyInt())).thenReturn(Map.of());
         when(client.resultsOf(any())).thenReturn(List.of());

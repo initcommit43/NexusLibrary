@@ -33,7 +33,14 @@ class TmdbClientTest {
         server = MockRestServiceServer.bindTo(builder).build();
         return new TmdbClient(
                 builder,
-                new TmdbProperties("https://tmdb.test/3", "https://img.tmdb.test/t/p/", "w500", accessToken, 100));
+                new TmdbProperties(
+                        "https://tmdb.test/3",
+                        "https://img.tmdb.test/t/p/",
+                        "w500",
+                        "w1280",
+                        "w185",
+                        accessToken,
+                        100));
     }
 
     /** The v4 token is a bearer, not a query parameter — sending it as one authenticates nothing. */

@@ -18,6 +18,21 @@ const season = (detail: Record<string, unknown>): string | null => {
   return `${name.charAt(0)}${name.slice(1).toLowerCase()}${year ? ` ${year}` : ''}`
 }
 
+/** "142 mins", from whichever of the two places the source recorded a running time. */
+const minutes = (value: unknown): string | null => {
+  const runtime = text(value)
+  return runtime ? `${runtime} mins` : null
+}
+
+/**
+ * TMDB reports money in whole US dollars whatever the film's own currency was, so the figure
+ * is shown as what it is rather than converted into a guess.
+ */
+const money = (value: unknown): string | null =>
+  typeof value === 'number' && value > 0
+    ? value.toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
+    : null
+
 const date = (iso: string | null) =>
   iso ? new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : null
 
@@ -73,7 +88,9 @@ export const MediaFacts = ({ media }: { media: MediaDetail }) => {
     ['Episodes', text(meta.episodes)],
     ['Chapters', text(meta.chapters)],
     ['Volumes', text(meta.volumes)],
-    ['Episode duration', text(detail.duration) ? `${text(detail.duration)} mins` : null],
+    ['Episode duration', minutes(detail.duration)],
+    ['Runtime', minutes(meta.runtimeMinutes ?? detail.runtime)],
+    ['Seasons', text(meta.seasons)],
     /*
      * The release, not the reader's progress. A bare "Finished" on a game reads as a game
      * you have finished, which is the one thing on this page that is not about you — and a
@@ -91,6 +108,8 @@ export const MediaFacts = ({ media }: { media: MediaDetail }) => {
     ['Favourites', text(detail.favourites)],
     ['Source', text(detail.source)],
     ['Hashtag', text(detail.hashtag)],
+    ['Budget', money(detail.budget)],
+    ['Box office', money(detail.revenue)],
   ]
 
   // Studios come from the detail when it is loaded, since only there are they split by role.
@@ -99,6 +118,7 @@ export const MediaFacts = ({ media }: { media: MediaDetail }) => {
   const stacked: [string, string[]][] = [
     ['Studios', studios.length > 0 ? studios : list(meta.studios)],
     ['Producers', producers],
+    ['Networks', list(detail.networks)],
     ['Platforms', list(meta.platforms)],
     ['Genres', list(meta.genres)],
     ['Romaji', [text(titles.romaji) ?? ''].filter(Boolean)],

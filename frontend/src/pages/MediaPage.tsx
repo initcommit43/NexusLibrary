@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { ApiError, api, type MediaDetail, type TrackedItem } from '../api/client'
+import { ApiError, api, type MediaDetail, type MediaType, type TrackedItem } from '../api/client'
 import { AppShell } from '../components/AppShell'
 import { EntryEditDialog } from '../components/EntryEditDialog'
 import { MediaAchievements } from '../components/MediaAchievements'
@@ -31,6 +31,19 @@ const plainText = (html: unknown): string | null => {
     .replace(/&amp;/g, '&')
     .replace(/\n{3,}/g, '\n\n')
     .trim()
+}
+
+/** What the people behind a title are called, which is not the same word in every medium. */
+const creditsLabel = (mediaType: MediaType): string => {
+  switch (mediaType) {
+    case 'GAME':
+      return 'Made by'
+    case 'MOVIE':
+    case 'SHOW':
+      return 'Crew'
+    default:
+      return 'Staff'
+  }
 }
 
 export const MediaPage = () => {
@@ -169,10 +182,8 @@ export const MediaPage = () => {
             mediaType={media.mediaType}
           />
           <MediaCharacters characters={view.characters} />
-          <MediaStaff
-            staff={view.staff}
-            title={media.mediaType === 'GAME' ? 'Made by' : 'Staff'}
-          />
+          <MediaStaff staff={view.cast} title="Cast" />
+          <MediaStaff staff={view.staff} title={creditsLabel(media.mediaType)} />
           <MediaAchievements media={media} />
           <MediaTrailer trailer={view.trailer} />
           <MediaGallery images={view.gallery} />

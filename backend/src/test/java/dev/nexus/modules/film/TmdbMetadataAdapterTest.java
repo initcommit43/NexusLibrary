@@ -27,7 +27,8 @@ class TmdbMetadataAdapterTest {
     void setUp() {
         client = mock(TmdbClient.class);
         adapter = new TmdbMetadataAdapter(
-                client, new TmdbProperties("https://tmdb.test/3", "https://img.tmdb.test/t/p/", "w500", "token", 20));
+                client, new TmdbProperties(
+                        "https://tmdb.test/3", "https://img.tmdb.test/t/p/", "w500", "w1280", "w185", "token", 20));
     }
 
     @Test

@@ -111,6 +111,24 @@ public class TmdbClient {
     }
 
     /**
+     * Everything a title's own page shows, in the one request the title itself costs.
+     *
+     * <p>TMDB appends sub-resources to the record rather than serving them separately, so
+     * credits, videos, images and the rest arrive inside this response — a page's worth of
+     * detail for the same call {@link #findById} already makes.
+     *
+     * <p>Images are asked for in English and with no language at all: a backdrop carrying
+     * another language's title card is worse than one carrying none.
+     */
+    public Optional<Map<String, Object>> findDetail(TmdbKind kind, String tmdbId) {
+        return get(
+                "/{kind}/{id}?append_to_response=credits,videos,images,recommendations,keywords,external_ids"
+                        + "&include_image_language=en,null",
+                kind.path(),
+                tmdbId);
+    }
+
+    /**
      * The TMDB id behind an IMDb one, for the kind asked for. TMDB indexes both, which is
      * what lets a library whose provider only knew an IMDb id still land on a canonical.
      *

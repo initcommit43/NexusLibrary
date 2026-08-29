@@ -24,6 +24,7 @@ import {
   type Person,
 } from './mediaDetail'
 import { readGameDetail } from './gameDetail'
+import { readFilmDetail } from './filmDetail'
 
 /** A title related to this one, from either side of the relation. */
 export interface RelatedTitle {
@@ -50,6 +51,12 @@ export interface MediaDetailView {
   trailer: string | null
   summaryExtra: string | null
   characters: CharacterRole[]
+  /**
+   * The people in front of the camera, kept apart from the ones behind it. A source with only
+   * one kind of credit — a game's companies, an anime's studios — leaves this empty and says
+   * everything through {@link staff}.
+   */
+  cast: Person[]
   staff: Person[]
   tags: MediaTag[]
   links: ExternalLink[]
@@ -71,6 +78,7 @@ export const emptyView: MediaDetailView = {
   trailer: null,
   summaryExtra: null,
   characters: [],
+  cast: [],
   staff: [],
   tags: [],
   links: [],
@@ -152,6 +160,8 @@ export const readDetail = (source: string, detail: Record<string, unknown>): Med
       return readAniListView(detail)
     case 'IGDB':
       return readGameDetail(detail)
+    case 'TMDB':
+      return readFilmDetail(detail)
     default:
       return emptyView
   }

@@ -98,6 +98,8 @@ nexus:
     api-base-url: https://api.themoviedb.org/3
     image-base-url: https://image.tmdb.org/t/p/
     poster-size: w500
+    backdrop-size: w1280
+    profile-size: w185
     # The v4 "API Read Access Token" from themoviedb.org/settings/api, sent as a bearer.
     # Application-wide and non-expiring, so films and shows need no per-user OAuth at all.
     access-token: ${TMDB_ACCESS_TOKEN:}

@@ -26,6 +26,12 @@ public record TmdbProperties(
         /** One of TMDB's fixed poster widths. w500 is what a cover grid needs. */
         String posterSize,
 
+        /** A page-wide backdrop; the same image at poster width would be a smear. */
+        String backdropSize,
+
+        /** A face in a cast tile, which is a thumbnail however large the page is. */
+        String profileSize,
+
         /** The v4 "API Read Access Token", sent as a bearer — not the v3 key. */
         String accessToken,
 
@@ -37,6 +43,18 @@ public record TmdbProperties(
     }
 
     public String posterUrl(String posterPath) {
-        return posterPath == null || posterPath.isBlank() ? null : imageBaseUrl + posterSize + posterPath;
+        return imageUrl(posterSize, posterPath);
+    }
+
+    public String backdropUrl(String backdropPath) {
+        return imageUrl(backdropSize, backdropPath);
+    }
+
+    public String profileUrl(String profilePath) {
+        return imageUrl(profileSize, profilePath);
+    }
+
+    private String imageUrl(String size, String path) {
+        return path == null || path.isBlank() ? null : imageBaseUrl + size + path;
     }
 }
