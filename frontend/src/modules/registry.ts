@@ -51,13 +51,26 @@ export interface ModuleDefinition {
   exportsCsv: boolean
 }
 
-const watching = {
-  PLANNING: 'Plan to watch',
-  IN_PROGRESS: 'Watching',
+/**
+ * The same five shelves in every module, named with the verb of the medium.
+ *
+ * <p>Only the two shelves that describe an activity change their wording: you plan to watch a
+ * film and to read a book, and you are watching or reading it now. The other three describe
+ * where a title stands rather than what you do with it — finished is finished, whether it was
+ * played or read — and a module wording those differently only makes the same shelf harder to
+ * recognise as you move between them.
+ */
+const shelves = (planning: string, inProgress: string): Record<TrackingStatus, string> => ({
+  PLANNING: planning,
+  IN_PROGRESS: inProgress,
   COMPLETED: 'Completed',
   PAUSED: 'On hold',
   DROPPED: 'Dropped',
-} satisfies Record<TrackingStatus, string>
+})
+
+const watching = shelves('Plan to watch', 'Watching')
+const reading = shelves('Plan to read', 'Reading')
+const playing = shelves('Plan to play', 'Playing')
 
 export const MODULES: ModuleDefinition[] = [
   {
@@ -73,13 +86,7 @@ export const MODULES: ModuleDefinition[] = [
         progressLabel: 'Hours played',
         searchPlaceholder: 'Search games…',
         statusOrder: ['IN_PROGRESS', 'PLANNING', 'COMPLETED', 'PAUSED', 'DROPPED'],
-        statusLabels: {
-          PLANNING: 'Backlog',
-          IN_PROGRESS: 'Playing',
-          COMPLETED: 'Completed',
-          PAUSED: 'Paused',
-          DROPPED: 'Dropped',
-        },
+        statusLabels: playing,
       },
     ],
     emptyHint: 'Nothing tracked yet. Connect Steam in settings, or search for a game.',
@@ -113,13 +120,7 @@ export const MODULES: ModuleDefinition[] = [
         progressLabel: 'Chapters',
         searchPlaceholder: 'Search manga…',
         statusOrder: ['IN_PROGRESS', 'COMPLETED', 'PAUSED', 'DROPPED', 'PLANNING'],
-        statusLabels: {
-          PLANNING: 'Plan to read',
-          IN_PROGRESS: 'Reading',
-          COMPLETED: 'Completed',
-          PAUSED: 'On hold',
-          DROPPED: 'Dropped',
-        },
+        statusLabels: reading,
       },
     ],
     emptyHint: 'Nothing tracked yet. Connect AniList or MyAnimeList in settings.',
@@ -152,7 +153,7 @@ export const MODULES: ModuleDefinition[] = [
         progressLabel: 'Progress',
         searchPlaceholder: 'Search movies…',
         statusOrder: ['IN_PROGRESS', 'COMPLETED', 'PAUSED', 'DROPPED', 'PLANNING'],
-        statusLabels: { ...watching, PLANNING: 'Watchlist', COMPLETED: 'Watched' },
+        statusLabels: watching,
       },
       {
         mediaType: 'SHOW',
@@ -162,7 +163,7 @@ export const MODULES: ModuleDefinition[] = [
         progressLabel: 'Episodes',
         searchPlaceholder: 'Search shows…',
         statusOrder: ['IN_PROGRESS', 'COMPLETED', 'PAUSED', 'DROPPED', 'PLANNING'],
-        statusLabels: { ...watching, PLANNING: 'Watchlist', COMPLETED: 'Watched' },
+        statusLabels: watching,
       },
     ],
     emptyHint: 'Nothing tracked yet. Connect Simkl in settings, or search for a movie.',
@@ -189,13 +190,7 @@ export const MODULES: ModuleDefinition[] = [
         progressLabel: 'Pages',
         searchPlaceholder: 'Search books…',
         statusOrder: ['IN_PROGRESS', 'PLANNING', 'COMPLETED', 'PAUSED', 'DROPPED'],
-        statusLabels: {
-          PLANNING: 'Want to read',
-          IN_PROGRESS: 'Reading',
-          COMPLETED: 'Read',
-          PAUSED: 'On hold',
-          DROPPED: 'Abandoned',
-        },
+        statusLabels: reading,
       },
     ],
     emptyHint: 'Nothing tracked yet. Upload a Goodreads export in settings.',
