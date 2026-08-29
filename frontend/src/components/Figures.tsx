@@ -14,11 +14,22 @@ export interface Figure {
  * the numeral is what makes it a headline, and the space around it is what separates it from
  * the next.
  */
-export const Figures = ({ figures }: { figures: Figure[] }) => {
+export const Figures = ({
+  figures,
+  panelled = false,
+}: {
+  figures: Figure[]
+  /**
+   * Tiles rather than a rail. For a column beside something else, where a row of numbers
+   * would wrap into an unreadable stagger and the numbers are the section rather than a
+   * heading over one.
+   */
+  panelled?: boolean
+}) => {
   if (figures.length === 0) return null
 
   return (
-    <dl className="figure-rail">
+    <dl className={panelled ? 'figure-rail is-panelled' : 'figure-rail'}>
       {figures.map((figure) => (
         <div key={figure.label} className="figure">
           <dt>{figure.value}</dt>

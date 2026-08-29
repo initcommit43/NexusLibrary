@@ -3,10 +3,12 @@ import { Link } from 'react-router-dom'
 import {
   ApiError,
   api,
+  type ActivityDay,
   type MediaType,
   type ProfileBanner,
   type TrackedItem,
 } from '../api/client'
+import { ActivityHeatmap } from '../components/ActivityHeatmap'
 import { AppShell } from '../components/AppShell'
 import { BannerPicker } from '../components/BannerPicker'
 import { ProfileBannerFrame } from '../components/ProfileBannerFrame'
@@ -15,8 +17,21 @@ import { summarise, timeSpent } from '../components/stats'
 import { FavouriteGrid } from '../components/FavouriteGrid'
 import { FavouriteRows } from '../components/FavouriteRows'
 import { Grip } from '../components/Grip'
+import { ScopePicker } from '../components/ScopePicker'
 import { useAuth } from '../auth/useAuth'
-import { MODULES, mediaPathFor } from '../modules/registry'
+import { MODULES, mediaPathFor, type ModuleDefinition } from '../modules/registry'
+import { useCurrentModule } from '../modules/useCurrentModule'
+
+/** Half a year, which is what fits one lane of the page at a square worth hovering. */
+const HISTORY_WEEKS = 26
+
+/*
+ * A module the map can say anything about. Steam knows how long a game was played and never
+ * when, so a games map would be a blank half-year over a shelf someone lives in — the
+ * module is left out of the picker rather than offered and then shown empty.
+ */
+const keepsDates = (module: ModuleDefinition) =>
+  module.types.some((type) => type.mediaType !== 'GAME')
 
 /** Arranged first, in the order they were dragged into; then everything never moved. */
 const byRank = (a: TrackedItem, b: TrackedItem): number => {
@@ -36,9 +51,21 @@ const byPlacement = (order: MediaType[]) => (a: MediaType, b: MediaType) => {
 
 export const ProfilePage = () => {
   const { user } = useAuth()
+  const module = useCurrentModule()
   const [entries, setEntries] = useState<TrackedItem[] | null>(null)
   const [rowOrder, setRowOrder] = useState<MediaType[]>([])
   const [banner, setBanner] = useState<ProfileBanner | null>(null)
+  const [history, setHistory] = useState<ActivityDay[]>([])
+
+  /*
+   * The map opens on whatever module the header is set to, and then follows the picker
+   * rather than the header: someone comparing two modules on this page is not asking to be
+   * moved to one of them.
+   */
+  const mapped = MODULES.filter(keepsDates)
+  const [scope, setScope] = useState<ModuleDefinition>(
+    () => mapped.find((candidate) => candidate.slug === module.slug) ?? mapped[0],
+  )
   const [picking, setPicking] = useState(false)
   const [adjusting, setAdjusting] = useState(false)
   const [arranging, setArranging] = useState(false)
@@ -55,6 +82,26 @@ export const ProfilePage = () => {
         setError(err instanceof ApiError ? err.message : 'Could not load your library.'),
       )
   }, [])
+
+  // Its own fetch, because it is the one thing on the page that is asked again when the
+  // reader points the map somewhere else.
+  useEffect(() => {
+    let current = true
+
+    api
+      .activityHistory(
+        HISTORY_WEEKS,
+        scope.types.map((type) => type.mediaType),
+      )
+      // A map that will not load leaves the squares blank rather than taking the page down
+      // with it: nothing else here depends on it.
+      .then((days) => current && setHistory(days))
+      .catch(() => current && setHistory([]))
+
+    return () => {
+      current = false
+    }
+  }, [scope])
 
   const totals = useMemo(() => summarise(entries ?? []), [entries])
   const favouriteCount = useMemo(
@@ -238,18 +285,42 @@ export const ProfilePage = () => {
 
       {entries !== null && (
         <>
-          <Figures
-            figures={[
-              { label: 'tracked', value: totals.tracked.toLocaleString() },
-              { label: 'completed', value: totals.completed.toLocaleString() },
-              { label: 'rated', value: totals.rated.toLocaleString() },
-              {
-                label: 'average score',
-                value: totals.meanScore === null ? '—' : totals.meanScore.toFixed(1),
-              },
-              { label: 'favourites', value: favouriteCount.toLocaleString() },
-            ]}
-          />
+          {/*
+            * Two lanes: the year on the left and the totals beside it. The map is read
+            * across and the figures down, so side by side each gets the shape it wants and
+            * neither pushes the favourites below the fold on its own.
+            */}
+          <div className="profile-overview">
+            <section className="status-section">
+              <h2>
+                Activity
+                <ScopePicker modules={mapped} current={scope} onChoose={setScope} />
+              </h2>
+              <ActivityHeatmap days={history} weeks={HISTORY_WEEKS} />
+            </section>
+
+            <section className="status-section">
+              <h2>At a glance</h2>
+              <Figures
+                panelled
+                figures={[
+                  { label: 'tracked', value: totals.tracked.toLocaleString() },
+                  { label: 'completed', value: totals.completed.toLocaleString() },
+                  { label: 'rated', value: totals.rated.toLocaleString() },
+                  {
+                    label: 'average score',
+                    value: totals.meanScore === null ? '—' : totals.meanScore.toFixed(1),
+                  },
+                  { label: 'favourites', value: favouriteCount.toLocaleString() },
+                  {
+                    label: 'active days',
+                    value: String(history.length),
+                    hint: 'last 7 months',
+                  },
+                ]}
+              />
+            </section>
+          </div>
 
           <section className="status-section">
             <h2>

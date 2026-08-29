@@ -281,6 +281,39 @@ button.small {
   color: var(--accent);
 }
 
+/*
+ * The same control as the header's, in the corner of a section's heading and doing a
+ * different job with it: that one moves you to a module, this one points the panel below at
+ * one. Bare rather than a pill, so it reads as the section's own action alongside the
+ * "see all" links that sit in the same place elsewhere.
+ */
+.scope-picker {
+  margin-left: auto;
+  align-self: center;
+}
+
+.scope-picker .module-trigger {
+  padding: 0;
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+}
+
+.scope-picker .module-trigger:hover:not(:disabled) {
+  background: none;
+  color: var(--text);
+}
+
+/* Hung from the right, since the trigger sits at the far end of the heading. */
+.scope-picker .module-menu {
+  left: auto;
+  right: 0;
+  min-width: 11rem;
+}
+
 .module-menu {
   position: absolute;
   z-index: 20;
@@ -1246,6 +1279,166 @@ input.filter-control::-webkit-search-cancel-button {
  * here because the numbers are the section rather than a heading over one, and a lane of
  * bare figures beside a drawn panel reads as something the layout forgot to finish.
  */
+/*
+ * Fixed columns, so every tile is the same width. Fitting as many as would go left the last
+ * row stretched wider than the ones above it, which reads as two sizes of number rather
+ * than one set of them.
+ */
+.figure-rail.is-panelled {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+  padding: 0;
+}
+
+.is-panelled .figure {
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface);
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+}
+
+.is-panelled .figure dt {
+  color: var(--accent);
+  font-size: var(--text-2xl);
+}
+
+.is-panelled .figure dd {
+  font-size: var(--text-xs);
+}
+
+/* The year across, the totals down: each shape gets the lane that suits it. */
+.profile-overview {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-5);
+  align-items: start;
+}
+
+@media (max-width: 64rem) {
+  .profile-overview {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* --- activity history --- */
+
+.heatmap {
+  /*
+   * The blank day, which has to sit darker than the box it is in and stay that way in both
+   * themes. Mixed from the strong border rather than named as a colour of its own: that
+   * token is already the darkest line the theme draws, in whichever direction its dark lies.
+   */
+  --heat-blank: color-mix(in srgb, var(--border-strong) 55%, var(--surface));
+
+  /*
+   * Wrapped to the map rather than stretched to the lane. A box with a third of it empty
+   * reads as a panel that failed to fill, and the scale beneath ends up under that empty
+   * part instead of under the last column it explains.
+   */
+  align-self: flex-start;
+  max-width: 100%;
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--surface);
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+}
+
+/*
+ * A week to a column, oldest on the left. It scrolls rather than shrinks: squares small
+ * enough to fit a narrow window are too small to tell four shades apart.
+ */
+.heatmap-grid {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  padding-bottom: var(--space-1);
+}
+
+.heatmap-week {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.heatmap-day {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  border-radius: 3px;
+  background: var(--heat-blank);
+}
+
+/*
+ * Four steps of the module's own accent. Mixed against the page rather than set as four
+ * colours, so the ladder holds together in both themes and follows whichever accent the
+ * reader is under.
+ */
+.heatmap-day[data-step='1'] {
+  background: color-mix(in srgb, var(--accent) 30%, var(--heat-blank));
+}
+
+.heatmap-day[data-step='2'] {
+  background: color-mix(in srgb, var(--accent) 55%, var(--heat-blank));
+}
+
+.heatmap-day[data-step='3'] {
+  background: color-mix(in srgb, var(--accent) 78%, var(--heat-blank));
+}
+
+.heatmap-day[data-step='4'] {
+  background: var(--accent);
+}
+
+/* Days that have not happened yet hold their place without claiming to be empty ones. */
+.heatmap-day.is-ahead {
+  visibility: hidden;
+}
+
+/* Under the map and against its right edge, which is where reading it ends. */
+.heatmap-key {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  margin: 0;
+  font-size: var(--text-xs);
+}
+
+.heatmap-key .heatmap-day {
+  width: 0.7rem;
+  height: 0.7rem;
+}
+
+.heatmap-key .heatmap-day:first-of-type {
+  margin-left: var(--space-1);
+}
+
+.heatmap-key .heatmap-day:last-of-type {
+  margin-right: var(--space-1);
+}
+
+.figure dt {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.figure dd {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
 /* One shelf at a time. Chosen reads as chosen rather than as a link mid-hover. */
 .lens-bar {
   display: flex;

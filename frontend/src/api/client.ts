@@ -91,6 +91,9 @@ export type TrackedItem = {
  */
 export type RowArrangement = { order: MediaType[]; paired: MediaType[] }
 
+/** One day of a reader's history: how many titles they started or finished on it. */
+export type ActivityDay = { date: string; amount: number }
+
 /** The image at the head of a profile, the title it came from, and how it is framed. */
 export type ProfileBanner = {
   imageUrl: string
@@ -469,6 +472,12 @@ export const api = {
     }),
 
   /** Null when the reader has chosen none, which is a bare profile head rather than an error. */
+  /** Only the days that saw something; the map draws its own blanks. */
+  activityHistory: (weeks: number, mediaTypes: MediaType[]) =>
+    request<ActivityDay[]>(
+      `/activity/history?weeks=${weeks}&mediaTypes=${mediaTypes.join(',')}`,
+    ),
+
   profileBanner: () => request<ProfileBanner | null>('/settings/profile-banner'),
 
   /**
