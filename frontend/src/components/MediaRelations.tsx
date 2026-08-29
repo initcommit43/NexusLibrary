@@ -117,6 +117,15 @@ export const MediaRelations = ({
 }
 
 /**
+ * How many suggestions a row holds.
+ *
+ * <p>Seven, because that is what the screenshots above settle on — a source hands over
+ * eight and the first becomes the page's banner — and two rows of different lengths under
+ * one another is the asymmetry this panel is trying to avoid.
+ */
+const ROW_COUNT = 7
+
+/**
  * Titles like this one rather than part of it.
  *
  * <p>Kept apart from relations deliberately. A sequel belongs to the same work and a
@@ -134,8 +143,8 @@ export const MediaRecommendations = ({
   return (
     <section className="status-section">
       <h2>You might also like</h2>
-      <div className="relation-grid">
-        {recommendations.map((title) => (
+      <div className="relation-grid one-row">
+        {recommendations.slice(0, ROW_COUNT).map((title) => (
           <Link key={title.id} className="relation-card" to={`/media/${source}/${title.id}`}>
             {title.cover ? (
               <img src={title.cover} alt="" loading="lazy" />

@@ -2042,6 +2042,23 @@ input.filter-control::-webkit-search-cancel-button {
   gap: var(--space-3);
 }
 
+/* One row, whatever the width: the count changes, the wrap never happens. */
+.relation-grid.one-row {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+@media (max-width: 64rem) {
+  .relation-grid.one-row {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 40rem) {
+  .relation-grid.one-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 .relation-card {
   display: flex;
   flex-direction: column;
