@@ -44,6 +44,12 @@ export const AddToShelfMenu = ({ result, state, onAdd, onEdit }: Props) => {
   // elements, and in CSS they fought each other over which one a class had reached first.
   const [reaching, setReaching] = useState(false)
 
+  /*
+   * The shelf a title is on is named for its medium — a game is played, a book is read — so
+   * the first shortcut takes that word. The second says Planning flat: every medium words it
+   * differently and at length, and "Plan to watch" beside a calendar is a sentence where a
+   * label belongs.
+   */
   const labels = statusLabelsFor(result.mediaType)
   // Only while a save is in flight. Being on a shelf already is not a reason to refuse the
   // control: moving a title from one shelf to another is the same gesture as putting it on
@@ -76,11 +82,11 @@ export const AddToShelfMenu = ({ result, state, onAdd, onEdit }: Props) => {
         type="button"
         className="card-action quick"
         disabled={busy}
-        aria-label={`Set ${result.title} as ${labels.PLANNING}`}
+        aria-label={`Set ${result.title} as Planning`}
         onClick={() => onAdd('PLANNING')}
       >
         <CalendarIcon />
-        <span className="card-action-label">Set as {labels.PLANNING}</span>
+        <span className="card-action-label">Set as Planning</span>
       </button>
 
       <button
