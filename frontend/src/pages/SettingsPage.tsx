@@ -17,7 +17,6 @@ import {
 } from '../modules/registry'
 import { useModules } from '../modules/useModules'
 import { useAuth } from '../auth/useAuth'
-import { useLocation } from 'react-router-dom'
 
 /**
  * An import runs in three stretches of very different length — pulling the list, matching
@@ -62,14 +61,19 @@ export const SettingsPage = () => {
   const { isAvailable, isBuilt, isEnabled, setEnabled } = useModules()
   const { user, logout, refresh } = useAuth()
 
-  const [profile, setProfile] = useState({ username: '', email: '' })
+  // Seeded from the account rather than left empty: the fields say what they currently
+  // are, and this page is only reached once the session has resolved, so they are there.
+  const [profile, setProfile] = useState(() => ({
+    username: user?.username ?? '',
+    email: user?.email ?? '',
+  }))
   const [passwords, setPasswords] = useState({ current: '', next: '' })
   const [confirmation, setConfirmation] = useState('')
   const [accountBusy, setAccountBusy] = useState<'profile' | 'password' | 'data' | 'delete' | null>(
     null,
   )
   const [accountNote, setAccountNote] = useState<string | null>(null)
-  const { hash } = useLocation()
+  const [reading, setReading] = useState('general')
   const [accounts, setAccounts] = useState<ConnectedAccount[] | null>(null)
   const [report, setReport] = useState<ImportReport | null>(null)
   /**
@@ -739,15 +743,20 @@ export const SettingsPage = () => {
       <article className="card">
         <div className="settings-group">
           <h3>Profile</h3>
-          <p className="muted">Leave a field empty to keep what it already says.</p>
+          <p className="muted">Change either and save.</p>
 
           <div className="field-stack">
+            {/*
+              * autoComplete off on both: a browser reads a text field beside a password field
+              * as a sign-in form and fills it with the saved address, which quietly replaced
+              * the username with an email.
+              */}
             <label className="field">
               <span>Username</span>
               <input
                 type="text"
+                autoComplete="off"
                 value={profile.username}
-                placeholder={user?.username ?? ''}
                 onChange={(e) => setProfile({ ...profile, username: e.target.value })}
               />
             </label>
@@ -756,8 +765,8 @@ export const SettingsPage = () => {
               <span>Email</span>
               <input
                 type="email"
+                autoComplete="off"
                 value={profile.email}
-                placeholder={user?.email ?? ''}
                 onChange={(e) => setProfile({ ...profile, email: e.target.value })}
               />
             </label>
@@ -765,14 +774,16 @@ export const SettingsPage = () => {
             <div className="integration-actions">
               <button
                 type="button"
-                disabled={accountBusy !== null || (!profile.username && !profile.email)}
+                disabled={
+                  accountBusy !== null ||
+                  (profile.username === (user?.username ?? '') && profile.email === (user?.email ?? ''))
+                }
                 onClick={() =>
                   void runAccountTask('profile', 'Saved.', async () => {
                     await api.updateProfile({
-                      ...(profile.username ? { username: profile.username } : {}),
-                      ...(profile.email ? { email: profile.email } : {}),
+                      ...(profile.username === user?.username ? {} : { username: profile.username }),
+                      ...(profile.email === user?.email ? {} : { email: profile.email }),
                     })
-                    setProfile({ username: '', email: '' })
                     // The header still shows the old name until something reads it again.
                     await refresh()
                   })
@@ -796,7 +807,7 @@ export const SettingsPage = () => {
               <span>Current password</span>
               <input
                 type="password"
-                autoComplete="current-password"
+                autoComplete="new-password"
                 value={passwords.current}
                 onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
               />
@@ -870,7 +881,7 @@ export const SettingsPage = () => {
               <span>Confirm with your password</span>
               <input
                 type="password"
-                autoComplete="current-password"
+                autoComplete="new-password"
                 value={confirmation}
                 onChange={(e) => setConfirmation(e.target.value)}
               />
@@ -967,6 +978,30 @@ export const SettingsPage = () => {
     { id: 'export', label: 'Export', render: exportSection },
   ]
 
+  const ids = panes.map((pane) => pane.id).join(',')
+
+  /*
+   * The rail marks where the page actually is, not the last thing clicked. The band is a
+   * strip just under the header: whatever is crossing it is what is being read, which is
+   * what stops the mark sticking to a short section long after it has gone by.
+   */
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const crossing = entries.find((entry) => entry.isIntersecting)
+        if (crossing) setReading(crossing.target.id)
+      },
+      { rootMargin: '-72px 0px -70% 0px' },
+    )
+
+    for (const id of ids.split(',')) {
+      const node = document.getElementById(id)
+      if (node) observer.observe(node)
+    }
+
+    return () => observer.disconnect()
+  }, [ids])
+
   return (
     <AppShell>
       <h1>Settings</h1>
@@ -991,7 +1026,8 @@ export const SettingsPage = () => {
             {panes.map((pane) => (
               <li key={pane.id}>
                 <a
-                  className={hash === `#${pane.id}` ? 'list-link active' : 'list-link'}
+                  className={reading === pane.id ? 'list-link active' : 'list-link'}
+                  aria-current={reading === pane.id ? 'true' : undefined}
                   href={`#${pane.id}`}
                 >
                   {pane.label}
