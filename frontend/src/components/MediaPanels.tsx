@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { Distribution, ExternalLink, MediaTag, Person } from './mediaDetail'
 import type { CharacterRole } from './mediaDetail'
 import type { Score } from './detailView'
+import { Bars } from './Bars'
 
 const PersonTile = ({ left, right }: { left: Person; right: Person | null }) => (
   <div className="person-card">
@@ -53,26 +54,6 @@ export const MediaStaff = ({ staff, title }: { staff: Person[]; title: string })
       <div className="person-grid">
         {staff.map((member) => (
           <PersonTile key={`${member.id}-${member.role}`} left={member} right={null} />
-        ))}
-      </div>
-    </section>
-  )
-}
-
-const Bars = ({ rows, title }: { rows: Distribution[]; title: string }) => {
-  if (rows.length === 0) return null
-  const peak = Math.max(...rows.map((row) => row.amount))
-
-  return (
-    <section className="status-section">
-      <h2>{title}</h2>
-      <div className="bar-chart">
-        {rows.map((row) => (
-          <div key={row.label} className="bar">
-            <span className="bar-value">{row.amount.toLocaleString()}</span>
-            <div className="bar-fill" style={{ height: `${Math.round((row.amount / peak) * 100)}%` }} />
-            <span className="bar-label muted">{row.label}</span>
-          </div>
         ))}
       </div>
     </section>

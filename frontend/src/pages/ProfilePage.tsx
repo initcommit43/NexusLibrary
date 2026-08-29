@@ -2,14 +2,13 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ApiError, api, type MediaType, type TrackedItem } from '../api/client'
 import { AppShell } from '../components/AppShell'
+import { Figures } from '../components/Figures'
+import { summarise, timeSpent } from '../components/stats'
 import { FavouriteGrid } from '../components/FavouriteGrid'
 import { FavouriteRows } from '../components/FavouriteRows'
 import { Grip } from '../components/Grip'
 import { useAuth } from '../auth/useAuth'
 import { MODULES } from '../modules/registry'
-
-/** Ratings are stored 0–100 and shown out of ten, the way every entry shows its own. */
-const RATING_SCALE = 10
 
 /** Arranged first, in the order they were dragged into; then everything never moved. */
 const byRank = (a: TrackedItem, b: TrackedItem): number => {
@@ -26,14 +25,6 @@ const byPlacement = (order: MediaType[]) => (a: MediaType, b: MediaType) => {
   }
   return placed(a) - placed(b)
 }
-
-const Stat = ({ label, value, hint }: { label: string; value: number; hint?: string }) => (
-  <li className="profile-stat">
-    <b>{value}</b>
-    <span>{label}</span>
-    {hint && <span className="muted">{hint}</span>}
-  </li>
-)
 
 export const ProfilePage = () => {
   const { user } = useAuth()
@@ -53,19 +44,11 @@ export const ProfilePage = () => {
       )
   }, [])
 
-  const totals = useMemo(() => {
-    const all = entries ?? []
-    const rated = all.filter((entry) => entry.rating !== null)
-    const sum = rated.reduce((running, entry) => running + (entry.rating ?? 0), 0)
-
-    return {
-      tracked: all.length,
-      completed: all.filter((entry) => entry.status === 'COMPLETED').length,
-      favorites: all.filter((entry) => entry.favorite).length,
-      rated: rated.length,
-      average: rated.length ? sum / rated.length / RATING_SCALE : null,
-    }
-  }, [entries])
+  const totals = useMemo(() => summarise(entries ?? []), [entries])
+  const favouriteCount = useMemo(
+    () => (entries ?? []).filter((entry) => entry.favorite).length,
+    [entries],
+  )
 
   /*
    * One grid per kind of thing, in the order the app lists them, and only the kinds that
@@ -112,16 +95,26 @@ export const ProfilePage = () => {
     }
   }
 
-  // Every shelf the app has, including the empty ones: a count of zero is the honest answer
-  // and the link is how you go and change it.
+  /*
+   * Every shelf the app has, including the empty ones: a count of zero is the honest answer
+   * and the link is how you go and change it.
+   *
+   * <p>One row rather than a tile of counts and a separate list of links. The two said less
+   * between them than the row says on its own, and cost the top of the page to say it.
+   */
   const shelves = useMemo(
     () =>
       MODULES.flatMap((module) =>
-        module.types.map((type) => ({
-          module,
-          type,
-          count: (entries ?? []).filter((entry) => entry.mediaType === type.mediaType).length,
-        })),
+        module.types.map((type) => {
+          const held = (entries ?? []).filter((entry) => entry.mediaType === type.mediaType)
+          return {
+            key: `${module.slug}/${type.slug}`,
+            path: `/library/${module.slug}/${type.slug}`,
+            label: type.listLabel,
+            summary: summarise(held),
+            time: timeSpent(held, type.mediaType),
+          }
+        }),
       ),
     [entries],
   )
@@ -159,7 +152,7 @@ export const ProfilePage = () => {
     <AppShell>
       <h1>Profile</h1>
 
-      <section className="card profile-identity">
+      <section className="profile-identity">
         <span className="profile-avatar" aria-hidden>
           {user?.username.charAt(0).toUpperCase()}
         </span>
@@ -179,20 +172,22 @@ export const ProfilePage = () => {
 
       {entries !== null && (
         <>
-          <ul className="profile-stats">
-            <Stat label="Tracked" value={totals.tracked} />
-            <Stat label="Completed" value={totals.completed} />
-            <Stat
-              label="Rated"
-              value={totals.rated}
-              hint={totals.average === null ? undefined : `${totals.average.toFixed(1)} average`}
-            />
-            <Stat label="Favourites" value={totals.favorites} />
-          </ul>
+          <Figures
+            figures={[
+              { label: 'tracked', value: totals.tracked.toLocaleString() },
+              { label: 'completed', value: totals.completed.toLocaleString() },
+              { label: 'rated', value: totals.rated.toLocaleString() },
+              {
+                label: 'mean score',
+                value: totals.meanScore === null ? '—' : totals.meanScore.toFixed(1),
+              },
+              { label: 'favourites', value: favouriteCount.toLocaleString() },
+            ]}
+          />
 
           <section className="status-section">
             <h2>
-              Favourites <span className="muted">({totals.favorites})</span>
+              Favourites <span className="muted">({favouriteCount})</span>
               {favourites.length > 0 && (
                 <button
                   type="button"
@@ -244,17 +239,34 @@ export const ProfilePage = () => {
           </section>
 
           <section className="status-section">
-            <h2>Across your shelves</h2>
-            <ul className="profile-shelves">
-              {shelves.map(({ module, type, count }) => (
-                <li key={`${module.slug}/${type.slug}`}>
-                  <Link className="profile-shelf" to={`/library/${module.slug}/${type.slug}`}>
-                    <span>{type.listLabel}</span>
-                    <span className="muted">{count}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            <h2>
+              Your library
+              <Link className="section-action" to="/stats">
+                See all stats →
+              </Link>
+            </h2>
+
+            <table className="stat-table">
+              <tbody>
+                {shelves.map(({ key, path, label, summary, time }) => (
+                  <tr key={key}>
+                    <th scope="row">
+                      <Link to={path}>{label}</Link>
+                    </th>
+                    <td>{summary.tracked.toLocaleString()}</td>
+                    <td className="muted">
+                      {summary.completed > 0 ? `${summary.completed.toLocaleString()} completed` : ''}
+                    </td>
+                    <td className="muted">
+                      {summary.meanScore === null ? '' : `${summary.meanScore.toFixed(1)} mean`}
+                    </td>
+                    <td className="muted">
+                      {time === null ? '' : `${time.amount.toLocaleString()} ${time.unit}`}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </section>
         </>
       )}
