@@ -51,7 +51,10 @@ export const App = () => (
       <Route path="/search" element={<SearchPage />} />
       <Route path="/activity" element={<ActivityPage />} />
       <Route path="/profile" element={<ProfilePage />} />
+      {/* The bare path and a lens without a section both resolve inside the page itself. */}
       <Route path="/stats" element={<StatsPage />} />
+      <Route path="/stats/:lens" element={<StatsPage />} />
+      <Route path="/stats/:lens/:section" element={<StatsPage />} />
       <Route path="/media/:source/:externalId" element={<MediaPage />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/settings/steam/callback" element={<SteamCallbackPage />} />
