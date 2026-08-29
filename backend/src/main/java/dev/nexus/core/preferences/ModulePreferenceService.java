@@ -37,6 +37,11 @@ public class ModulePreferenceService {
                 : EnumSet.copyOf(disabled);
 
         repository.deleteByUserId(userId);
+        // Flushed before the new rows are written: Hibernate orders inserts ahead of deletes
+        // within a transaction, so a module that stays switched off across two writes collides
+        // with the copy on its way out on (user_id, media_type).
+        repository.flush();
+
         if (!wanted.isEmpty()) {
             repository.saveAll(
                     wanted.stream().map(type -> new DisabledModule(userId, type)).toList());

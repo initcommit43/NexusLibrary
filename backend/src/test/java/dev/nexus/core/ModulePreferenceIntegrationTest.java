@@ -70,6 +70,15 @@ class ModulePreferenceIntegrationTest extends PostgresIntegrationTest {
         assertThat(disabledFor(token)).containsExactly("MANGA");
     }
 
+    /** Switching a second module off is a write that keeps the first one in the set. */
+    @Test
+    void switchingAnotherModuleOffKeepsTheOneAlreadyOff() {
+        put(token, List.of("BOOK"));
+
+        assertThat(put(token, List.of("BOOK", "GAME")).status()).isEqualTo(200);
+        assertThat(disabledFor(token)).containsExactlyInAnyOrder("BOOK", "GAME");
+    }
+
     @Test
     void switchingEverythingBackOnLeavesNothingBehind() {
         put(token, List.of("BOOK"));
