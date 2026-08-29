@@ -54,6 +54,12 @@ export interface MediaDetailView {
   tags: MediaTag[]
   links: ExternalLink[]
   relations: RelatedTitle[]
+  /**
+   * Titles like this one, which is a different claim from being part of it. A sequel belongs
+   * to the same work; a game that plays similarly is a suggestion, and putting the two in one
+   * list says The Witcher 3 is related to Skyrim, which it is not.
+   */
+  recommendations: RelatedTitle[]
   gallery: string[]
   scores: Score[]
   statusDistribution: Distribution[]
@@ -69,6 +75,7 @@ export const emptyView: MediaDetailView = {
   tags: [],
   links: [],
   relations: [],
+  recommendations: [],
   gallery: [],
   scores: [],
   statusDistribution: [],

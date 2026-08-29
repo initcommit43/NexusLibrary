@@ -115,10 +115,9 @@ export const readGameDetail = (detail: Record<string, unknown>): MediaDetailView
     staff: readCompanies(detail),
     tags: readTags(detail),
     links: readLinks(detail),
-    relations: [
-      ...readRelated(detail, 'related', 'Related'),
-      ...readRelated(detail, 'similar', 'Similar'),
-    ],
+    // What the game is made of, and what it is merely like, are two different lists.
+    relations: readRelated(detail, 'related', 'Related'),
+    recommendations: readRelated(detail, 'similar', 'Similar'),
     gallery: gallery.slice(1),
     scores: readScores(detail),
   }

@@ -35,7 +35,6 @@ const RELATION_ORDER = [
   'Expansion',
   'Character',
   'Related',
-  'Similar',
   'Other',
 ]
 
@@ -109,6 +108,42 @@ export const MediaRelations = ({
             </span>
             <span className="muted">
               {[relation.format, relation.year].filter(Boolean).join(' · ')}
+            </span>
+          </Link>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+/**
+ * Titles like this one rather than part of it.
+ *
+ * <p>Kept apart from relations deliberately. A sequel belongs to the same work and a
+ * suggestion does not, and listing them together says The Witcher 3 is related to Skyrim.
+ */
+export const MediaRecommendations = ({
+  recommendations,
+  source,
+}: {
+  recommendations: RelatedTitle[]
+  source: string
+}) => {
+  if (recommendations.length === 0) return null
+
+  return (
+    <section className="status-section">
+      <h2>You might also like</h2>
+      <div className="relation-grid">
+        {recommendations.map((title) => (
+          <Link key={title.id} className="relation-card" to={`/media/${source}/${title.id}`}>
+            {title.cover ? (
+              <img src={title.cover} alt="" loading="lazy" />
+            ) : (
+              <div className="cover-placeholder" aria-hidden="true" />
+            )}
+            <span className="relation-title" title={title.title}>
+              {title.title}
             </span>
           </Link>
         ))}

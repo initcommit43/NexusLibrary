@@ -5,7 +5,7 @@ import { AppShell } from '../components/AppShell'
 import { EntryEditDialog } from '../components/EntryEditDialog'
 import { MediaFacts } from '../components/MediaFacts'
 import { StatusMenu } from '../components/StatusMenu'
-import { MediaRelations } from '../components/MediaRelations'
+import { MediaRecommendations, MediaRelations } from '../components/MediaRelations'
 import {
   MediaCharacters,
   MediaGallery,
@@ -174,6 +174,7 @@ export const MediaPage = () => {
           />
           <MediaTrailer trailer={view.trailer} />
           <MediaGallery images={view.gallery} />
+          <MediaRecommendations recommendations={view.recommendations} source={media.source} />
           <MediaStats statuses={view.statusDistribution} scores={view.scoreDistribution} />
         </div>
       </div>
