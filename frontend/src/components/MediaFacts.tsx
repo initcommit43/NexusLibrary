@@ -91,6 +91,8 @@ export const MediaFacts = ({ media }: { media: MediaDetail }) => {
     ['Episode duration', minutes(detail.duration)],
     ['Runtime', minutes(meta.runtimeMinutes ?? detail.runtime)],
     ['Seasons', text(meta.seasons)],
+    ['Pages', text(meta.pageCount)],
+    ['First published', text(detail.firstPublished)],
     /*
      * The release, not the reader's progress. A bare "Finished" on a game reads as a game
      * you have finished, which is the one thing on this page that is not about you — and a
@@ -118,6 +120,7 @@ export const MediaFacts = ({ media }: { media: MediaDetail }) => {
   const stacked: [string, string[]][] = [
     ['Studios', studios.length > 0 ? studios : list(meta.studios)],
     ['Producers', producers],
+    ['Authors', list(meta.authors)],
     ['Networks', list(detail.networks)],
     ['Platforms', list(meta.platforms)],
     ['Genres', list(meta.genres)],

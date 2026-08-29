@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.springframework.stereotype.Component;
 
 /** The canonical catalogue for books. One media type, unlike TMDB's two and AniList's two. */
@@ -31,6 +32,17 @@ public class OpenLibraryMetadataAdapter implements MetadataAdapter {
 
     /** Open Library's subject lists run to hundreds of entries; a shelf needs a handful. */
     private static final int MAX_SUBJECTS = 8;
+
+    /**
+     * What a book's own page keeps of the work record's lists.
+     *
+     * <p>Open Library's subject lists run to hundreds on a classic — every edition's cataloguing
+     * folded together — and the answer is cached on the shared item, so a page's worth is what
+     * is kept rather than all of it.
+     */
+    private static final int MAX_DETAIL_SUBJECTS = 20;
+
+    private static final int MAX_COVERS = 6;
 
     private final OpenLibraryClient client;
     private final OpenLibraryProperties properties;
@@ -231,6 +243,95 @@ public class OpenLibraryMetadataAdapter implements MetadataAdapter {
             metadata.put("externalRating", Math.round(rating.doubleValue() * RATING_SCALE));
         }
         return metadata;
+    }
+
+    /**
+     * Everything a book's own page shows beyond the fields core models.
+     *
+     * <p>Comes from the work record, which is the same request {@link #fetchById} already makes
+     * for the description — the search endpoint carries none of this.
+     */
+    @Override
+    public Optional<Map<String, Object>> fetchDetail(String externalId) {
+        return client.fetchWork(externalId).map(this::toDetail);
+    }
+
+    private Map<String, Object> toDetail(Map<String, Object> work) {
+        Map<String, Object> detail = new HashMap<>();
+
+        putIfPresent(detail, "subjects", subjects(work));
+        putIfPresent(detail, "links", links(work));
+        putIfPresent(detail, "covers", covers(work));
+        putIfPresent(detail, "excerpt", excerpt(work));
+        putIfPresent(detail, "firstPublished", work.get("first_publish_date"));
+
+        return detail;
+    }
+
+    /**
+     * What the book is about, where it is set, and who is in it — one list, because the page
+     * shows them as one and Open Library's own split between them is not one a reader asks for.
+     */
+    private List<String> subjects(Map<String, Object> work) {
+        return Stream.of("subjects", "subject_people", "subject_places", "subject_times")
+                .flatMap(key -> strings(work.get(key)).stream())
+                .distinct()
+                .limit(MAX_DETAIL_SUBJECTS)
+                .toList();
+    }
+
+    private List<Map<String, Object>> links(Map<String, Object> work) {
+        if (!(work.get("links") instanceof List<?> entries)) {
+            return List.of();
+        }
+
+        return entries.stream()
+                .filter(Map.class::isInstance)
+                .map(entry -> (Map<?, ?>) entry)
+                .filter(link -> link.get("url") != null)
+                .map(link -> Map.<String, Object>of(
+                        "site",
+                        link.get("title") == null ? "Website" : link.get("title").toString(),
+                        "url",
+                        link.get("url").toString()))
+                .toList();
+    }
+
+    /** Cover ids as something the page can load, the way a search result's single cover is. */
+    private List<String> covers(Map<String, Object> work) {
+        if (!(work.get("covers") instanceof List<?> ids)) {
+            return List.of();
+        }
+
+        return ids.stream()
+                // A work with no cover is recorded as one whose cover is -1.
+                .filter(id -> id instanceof Number number && number.intValue() > 0)
+                .limit(MAX_COVERS)
+                .map(properties::coverUrl)
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    /**
+     * A passage from the book itself, which says more about how it reads than a synopsis does.
+     *
+     * <p>Written under {@code excerpt} or, on older records, under {@code value} — the same
+     * two shapes the description arrives in.
+     */
+    private String excerpt(Map<String, Object> work) {
+        if (!(work.get("excerpts") instanceof List<?> excerpts)) {
+            return null;
+        }
+
+        return excerpts.stream()
+                .filter(Map.class::isInstance)
+                .map(entry -> (Map<?, ?>) entry)
+                .map(entry -> entry.get("excerpt") == null ? entry.get("value") : entry.get("excerpt"))
+                .filter(Objects::nonNull)
+                .map(Object::toString)
+                .filter(text -> !text.isBlank())
+                .findFirst()
+                .orElse(null);
     }
 
     /**

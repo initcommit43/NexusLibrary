@@ -25,6 +25,7 @@ import {
 } from './mediaDetail'
 import { readGameDetail } from './gameDetail'
 import { readFilmDetail } from './filmDetail'
+import { readBookDetail } from './bookDetail'
 
 /** A title related to this one, from either side of the relation. */
 export interface RelatedTitle {
@@ -162,6 +163,8 @@ export const readDetail = (source: string, detail: Record<string, unknown>): Med
       return readGameDetail(detail)
     case 'TMDB':
       return readFilmDetail(detail)
+    case 'OPEN_LIBRARY':
+      return readBookDetail(detail)
     default:
       return emptyView
   }
