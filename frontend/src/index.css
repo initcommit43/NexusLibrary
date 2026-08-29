@@ -953,12 +953,109 @@ input.filter-control::-webkit-search-cancel-button {
 
 /* --- profile --- */
 
+/*
+ * Banner and identity in one block, the way a title's page holds its own: the avatar rides
+ * the banner's lower edge so the two read as a head rather than as a picture with a name
+ * beneath it. Contained rather than breaking out to the window, unlike .media-banner — a
+ * profile is about the reader, and a full-bleed image would make the picture the page.
+ */
+.profile-head {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+
+.profile-banner {
+  position: relative;
+  height: 14rem;
+  overflow: hidden;
+  /* Barely turned: a card's corner on something this wide reads as a rounded box. */
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--card-border);
+  background: var(--surface-raised);
+}
+
+/*
+ * The picture fills the strip and the strip clips it; where it sits inside is written on
+ * the element as the reader drags, since it is a value that changes with a pointer rather
+ * than a state the stylesheet could know.
+ */
+.profile-banner img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  user-select: none;
+}
+
+.profile-banner.adjusting img {
+  cursor: grab;
+}
+
+.profile-banner.adjusting img:active {
+  cursor: grabbing;
+}
+
+.banner-adjust-button {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-full);
+  background: rgb(11 18 32 / 55%);
+  color: var(--banner-text);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.profile-banner:hover .banner-adjust-button,
+.banner-adjust-button:focus-visible {
+  opacity: 1;
+}
+
+.banner-adjust-button:hover {
+  background: rgb(11 18 32 / 78%);
+}
+
+/*
+ * Over the picture rather than under it: a bar that pushed the head down would move the
+ * thing being framed while it was being framed.
+ */
+.banner-adjust {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: rgb(11 18 32 / 78%);
+  color: var(--banner-text);
+}
+
+.banner-adjust-hint {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-xs);
+  color: var(--banner-muted);
+}
+
+.banner-adjust input[type='range'] {
+  width: 8rem;
+  accent-color: var(--accent);
+}
+
 .profile-identity {
   display: flex;
   align-items: center;
   gap: var(--space-4);
-  padding-bottom: var(--space-4);
-  border-bottom: 1px solid var(--border);
 }
 
 /* An initial rather than a picture: there are no avatars to upload yet. */
@@ -975,6 +1072,138 @@ input.filter-control::-webkit-search-cancel-button {
   font-family: var(--font-display);
   font-size: var(--text-lg);
   font-weight: 700;
+}
+
+/*
+ * Only the avatar rides up, and only when there is something to ride up over. The name
+ * stays clear of the image: white-on-anything is a gamble when the anything is whatever
+ * key art the reader picked. The ring is the page's own ground, which is what lets a circle
+ * straddle an edge without the edge cutting through it.
+ *
+ * Positioned, because the banner above it is: a positioned box paints over a static one
+ * whatever the order they are written in, and the avatar has to be the one on top.
+ */
+.has-profile-banner .profile-identity {
+  position: relative;
+  z-index: 1;
+  padding-inline: var(--space-3);
+}
+
+.has-profile-banner .profile-avatar {
+  margin-top: -2rem;
+  border: 3px solid var(--bg);
+  box-shadow: var(--shadow-2);
+}
+
+.profile-name {
+  flex: 1;
+  min-width: 0;
+}
+
+/*
+ * The corner opposite the avatar. Held to the top of the row rather than its middle, which
+ * is where the banner's lower edge is: the credit reads as a caption on the picture instead
+ * of as a line about the reader.
+ */
+.profile-head-aside {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  align-self: flex-start;
+  flex-shrink: 0;
+  gap: var(--space-1);
+  padding-top: var(--space-2);
+  text-align: right;
+}
+
+/*
+ * Out of sight until the head is reached for, like the fold control on home: the button
+ * belongs on the thing it changes, but a profile is not read for its wallpaper.
+ */
+.banner-button {
+  flex-shrink: 0;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.profile-head:hover .banner-button,
+.banner-button:focus-visible {
+  opacity: 1;
+}
+
+
+.banner-button:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
+.banner-button:disabled {
+  cursor: default;
+  color: var(--text-muted);
+}
+
+.profile-banner-credit {
+  margin: 0;
+  font-size: var(--text-xs);
+}
+
+/* The picker: covers, because what is being chosen is a picture. */
+.banner-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
+  gap: var(--space-3);
+  max-height: 26rem;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.banner-option {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  width: 100%;
+  padding: 0;
+  background: none;
+  border: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.banner-option img,
+.banner-option .cover-placeholder {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--card-border);
+}
+
+.banner-option:hover img,
+.banner-option:focus-visible img {
+  border-color: var(--accent);
+}
+
+.banner-option[disabled] {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.banner-option-title {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 /* One grid per module, with the module named over it rather than beside every cover. */
@@ -1012,23 +1241,11 @@ input.filter-control::-webkit-search-cancel-button {
   padding: var(--space-4) 0;
 }
 
-.figure dt {
-  font-family: var(--font-display);
-  font-size: var(--text-2xl);
-  font-weight: 700;
-  line-height: 1.1;
-  color: var(--text);
-  font-variant-numeric: tabular-nums;
-}
-
-.figure dd {
-  display: flex;
-  flex-direction: column;
-  margin: 0;
-  font-size: var(--text-sm);
-  color: var(--text-muted);
-}
-
+/*
+ * Beside the map rather than across the top, where a wrapping rail would stagger. Tiles
+ * here because the numbers are the section rather than a heading over one, and a lane of
+ * bare figures beside a drawn panel reads as something the layout forgot to finish.
+ */
 /* One shelf at a time. Chosen reads as chosen rather than as a link mid-hover. */
 .lens-bar {
   display: flex;

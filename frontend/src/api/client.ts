@@ -85,6 +85,29 @@ export type TrackedItem = {
   notes: string | null
 }
 
+/**
+ * How a reader arranged their favourite rows: the order, and which of them share a band
+ * with the row before them.
+ */
+export type RowArrangement = { order: MediaType[]; paired: MediaType[] }
+
+/** The image at the head of a profile, the title it came from, and how it is framed. */
+export type ProfileBanner = {
+  imageUrl: string
+  title: string
+  mediaType: MediaType
+  source: string
+  externalId: string
+  /** The point of the image held in view, as percentages of it; 50/50 is a plain cover crop. */
+  focusX: number
+  focusY: number
+  /** Hundredths: 100 is the image at cover size, 250 is two and a half times it. */
+  zoom: number
+}
+
+/** Where the image sits inside the strip, which is not a change of which image it is. */
+export type BannerFraming = { focusX: number; focusY: number; zoom: number }
+
 export type MediaDetail = {
   mediaType: MediaType
   source: string
@@ -436,15 +459,35 @@ export const api = {
       body: JSON.stringify({ entryIds }),
     }),
 
-  favouriteRowOrder: () =>
-    request<{ order: MediaType[] }>('/settings/favourite-rows').then((body) => body.order),
+  favouriteRowOrder: () => request<RowArrangement>('/settings/favourite-rows'),
 
   /** Every row the reader has placed, in order; the rest keep the app's own. */
-  replaceFavouriteRowOrder: (order: MediaType[]) =>
-    request<{ order: MediaType[] }>('/settings/favourite-rows', {
+  replaceFavouriteRowOrder: (order: MediaType[], paired: MediaType[] = []) =>
+    request<RowArrangement>('/settings/favourite-rows', {
       method: 'PUT',
-      body: JSON.stringify({ order }),
-    }).then((body) => body.order),
+      body: JSON.stringify({ order, paired }),
+    }),
+
+  /** Null when the reader has chosen none, which is a bare profile head rather than an error. */
+  profileBanner: () => request<ProfileBanner | null>('/settings/profile-banner'),
+
+  /**
+   * Takes the entry rather than an image: the server reads the banner out of that title's
+   * detail, so a profile can only ever wear art from something in the reader's own library.
+   */
+  chooseProfileBanner: (entryId: number) =>
+    request<ProfileBanner>('/settings/profile-banner', {
+      method: 'PUT',
+      body: JSON.stringify({ entryId }),
+    }),
+
+  frameProfileBanner: (framing: BannerFraming) =>
+    request<ProfileBanner>('/settings/profile-banner', {
+      method: 'PATCH',
+      body: JSON.stringify(framing),
+    }),
+
+  clearProfileBanner: () => request<void>('/settings/profile-banner', { method: 'DELETE' }),
 
   listIntegrations: () => request<ConnectedAccount[]>('/integrations'),
 

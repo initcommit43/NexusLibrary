@@ -1,14 +1,22 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ApiError, api, type MediaType, type TrackedItem } from '../api/client'
+import {
+  ApiError,
+  api,
+  type MediaType,
+  type ProfileBanner,
+  type TrackedItem,
+} from '../api/client'
 import { AppShell } from '../components/AppShell'
+import { BannerPicker } from '../components/BannerPicker'
+import { ProfileBannerFrame } from '../components/ProfileBannerFrame'
 import { Figures } from '../components/Figures'
 import { summarise, timeSpent } from '../components/stats'
 import { FavouriteGrid } from '../components/FavouriteGrid'
 import { FavouriteRows } from '../components/FavouriteRows'
 import { Grip } from '../components/Grip'
 import { useAuth } from '../auth/useAuth'
-import { MODULES } from '../modules/registry'
+import { MODULES, mediaPathFor } from '../modules/registry'
 
 /** Arranged first, in the order they were dragged into; then everything never moved. */
 const byRank = (a: TrackedItem, b: TrackedItem): number => {
@@ -30,14 +38,18 @@ export const ProfilePage = () => {
   const { user } = useAuth()
   const [entries, setEntries] = useState<TrackedItem[] | null>(null)
   const [rowOrder, setRowOrder] = useState<MediaType[]>([])
+  const [banner, setBanner] = useState<ProfileBanner | null>(null)
+  const [picking, setPicking] = useState(false)
+  const [adjusting, setAdjusting] = useState(false)
   const [arranging, setArranging] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    Promise.all([api.listEntries(), api.favouriteRowOrder()])
-      .then(([library, order]) => {
+    Promise.all([api.listEntries(), api.favouriteRowOrder(), api.profileBanner()])
+      .then(([library, arrangement, chosen]) => {
         setEntries(library)
-        setRowOrder(order)
+        setRowOrder(arrangement.order)
+        setBanner(chosen)
       })
       .catch((err) =>
         setError(err instanceof ApiError ? err.message : 'Could not load your library.'),
@@ -72,13 +84,13 @@ export const ProfilePage = () => {
   }, [entries, rowOrder])
 
   /**
-   * Writes the order of the rows, the ones with nothing in them included.
+   * Writes an arrangement of the rows, the ones with nothing in them included.
    *
    * <p>An empty row is not drawn but keeps its place: it is put back at the index it was
    * stored at, so unfavouriting the last title in a row and marking another later brings the
    * row back where it was rather than at the end.
    */
-  const reorderRows = async (ordered: MediaType[]) => {
+  const writeRows = async (ordered: MediaType[]) => {
     const hidden = rowOrder.filter((type) => !ordered.includes(type))
     const next = [...ordered]
     for (const type of hidden) {
@@ -88,7 +100,7 @@ export const ProfilePage = () => {
     const held = rowOrder
     setRowOrder(next)
     try {
-      setRowOrder(await api.replaceFavouriteRowOrder(next))
+      setRowOrder((await api.replaceFavouriteRowOrder(next)).order)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not save that order.')
       setRowOrder(held)
@@ -152,15 +164,69 @@ export const ProfilePage = () => {
     <AppShell>
       <h1>Profile</h1>
 
-      <section className="profile-identity">
-        <span className="profile-avatar" aria-hidden>
-          {user?.username.charAt(0).toUpperCase()}
-        </span>
-        <div>
-          <h2>{user?.username}</h2>
-          <p className="muted">{user?.email}</p>
+      {/*
+        * Banner and identity are one block, as on a title's page: the avatar rides the
+        * banner's lower edge, so the two read as a head rather than as a picture with a
+        * name under it. Contained rather than breaking out to the window — the profile is
+        * about the reader, and a full-bleed image would make the picture the page.
+        */}
+      <section className={banner ? 'profile-head has-profile-banner' : 'profile-head'}>
+        {banner && (
+          <ProfileBannerFrame
+            banner={banner}
+            adjusting={adjusting}
+            onAdjust={() => setAdjusting(true)}
+            onFramed={setBanner}
+            onClose={() => setAdjusting(false)}
+          />
+        )}
+
+        <div className="profile-identity">
+          <span className="profile-avatar" aria-hidden>
+            {user?.username.charAt(0).toUpperCase()}
+          </span>
+          <div className="profile-name">
+            <h2>{user?.username}</h2>
+            <p className="muted">{user?.email}</p>
+          </div>
+
+          {/*
+            * Everything about the picture in one corner, tucked under its lower edge as the
+            * avatar rides over it on the other side. The credit says where the banner came
+            * from rather than leaving it an anonymous backdrop; the button is out of sight
+            * until the head is reached for, like the fold control on home — it belongs on
+            * the thing it changes, but a profile is not read for its wallpaper.
+            */}
+          <div className="profile-head-aside">
+            {banner && (
+              <p className="profile-banner-credit muted">
+                Banner from <Link to={mediaPathFor(banner)}>{banner.title}</Link>
+              </p>
+            )}
+            <button
+              type="button"
+              className="banner-button"
+              disabled={entries === null}
+              onClick={() => {
+                setAdjusting(false)
+                setPicking(true)
+              }}
+            >
+              {banner ? 'Change banner' : 'Add a banner'}
+            </button>
+          </div>
         </div>
       </section>
+
+      {picking && entries !== null && (
+        <BannerPicker
+          entries={entries}
+          chosen={banner}
+          onChosen={setBanner}
+          onCleared={() => setBanner(null)}
+          onClose={() => setPicking(false)}
+        />
+      )}
 
       {error && (
         <p className="alert" role="alert">
@@ -222,7 +288,7 @@ export const ProfilePage = () => {
             ) : (
               <FavouriteRows
                 arranging={arranging}
-                onReorder={(rows) => void reorderRows(rows.map((row) => row.key as MediaType))}
+                onReorder={(rows) => void writeRows(rows.map((row) => row.key as MediaType))}
                 rows={favourites.map(({ key, label, marked }) => ({
                   key,
                   label,
