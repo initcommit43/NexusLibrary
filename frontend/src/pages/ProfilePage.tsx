@@ -2,13 +2,19 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ApiError, api, type TrackedItem } from '../api/client'
 import { AppShell } from '../components/AppShell'
-import { EntryCard } from '../components/EntryCard'
-import { EntryEditDialog } from '../components/EntryEditDialog'
+import { FavouriteGrid } from '../components/FavouriteGrid'
 import { useAuth } from '../auth/useAuth'
-import { MODULES, moduleForMediaType } from '../modules/registry'
+import { MODULES } from '../modules/registry'
 
 /** Ratings are stored 0–100 and shown out of ten, the way every entry shows its own. */
 const RATING_SCALE = 10
+
+/** Arranged first, in the order they were dragged into; then everything never moved. */
+const byRank = (a: TrackedItem, b: TrackedItem): number => {
+  if (a.favoriteRank === null) return b.favoriteRank === null ? 0 : 1
+  if (b.favoriteRank === null) return -1
+  return a.favoriteRank - b.favoriteRank
+}
 
 const Stat = ({ label, value, hint }: { label: string; value: number; hint?: string }) => (
   <li className="profile-stat">
@@ -21,7 +27,6 @@ const Stat = ({ label, value, hint }: { label: string; value: number; hint?: str
 export const ProfilePage = () => {
   const { user } = useAuth()
   const [entries, setEntries] = useState<TrackedItem[] | null>(null)
-  const [editing, setEditing] = useState<TrackedItem | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -48,17 +53,23 @@ export const ProfilePage = () => {
   }, [entries])
 
   /*
-   * Grouped by module, in the order the app lists them, and only the modules that have any.
-   * A heading over an empty grid says the module exists; here it would only say you have
+   * One grid per kind of thing, in the order the app lists them, and only the kinds that
+   * have any. Not per module: a module can hold two of them, and anime beside manga is a
+   * shelf of two different habits — as films are beside the series you watch weekly.
+   *
+   * A heading over an empty grid says the kind exists; here it would only say you have
    * nothing in it, which the shelf counts below already say better.
    */
   const favourites = useMemo(() => {
     const marked = (entries ?? []).filter((entry) => entry.favorite)
 
-    return MODULES.map((module) => ({
-      module,
-      marked: marked.filter((entry) => moduleForMediaType(entry.mediaType)?.slug === module.slug),
-    })).filter((group) => group.marked.length > 0)
+    return MODULES.flatMap((module) =>
+      module.types.map((type) => ({
+        key: `${module.slug}/${type.slug}`,
+        label: type.label,
+        marked: marked.filter((entry) => entry.mediaType === type.mediaType).sort(byRank),
+      })),
+    ).filter((group) => group.marked.length > 0)
   }, [entries])
 
   // Every shelf the app has, including the empty ones: a count of zero is the honest answer
@@ -75,8 +86,34 @@ export const ProfilePage = () => {
     [entries],
   )
 
-  const replace = (updated: TrackedItem) =>
-    setEntries((held) => held?.map((entry) => (entry.id === updated.id ? updated : entry)) ?? null)
+  /**
+   * Written as one arrangement of every favourite, not of the module that was dragged.
+   *
+   * <p>Rank is a position in that whole list, so sending only the grid that moved would
+   * hand two of them the same numbers. The grid shows the new order before the request
+   * answers; if the write fails the server's own copy is what comes back.
+   */
+  const reorder = async (key: string, ordered: TrackedItem[]) => {
+    const arranged = favourites.flatMap((group) => (group.key === key ? ordered : group.marked))
+    const ranks = new Map(arranged.map((entry, rank) => [entry.id, rank]))
+
+    setEntries(
+      (held) =>
+        held?.map((entry) => {
+          const rank = ranks.get(entry.id)
+          return rank === undefined ? entry : { ...entry, favoriteRank: rank }
+        }) ?? null,
+    )
+
+    try {
+      const saved = await api.reorderFavourites(arranged.map((entry) => entry.id))
+      const byId = new Map(saved.map((entry) => [entry.id, entry]))
+      setEntries((held) => held?.map((entry) => byId.get(entry.id) ?? entry) ?? null)
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not save that order.')
+      api.listEntries().then(setEntries).catch(() => {})
+    }
+  }
 
   return (
     <AppShell>
@@ -124,14 +161,10 @@ export const ProfilePage = () => {
                 here.
               </p>
             ) : (
-              favourites.map(({ module, marked }) => (
-                <section key={module.slug} className="profile-favourites">
-                  <h3>{module.label}</h3>
-                  <div className="cover-grid">
-                    {marked.map((entry) => (
-                      <EntryCard key={entry.id} entry={entry} onEdit={() => setEditing(entry)} />
-                    ))}
-                  </div>
+              favourites.map(({ key, label, marked }) => (
+                <section key={key} className="profile-favourites">
+                  <h3>{label}</h3>
+                  <FavouriteGrid entries={marked} onReorder={(ordered) => void reorder(key, ordered)} />
                 </section>
               ))
             )}
@@ -153,20 +186,6 @@ export const ProfilePage = () => {
         </>
       )}
 
-      {editing && (
-        <EntryEditDialog
-          entry={editing}
-          onClose={() => setEditing(null)}
-          onSaved={(updated) => {
-            replace(updated)
-            setEditing(null)
-          }}
-          onDeleted={(id) => {
-            setEntries((held) => held?.filter((entry) => entry.id !== id) ?? null)
-            setEditing(null)
-          }}
-        />
-      )}
     </AppShell>
   )
 }

@@ -30,6 +30,8 @@ public record TrackedItemResponse(
         LocalDate startedAt,
         LocalDate finishedAt,
         boolean favorite,
+        /** Where it sits among the reader's favourites, null while they are in default order. */
+        Integer favoriteRank,
         /** Which service this entry was imported from, if it was not added by hand. */
         Provider importedFrom,
         String notes) {
@@ -54,6 +56,7 @@ public record TrackedItemResponse(
                 entry.getStartedAt(),
                 entry.getFinishedAt(),
                 entry.isFavorite(),
+                entry.getFavoriteRank(),
                 entry.getImportedFrom(),
                 entry.getNotes());
     }

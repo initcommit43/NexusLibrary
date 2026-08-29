@@ -78,6 +78,8 @@ export type TrackedItem = {
   finishedAt: string | null
   progressExtra: Record<string, unknown> | null
   favorite: boolean
+  /** Where it sits among the favourites, null while they are in their default order. */
+  favoriteRank: number | null
   /** Set when an import put this here rather than the reader adding it by hand. */
   importedFrom: Provider | null
   notes: string | null
@@ -393,6 +395,13 @@ export const api = {
     request<TrackedItem>(`/entries/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
 
   deleteEntry: (id: number) => request<void>(`/entries/${id}`, { method: 'DELETE' }),
+
+  /** The whole arrangement, first to last, rather than one card's new position. */
+  reorderFavourites: (entryIds: number[]) =>
+    request<TrackedItem[]>('/entries/favourites/order', {
+      method: 'PUT',
+      body: JSON.stringify({ entryIds }),
+    }),
 
   listIntegrations: () => request<ConnectedAccount[]>('/integrations'),
 

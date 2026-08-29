@@ -17,8 +17,11 @@ const progressLabel = (entry: TrackedItem): string | null => {
  * Cover, title, and the two numbers worth seeing on a shelf. Everything editable lives
  * behind the button that appears on hover, so forty cards are forty covers rather than
  * forty forms.
+ *
+ * <p>A card without {@code onEdit} carries no button at all, for the places where the cards
+ * themselves are the thing being handled and a control on each is in the way.
  */
-export const EntryCard = ({ entry, onEdit }: { entry: TrackedItem; onEdit: () => void }) => {
+export const EntryCard = ({ entry, onEdit }: { entry: TrackedItem; onEdit?: () => void }) => {
   const progress = progressLabel(entry)
   const score = toDisplayScore(entry.rating)
   const to = detailPathFor(entry)
@@ -34,19 +37,21 @@ export const EntryCard = ({ entry, onEdit }: { entry: TrackedItem; onEdit: () =>
           )}
         </Link>
 
-        <div className="card-actions corner-top">
-          <button
-            type="button"
-            className="card-action"
-            aria-label={`Edit ${entry.title}`}
-            onClick={onEdit}
-          >
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" aria-hidden>
-              <path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17v3Z" strokeWidth="1.8" strokeLinejoin="round" />
-            </svg>
-            <span className="card-action-label">Edit</span>
-          </button>
-        </div>
+        {onEdit && (
+          <div className="card-actions corner-top">
+            <button
+              type="button"
+              className="card-action"
+              aria-label={`Edit ${entry.title}`}
+              onClick={onEdit}
+            >
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" aria-hidden>
+                <path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17v3Z" strokeWidth="1.8" strokeLinejoin="round" />
+              </svg>
+              <span className="card-action-label">Edit</span>
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="cover-heading">

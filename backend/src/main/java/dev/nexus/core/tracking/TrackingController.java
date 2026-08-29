@@ -1,6 +1,7 @@
 package dev.nexus.core.tracking;
 
 import dev.nexus.auth.CurrentUser;
+import dev.nexus.core.tracking.dto.ReorderFavouritesRequest;
 import dev.nexus.core.tracking.dto.TrackRequest;
 import dev.nexus.core.tracking.dto.TrackedItemResponse;
 import dev.nexus.core.tracking.dto.UpdateEntryRequest;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -43,6 +45,15 @@ public class TrackingController {
     public TrackedItemResponse track(
             @AuthenticationPrincipal CurrentUser user, @Valid @RequestBody TrackRequest request) {
         return TrackedItemResponse.from(tracking.track(user.id(), request));
+    }
+
+    /** The favourites, in the order the reader dragged them into. */
+    @PutMapping("/favourites/order")
+    public List<TrackedItemResponse> reorderFavourites(
+            @AuthenticationPrincipal CurrentUser user, @Valid @RequestBody ReorderFavouritesRequest request) {
+        return tracking.reorderFavourites(user.id(), request.entryIds()).stream()
+                .map(TrackedItemResponse::from)
+                .toList();
     }
 
     @PatchMapping("/{id}")

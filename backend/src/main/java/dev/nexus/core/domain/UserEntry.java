@@ -65,6 +65,10 @@ public class UserEntry {
     @Column(nullable = false)
     private boolean favorite;
 
+    /** Where this sits among the reader's favourites; null until they arrange them. */
+    @Column(name = "favorite_rank")
+    private Integer favoriteRank;
+
     /**
      * The provider that put this entry here, if any. A fact about this person's copy — the
      * shared item's Steam appid says the game is on Steam, not that they imported it.
@@ -186,6 +190,14 @@ public class UserEntry {
 
     public void setFavorite(boolean favorite) {
         this.favorite = favorite;
+    }
+
+    public Integer getFavoriteRank() {
+        return favoriteRank;
+    }
+
+    public void setFavoriteRank(Integer favoriteRank) {
+        this.favoriteRank = favoriteRank;
     }
 
     public String getNotes() {

@@ -118,6 +118,25 @@ public class TrackingService {
         return saved;
     }
 
+    /**
+     * Writes the reader's own arrangement of their favourites.
+     *
+     * <p>Every id is looked up scoped to the caller, so an id belonging to someone else is
+     * simply not found and the whole arrangement is refused rather than partly applied. Rank
+     * is the position in the list, which leaves no gaps to reason about later.
+     */
+    @Transactional
+    public List<UserEntry> reorderFavourites(Long userId, List<Long> entryIds) {
+        List<UserEntry> arranged = entryIds.stream()
+                .map(id -> entries.findByIdAndUserId(id, userId).orElseThrow(EntryNotFoundException::new))
+                .toList();
+
+        for (int rank = 0; rank < arranged.size(); rank++) {
+            arranged.get(rank).setFavoriteRank(rank);
+        }
+        return entries.saveAll(arranged);
+    }
+
     @Transactional
     public void delete(Long userId, Long entryId) {
         if (entries.deleteByIdAndUserId(entryId, userId) == 0) {

@@ -50,6 +50,25 @@ export const EntryEditDialog = ({
     return () => document.removeEventListener('keydown', onKeyDown)
   }, [onClose])
 
+  /**
+   * Written on the click, unlike every other field here.
+   *
+   * <p>The heart fills the moment it is pressed, which reads as saved; leaving it to the
+   * Save button means closing the dialog quietly drops the mark, and nothing on the way out
+   * says so.
+   */
+  const toggleFavourite = async () => {
+    const next = !favorite
+    setFavorite(next)
+    setError(null)
+    try {
+      onSaved(await api.updateEntry(entry.id, { favorite: next }))
+    } catch (err) {
+      setFavorite(!next)
+      setError(err instanceof ApiError ? err.message : 'Could not save that.')
+    }
+  }
+
   const save = async () => {
     setBusy(true)
     setError(null)
@@ -117,7 +136,7 @@ export const EntryEditDialog = ({
             className={favorite ? 'ghost icon-button favorite on' : 'ghost icon-button favorite'}
             aria-pressed={favorite}
             aria-label="Favourite"
-            onClick={() => setFavorite((on) => !on)}
+            onClick={() => void toggleFavourite()}
           >
             <svg viewBox="0 0 24 24" width="16" height="16" fill={favorite ? 'currentColor' : 'none'} stroke="currentColor" aria-hidden>
               <path

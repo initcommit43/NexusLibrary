@@ -1476,6 +1476,43 @@ input.filter-control::-webkit-search-cancel-button {
   gap: var(--space-4);
 }
 
+/* --- rearranging favourites --- */
+
+.sortable-card {
+  /* The drag gesture is the pointer's, not the browser's: without this a touch scrolls. */
+  touch-action: none;
+  cursor: grab;
+}
+
+.sortable-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: var(--radius-md);
+}
+
+/*
+ * The space a carried card came from. It keeps its place in the grid and fades rather than
+ * closing up, so the gap says where the card will land if it is let go here.
+ */
+.sortable-card.is-dragging {
+  opacity: 0.25;
+}
+
+/* The card under the pointer, lifted off the page and dropped back onto it by dnd-kit. */
+.sortable-card.is-carried {
+  cursor: grabbing;
+  transform: scale(1.03);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* The slide is written as an inline transition, which nothing but this outranks. */
+  .sortable-card {
+    transition: none !important;
+  }
+}
+
 .cover-card {
   padding: 0;
   overflow: hidden;
