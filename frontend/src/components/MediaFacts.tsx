@@ -105,7 +105,6 @@ export const MediaFacts = ({ media }: { media: MediaDetail }) => {
     ['Start date', date(media.releaseDate)],
     ['Season', season(detail)],
     ['Average score', text(meta.externalRating) ? `${text(meta.externalRating)}%` : null],
-    ['Mean score', text(detail.meanScore) ? `${text(detail.meanScore)}%` : null],
     ['Popularity', text(detail.popularity)],
     ['Favourites', text(detail.favourites)],
     ['Source', text(detail.source)],

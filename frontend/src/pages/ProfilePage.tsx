@@ -178,7 +178,7 @@ export const ProfilePage = () => {
               { label: 'completed', value: totals.completed.toLocaleString() },
               { label: 'rated', value: totals.rated.toLocaleString() },
               {
-                label: 'mean score',
+                label: 'average score',
                 value: totals.meanScore === null ? '—' : totals.meanScore.toFixed(1),
               },
               { label: 'favourites', value: favouriteCount.toLocaleString() },
@@ -258,7 +258,7 @@ export const ProfilePage = () => {
                       {summary.completed > 0 ? `${summary.completed.toLocaleString()} completed` : ''}
                     </td>
                     <td className="muted">
-                      {summary.meanScore === null ? '' : `${summary.meanScore.toFixed(1)} mean`}
+                      {summary.meanScore === null ? '' : `${summary.meanScore.toFixed(1)} average`}
                     </td>
                     <td className="muted">
                       {time === null ? '' : `${time.amount.toLocaleString()} ${time.unit}`}
