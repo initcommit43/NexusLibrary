@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Distribution, ExternalLink, MediaTag, Person } from './mediaDetail'
 import type { CharacterRole } from './mediaDetail'
 import type { Score } from './detailView'
@@ -116,17 +116,53 @@ export const MediaScores = ({ scores }: { scores: Score[] }) => {
 }
 
 /** Screenshots, for the sources that have them. A game shows itself better than it reads. */
+/**
+ * Six, because the grid is three wide: a seventh sits alone on a line of its own, which is
+ * the shape a row of screenshots is least worth having.
+ */
+const GALLERY_COUNT = 6
+
 export const MediaGallery = ({ images }: { images: string[] }) => {
+  const [expanded, setExpanded] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!expanded) return
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setExpanded(null)
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [expanded])
+
   if (images.length === 0) return null
 
   return (
     <section className="status-section">
       <h2>Screenshots</h2>
       <div className="gallery">
-        {images.map((image) => (
-          <img key={image} src={image} alt="" loading="lazy" />
+        {images.slice(0, GALLERY_COUNT).map((image, index) => (
+          <button
+            type="button"
+            key={image}
+            className="gallery-shot"
+            aria-label={`Screenshot ${index + 1}`}
+            onClick={() => setExpanded(image)}
+          >
+            <img src={image} alt="" loading="lazy" />
+          </button>
         ))}
       </div>
+
+      {/* The grid crops every shot to one shape; opening one is how the rest of it is seen,
+          so the open image is fitted to the screen rather than filled into it. */}
+      {expanded && (
+        <div className="dialog-backdrop" role="presentation" onClick={() => setExpanded(null)}>
+          <div className="lightbox" role="dialog" aria-modal="true" aria-label="Screenshot">
+            <img src={expanded} alt="" />
+          </div>
+        </div>
+      )}
     </section>
   )
 }

@@ -825,18 +825,54 @@ input.filter-control::-webkit-search-cancel-button {
 }
 
 /* A game shows itself better than it reads, so the shots get room rather than a strip. */
+/* Three across at every width the column is wide enough for, so six fill two rows exactly. */
 .gallery {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-3);
 }
 
+@media (max-width: 64rem) {
+  .gallery {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 40rem) {
+  .gallery {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* A thumbnail is a control now, and should still look like nothing but the picture. */
+.gallery-shot {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  border-radius: var(--radius-sm);
+  cursor: zoom-in;
+}
+
 .gallery img {
+  display: block;
   width: 100%;
   aspect-ratio: 16 / 9;
   object-fit: cover;
   border-radius: var(--radius-sm);
   border: 1px solid var(--card-border);
+}
+
+.lightbox {
+  cursor: zoom-out;
+}
+
+/* Whole frame, uncropped: the shape it happens to have is the one it is shown at. */
+.lightbox img {
+  display: block;
+  max-width: 100%;
+  max-height: 85vh;
+  border-radius: var(--radius-sm);
 }
 
 /* --- profile --- */
