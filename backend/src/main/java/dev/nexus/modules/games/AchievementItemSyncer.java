@@ -4,6 +4,7 @@ import dev.nexus.core.domain.ExternalIds;
 import dev.nexus.core.domain.Provider;
 import dev.nexus.core.domain.TrackableItem;
 import dev.nexus.core.domain.TrackableItemRepository;
+import dev.nexus.core.domain.TrackingStatus;
 import dev.nexus.core.domain.UserEntry;
 import dev.nexus.core.domain.UserEntryRepository;
 import java.time.Duration;
@@ -167,11 +168,41 @@ public class AchievementItemSyncer {
         // as a change; it is still stamped, so it counts as fresh either way.
         boolean changed = !progress.equals(withoutTimestamp(extra.get(ACHIEVEMENTS_KEY)));
 
+        completeIfFinished(entry, unlocked.size(), achievements.size(), extra.get(ACHIEVEMENTS_KEY));
+
         progress.put(SYNCED_AT_KEY, Instant.now().getEpochSecond());
         extra.put(ACHIEVEMENTS_KEY, progress);
         entry.setProgressExtra(extra);
         entries.save(entry);
         return changed;
+    }
+
+    /**
+     * Marks a game finished the first time every achievement is earned.
+     *
+     * <p>Only on the crossing, never on every sync. A reader who earns the last achievement
+     * and then puts the game back on another shelf — replaying it, or keeping it in progress
+     * for a DLC — would otherwise have that undone by the next sync, and a shelf the app
+     * keeps putting things back on is not a shelf they own.
+     */
+    private void completeIfFinished(UserEntry entry, int unlocked, int total, Object stored) {
+        boolean allEarned = total > 0 && unlocked == total;
+        if (!allEarned || wasAllEarned(stored) || entry.getStatus() == TrackingStatus.COMPLETED) {
+            return;
+        }
+        entry.setStatus(TrackingStatus.COMPLETED);
+    }
+
+    @SuppressWarnings("unchecked")
+    private boolean wasAllEarned(Object stored) {
+        if (!(stored instanceof Map<?, ?> map)) {
+            return false;
+        }
+        Map<String, Object> progress = (Map<String, Object>) map;
+        return progress.get("unlocked") instanceof List<?> unlocked
+                && progress.get("total") instanceof Number total
+                && total.intValue() > 0
+                && unlocked.size() == total.intValue();
     }
 
     @SuppressWarnings("unchecked")

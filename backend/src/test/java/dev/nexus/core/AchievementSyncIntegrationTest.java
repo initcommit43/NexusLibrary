@@ -13,6 +13,7 @@ import dev.nexus.core.domain.ExternalIds;
 import dev.nexus.core.domain.Provider;
 import dev.nexus.core.domain.TrackableItem;
 import dev.nexus.core.domain.TrackableItemRepository;
+import dev.nexus.core.domain.TrackingStatus;
 import dev.nexus.core.domain.UserEntry;
 import dev.nexus.core.domain.UserEntryRepository;
 import dev.nexus.modules.games.AchievementItemSyncer;
@@ -93,6 +94,40 @@ class AchievementSyncIntegrationTest extends PostgresIntegrationTest {
         assertThat(progress).containsEntry("total", 2);
     }
 
+    @Test
+    void earningEveryAchievementFinishesTheGame() {
+        when(steamAchievements.fetch(anyString(), anyString())).thenReturn(Optional.of(allEarned()));
+
+        syncer.syncOne(entryId, STEAM_ID);
+
+        assertThat(entries.findById(entryId).orElseThrow().getStatus()).isEqualTo(TrackingStatus.COMPLETED);
+    }
+
+    @Test
+    void aPartlyPlayedGameIsLeftWhereItIs() {
+        syncer.syncOne(entryId, STEAM_ID);
+
+        assertThat(entries.findById(entryId).orElseThrow().getStatus()).isEqualTo(TrackingStatus.IN_PROGRESS);
+    }
+
+    /**
+     * The crossing is what completes it, not the state. Someone who finishes a game and then
+     * puts it back on another shelf should not have that undone by the next sync.
+     */
+    @Test
+    void aShelfChosenAfterFinishingIsLeftAlone() {
+        when(steamAchievements.fetch(anyString(), anyString())).thenReturn(Optional.of(allEarned()));
+        syncer.syncOne(entryId, STEAM_ID);
+
+        UserEntry entry = entries.findById(entryId).orElseThrow();
+        entry.setStatus(TrackingStatus.IN_PROGRESS);
+        entries.save(entry);
+
+        syncer.syncOne(entryId, STEAM_ID);
+
+        assertThat(entries.findById(entryId).orElseThrow().getStatus()).isEqualTo(TrackingStatus.IN_PROGRESS);
+    }
+
     /** The catalogue is the same for every player, so it belongs on the shared item. */
     @Test
     void storesTheCatalogueWithIconsOnTheSharedItem() {
@@ -170,6 +205,12 @@ class AchievementSyncIntegrationTest extends PostgresIntegrationTest {
         ((Map<String, Object>) extra.get("achievements")).remove("syncedAt");
         entry.setProgressExtra(extra);
         entries.save(entry);
+    }
+
+    private List<Map<String, Object>> allEarned() {
+        return List.of(
+                Map.of("apiname", "ACH_ONE", "achieved", 1, "unlocktime", 1_700_000_000L),
+                Map.of("apiname", "ACH_TWO", "achieved", 1, "unlocktime", 1_700_000_100L));
     }
 
     private List<Map<String, Object>> playerAchievements() {
