@@ -121,16 +121,43 @@ export type ImportReport = {
   unmatched: UnmatchedItem[]
 }
 
-export type ActivityType = 'ADDED' | 'STATUS_CHANGE' | 'PROGRESS' | 'RATED' | 'REVIEWED'
+export type ActivityType =
+  | 'ADDED'
+  | 'STATUS_CHANGE'
+  | 'PROGRESS'
+  | 'RATED'
+  | 'REVIEWED'
+  /** A library arriving from a provider: one event for the run, not one per title. */
+  | 'IMPORTED'
+  /** A later run of the same provider, recorded only where it changed something. */
+  | 'SYNCED'
 
+/** One title a run touched, as the row's hover card reads it. */
+export type ActivityChange = { title: string; from: string | null; to: string }
+
+/**
+ * Something that happened, to a title or to a whole run.
+ *
+ * <p>A run belongs to no title, so it answers with nulls where an edit answers with a cover
+ * and a name, and says what it did in its payload instead.
+ */
 export type ActivityEntry = {
   id: number
   type: ActivityType
-  mediaType: MediaType
-  title: string
+  mediaType: MediaType | null
+  title: string | null
   coverUrl: string | null
-  externalId: string
-  payload: { from?: string | null; to?: string | null; unit?: string; status?: string }
+  externalId: string | null
+  payload: {
+    from?: string | null
+    to?: string | null
+    unit?: string
+    status?: string
+    provider?: Provider
+    added?: number
+    advanced?: number
+    titles?: ActivityChange[]
+  }
   createdAt: string
 }
 
