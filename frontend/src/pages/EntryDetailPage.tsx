@@ -8,6 +8,7 @@ import {
   type UpdateEntryPayload,
 } from '../api/client'
 import { AchievementList } from '../components/AchievementList'
+import { achievementCatalogue, achievementProgress } from '../components/achievements'
 import { AppShell } from '../components/AppShell'
 import { moduleForMediaType } from '../modules/registry'
 import { RatingInput } from '../components/RatingInput'
@@ -209,7 +210,10 @@ export const EntryDetailPage = () => {
 
       </div>
 
-      <AchievementList entry={entry} />
+      <AchievementList
+        catalogue={achievementCatalogue(entry)}
+        progress={achievementProgress(entry)}
+      />
 
       <section className="status-section">
         <h2>Review</h2>

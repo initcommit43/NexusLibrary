@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import { ApiError, api, type MediaDetail, type TrackedItem } from '../api/client'
 import { AppShell } from '../components/AppShell'
 import { EntryEditDialog } from '../components/EntryEditDialog'
+import { MediaAchievements } from '../components/MediaAchievements'
 import { MediaFacts } from '../components/MediaFacts'
 import { StatusMenu } from '../components/StatusMenu'
 import { MediaRecommendations, MediaRelations } from '../components/MediaRelations'
@@ -172,6 +173,7 @@ export const MediaPage = () => {
             staff={view.staff}
             title={media.mediaType === 'GAME' ? 'Made by' : 'Staff'}
           />
+          <MediaAchievements media={media} />
           <MediaTrailer trailer={view.trailer} />
           <MediaGallery images={view.gallery} />
           <MediaRecommendations recommendations={view.recommendations} source={media.source} />

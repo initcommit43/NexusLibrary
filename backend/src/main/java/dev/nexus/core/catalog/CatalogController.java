@@ -12,6 +12,7 @@ import dev.nexus.core.domain.Source;
 import dev.nexus.core.domain.TrackableItem;
 import dev.nexus.core.tracking.TrackingService;
 import dev.nexus.core.tracking.dto.TrackedItemResponse;
+import dev.nexus.modules.games.AchievementCatalogue;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -68,6 +69,7 @@ public class CatalogController {
     private final BrowseService browse;
     private final TrackingService tracking;
     private final RateLimiter rateLimiter;
+    private final AchievementCatalogue achievements;
     private final int searchesPerMinute;
 
     public CatalogController(
@@ -77,6 +79,7 @@ public class CatalogController {
             BrowseService browse,
             TrackingService tracking,
             RateLimiter rateLimiter,
+            AchievementCatalogue achievements,
             NexusProperties properties) {
         this.adapters = adapters;
         this.timings = timings;
@@ -84,6 +87,7 @@ public class CatalogController {
         this.browse = browse;
         this.tracking = tracking;
         this.rateLimiter = rateLimiter;
+        this.achievements = achievements;
         this.searchesPerMinute = properties.rateLimit().searchRequestsPerMinute();
     }
 
@@ -130,6 +134,24 @@ public class CatalogController {
                 item.getItemState().name(),
                 item.getMetadata(),
                 entry.orElse(null));
+    }
+
+    /**
+     * What there is to earn in one game, whether or not this reader owns it.
+     *
+     * <p>Asked for separately rather than carried by the response above: the list is the
+     * same for everyone and cached on the item once fetched, but the first reader to open a
+     * game nobody has imported pays a call to Steam for it, and that must not be a call the
+     * page waits on before it can render anything at all.
+     */
+    @GetMapping("/media/{source}/{externalId}/achievements")
+    public List<Map<String, Object>> achievements(
+            @AuthenticationPrincipal CurrentUser user,
+            @PathVariable Source source,
+            @PathVariable String externalId) {
+
+        rateLimiter.check("achievements:" + user.id(), searchesPerMinute);
+        return timings.time("achievements", () -> this.achievements.forMedia(source, externalId));
     }
 
     /** Which rows this module's browse page has, so the client renders what exists. */

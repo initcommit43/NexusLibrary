@@ -1,4 +1,4 @@
-import type { AchievementCatalogueEntry, AchievementProgress, TrackedItem } from '../api/client'
+import type { AchievementCatalogueEntry, AchievementProgress } from '../api/client'
 
 /**
  * Achievements live in the two JSONB escape hatches rather than their own tables: the
@@ -7,12 +7,17 @@ import type { AchievementCatalogueEntry, AchievementProgress, TrackedItem } from
  */
 const ACHIEVEMENTS_KEY = 'achievements'
 
-export const achievementCatalogue = (entry: TrackedItem): AchievementCatalogueEntry[] => {
-  const raw = entry.metadata?.[ACHIEVEMENTS_KEY]
+/** The shared item's list, which a media page carries as readily as a tracked entry does. */
+export const achievementCatalogue = (item: {
+  metadata: Record<string, unknown>
+}): AchievementCatalogueEntry[] => {
+  const raw = item.metadata?.[ACHIEVEMENTS_KEY]
   return Array.isArray(raw) ? (raw as AchievementCatalogueEntry[]) : []
 }
 
-export const achievementProgress = (entry: TrackedItem): AchievementProgress | null => {
+export const achievementProgress = (entry: {
+  progressExtra: Record<string, unknown> | null
+}): AchievementProgress | null => {
   const raw = entry.progressExtra?.[ACHIEVEMENTS_KEY]
   if (!raw || typeof raw !== 'object') return null
 

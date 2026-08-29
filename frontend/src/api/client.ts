@@ -384,6 +384,12 @@ export const api = {
   media: (source: string, externalId: string) =>
     request<MediaDetail>(`/catalog/media/${source}/${encodeURIComponent(externalId)}`),
 
+  /** Fetched apart from the page: the first reader of an unimported game waits on Steam. */
+  mediaAchievements: (source: string, externalId: string) =>
+    request<AchievementCatalogueEntry[]>(
+      `/catalog/media/${source}/${encodeURIComponent(externalId)}/achievements`,
+    ),
+
   listEntries: () => request<TrackedItem[]>('/entries'),
 
   getEntry: (id: number) => request<TrackedItem>(`/entries/${id}`),

@@ -2,8 +2,6 @@ package dev.nexus.modules.games;
 
 import dev.nexus.core.domain.ExternalIds;
 import dev.nexus.core.domain.Provider;
-import dev.nexus.core.domain.TrackableItem;
-import dev.nexus.core.domain.TrackableItemRepository;
 import dev.nexus.core.domain.TrackingStatus;
 import dev.nexus.core.domain.UserEntry;
 import dev.nexus.core.domain.UserEntryRepository;
@@ -28,7 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 public class AchievementItemSyncer {
 
-    static final String ACHIEVEMENTS_KEY = "achievements";
+    static final String ACHIEVEMENTS_KEY = AchievementCatalogue.ACHIEVEMENTS_KEY;
     static final String SYNCED_AT_KEY = "syncedAt";
 
     /**
@@ -42,14 +40,14 @@ public class AchievementItemSyncer {
     private static final Duration FRESH_FOR = Duration.ofHours(6);
 
     private final UserEntryRepository entries;
-    private final TrackableItemRepository items;
     private final SteamAchievementsClient client;
+    private final AchievementCatalogue catalogue;
 
     public AchievementItemSyncer(
-            UserEntryRepository entries, TrackableItemRepository items, SteamAchievementsClient client) {
+            UserEntryRepository entries, SteamAchievementsClient client, AchievementCatalogue catalogue) {
         this.entries = entries;
-        this.items = items;
         this.client = client;
+        this.catalogue = catalogue;
     }
 
     @Transactional(readOnly = true)
@@ -80,52 +78,8 @@ public class AchievementItemSyncer {
             return false;
         }
 
-        storeCatalogue(entry.getItem(), appId);
+        catalogue.ensure(entry.getItem(), appId);
         return storeProgress(entry, achievements);
-    }
-
-    /**
-     * Stores the game's achievement list on the shared item: names, icons and whether an
-     * achievement is a hidden one. Identical for every player, so it is fetched once per
-     * game and then costs nothing for everyone after.
-     */
-    private void storeCatalogue(TrackableItem item, String appId) {
-        if (!needsCatalogue(item)) {
-            return;
-        }
-
-        List<Map<String, Object>> catalogue = client.fetchSchema(appId).stream()
-                .map(achievement -> {
-                    Map<String, Object> summary = new LinkedHashMap<>();
-                    summary.put("id", string(achievement.get("name")));
-                    summary.put("name", string(achievement.get("displayName")));
-                    summary.put("description", string(achievement.get("description")));
-                    summary.put("icon", string(achievement.get("icon")));
-                    summary.put("lockedIcon", string(achievement.get("icongray")));
-                    summary.put("hidden", achievement.get("hidden") instanceof Number h && h.intValue() == 1);
-                    return summary;
-                })
-                .toList();
-
-        if (catalogue.isEmpty()) {
-            return;
-        }
-
-        item.getMetadata().put(ACHIEVEMENTS_KEY, catalogue);
-        items.save(item);
-    }
-
-    /**
-     * Also refreshes a catalogue stored before icons were fetched, which is cheaper than a
-     * migration and self-correcting as libraries are synced.
-     */
-    @SuppressWarnings("unchecked")
-    private boolean needsCatalogue(TrackableItem item) {
-        Object stored = item.getMetadata().get(ACHIEVEMENTS_KEY);
-        if (!(stored instanceof List<?> catalogue) || catalogue.isEmpty()) {
-            return true;
-        }
-        return !(catalogue.getFirst() instanceof Map<?, ?> first) || first.get("icon") == null;
     }
 
     @SuppressWarnings("unchecked")
