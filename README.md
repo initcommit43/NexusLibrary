@@ -23,7 +23,7 @@ shared core is proven by a real vertical slice before a second medium is added.
 | ✅ **Phase 4** | Cache staleness and refresh |
 | ✅ **Phase 5** | Anime and manga — AniList as canonical, AniList and MAL as library feeds |
 | ✅ **Phase 6–7** | Films and TV, books |
-| ⬜ **Phase 8** | Enable and disable modules per user |
+| ✅ **Phase 8** | Enable and disable modules per user |
 
 What that means today: the games module is complete. You can search IGDB, track a title,
 edit status, rating, progress, dates and notes, write a review, and read back an activity
