@@ -409,6 +409,16 @@ export const api = {
       body: JSON.stringify({ entryIds }),
     }),
 
+  favouriteRowOrder: () =>
+    request<{ order: MediaType[] }>('/settings/favourite-rows').then((body) => body.order),
+
+  /** Every row the reader has placed, in order; the rest keep the app's own. */
+  replaceFavouriteRowOrder: (order: MediaType[]) =>
+    request<{ order: MediaType[] }>('/settings/favourite-rows', {
+      method: 'PUT',
+      body: JSON.stringify({ order }),
+    }).then((body) => body.order),
+
   listIntegrations: () => request<ConnectedAccount[]>('/integrations'),
 
   steamAuthorizeUrl: () =>
