@@ -1,12 +1,8 @@
-import type { SearchResult, TrackingStatus } from '../api/client'
-import { AddToShelfMenu } from './AddToShelfMenu'
+import type { SearchResult } from '../api/client'
 
 interface Props {
   result: SearchResult
   rank: number
-  state: 'idle' | 'saving' | 'tracked'
-  onTrack: (status: TrackingStatus) => void
-  onEdit: () => void
 }
 
 const facetText = (value: unknown): string | null =>
@@ -20,8 +16,11 @@ const facetList = (value: unknown): string[] => (Array.isArray(value) ? value.ma
  * <p>A different shape to {@link CatalogCard} on purpose. A ranked list is read down rather
  * than across, and the score and format that justify the ranking are the whole point of it —
  * as a row of covers it would say nothing about why anything is where it is.
+ *
+ * <p>No shelf controls either. This is a chart, read to see what is on it; putting something
+ * on a shelf happens where the title itself is, one tap further in.
  */
-export const RankedRow = ({ result, rank, state, onTrack, onEdit }: Props) => {
+export const RankedRow = ({ result, rank }: Props) => {
   const score = typeof result.facets?.score === 'number' ? result.facets.score : null
   const format = facetText(result.facets?.format)
   const genres = facetList(result.facets?.genres)
@@ -58,8 +57,6 @@ export const RankedRow = ({ result, rank, state, onTrack, onEdit }: Props) => {
         {chapters !== null && <span className="muted">{chapters} chapters</span>}
         {result.releaseDate && <span className="muted">{result.releaseDate.slice(0, 4)}</span>}
       </div>
-
-      <AddToShelfMenu result={result} state={state} onAdd={onTrack} onEdit={onEdit} />
     </article>
   )
 }

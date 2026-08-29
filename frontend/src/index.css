@@ -1134,8 +1134,9 @@ input.filter-control::-webkit-search-cancel-button {
   border-left: 1px solid var(--card-border);
 }
 
+/* Plus the page column's own gap between children, which is where the rest of it comes from. */
 .browse-shelf {
-  margin-top: var(--space-5);
+  margin-top: var(--space-3);
 }
 
 .browse-shelf-head {
@@ -1269,9 +1270,6 @@ input.filter-control::-webkit-search-cancel-button {
 }
 
 /* A row has no cover to hover over, and ten of them do not crowd the way forty cards would. */
-.ranked-row .card-action {
-  opacity: 1;
-}
 
 .ranked-score {
   font-family: var(--font-display);
@@ -1287,8 +1285,7 @@ input.filter-control::-webkit-search-cancel-button {
     grid-template-columns: auto 3rem 1fr;
   }
 
-  .ranked-facts,
-  .ranked-row > .card-actions {
+  .ranked-facts {
     grid-column: 3;
   }
 }

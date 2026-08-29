@@ -357,9 +357,6 @@ export const BrowsePage = () => {
                   key={keyOf(result)}
                   result={result}
                   rank={index + 1}
-                  state={tracking.stateOf(result)}
-                  onTrack={(chosen) => void tracking.track(result, chosen)}
-                  onEdit={() => void tracking.edit(result)}
                 />
               ))}
             </div>
