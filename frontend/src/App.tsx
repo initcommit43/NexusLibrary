@@ -6,6 +6,7 @@ import { ShelfPage } from './pages/ShelfPage'
 import { LibraryPage } from './pages/LibraryPage'
 import { MediaPage } from './pages/MediaPage'
 import { ProfilePage } from './pages/ProfilePage'
+import { StatsPage } from './pages/StatsPage'
 import { LoginPage } from './pages/LoginPage'
 import { SearchPage } from './pages/SearchPage'
 import { SettingsPage } from './pages/SettingsPage'
@@ -50,6 +51,7 @@ export const App = () => (
       <Route path="/search" element={<SearchPage />} />
       <Route path="/activity" element={<ActivityPage />} />
       <Route path="/profile" element={<ProfilePage />} />
+      <Route path="/stats" element={<StatsPage />} />
       <Route path="/media/:source/:externalId" element={<MediaPage />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/settings/steam/callback" element={<SteamCallbackPage />} />
