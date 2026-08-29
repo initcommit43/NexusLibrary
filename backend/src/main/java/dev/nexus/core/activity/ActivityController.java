@@ -8,6 +8,7 @@ import dev.nexus.core.domain.TrackableItem;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Positive;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -23,6 +24,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class ActivityController {
 
     private static final int DEFAULT_LIMIT = 50;
+
+    /** About seven months, which is as much as fits a map read across a column of a page. */
+    private static final int DEFAULT_WEEKS = 30;
+
+    /** One square of the map: the day, and how much happened on it. */
+    public record DayResponse(LocalDate date, long amount) {}
 
     public record ActivityResponse(
             Long id,
@@ -55,9 +62,11 @@ public class ActivityController {
     }
 
     private final ActivityRecorder activity;
+    private final HistoryService history;
 
-    public ActivityController(ActivityRecorder activity) {
+    public ActivityController(ActivityRecorder activity, HistoryService history) {
         this.activity = activity;
+        this.history = history;
     }
 
     @GetMapping
@@ -67,6 +76,22 @@ public class ActivityController {
 
         return activity.feedFor(user.id(), limit).stream()
                 .map(ActivityResponse::from)
+                .toList();
+    }
+
+    /**
+     * The days behind today that saw anything, for the map at the head of a profile. Only
+     * days with something on them are sent; the map draws the blanks itself, and a year of
+     * mostly-empty squares is not worth the wire.
+     */
+    @GetMapping("/history")
+    public List<DayResponse> history(
+            @AuthenticationPrincipal CurrentUser user,
+            @RequestParam(defaultValue = "" + DEFAULT_WEEKS) @Positive @Max(104) int weeks,
+            @RequestParam(required = false) List<MediaType> mediaTypes) {
+
+        return history.since(user.id(), LocalDate.now().minusWeeks(weeks), mediaTypes).stream()
+                .map(day -> new DayResponse(day.getDay(), day.getAmount()))
                 .toList();
     }
 }
