@@ -819,6 +819,26 @@ input.filter-control::-webkit-search-cancel-button {
 }
 
 .profile-stats,
+/* One grid per module, with the module named over it rather than beside every cover. */
+.profile-favourites {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.profile-favourites + .profile-favourites {
+  margin-top: var(--space-4);
+}
+
+.profile-favourites h3 {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--text-muted);
+}
+
 .profile-shelves {
   display: grid;
   gap: var(--space-3);

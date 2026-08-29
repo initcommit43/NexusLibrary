@@ -2,8 +2,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ApiError, api, type TrackedItem } from '../api/client'
 import { AppShell } from '../components/AppShell'
+import { EntryCard } from '../components/EntryCard'
+import { EntryEditDialog } from '../components/EntryEditDialog'
 import { useAuth } from '../auth/useAuth'
-import { MODULES } from '../modules/registry'
+import { MODULES, moduleForMediaType } from '../modules/registry'
 
 /** Ratings are stored 0–100 and shown out of ten, the way every entry shows its own. */
 const RATING_SCALE = 10
@@ -19,6 +21,7 @@ const Stat = ({ label, value, hint }: { label: string; value: number; hint?: str
 export const ProfilePage = () => {
   const { user } = useAuth()
   const [entries, setEntries] = useState<TrackedItem[] | null>(null)
+  const [editing, setEditing] = useState<TrackedItem | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -44,6 +47,20 @@ export const ProfilePage = () => {
     }
   }, [entries])
 
+  /*
+   * Grouped by module, in the order the app lists them, and only the modules that have any.
+   * A heading over an empty grid says the module exists; here it would only say you have
+   * nothing in it, which the shelf counts below already say better.
+   */
+  const favourites = useMemo(() => {
+    const marked = (entries ?? []).filter((entry) => entry.favorite)
+
+    return MODULES.map((module) => ({
+      module,
+      marked: marked.filter((entry) => moduleForMediaType(entry.mediaType)?.slug === module.slug),
+    })).filter((group) => group.marked.length > 0)
+  }, [entries])
+
   // Every shelf the app has, including the empty ones: a count of zero is the honest answer
   // and the link is how you go and change it.
   const shelves = useMemo(
@@ -57,6 +74,9 @@ export const ProfilePage = () => {
       ),
     [entries],
   )
+
+  const replace = (updated: TrackedItem) =>
+    setEntries((held) => held?.map((entry) => (entry.id === updated.id ? updated : entry)) ?? null)
 
   return (
     <AppShell>
@@ -94,6 +114,30 @@ export const ProfilePage = () => {
           </ul>
 
           <section className="status-section">
+            <h2>
+              Favourites <span className="muted">({totals.favorites})</span>
+            </h2>
+
+            {favourites.length === 0 ? (
+              <p className="muted">
+                Nothing marked yet. Open an entry and use the heart in its editor to keep it
+                here.
+              </p>
+            ) : (
+              favourites.map(({ module, marked }) => (
+                <section key={module.slug} className="profile-favourites">
+                  <h3>{module.label}</h3>
+                  <div className="cover-grid">
+                    {marked.map((entry) => (
+                      <EntryCard key={entry.id} entry={entry} onEdit={() => setEditing(entry)} />
+                    ))}
+                  </div>
+                </section>
+              ))
+            )}
+          </section>
+
+          <section className="status-section">
             <h2>Across your shelves</h2>
             <ul className="profile-shelves">
               {shelves.map(({ module, type, count }) => (
@@ -107,6 +151,21 @@ export const ProfilePage = () => {
             </ul>
           </section>
         </>
+      )}
+
+      {editing && (
+        <EntryEditDialog
+          entry={editing}
+          onClose={() => setEditing(null)}
+          onSaved={(updated) => {
+            replace(updated)
+            setEditing(null)
+          }}
+          onDeleted={(id) => {
+            setEntries((held) => held?.filter((entry) => entry.id !== id) ?? null)
+            setEditing(null)
+          }}
+        />
       )}
     </AppShell>
   )
