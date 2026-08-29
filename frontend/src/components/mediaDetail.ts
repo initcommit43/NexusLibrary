@@ -147,7 +147,13 @@ export const readNextEpisode = (detail: Record<string, unknown>): NextEpisode | 
   return { episode: next.episode, airingAt: next.airingAt }
 }
 
-/** "3d 4h", "12h 30m", "8m" — enough to know when, without pretending to a precision. */
+/**
+ * "3d 4h", "12h", "8m" — enough to know when, without pretending to a precision.
+ *
+ * <p>The minutes are dropped as soon as there is an hour to go: nobody waiting three days
+ * cares about the thirty-one minutes, and a number that changes every minute reads as though
+ * it needs watching.
+ */
 export const countdown = (airingAt: number, now: number = Date.now()): string | null => {
   const seconds = airingAt - Math.floor(now / 1000)
   if (seconds <= 0) return null
@@ -157,7 +163,7 @@ export const countdown = (airingAt: number, now: number = Date.now()): string | 
   const minutes = Math.floor((seconds % 3600) / 60)
 
   if (days > 0) return `${days}d ${hours}h`
-  if (hours > 0) return `${hours}h ${minutes}m`
+  if (hours > 0) return `${hours}h`
   return `${minutes}m`
 }
 

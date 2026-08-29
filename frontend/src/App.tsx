@@ -5,6 +5,7 @@ import { BrowsePage } from './pages/BrowsePage'
 import { ShelfPage } from './pages/ShelfPage'
 import { LibraryPage } from './pages/LibraryPage'
 import { MediaPage } from './pages/MediaPage'
+import { HomePage } from './pages/HomePage'
 import { ProfilePage } from './pages/ProfilePage'
 import { StatsPage } from './pages/StatsPage'
 import { LoginPage } from './pages/LoginPage'
@@ -16,17 +17,8 @@ import { SimklCallbackPage } from './pages/SimklCallbackPage'
 import { SteamCallbackPage } from './pages/SteamCallbackPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { defaultTypeOf, moduleBySlug } from './modules/registry'
-import { useCurrentModule } from './modules/useCurrentModule'
-import { useModules } from './modules/useModules'
 
 /** '/' is whichever module you were last in, so a bookmark or a reload lands where you left. */
-const LandingRedirect = () => {
-  const { loading } = useModules()
-  const current = useCurrentModule()
-  if (loading) return null
-  return <Navigate to={`/library/${current.slug}`} replace />
-}
-
 /**
  * A module has no page of its own — it is only a set of shelves — so the bare path opens the
  * first one. Callers link here rather than to a shelf so that which shelf comes first stays
@@ -43,7 +35,7 @@ export const App = () => (
     <Route path="/login" element={<LoginPage />} />
     <Route path="/register" element={<RegisterPage />} />
     <Route element={<ProtectedRoute />}>
-      <Route path="/" element={<LandingRedirect />} />
+      <Route path="/" element={<HomePage />} />
       <Route path="/library/:module" element={<ModuleRedirect />} />
       <Route path="/library/:module/:type" element={<LibraryPage />} />
       <Route path="/browse" element={<BrowsePage />} />

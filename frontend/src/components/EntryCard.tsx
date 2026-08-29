@@ -2,16 +2,7 @@ import { Link } from 'react-router-dom'
 import type { TrackedItem } from '../api/client'
 import { detailPathFor } from '../modules/registry'
 import { toDisplayScore } from './rating'
-import { MINUTES_PER_HOUR } from './progress'
-
-/** "8 / 13", "128 h", or nothing when there is no progress worth showing. */
-const progressLabel = (entry: TrackedItem): string | null => {
-  if (entry.progressCurrent === null) return null
-  if (entry.progressUnit === 'MINUTES') {
-    return `${Math.round(entry.progressCurrent / MINUTES_PER_HOUR)} h`
-  }
-  return entry.progressMax ? `${entry.progressCurrent} / ${entry.progressMax}` : `${entry.progressCurrent}`
-}
+import { episodesWaiting, progressSummary } from './progress'
 
 /**
  * Cover, title, and the two numbers worth seeing on a shelf. Everything editable lives
@@ -22,12 +13,34 @@ const progressLabel = (entry: TrackedItem): string | null => {
  * themselves are the thing being handled and a control on each is in the way.
  */
 export const EntryCard = ({ entry, onEdit }: { entry: TrackedItem; onEdit?: () => void }) => {
-  const progress = progressLabel(entry)
+  const progress = progressSummary(entry)
+  const waiting = episodesWaiting(entry)
   const score = toDisplayScore(entry.rating)
   const to = detailPathFor(entry)
 
   return (
-    <article className="card cover-card">
+    /*
+     * The frame exists so the corner mark can stand on the card's edge. The card itself clips
+     * — that is what keeps the artwork inside its rounded border — so anything meant to cross
+     * that edge has to hang outside it rather than in it.
+     */
+    <div className="cover-frame">
+      {/*
+        * Top left, where a corner mark is looked for. Every airing title carries one and they
+        * are all the same size: the number of episodes waiting where there are any, and the
+        * bare mark where you are caught up. A mark that changed size with its state read as a
+        * mark that had gone wrong.
+        */}
+      {waiting !== null && (
+        <span
+          className="airing-mark"
+          title={waiting > 0 ? `${waiting} waiting to watch` : 'Airing, and you are caught up'}
+        >
+          {waiting > 0 ? waiting : ''}
+        </span>
+      )}
+
+      <article className="card cover-card">
       <div className="cover-art">
         <Link className="cover-link" to={to} title={entry.title}>
           {entry.coverUrl ? (
@@ -69,6 +82,7 @@ export const EntryCard = ({ entry, onEdit }: { entry: TrackedItem; onEdit?: () =
           </p>
         )}
       </div>
-    </article>
+      </article>
+    </div>
   )
 }

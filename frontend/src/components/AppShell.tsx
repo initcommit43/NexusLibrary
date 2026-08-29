@@ -43,6 +43,10 @@ export const AppShell = ({
 
         {/* A module contributes its own shelves; the rest of the header is the same everywhere. */}
         <nav className="shell-nav">
+          {/* Home is the module's own page, so it takes the end prop its shelves do not. */}
+          <NavLink to="/" end>
+            Home
+          </NavLink>
           {current.types.map((type) => (
             <NavLink key={type.slug} to={`/library/${current.slug}/${type.slug}`}>
               {type.listLabel}

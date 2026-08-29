@@ -244,11 +244,18 @@ button.small {
   position: relative;
 }
 
+/*
+ * Clips rather than wraps. A long module name in a narrow window used to take a second line
+ * and push the control taller than the header around it, which is a worse answer than a name
+ * that ends in an ellipsis.
+ */
 .module-trigger {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  min-width: 0;
   padding: var(--space-1) var(--space-3);
+  white-space: nowrap;
   background: var(--surface-raised);
   border: 1px solid var(--border);
   border-radius: var(--radius-full);
@@ -256,6 +263,16 @@ button.small {
   font-family: var(--font-display);
   font-size: var(--text-base);
   font-weight: 600;
+}
+
+.module-trigger > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The arrow keeps its size while the name gives way. */
+.module-trigger svg {
+  flex-shrink: 0;
 }
 
 .module-trigger:hover:not(:disabled) {
@@ -387,7 +404,8 @@ button.small {
   --corner: calc(var(--space-3) + 5px);
 
   position: fixed;
-  right: calc(var(--corner) + (var(--content-edge) - var(--corner)) / 12);
+  /* Out at the window's own corner rather than tucked back towards the content's edge. */
+  right: var(--corner);
   bottom: var(--space-3);
   z-index: 30;
 }
@@ -822,6 +840,64 @@ input.filter-control::-webkit-search-cancel-button {
 .score-list span {
   font-size: var(--text-sm);
   color: var(--text-muted);
+}
+
+/* Holds the card and the mark that stands on its corner; it clips nothing itself. */
+.cover-frame {
+  position: relative;
+  height: 100%;
+}
+
+.cover-frame > .cover-card {
+  height: 100%;
+}
+
+/* The same for a home cover, whose own box clips to keep the caption flush with the artwork. */
+.poster-slot {
+  position: relative;
+}
+
+/*
+ * The corner mark on a cover: this one is airing, and the number is how many episodes are
+ * waiting. Caught up, it carries no number — but it keeps the same box, because a mark that
+ * shrinks when it has nothing to say reads as a mark that failed to load.
+ *
+ * Green rather than the accent: the accent is what the app uses for anything you can press,
+ * and this is a fact about the title rather than a control.
+ */
+.airing-mark {
+  position: absolute;
+  /*
+   * Standing on the card's corner, which is why it lives in the frame around the card rather
+   * than inside it: the card clips, and along a rounded corner at that, so a mark placed
+   * within came back a different sliver on every cover.
+   *
+   * Anchored by its centre, so the dot and the number sit on the same point rather than
+   * drifting apart with their own sizes.
+   */
+  top: 0;
+  left: 0;
+  transform: translate(-35%, -35%);
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  min-width: 0.95rem;
+  height: 0.95rem;
+  padding: 0 3px;
+  border-radius: var(--radius-full);
+  background: var(--success);
+  /*
+   * A dark ring to hold it off the artwork, and a faint bloom of its own colour so it reads
+   * as lit rather than printed. Kept low: a mark that glows harder than the cover it sits on
+   * stops being a detail and becomes the subject.
+   */
+  box-shadow:
+    0 0 0 2px rgb(11 18 32 / 35%),
+    0 0 7px 1px color-mix(in srgb, var(--success) 70%, transparent);
+  color: #fff;
+  font-size: 0.625rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 /* A game shows itself better than it reads, so the shots get room rather than a strip. */
@@ -3242,9 +3318,14 @@ button.ghost.danger:hover:not(:disabled) {
 
 /* --- activity --- */
 
+/*
+ * No margin of its own: every place it sits already spaces it — a section through its gap,
+ * the activity page through the shell's. The margin it used to carry pushed the first row
+ * below the first cover in the lane beside it.
+ */
 .activity-feed {
   list-style: none;
-  margin: var(--space-4) 0 0;
+  margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
@@ -3559,3 +3640,304 @@ a.icon-button.active {
   letter-spacing: var(--tracking-wide);
   color: var(--text-muted);
 }
+
+/* --- home --- */
+
+/*
+ * What airs next, as a list rather than a grid of covers: the title and the wait are the
+ * whole of it, and a cover apiece would make eight rows of artwork saying nothing extra.
+ */
+.airing-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.airing-list li {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: baseline;
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--border);
+}
+
+.airing-list li:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.airing-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.airing-title:hover {
+  color: var(--accent);
+}
+
+/* The one figure in the row worth reading first, so it carries the accent. */
+.airing-when {
+  min-width: 6rem;
+  text-align: right;
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--accent);
+}
+
+/*
+ * Where the page turns from what you have to what there is. A rule rather than a bigger
+ * heading: the two halves are equals, not a section and its subsection.
+ */
+.home-turn {
+  margin-top: var(--space-6);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--text-muted);
+}
+
+/*
+ * A run has no cover, so it wears the initial of the provider it ran against — the same
+ * round mark a person's avatar uses, which is what tells it apart from the rows that do.
+ */
+.activity-run-mark {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+  border-radius: var(--radius-full);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+
+/* Its titles are a hover away, so the row says it can be reached for. */
+.activity-row.is-run {
+  cursor: help;
+}
+
+.activity-row.is-run:hover,
+.activity-row.is-run:focus-visible {
+  background: var(--surface-raised);
+  outline: none;
+}
+
+/* --- home --- */
+
+/*
+ * Folded out, the shelves run the width of the page and the feed reads beneath them. Twenty
+ * covers four across in a side column is five rows of scrolling; across the page it is two.
+ */
+.shelf-stack + .home-layout {
+  margin-top: var(--space-5);
+}
+
+/*
+ * The shelves and the control that decides where they sit. It hides until they are reached
+ * for: a button that rearranges the page should not be the first thing the eye lands on, and
+ * the shelves are the only place it means anything.
+ */
+.shelf-stack {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  /*
+   * The box reaches up into the gap while its content stays put: the padding makes room for
+   * the control and the negative margin takes that room back out of the layout. Without the
+   * reach, moving the pointer up to the control leaves the stack, the hover ends, and the
+   * button disappears from under the cursor.
+   */
+  padding-top: var(--space-4);
+  margin-top: calc(-1 * var(--space-4));
+}
+
+/*
+ * The bare mark, floating: no surface, no border, and sized to sit inside the heading's own
+ * line so it clears the rule underneath it. The global button rule paints a filled control,
+ * which is what has to be undone here rather than merely left off.
+ */
+/* Sits in the reach above the shelves, which is inside the stack even though it looks above. */
+.fold-button {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 1rem;
+  height: 1rem;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--duration-fast) var(--ease),
+    visibility var(--duration-fast) var(--ease),
+    color var(--duration-fast) var(--ease);
+}
+
+.fold-button:hover:not(:disabled) {
+  background: none;
+  color: var(--accent);
+}
+
+.shelf-stack:hover .fold-button,
+.fold-button:hover,
+.fold-button:focus-visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.section-action {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/*
+ * Fills the shell, like every other page: a cap of its own made home the one narrow page in
+ * the app. The feed takes about four sevenths and the covers the rest, which is the split the
+ * reference uses.
+ */
+.home-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  gap: var(--space-5);
+  align-items: start;
+}
+
+.home-main,
+.home-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  min-width: 0;
+}
+
+/* Below the width where a 20rem column still leaves the feed room to be a feed. */
+@media (max-width: 64rem) {
+  .home-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/*
+ * Covers at the size a cover deserves, five to a row in the side column. The caption rides
+ * the foot of the artwork rather than sitting under it, so a row of ten stays a wall of
+ * covers rather than a wall of covers and text.
+ */
+.poster-gallery {
+  display: grid;
+  /* Five to a row in that column, which puts a cover at about a hundred pixels. */
+  grid-template-columns: repeat(auto-fill, minmax(6rem, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/*
+ * A home cover is half a library card's size, so its mark is too — and it sits just inside
+ * the corner rather than over it, since the poster clips what crosses its edge.
+ */
+/*
+ * Inside the artwork here rather than standing on its corner: a home gallery packs its covers
+ * close together, and a mark hanging into that gap crowds the cover beside it.
+ */
+.poster-slot .airing-mark {
+  top: 4px;
+  left: 4px;
+  transform: none;
+  min-width: 0.95rem;
+  height: 0.95rem;
+  padding: 0 3px;
+  font-size: 0.625rem;
+}
+
+/*
+ * Fixed five rather than as many as fit: the covers then shrink with the column instead of
+ * wrapping onto a second row, so a shelf stays one row at every width.
+ */
+.poster-gallery.one-row {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+/* Artwork wants a tighter corner than a control does: barely rounded, near enough square. */
+.poster {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  border-radius: 4px;
+  border: 1px solid var(--card-border);
+  background: var(--surface-raised);
+}
+
+.poster img,
+.poster-blank {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+}
+
+.poster:hover {
+  border-color: var(--accent);
+}
+
+/*
+ * Dark enough to read a countdown against whatever artwork is underneath it, and stacked:
+ * the episode and the wait are two facts, and running them together as one phrase makes a
+ * reader parse a sentence to find a number.
+ */
+.poster-caption {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 3px var(--space-1);
+  /* Solid enough that bright artwork behind it cannot soften the letters. */
+  background: rgb(11 18 32 / 92%);
+  /* Just off pure white: full white on a near-black strip glares rather than reads. */
+  color: rgb(255 255 255 / 86%);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.25;
+}
+
+.poster-caption span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+ * The overlay is a fixed dark whatever the theme, so its text is a fixed light: a token here
+ * would inherit the page's idea of "soft" and turn navy on navy in the dark theme. Both lines
+ * take the same white — they are one caption in two rows, not a label and a footnote.
+ */
