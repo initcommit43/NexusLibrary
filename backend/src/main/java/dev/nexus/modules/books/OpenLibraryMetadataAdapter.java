@@ -42,7 +42,11 @@ public class OpenLibraryMetadataAdapter implements MetadataAdapter {
      */
     private static final int MAX_DETAIL_SUBJECTS = 20;
 
-    private static final int MAX_COVERS = 6;
+    /**
+     * A book with forty contributors would otherwise cost forty requests. The ones worth a
+     * card are the ones on the spine.
+     */
+    private static final int MAX_AUTHORS = 3;
 
     private final OpenLibraryClient client;
     private final OpenLibraryProperties properties;
@@ -253,19 +257,142 @@ public class OpenLibraryMetadataAdapter implements MetadataAdapter {
      */
     @Override
     public Optional<Map<String, Object>> fetchDetail(String externalId) {
-        return client.fetchWork(externalId).map(this::toDetail);
+        return client.fetchWork(externalId).map(work -> toDetail(externalId, work));
     }
 
-    private Map<String, Object> toDetail(Map<String, Object> work) {
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> toDetail(String workId, Map<String, Object> work) {
         Map<String, Object> detail = new HashMap<>();
 
         putIfPresent(detail, "subjects", subjects(work));
         putIfPresent(detail, "links", links(work));
-        putIfPresent(detail, "covers", covers(work));
         putIfPresent(detail, "excerpt", excerpt(work));
         putIfPresent(detail, "firstPublished", work.get("first_publish_date"));
+        putIfPresent(detail, "authors", authors(work));
+
+        Map<String, Object> stats = new HashMap<>();
+        ratings(workId, detail, stats);
+        readingCounts(workId, stats);
+        if (!stats.isEmpty()) {
+            detail.put("stats", stats);
+        }
 
         return detail;
+    }
+
+    /**
+     * The people who wrote it, each with whatever Open Library knows about them.
+     *
+     * <p>The work record names them only by key, so a card costs a request per author — which
+     * is why there are three at most, and why the answer is cached on the shared item like
+     * everything else here.
+     */
+    private List<Map<String, Object>> authors(Map<String, Object> work) {
+        if (!(work.get("authors") instanceof List<?> credited)) {
+            return List.of();
+        }
+
+        return credited.stream()
+                .filter(Map.class::isInstance)
+                .map(entry -> ((Map<?, ?>) entry).get("author"))
+                .filter(Map.class::isInstance)
+                .map(author -> ((Map<?, ?>) author).get("key"))
+                .filter(Objects::nonNull)
+                .map(key -> key.toString().replace("/authors/", ""))
+                .distinct()
+                .limit(MAX_AUTHORS)
+                .map(this::author)
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    private Map<String, Object> author(String authorId) {
+        Map<String, Object> record = client.fetchAuthor(authorId).orElse(null);
+        if (record == null || record.get("name") == null) {
+            return null;
+        }
+
+        Map<String, Object> card = new HashMap<>();
+        card.put("name", record.get("name").toString());
+        card.put("image", properties.authorPhotoUrl(authorId));
+        putIfPresent(card, "bio", prose(record.get("bio")));
+        putIfPresent(card, "lived", lived(record));
+        return card;
+    }
+
+    /** "1892 – 1973", or just the birth where the author is alive or the death unrecorded. */
+    private String lived(Map<String, Object> record) {
+        Object born = record.get("birth_date");
+        Object died = record.get("death_date");
+
+        if (born == null && died == null) {
+            return null;
+        }
+        if (died == null) {
+            return "Born " + born;
+        }
+        return born == null ? "Died " + died : born + " – " + died;
+    }
+
+    /**
+     * The average, how many readers said so, and the spread across the five stars.
+     *
+     * <p>The spread is written in the shape the page's other sources write theirs, so the same
+     * chart draws it without learning where it came from.
+     */
+    private void ratings(String workId, Map<String, Object> detail, Map<String, Object> stats) {
+        Map<String, Object> ratings = client.fetchRatings(workId).orElse(Map.of());
+
+        if (ratings.get("summary") instanceof Map<?, ?> summary) {
+            putIfPresent(detail, "ratingAverage", ((Map<String, Object>) summary).get("average"));
+            putIfPresent(detail, "ratingCount", ((Map<String, Object>) summary).get("count"));
+        }
+
+        if (!(ratings.get("counts") instanceof Map<?, ?> counts)) {
+            return;
+        }
+
+        List<Map<String, Object>> spread = new ArrayList<>();
+        for (int score = 1; score <= 5; score++) {
+            Object amount = ((Map<String, Object>) counts).get(String.valueOf(score));
+            if (amount instanceof Number number && number.intValue() > 0) {
+                spread.add(Map.of("score", score, "amount", number.intValue()));
+            }
+        }
+        putIfPresent(stats, "scoreDistribution", spread);
+    }
+
+    /**
+     * How many readers want it, are reading it, or have finished it.
+     *
+     * <p>Open Library keeps the same three shelves this app does, so the counts are written
+     * under the status names core already speaks and read back by the chart unchanged.
+     */
+    private void readingCounts(String workId, Map<String, Object> stats) {
+        Map<String, Object> shelves = client.fetchReadingCounts(workId).orElse(Map.of());
+        if (!(shelves.get("counts") instanceof Map<?, ?> counts)) {
+            return;
+        }
+
+        Map<String, String> statuses = new java.util.LinkedHashMap<>();
+        statuses.put("want_to_read", "PLANNING");
+        statuses.put("currently_reading", "IN_PROGRESS");
+        statuses.put("already_read", "COMPLETED");
+
+        List<Map<String, Object>> distribution = new ArrayList<>();
+        statuses.forEach((shelf, status) -> {
+            Object amount = ((Map<String, Object>) counts).get(shelf);
+            if (amount instanceof Number number && number.intValue() > 0) {
+                distribution.add(Map.of("status", status, "amount", number.intValue()));
+            }
+        });
+        putIfPresent(stats, "statusDistribution", distribution);
+    }
+
+    /** Open Library writes prose either bare or wrapped in a typed record, under {@code value}. */
+    private String prose(Object raw) {
+        Object text = raw instanceof Map<?, ?> typed ? typed.get("value") : raw;
+        return text == null || text.toString().isBlank() ? null : text.toString();
     }
 
     /**
@@ -294,21 +421,6 @@ public class OpenLibraryMetadataAdapter implements MetadataAdapter {
                         link.get("title") == null ? "Website" : link.get("title").toString(),
                         "url",
                         link.get("url").toString()))
-                .toList();
-    }
-
-    /** Cover ids as something the page can load, the way a search result's single cover is. */
-    private List<String> covers(Map<String, Object> work) {
-        if (!(work.get("covers") instanceof List<?> ids)) {
-            return List.of();
-        }
-
-        return ids.stream()
-                // A work with no cover is recorded as one whose cover is -1.
-                .filter(id -> id instanceof Number number && number.intValue() > 0)
-                .limit(MAX_COVERS)
-                .map(properties::coverUrl)
-                .filter(Objects::nonNull)
                 .toList();
     }
 
@@ -341,11 +453,7 @@ public class OpenLibraryMetadataAdapter implements MetadataAdapter {
      */
     private String description(String workId) {
         return client.fetchWork(workId)
-                .map(work -> work.get("description"))
-                .map(raw -> raw instanceof Map<?, ?> typed ? typed.get("value") : raw)
-                .filter(Objects::nonNull)
-                .map(Object::toString)
-                .filter(text -> !text.isBlank())
+                .map(work -> prose(work.get("description")))
                 .orElse(null);
     }
 

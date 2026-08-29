@@ -2294,6 +2294,53 @@ input.filter-control::-webkit-search-cancel-button {
   gap: var(--space-2);
 }
 
+/* A portrait beside a paragraph, which is a different card from a grid of faces. */
+.author-card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3);
+}
+
+.author-card + .author-card {
+  margin-top: var(--space-3);
+}
+
+.author-portrait {
+  flex-shrink: 0;
+  width: 4.5rem;
+  height: 6rem;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--card-border);
+}
+
+.author-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.author-text p {
+  margin: var(--space-1) 0 0;
+  color: var(--text-body);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+}
+
+/* The author's own words, marked as a quotation rather than another paragraph of ours. */
+.excerpt {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-left: 3px solid var(--accent);
+  color: var(--text-body);
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  font-style: italic;
+  line-height: var(--leading-normal);
+}
+
 /* Character on the left, the voice behind them on the right, facing each other. */
 .person-card {
   display: flex;

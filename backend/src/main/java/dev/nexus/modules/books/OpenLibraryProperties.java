@@ -47,4 +47,14 @@ public record OpenLibraryProperties(
     public String coverUrl(Object coverId) {
         return coverId == null ? null : coverBaseUrl + "/b/id/" + coverId + "-" + coverSize + ".jpg";
     }
+
+    /**
+     * An author's portrait, from the same host as the covers: {@code /a/} rather than
+     * {@code /b/}, and keyed by their Open Library id rather than by a photo id.
+     */
+    public String authorPhotoUrl(String authorId) {
+        return authorId == null || authorId.isBlank()
+                ? null
+                : coverBaseUrl + "/a/olid/" + authorId + "-" + coverSize + ".jpg";
+    }
 }

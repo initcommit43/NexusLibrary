@@ -1,13 +1,14 @@
 /**
  * Readers for Open Library's work record.
  *
- * <p>The thinnest of the sources: a book has no cast, no trailer and nothing like a related
- * title, so most of the view stays empty and the panels take themselves off the page. What it
- * does have is what it is about, where it can be read, and a passage from the book itself.
+ * <p>A different page from the other three by having different panels fill, not by knowing it
+ * is a book: no cast, no trailer, nothing like a related title, and in their place the people
+ * who wrote it, a passage from it, and what other readers made of it.
  */
-import type { MediaDetailView } from './detailView'
+import type { MediaDetailView, Score } from './detailView'
 import { emptyView } from './detailView'
-import type { MediaTag } from './mediaDetail'
+import type { MediaTag, Person } from './mediaDetail'
+import { readScoreDistribution, readStatusDistribution } from './mediaDetail'
 
 const text = (value: unknown): string | null =>
   typeof value === 'string' && value.trim() ? value : null
@@ -37,15 +38,42 @@ const readLinks = (detail: Record<string, unknown>) =>
     return [{ site: text(link.site) ?? 'Website', url, language: null }]
   })
 
+const readAuthors = (detail: Record<string, unknown>): Person[] =>
+  array(detail.authors).flatMap((raw) => {
+    const author = record(raw)
+    const name = text(author.name)
+    if (!name) return []
+    return [
+      { id: name, name, image: text(author.image), role: text(author.lived), bio: text(author.bio) },
+    ]
+  })
+
+/**
+ * Open Library rates out of five; every other source on this page rates out of a hundred, and
+ * a panel that changed scale by medium would be read wrong at a glance.
+ */
+const readScores = (detail: Record<string, unknown>): Score[] => {
+  const average = detail.ratingAverage
+  if (typeof average !== 'number' || average <= 0) return []
+
+  const count = detail.ratingCount
+  return [
+    {
+      label: 'Readers',
+      value: `${Math.round(average * 20)}%`,
+      hint: typeof count === 'number' ? `${count.toLocaleString()} ratings` : null,
+    },
+  ]
+}
+
 export const readBookDetail = (detail: Record<string, unknown>): MediaDetailView => ({
   ...emptyView,
-  // A passage from the book, under the synopsis: how it reads is the thing a synopsis cannot
-  // say, and it is the only writing here that is the author's own.
-  summaryExtra: text(detail.excerpt),
+  excerpt: text(detail.excerpt),
+  authors: readAuthors(detail),
   tags: readSubjects(detail),
   links: readLinks(detail),
-  gallery: array(detail.covers).flatMap((raw) => {
-    const url = text(raw)
-    return url ? [url] : []
-  }),
+  scores: readScores(detail),
+  // Written in the shape AniList writes its own, so these read back unchanged.
+  statusDistribution: readStatusDistribution(detail),
+  scoreDistribution: readScoreDistribution(detail),
 })

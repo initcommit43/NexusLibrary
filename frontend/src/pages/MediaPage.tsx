@@ -9,7 +9,9 @@ import { MediaFacts } from '../components/MediaFacts'
 import { StatusMenu } from '../components/StatusMenu'
 import { MediaRecommendations, MediaRelations } from '../components/MediaRelations'
 import {
+  MediaAuthors,
   MediaCharacters,
+  MediaExcerpt,
   MediaGallery,
   MediaLinks,
   MediaScores,
@@ -185,6 +187,8 @@ export const MediaPage = () => {
           <MediaCharacters characters={view.characters} />
           <MediaStaff staff={view.cast} title="Cast" />
           <MediaStaff staff={view.staff} title={creditsLabel(media.mediaType)} />
+          <MediaAuthors authors={view.authors} />
+          <MediaExcerpt excerpt={view.excerpt} />
           <MediaAchievements media={media} />
           <MediaTrailer trailer={view.trailer} />
           <MediaGallery images={view.gallery} />

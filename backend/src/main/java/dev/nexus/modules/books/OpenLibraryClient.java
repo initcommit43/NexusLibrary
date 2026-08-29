@@ -217,6 +217,40 @@ public class OpenLibraryClient {
                 .build(workId));
     }
 
+    /**
+     * How readers rated a work: the average, how many said so, and the spread across the five
+     * stars. Separate from the work record, which carries none of it.
+     */
+    public Optional<Map<String, Object>> fetchRatings(String workId) {
+        return get(UriComponentsBuilder.fromUriString(properties.apiBaseUrl())
+                .path("/works/{id}/ratings.json")
+                .build(workId));
+    }
+
+    /**
+     * How many readers want to read a work, are reading it, or have finished it — the same
+     * three shelves this app keeps, which is what makes them worth showing beside a reader's
+     * own.
+     */
+    public Optional<Map<String, Object>> fetchReadingCounts(String workId) {
+        return get(UriComponentsBuilder.fromUriString(properties.apiBaseUrl())
+                .path("/works/{id}/bookshelves.json")
+                .build(workId));
+    }
+
+    /**
+     * One author's record: their name, their dates, and a paragraph about them where somebody
+     * has written one.
+     *
+     * @param authorId an Open Library author id such as {@code OL23919A}, without the
+     *     {@code /authors/} the work record prefixes it with
+     */
+    public Optional<Map<String, Object>> fetchAuthor(String authorId) {
+        return get(UriComponentsBuilder.fromUriString(properties.apiBaseUrl())
+                .path("/authors/{id}.json")
+                .build(authorId));
+    }
+
     /** Query parameters as alternating name and value, encoded exactly once on the way out. */
     /**
      * One page of a filtered grid.

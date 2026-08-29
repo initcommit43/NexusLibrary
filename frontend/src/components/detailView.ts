@@ -59,6 +59,13 @@ export interface MediaDetailView {
    */
   cast: Person[]
   staff: Person[]
+  /**
+   * The people who wrote it, with a paragraph each. Apart from {@link staff} because a card
+   * carrying a life story is not the tile a crew list is made of.
+   */
+  authors: Person[]
+  /** A passage from the work itself, in its own words rather than a summary of them. */
+  excerpt: string | null
   tags: MediaTag[]
   links: ExternalLink[]
   relations: RelatedTitle[]
@@ -81,6 +88,8 @@ export const emptyView: MediaDetailView = {
   characters: [],
   cast: [],
   staff: [],
+  authors: [],
+  excerpt: null,
   tags: [],
   links: [],
   relations: [],

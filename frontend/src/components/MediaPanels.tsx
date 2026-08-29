@@ -167,6 +167,54 @@ export const MediaGallery = ({ images }: { images: string[] }) => {
   )
 }
 
+/**
+ * Who wrote it, at the length a book's page has room for.
+ *
+ * <p>Not the tile the cast and crew are drawn as: those say a name and a job, and this says
+ * where somebody lived and what they are known for. A source with only names leaves this empty
+ * and speaks through the staff panel instead.
+ */
+export const MediaAuthors = ({ authors }: { authors: Person[] }) => {
+  if (authors.length === 0) return null
+
+  return (
+    <section className="status-section">
+      <h2>{authors.length > 1 ? 'About the authors' : 'About the author'}</h2>
+      {authors.map((author) => (
+        <article key={author.id} className="card author-card">
+          {author.image ? (
+            <img className="author-portrait" src={author.image} alt="" loading="lazy" />
+          ) : (
+            <div className="author-portrait person-blank" aria-hidden="true" />
+          )}
+          <div className="author-text">
+            <strong>{author.name}</strong>
+            {author.role && <span className="muted">{author.role}</span>}
+            {author.bio && <p>{author.bio}</p>}
+          </div>
+        </article>
+      ))}
+    </section>
+  )
+}
+
+/**
+ * A passage from the work itself.
+ *
+ * <p>Set as a quotation rather than another paragraph of description: it is the only writing
+ * on the page that is the author's own, and reading like the synopsis would hide that.
+ */
+export const MediaExcerpt = ({ excerpt }: { excerpt: string | null }) => {
+  if (!excerpt) return null
+
+  return (
+    <section className="status-section">
+      <h2>From the book</h2>
+      <blockquote className="card excerpt">{excerpt}</blockquote>
+    </section>
+  )
+}
+
 export const MediaTrailer = ({ trailer }: { trailer: string | null }) => {
   if (!trailer) return null
 

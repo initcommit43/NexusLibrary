@@ -12,6 +12,8 @@ export interface Person {
   name: string
   image: string | null
   role: string | null
+  /** A paragraph about them, where the source keeps one. Only the author card shows it. */
+  bio?: string | null
 }
 
 export interface CharacterRole {
