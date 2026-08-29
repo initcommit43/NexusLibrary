@@ -899,7 +899,6 @@ input.filter-control::-webkit-search-cancel-button {
   font-weight: 700;
 }
 
-.profile-stats,
 /* One grid per module, with the module named over it rather than beside every cover. */
 .profile-favourites {
   display: flex;
@@ -928,8 +927,14 @@ input.filter-control::-webkit-search-cancel-button {
   list-style: none;
 }
 
+/* Side by side, and flush with the cards above: a list's own indent would step them in. */
 .profile-stats {
+  display: grid;
   grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .profile-shelves {
