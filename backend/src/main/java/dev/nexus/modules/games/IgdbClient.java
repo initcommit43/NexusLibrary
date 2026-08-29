@@ -4,6 +4,7 @@ import dev.nexus.core.web.OutboundRateLimiter;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -101,6 +102,53 @@ public class IgdbClient {
     public List<Map<String, Object>> platforms(Collection<Integer> ids) {
         String csv = ids.stream().map(String::valueOf).collect(java.util.stream.Collectors.joining(","));
         return post("fields id,name; where id = (%s); sort name asc; limit %d;".formatted(csv, ids.size()), "/platforms");
+    }
+
+    /**
+     * The extra fields a game's own page reads. Sub-fields are named one by one because IGDB
+     * expands a relation only as far as it is asked to.
+     */
+    private static final String DETAIL_FIELDS = String.join(
+            ",",
+            "storyline",
+            "involved_companies.company.name",
+            "involved_companies.developer",
+            "involved_companies.publisher",
+            "game_engines.name",
+            "game_modes.name",
+            "player_perspectives.name",
+            "themes.name",
+            "rating",
+            "rating_count",
+            "aggregated_rating",
+            "aggregated_rating_count",
+            "similar_games.name",
+            "similar_games.cover.image_id",
+            "dlcs.name",
+            "dlcs.cover.image_id",
+            "expansions.name",
+            "expansions.cover.image_id",
+            "videos.video_id",
+            "videos.name",
+            "screenshots.image_id",
+            "websites.url",
+            "websites.type.type",
+            "age_ratings.rating_category",
+            "age_ratings.organization.name");
+
+    /**
+     * Everything a game's own page shows beyond the fields core models.
+     *
+     * <p>Asked for by name rather than with a wildcard, and capped where a list has no natural
+     * end. IGDB will hand back six hundred screenshots and a hundred videos for a large game,
+     * and the whole answer is stored on the shared item — a page shows a handful of each, so
+     * fetching the rest costs bytes on every reader's behalf and shows nobody anything.
+     */
+    public Optional<Map<String, Object>> findGameDetail(String externalId) {
+        List<Map<String, Object>> found = post("where id = %s; fields %s; limit 1;"
+                .formatted(Long.parseLong(externalId), DETAIL_FIELDS));
+
+        return found.stream().findFirst();
     }
 
     public List<Map<String, Object>> findGameById(String externalId) {
