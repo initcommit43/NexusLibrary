@@ -48,7 +48,7 @@ class AccountIntegrationTest extends PostgresIntegrationTest {
 
         assertThat(response.status()).isEqualTo(200);
         assertThat(response.body()).containsEntry("username", "renamed");
-        assertThat(users.existsByUsername("renamed")).isTrue();
+        assertThat(users.existsByUsernameIgnoreCase("renamed")).isTrue();
     }
 
     /** Case-folded exactly as registration folds it, or the two would disagree about who is taken. */
@@ -69,6 +69,13 @@ class AccountIntegrationTest extends PostgresIntegrationTest {
     void whatIsAlreadyTakenIsRefused() {
         assertThat(patch(Map.of("email", "taken@example.com")).status()).isEqualTo(409);
         assertThat(patch(Map.of("username", "taken")).status()).isEqualTo(409);
+    }
+
+    /** Two names that differ only in case are the same name to anyone reading them. */
+    @Test
+    void takenIgnoresCase() {
+        assertThat(patch(Map.of("username", "TAKEN")).status()).isEqualTo(409);
+        assertThat(patch(Map.of("email", "Taken@Example.com")).status()).isEqualTo(409);
     }
 
     /** Sending only one field changes only that field, rather than blanking the other. */
@@ -131,9 +138,9 @@ class AccountIntegrationTest extends PostgresIntegrationTest {
                         .status())
                 .isEqualTo(204);
 
-        assertThat(users.existsByEmail("reader@example.com")).isFalse();
+        assertThat(users.existsByEmailIgnoreCase("reader@example.com")).isFalse();
         // The other account is untouched.
-        assertThat(users.existsByEmail("taken@example.com")).isTrue();
+        assertThat(users.existsByEmailIgnoreCase("taken@example.com")).isTrue();
         assertThat(login("reader@example.com", PASSWORD).status()).isEqualTo(401);
     }
 

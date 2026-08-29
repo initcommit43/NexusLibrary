@@ -26,10 +26,10 @@ public class AuthService {
     public AppUser register(RegisterRequest request) {
         String email = normalizeEmail(request.email());
 
-        if (users.existsByEmail(email)) {
+        if (users.existsByEmailIgnoreCase(email)) {
             throw new RegistrationConflictException("email", "That email is already registered.");
         }
-        if (users.existsByUsername(request.username())) {
+        if (users.existsByUsernameIgnoreCase(request.username())) {
             throw new RegistrationConflictException("username", "That username is taken.");
         }
 

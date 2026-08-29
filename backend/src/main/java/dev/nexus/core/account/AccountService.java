@@ -63,7 +63,7 @@ public class AccountService {
         if (email != null) {
             email = email.toLowerCase(java.util.Locale.ROOT);
             if (!email.equals(user.getEmail())) {
-                if (users.existsByEmail(email)) {
+                if (users.existsByEmailIgnoreCase(email)) {
                     throw new RegistrationConflictException("email", "That email is already registered.");
                 }
                 user.changeEmail(email);
@@ -72,7 +72,7 @@ public class AccountService {
 
         String username = normalised(update.username());
         if (username != null && !username.equals(user.getUsername())) {
-            if (users.existsByUsername(username)) {
+            if (users.existsByUsernameIgnoreCase(username)) {
                 throw new RegistrationConflictException("username", "That username is taken.");
             }
             user.rename(username);
