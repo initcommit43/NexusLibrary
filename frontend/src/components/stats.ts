@@ -133,11 +133,20 @@ export const scoreBuckets = (entries: TrackedItem[]): CountRow[] => {
   return rows
 }
 
+/** Past this many bars a year axis stops being readable and starts being a texture. */
+const MAX_YEAR_BARS = 24
+
+/** Years to a bar once a library spans more than the axis can hold one by one. */
+const YEARS_PER_BUCKET = 5
+
 /**
- * The years the library comes from, every year in between included.
+ * The years the library comes from, in bars an axis can carry.
  *
- * <p>A run of years with nothing in them says as much as the years with something: the point
- * of the panel is the shape, and a chart that skips its empty years has no shape to read.
+ * <p>Every year in the span is kept, including the ones with nothing in them: a run of empty
+ * years is part of the shape, and closing the gaps draws a different picture. But a library
+ * reaching back to the forties spans eighty of them, and eighty labels under a chart is a
+ * smear — so past two dozen the years group into fives, and the axis names every other group
+ * the way a long axis is read.
  */
 export const releaseYears = (entries: TrackedItem[]): CountRow[] => {
   const counts = new Map<number, number>()
@@ -151,9 +160,27 @@ export const releaseYears = (entries: TrackedItem[]): CountRow[] => {
   if (counts.size === 0) return []
 
   const years = [...counts.keys()]
+  const first = Math.min(...years)
+  const last = Math.max(...years)
+  const size = last - first < MAX_YEAR_BARS ? 1 : YEARS_PER_BUCKET
+
+  const buckets = new Map<number, number>()
+  for (const [year, amount] of counts) {
+    const start = Math.floor(year / size) * size
+    buckets.set(start, (buckets.get(start) ?? 0) + amount)
+  }
+
+  const firstBucket = Math.floor(first / size) * size
+  const lastBucket = Math.floor(last / size) * size
+
   const rows: CountRow[] = []
-  for (let year = Math.min(...years); year <= Math.max(...years); year++) {
-    rows.push({ label: String(year), amount: counts.get(year) ?? 0, meanScore: null })
+  for (let start = firstBucket; start <= lastBucket; start += size) {
+    const step = (start - firstBucket) / size
+    rows.push({
+      label: size === 1 || step % 2 === 0 ? String(start) : '',
+      amount: buckets.get(start) ?? 0,
+      meanScore: null,
+    })
   }
   return rows
 }

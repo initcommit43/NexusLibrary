@@ -16,7 +16,7 @@ import {
 
 /** Every shelf the app has, and the reading across all of them at once. */
 const LENSES: { key: string; label: string; mediaType: MediaType | null }[] = [
-  { key: 'all', label: 'Everything', mediaType: null },
+  { key: 'all', label: 'All', mediaType: null },
   ...MODULES.flatMap((module) =>
     module.types.map((type) => ({
       key: type.mediaType,
@@ -26,37 +26,69 @@ const LENSES: { key: string; label: string; mediaType: MediaType | null }[] = [
   ),
 ]
 
+/** Past this many rows a single column is a long read where two are a glance. */
+const SPLIT_ABOVE = 6
+
 /**
  * A count with the mean score of what it counts.
  *
  * <p>The count says what someone watches and the score beside it says what they liked, which
- * is the pair worth reading — either alone is half a sentence. The bar is drawn to the largest
- * count rather than to the page, so the shape is of this list and not of the widest row in it.
+ * is the pair worth reading — either alone is half a sentence.
+ *
+ * <p>Bars are drawn against the largest row in the whole list, including when the list is
+ * split across two columns: scaling each column to its own longest row would make the second
+ * column's smaller counts look like the first column's larger ones.
  */
-const Ranked = ({ title, rows }: { title: string; rows: CountRow[] }) => {
+const Ranked = ({
+  title,
+  rows,
+  split = false,
+  asShare = false,
+}: {
+  title: string
+  rows: CountRow[]
+  split?: boolean
+  asShare?: boolean
+}) => {
   if (rows.length === 0) return null
+
   const peak = Math.max(...rows.map((row) => row.amount))
+  const total = rows.reduce((sum, row) => sum + row.amount, 0)
+
+  const half = Math.ceil(rows.length / 2)
+  const columns =
+    split && rows.length > SPLIT_ABOVE ? [rows.slice(0, half), rows.slice(half)] : [rows]
 
   return (
     <section className="status-section">
       <h2>{title}</h2>
-      <ul className="ranked-list">
-        {rows.map((row) => (
-          <li key={row.label}>
-            <span className="ranked-label">{row.label}</span>
-            <span className="ranked-track" aria-hidden="true">
-              <span
-                className="ranked-fill"
-                style={{ width: `${Math.round((row.amount / peak) * 100)}%` }}
-              />
-            </span>
-            <span className="ranked-amount">{row.amount.toLocaleString()}</span>
-            <span className="ranked-score muted">
-              {row.meanScore === null ? '' : row.meanScore.toFixed(1)}
-            </span>
-          </li>
+      <div className={columns.length > 1 ? 'stats-pair' : undefined}>
+        {columns.map((column, index) => (
+          <ul key={column[0]?.label ?? index} className="ranked-list">
+            {column.map((row) => (
+              <li key={row.label}>
+                <span className="ranked-label" title={row.label}>
+                  {row.label}
+                </span>
+                <span className="ranked-track" aria-hidden="true">
+                  <span
+                    className="ranked-fill"
+                    style={{ width: `${Math.round((row.amount / peak) * 100)}%` }}
+                  />
+                </span>
+                <span className="ranked-amount">
+                  {asShare
+                    ? `${Math.round((row.amount / total) * 100)}%`
+                    : row.amount.toLocaleString()}
+                </span>
+                <span className="ranked-score muted">
+                  {asShare || row.meanScore === null ? '' : row.meanScore.toFixed(1)}
+                </span>
+              </li>
+            ))}
+          </ul>
         ))}
-      </ul>
+      </div>
     </section>
   )
 }
@@ -115,7 +147,7 @@ export const StatsPage = () => {
 
       {entries !== null && (
         <>
-          {/* One shelf at a time, or the whole library at once. */}
+          {/* One shelf at a time, or the whole library added together. */}
           <nav className="lens-bar">
             {LENSES.map((candidate) => (
               <button
@@ -135,10 +167,15 @@ export const StatsPage = () => {
               Nothing on this shelf yet. Track something and its figures appear here.
             </p>
           ) : (
+            /*
+             * Read down: what the shelf amounts to, then how this reader marks it, then what
+             * they reach for, then who made it and in what form, and last where in time it
+             * comes from. Each answer is narrower than the one above it.
+             */
             <>
               <Figures
                 figures={[
-                  { label: 'tracked', value: summary.tracked.toLocaleString() },
+                  { label: 'entries', value: summary.tracked.toLocaleString() },
                   { label: 'completed', value: summary.completed.toLocaleString() },
                   {
                     label: 'mean score',
@@ -150,21 +187,21 @@ export const StatsPage = () => {
                     value: summary.deviation === null ? '—' : summary.deviation.toFixed(1),
                   },
                   ...(summary.time
-                    ? [
-                        {
-                          label: summary.time.unit,
-                          value: summary.time.amount.toLocaleString(),
-                        },
-                      ]
+                    ? [{ label: summary.time.unit, value: summary.time.amount.toLocaleString() }]
                     : []),
                 ]}
               />
 
               <Bars rows={scores} title="How you score" />
-              <Ranked title="Genres" rows={genres} />
-              {credits && <Ranked title={credits.title} rows={credited} />}
-              <Bars rows={years} title="Release years" />
-              <Ranked title="Formats" rows={formats} />
+
+              <Ranked title="What you like" rows={genres} split />
+
+              <div className="stats-pair">
+                {credits && <Ranked title={credits.title} rows={credited} />}
+                <Ranked title="Formats" rows={formats} asShare />
+              </div>
+
+              <Bars rows={years} title="When it's from" />
             </>
           )}
         </>

@@ -953,12 +953,23 @@ input.filter-control::-webkit-search-cancel-button {
   color: var(--text-muted);
 }
 
+/*
+ * Two panels abreast where each is a short list. Falls to one column before the labels have
+ * to be cut, since a genre nobody can read is not a row worth keeping.
+ */
+.stats-pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+  gap: var(--space-4) var(--space-5);
+  align-items: start;
+}
+
 /* One shelf at a time. Pressed reads as chosen rather than as a button mid-click. */
 .lens-bar {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
-  padding-bottom: var(--space-2);
+  padding-bottom: var(--space-3);
 }
 
 .lens-bar .on {

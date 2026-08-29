@@ -15,8 +15,9 @@ export const Bars = ({ rows, title }: { rows: Distribution[]; title: string }) =
     <section className="status-section">
       <h2>{title}</h2>
       <div className="bar-chart">
-        {rows.map((row) => (
-          <div key={row.label} className="bar">
+        {/* Keyed by place: a long axis labels only some of its bars, and blanks collide. */}
+        {rows.map((row, index) => (
+          <div key={`${index}-${row.label}`} className="bar">
             <span className="bar-value">{row.amount.toLocaleString()}</span>
             <div
               className="bar-fill"
