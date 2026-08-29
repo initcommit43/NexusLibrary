@@ -911,6 +911,9 @@ input.filter-control::-webkit-search-cancel-button {
 }
 
 .profile-favourites h3 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   font-family: var(--font-sans);
   font-size: var(--text-sm);
   font-weight: 600;
@@ -1520,7 +1523,15 @@ input.filter-control::-webkit-search-cancel-button {
 /* --- rearranging favourites --- */
 
 .sortable-card {
-  /* The drag gesture is the pointer's, not the browser's: without this a touch scrolls. */
+  position: relative;
+}
+
+/*
+ * Only while arranging: the grab cursor would otherwise promise a gesture the card no longer
+ * answers to, and taking the touch gesture away from the browser outside the mode would stop
+ * a finger scrolling the page over a grid of covers.
+ */
+.cover-grid.is-arranging .sortable-card {
   touch-action: none;
   cursor: grab;
 }
@@ -1547,9 +1558,89 @@ input.filter-control::-webkit-search-cancel-button {
   box-shadow: var(--shadow-2);
 }
 
+/* Said only while arranging, so the page carries no instructions the rest of the time. */
+.arrange-hint {
+  margin-top: calc(-1 * var(--space-2));
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+/* The row's handle, and the only part of a row that carries its drag. */
+.row-handle {
+  display: inline-grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  padding: 0;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: grab;
+}
+
+.row-handle:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--surface);
+  color: var(--accent);
+}
+
+.profile-favourites.is-dragging {
+  opacity: 0.25;
+}
+
+/* A whole row would be a lot to carry, so what follows the pointer is its name. */
+.row-carried {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-2);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  cursor: grabbing;
+}
+
+/*
+ * While the profile is being arranged the covers are not links: a drag that ends a pixel
+ * short of the threshold would otherwise open the title it was meant to move.
+ */
+.cover-grid.is-arranging .cover-link {
+  pointer-events: none;
+}
+
+.cover-grid.is-arranging .sortable-card {
+  outline: 1px dashed var(--border-strong);
+  outline-offset: 4px;
+  border-radius: var(--radius-md);
+}
+
+/* The badge that says a cover can be picked up; the card itself is the handle. */
+.card-grip {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-2);
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: var(--radius-full);
+  background: rgb(11 18 32 / 78%);
+  color: #fff;
+}
+
 @media (prefers-reduced-motion: reduce) {
   /* The slide is written as an inline transition, which nothing but this outranks. */
-  .sortable-card {
+  .sortable-card,
+  .profile-favourites {
     transition: none !important;
   }
 }
@@ -2108,6 +2199,9 @@ input.filter-control::-webkit-search-cancel-button {
 
 /* A heading can carry one control; it sits at the far end of the rule. */
 .section-action {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
   margin-left: auto;
   font-weight: 500;
   text-transform: none;

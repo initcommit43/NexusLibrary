@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ApiError, api, type TrackedItem } from '../api/client'
+import { ApiError, api, type MediaType, type TrackedItem } from '../api/client'
 import { AppShell } from '../components/AppShell'
 import { FavouriteGrid } from '../components/FavouriteGrid'
+import { FavouriteRows } from '../components/FavouriteRows'
+import { Grip } from '../components/Grip'
 import { useAuth } from '../auth/useAuth'
 import { MODULES } from '../modules/registry'
 
@@ -16,6 +18,15 @@ const byRank = (a: TrackedItem, b: TrackedItem): number => {
   return a.favoriteRank - b.favoriteRank
 }
 
+/** Rows the reader placed, in that order; the rest keep the order the app lists them in. */
+const byPlacement = (order: MediaType[]) => (a: MediaType, b: MediaType) => {
+  const placed = (type: MediaType) => {
+    const at = order.indexOf(type)
+    return at === -1 ? Number.MAX_SAFE_INTEGER : at
+  }
+  return placed(a) - placed(b)
+}
+
 const Stat = ({ label, value, hint }: { label: string; value: number; hint?: string }) => (
   <li className="profile-stat">
     <b>{value}</b>
@@ -27,12 +38,16 @@ const Stat = ({ label, value, hint }: { label: string; value: number; hint?: str
 export const ProfilePage = () => {
   const { user } = useAuth()
   const [entries, setEntries] = useState<TrackedItem[] | null>(null)
+  const [rowOrder, setRowOrder] = useState<MediaType[]>([])
+  const [arranging, setArranging] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    api
-      .listEntries()
-      .then(setEntries)
+    Promise.all([api.listEntries(), api.favouriteRowOrder()])
+      .then(([library, order]) => {
+        setEntries(library)
+        setRowOrder(order)
+      })
       .catch((err) =>
         setError(err instanceof ApiError ? err.message : 'Could not load your library.'),
       )
@@ -63,14 +78,39 @@ export const ProfilePage = () => {
   const favourites = useMemo(() => {
     const marked = (entries ?? []).filter((entry) => entry.favorite)
 
-    return MODULES.flatMap((module) =>
-      module.types.map((type) => ({
-        key: `${module.slug}/${type.slug}`,
+    return MODULES.flatMap((module) => module.types)
+      .sort((a, b) => byPlacement(rowOrder)(a.mediaType, b.mediaType))
+      .map((type) => ({
+        key: type.mediaType,
         label: type.label,
         marked: marked.filter((entry) => entry.mediaType === type.mediaType).sort(byRank),
-      })),
-    ).filter((group) => group.marked.length > 0)
-  }, [entries])
+      }))
+      .filter((group) => group.marked.length > 0)
+  }, [entries, rowOrder])
+
+  /**
+   * Writes the order of the rows, the ones with nothing in them included.
+   *
+   * <p>An empty row is not drawn but keeps its place: it is put back at the index it was
+   * stored at, so unfavouriting the last title in a row and marking another later brings the
+   * row back where it was rather than at the end.
+   */
+  const reorderRows = async (ordered: MediaType[]) => {
+    const hidden = rowOrder.filter((type) => !ordered.includes(type))
+    const next = [...ordered]
+    for (const type of hidden) {
+      next.splice(Math.min(rowOrder.indexOf(type), next.length), 0, type)
+    }
+
+    const held = rowOrder
+    setRowOrder(next)
+    try {
+      setRowOrder(await api.replaceFavouriteRowOrder(next))
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not save that order.')
+      setRowOrder(held)
+    }
+  }
 
   // Every shelf the app has, including the empty ones: a count of zero is the honest answer
   // and the link is how you go and change it.
@@ -153,7 +193,31 @@ export const ProfilePage = () => {
           <section className="status-section">
             <h2>
               Favourites <span className="muted">({totals.favorites})</span>
+              {favourites.length > 0 && (
+                <button
+                  type="button"
+                  className="ghost small section-action"
+                  aria-pressed={arranging}
+                  onClick={() => setArranging((on) => !on)}
+                >
+                  {arranging ? (
+                    'Done'
+                  ) : (
+                    <>
+                      <Grip />
+                      Arrange
+                    </>
+                  )}
+                </button>
+              )}
             </h2>
+
+            {/* Said once, where it is needed: the mode is what the button already named. */}
+            {arranging && (
+              <p className="arrange-hint">
+                Drag a cover to reorder it, or a row by its handle to move the whole row.
+              </p>
+            )}
 
             {favourites.length === 0 ? (
               <p className="muted">
@@ -161,12 +225,21 @@ export const ProfilePage = () => {
                 here.
               </p>
             ) : (
-              favourites.map(({ key, label, marked }) => (
-                <section key={key} className="profile-favourites">
-                  <h3>{label}</h3>
-                  <FavouriteGrid entries={marked} onReorder={(ordered) => void reorder(key, ordered)} />
-                </section>
-              ))
+              <FavouriteRows
+                arranging={arranging}
+                onReorder={(rows) => void reorderRows(rows.map((row) => row.key as MediaType))}
+                rows={favourites.map(({ key, label, marked }) => ({
+                  key,
+                  label,
+                  content: (
+                    <FavouriteGrid
+                      entries={marked}
+                      arranging={arranging}
+                      onReorder={(ordered) => void reorder(key, ordered)}
+                    />
+                  ),
+                }))}
+              />
             )}
           </section>
 
