@@ -12,7 +12,20 @@ import { episodesWaiting, progressSummary } from './progress'
  * <p>A card without {@code onEdit} carries no button at all, for the places where the cards
  * themselves are the thing being handled and a control on each is in the way.
  */
-export const EntryCard = ({ entry, onEdit }: { entry: TrackedItem; onEdit?: () => void }) => {
+export const EntryCard = ({
+  entry,
+  onEdit,
+  artOnly = false,
+}: {
+  entry: TrackedItem
+  onEdit?: () => void
+  /**
+   * The cover and nothing else. A shelf of favourites is a display rather than a list: the
+   * titles are already known to the one person the page belongs to, and a name under each
+   * cover turns a wall of artwork into a table of contents.
+   */
+  artOnly?: boolean
+}) => {
   const progress = progressSummary(entry)
   const waiting = episodesWaiting(entry)
   const score = toDisplayScore(entry.rating)
@@ -31,7 +44,7 @@ export const EntryCard = ({ entry, onEdit }: { entry: TrackedItem; onEdit?: () =
         * bare mark where you are caught up. A mark that changed size with its state read as a
         * mark that had gone wrong.
         */}
-      {waiting !== null && (
+      {waiting !== null && !artOnly && (
         <span
           className="airing-mark"
           title={waiting > 0 ? `${waiting} waiting to watch` : 'Airing, and you are caught up'}
@@ -40,7 +53,7 @@ export const EntryCard = ({ entry, onEdit }: { entry: TrackedItem; onEdit?: () =
         </span>
       )}
 
-      <article className="card cover-card">
+      <article className={artOnly ? 'card cover-card is-art-only' : 'card cover-card'}>
       <div className="cover-art">
         <Link className="cover-link" to={to} title={entry.title}>
           {entry.coverUrl ? (
@@ -67,21 +80,23 @@ export const EntryCard = ({ entry, onEdit }: { entry: TrackedItem; onEdit?: () =
         )}
       </div>
 
-      <div className="cover-heading">
-        <h3>
-          {/* The clamp cuts long titles, so the full one is a hover away. */}
-          <Link to={to} title={entry.title}>
-            {entry.title}
-          </Link>
-        </h3>
-        {(progress || score) && (
-          <p className="cover-stats">
-            {progress && <span>{progress}</span>}
-            {/* Pushed to the far side itself, so a rating without a count still sits there. */}
-            {score && <span className="cover-score">{score}</span>}
-          </p>
-        )}
-      </div>
+      {!artOnly && (
+        <div className="cover-heading">
+          <h3>
+            {/* The clamp cuts long titles, so the full one is a hover away. */}
+            <Link to={to} title={entry.title}>
+              {entry.title}
+            </Link>
+          </h3>
+          {(progress || score) && (
+            <p className="cover-stats">
+              {progress && <span>{progress}</span>}
+              {/* Pushed to the far side itself, so a rating without a count still sits there. */}
+              {score && <span className="cover-score">{score}</span>}
+            </p>
+          )}
+        </div>
+      )}
       </article>
     </div>
   )

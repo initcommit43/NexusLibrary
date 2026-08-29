@@ -2507,6 +2507,47 @@ input.filter-control::-webkit-search-cancel-button {
   cursor: grab;
 }
 
+/*
+ * A favourites row is a display, not a list: the cover alone, at the shape a cover is. With
+ * no heading beneath it the card is the artwork and nothing else, so the border that told a
+ * cover apart from its caption has nothing left to separate.
+ */
+.cover-card.is-art-only {
+  border-width: 1px;
+}
+
+.cover-card.is-art-only img,
+.cover-card.is-art-only .cover-placeholder {
+  aspect-ratio: 3 / 4;
+}
+
+/*
+ * Eight across rather than the browse shelf's six: these cards carry no caption, and eight
+ * is what lets a row split down the middle into four and four without a cover changing size.
+ *
+ * Set on the row itself. The count is a custom property that would happily be inherited,
+ * but .browse-row declares its own, and a value on the element beats one handed down to it.
+ */
+.favourite-carousel .browse-row {
+  --browse-across: 8;
+}
+
+.favourite-grid {
+  /* The carousel's own gutter, so entering arrange mode does not resize a single cover. */
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: var(--browse-gap);
+}
+
+@media (max-width: 64rem) {
+  .favourite-carousel .browse-row {
+    --browse-across: 5;
+  }
+
+  .favourite-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
 .sortable-card:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
@@ -2621,7 +2662,8 @@ input.filter-control::-webkit-search-cancel-button {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  border-radius: var(--radius-md);
+  /* Nearer the home covers than a list row: a cover is artwork with a corner, not a tile. */
+  border-radius: 6px;
   transition:
     box-shadow var(--duration-base) var(--ease),
     transform var(--duration-base) var(--ease),

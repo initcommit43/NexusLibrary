@@ -19,6 +19,7 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import type { TrackedItem } from '../api/client'
+import { Carousel } from './Carousel'
 import { EntryCard } from './EntryCard'
 import { Grip } from './Grip'
 
@@ -59,7 +60,7 @@ const SortableCard = ({ entry, arranging }: { entry: TrackedItem; arranging: boo
       {...handle}
     >
       {arranging && <CardGrip />}
-      <EntryCard entry={entry} />
+      <EntryCard entry={entry} artOnly />
     </div>
   )
 }
@@ -76,10 +77,13 @@ const SortableCard = ({ entry, arranging }: { entry: TrackedItem; arranging: boo
  */
 export const FavouriteGrid = ({
   entries,
+  label,
   arranging,
   onReorder,
 }: {
   entries: TrackedItem[]
+  /** What the row is called, for the arrows a screen reader would otherwise meet unlabelled. */
+  label: string
   arranging: boolean
   onReorder: (ordered: TrackedItem[]) => void
 }) => {
@@ -105,6 +109,26 @@ export const FavouriteGrid = ({
     onReorder(arrayMove(entries, from, to))
   }
 
+  /*
+   * A row is one row. However many favourites it holds, it scrolls rather than wraps: a
+   * second line of covers reads as a second shelf, and the arrows show themselves only when
+   * there is something past the edge, so a row of three looks like a row of three.
+   *
+   * <p>Arranging is the exception. Scrolling and dragging want the same gesture, and nothing
+   * can be dropped where it cannot be seen, so the mode lays every cover out at once.
+   */
+  if (!arranging) {
+    return (
+      <div className="favourite-carousel">
+        <Carousel label={label}>
+          {entries.map((entry) => (
+            <EntryCard key={entry.id} entry={entry} artOnly />
+          ))}
+        </Carousel>
+      </div>
+    )
+  }
+
   return (
     <DndContext
       sensors={sensors}
@@ -114,7 +138,7 @@ export const FavouriteGrid = ({
       onDragCancel={() => setCarried(null)}
     >
       <SortableContext items={entries.map((entry) => entry.id)} strategy={rectSortingStrategy}>
-        <div className={arranging ? 'cover-grid is-arranging' : 'cover-grid'}>
+        <div className="cover-grid favourite-grid is-arranging">
           {entries.map((entry) => (
             <SortableCard key={entry.id} entry={entry} arranging={arranging} />
           ))}
@@ -124,7 +148,7 @@ export const FavouriteGrid = ({
       <DragOverlay dropAnimation={{ duration: 220, easing: 'cubic-bezier(0.2, 0, 0, 1)' }}>
         {carried && (
           <div className="sortable-card is-carried">
-            <EntryCard entry={carried} />
+            <EntryCard entry={carried} artOnly />
           </div>
         )}
       </DragOverlay>

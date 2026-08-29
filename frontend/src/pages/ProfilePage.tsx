@@ -366,6 +366,7 @@ export const ProfilePage = () => {
                   content: (
                     <FavouriteGrid
                       entries={marked}
+                      label={label}
                       arranging={arranging}
                       onReorder={(ordered) => void reorder(key, ordered)}
                     />
