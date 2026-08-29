@@ -49,11 +49,11 @@ class AniListBrowseTest {
     void offersSeasonalShelvesForAnimeAndNotForManga() {
         assertThat(adapter.browseShelves(MediaType.ANIME))
                 .extracting(BrowseShelf::id)
-                .containsExactly("trending", "this-season", "next-season", "popular", "top");
+                .containsExactly("trending", "this-season", "next-season", "popular", "top", "newly-added");
 
         assertThat(adapter.browseShelves(MediaType.MANGA))
                 .extracting(BrowseShelf::id)
-                .containsExactly("trending", "popular", "light-novels", "top");
+                .containsExactly("trending", "popular", "light-novels", "top", "newly-added");
     }
 
     /** AniList files light novels under MANGA, and they are a different thing to read. */

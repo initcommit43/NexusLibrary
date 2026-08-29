@@ -57,18 +57,23 @@ final class AniListShelves {
     private static final String POPULARITY = "POPULARITY_DESC";
     private static final String SCORE = "SCORE_DESC";
 
+    /** AniList numbers its records as they arrive, so its newest ids are its newest entries. */
+    private static final String NEWEST = "ID_DESC";
+
     private static final List<Definition> ANIME = List.of(
             Definition.of("trending", "Trending now", TRENDING),
             Definition.of("this-season", "Popular this season", POPULARITY).inCurrentSeason(),
             Definition.of("next-season", "Upcoming next season", POPULARITY).inNextSeason(),
             Definition.of("popular", "All time popular", POPULARITY),
-            Definition.of("top", "Top 100 anime", SCORE));
+            Definition.of("top", "Top 100 anime", SCORE),
+            Definition.of("newly-added", "Newly added", NEWEST));
 
     private static final List<Definition> MANGA = List.of(
             Definition.of("trending", "Trending now", TRENDING),
             Definition.of("popular", "All time popular", POPULARITY),
             Definition.of("light-novels", "Popular light novels", POPULARITY).ofFormat("NOVEL"),
-            Definition.of("top", "Top 100 manga", SCORE));
+            Definition.of("top", "Top 100 manga", SCORE),
+            Definition.of("newly-added", "Newly added", NEWEST));
 
     private AniListShelves() {}
 
