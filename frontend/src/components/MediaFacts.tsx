@@ -41,6 +41,17 @@ const companies = (detail: Record<string, unknown>, main: boolean): string[] => 
  * The column of facts beside a title. Rows appear only when the source actually knows the
  * answer, so a manga is not padded out with empty episode counts.
  */
+/** Media that arrive in parts, and so have a run that can still be going on. */
+const SERIAL = new Set(['ANIME', 'SHOW', 'MANGA'])
+
+const releaseState = (mediaType: string, itemState: string | null): string => {
+  const serial = SERIAL.has(mediaType)
+
+  if (itemState === 'UPCOMING') return serial ? 'Not yet aired' : 'Unreleased'
+  if (itemState === 'ONGOING') return serial ? 'Airing' : 'In development'
+  return serial ? 'Finished' : 'Released'
+}
+
 export const MediaFacts = ({ media }: { media: MediaDetail }) => {
   const meta = media.metadata
   const detail = (meta.detail ?? {}) as Record<string, unknown>
@@ -52,14 +63,14 @@ export const MediaFacts = ({ media }: { media: MediaDetail }) => {
     ['Chapters', text(meta.chapters)],
     ['Volumes', text(meta.volumes)],
     ['Episode duration', text(detail.duration) ? `${text(detail.duration)} mins` : null],
-    [
-      'Status',
-      media.itemState === 'ONGOING'
-        ? 'Releasing'
-        : media.itemState === 'UPCOMING'
-          ? 'Not yet released'
-          : 'Finished',
-    ],
+    /*
+     * The release, not the reader's progress. Plain "Status: Finished" on a game reads as a
+     * game you have finished, which is the one thing on this page that is not about you.
+     *
+     * Serial media are still described as finishing, because that is what an anime or a
+     * comic does; a game or a film is released once and then simply is.
+     */
+    ['Release', releaseState(media.mediaType, media.itemState)],
     ['Start date', date(media.releaseDate)],
     ['Season', season(detail)],
     ['Average score', text(meta.externalRating) ? `${text(meta.externalRating)}%` : null],
