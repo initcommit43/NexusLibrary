@@ -794,6 +794,51 @@ input.filter-control::-webkit-search-cancel-button {
   color: var(--accent);
 }
 
+/* --- detail extras --- */
+
+/* Ratings a source states rather than charts: the number, what it measures, how many said so. */
+.score-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.score-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.score-list b {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.score-list span {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+/* A game shows itself better than it reads, so the shots get room rather than a strip. */
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: var(--space-3);
+}
+
+.gallery img {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--card-border);
+}
+
 /* --- profile --- */
 
 .profile-identity {

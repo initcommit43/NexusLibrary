@@ -8,12 +8,15 @@ import { StatusMenu } from '../components/StatusMenu'
 import { MediaRelations } from '../components/MediaRelations'
 import {
   MediaCharacters,
+  MediaGallery,
   MediaLinks,
+  MediaScores,
   MediaStaff,
   MediaStats,
   MediaTags,
   MediaTrailer,
 } from '../components/MediaPanels'
+import { readDetail } from '../components/detailView'
 import { moduleForMediaType } from '../modules/registry'
 
 /** AniList writes synopses in HTML, and pads them with blank lines it does not mean. */
@@ -93,7 +96,9 @@ export const MediaPage = () => {
   }
 
   const detail = (media.metadata.detail ?? {}) as Record<string, unknown>
-  const banner = typeof detail.bannerImage === 'string' ? detail.bannerImage : null
+  // Read once, by whichever source wrote it; the panels below never learn which that was.
+  const view = readDetail(media.source, detail)
+  const banner = view.banner
   const summary = plainText(media.metadata.summary)
   const module = moduleForMediaType(media.mediaType)
   const entry = media.entry
@@ -137,6 +142,7 @@ export const MediaPage = () => {
           <div className="media-intro">
             <h1>{media.title}</h1>
             {summary && <p className="media-summary">{summary}</p>}
+            {view.summaryExtra && <p className="media-summary muted">{view.summaryExtra}</p>}
           </div>
         </div>
       </div>
@@ -150,16 +156,25 @@ export const MediaPage = () => {
       <div className="media-layout">
         <div className="media-side">
           <MediaFacts media={media} />
-          <MediaTags detail={detail} />
-          <MediaLinks detail={detail} />
+          <MediaScores scores={view.scores} />
+          <MediaTags tags={view.tags} />
+          <MediaLinks links={view.links} />
         </div>
 
         <div className="media-main">
-          <MediaRelations detail={detail} source={media.source} mediaType={media.mediaType} />
-          <MediaCharacters detail={detail} />
-          <MediaStaff detail={detail} />
-          <MediaStats detail={detail} />
-          <MediaTrailer detail={detail} />
+          <MediaRelations
+            relations={view.relations}
+            source={media.source}
+            mediaType={media.mediaType}
+          />
+          <MediaCharacters characters={view.characters} />
+          <MediaStaff
+            staff={view.staff}
+            title={media.mediaType === 'GAME' ? 'Made by' : 'Staff'}
+          />
+          <MediaTrailer trailer={view.trailer} />
+          <MediaGallery images={view.gallery} />
+          <MediaStats statuses={view.statusDistribution} scores={view.scoreDistribution} />
         </div>
       </div>
 

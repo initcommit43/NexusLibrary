@@ -1,15 +1,7 @@
 import { useState } from 'react'
-import {
-  readCharacters,
-  readLinks,
-  readScoreDistribution,
-  readStaff,
-  readStatusDistribution,
-  readTags,
-  readTrailer,
-  type Distribution,
-  type Person,
-} from './mediaDetail'
+import type { Distribution, ExternalLink, MediaTag, Person } from './mediaDetail'
+import type { CharacterRole } from './mediaDetail'
+import type { Score } from './detailView'
 
 const PersonTile = ({ left, right }: { left: Person; right: Person | null }) => (
   <div className="person-card">
@@ -36,8 +28,7 @@ const PersonTile = ({ left, right }: { left: Person; right: Person | null }) => 
 )
 
 /** A character beside the actor who voices them, which is how both are usually recalled. */
-export const MediaCharacters = ({ detail }: { detail: Record<string, unknown> }) => {
-  const characters = readCharacters(detail)
+export const MediaCharacters = ({ characters }: { characters: CharacterRole[] }) => {
   if (characters.length === 0) return null
 
   return (
@@ -52,13 +43,13 @@ export const MediaCharacters = ({ detail }: { detail: Record<string, unknown> })
   )
 }
 
-export const MediaStaff = ({ detail }: { detail: Record<string, unknown> }) => {
-  const staff = readStaff(detail)
+/** Named for what the medium has: an anime has staff, a game has the companies behind it. */
+export const MediaStaff = ({ staff, title }: { staff: Person[]; title: string }) => {
   if (staff.length === 0) return null
 
   return (
     <section className="status-section">
-      <h2>Staff</h2>
+      <h2>{title}</h2>
       <div className="person-grid">
         {staff.map((member) => (
           <PersonTile key={`${member.id}-${member.role}`} left={member} right={null} />
@@ -88,15 +79,59 @@ const Bars = ({ rows, title }: { rows: Distribution[]; title: string }) => {
   )
 }
 
-export const MediaStats = ({ detail }: { detail: Record<string, unknown> }) => (
+export const MediaStats = ({
+  statuses,
+  scores,
+}: {
+  statuses: Distribution[]
+  scores: Distribution[]
+}) => (
   <>
-    <Bars rows={readStatusDistribution(detail)} title="Status distribution" />
-    <Bars rows={readScoreDistribution(detail)} title="Score distribution" />
+    <Bars rows={statuses} title="Status distribution" />
+    <Bars rows={scores} title="Score distribution" />
   </>
 )
 
-export const MediaTrailer = ({ detail }: { detail: Record<string, unknown> }) => {
-  const trailer = readTrailer(detail)
+/**
+ * Ratings stated rather than charted. A source that reports one number and how many people
+ * gave it has nothing to draw, and a two-bar chart of that says less than the two numbers do.
+ */
+export const MediaScores = ({ scores }: { scores: Score[] }) => {
+  if (scores.length === 0) return null
+
+  return (
+    <section className="status-section">
+      <h2>Ratings</h2>
+      <ul className="score-list">
+        {scores.map((score) => (
+          <li key={score.label}>
+            <b>{score.value}</b>
+            <span>{score.label}</span>
+            {score.hint && <span className="muted">{score.hint}</span>}
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+/** Screenshots, for the sources that have them. A game shows itself better than it reads. */
+export const MediaGallery = ({ images }: { images: string[] }) => {
+  if (images.length === 0) return null
+
+  return (
+    <section className="status-section">
+      <h2>Screenshots</h2>
+      <div className="gallery">
+        {images.map((image) => (
+          <img key={image} src={image} alt="" loading="lazy" />
+        ))}
+      </div>
+    </section>
+  )
+}
+
+export const MediaTrailer = ({ trailer }: { trailer: string | null }) => {
   if (!trailer) return null
 
   return (
@@ -113,9 +148,8 @@ export const MediaTrailer = ({ detail }: { detail: Record<string, unknown> }) =>
  * Tags carry how strongly the community thinks each applies, and some of them give the plot
  * away — those stay hidden until asked for, the way the source flags them.
  */
-export const MediaTags = ({ detail }: { detail: Record<string, unknown> }) => {
+export const MediaTags = ({ tags }: { tags: MediaTag[] }) => {
   const [showSpoilers, setShowSpoilers] = useState(false)
-  const tags = readTags(detail)
   if (tags.length === 0) return null
 
   const spoilers = tags.filter((tag) => tag.spoiler)
@@ -127,7 +161,7 @@ export const MediaTags = ({ detail }: { detail: Record<string, unknown> }) => {
       {shown.map((tag) => (
         <div key={tag.name} className="tag-row">
           <span>{tag.name}</span>
-          <span className="muted">{tag.rank}%</span>
+          {tag.rank > 0 && <span className="muted">{tag.rank}%</span>}
         </div>
       ))}
 
@@ -140,8 +174,7 @@ export const MediaTags = ({ detail }: { detail: Record<string, unknown> }) => {
   )
 }
 
-export const MediaLinks = ({ detail }: { detail: Record<string, unknown> }) => {
-  const links = readLinks(detail)
+export const MediaLinks = ({ links }: { links: ExternalLink[] }) => {
   if (links.length === 0) return null
 
   return (
