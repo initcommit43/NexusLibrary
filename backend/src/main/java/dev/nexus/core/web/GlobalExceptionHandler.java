@@ -13,6 +13,7 @@ import dev.nexus.core.importing.SteamVerificationFailedException;
 import dev.nexus.core.importing.SyncJobNotFoundException;
 import dev.nexus.core.importing.UpstreamUnavailableException;
 import dev.nexus.core.review.ReviewNotFoundException;
+import dev.nexus.core.review.ReviewNotStartedException;
 import dev.nexus.core.tracking.EntryNotFoundException;
 import dev.nexus.modules.anime.AniListNotConfiguredException;
 import dev.nexus.modules.anime.AniListUnavailableException;
@@ -154,6 +155,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(dev.nexus.core.exporting.ExportNotSupportedException.class)
     public ResponseEntity<ApiError> handleExportUnsupported(dev.nexus.core.exporting.ExportNotSupportedException e) {
         return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body(new ApiError(e.getMessage()));
+    }
+
+    @ExceptionHandler(ReviewNotStartedException.class)
+    public ResponseEntity<ApiError> handleReviewNotStarted(ReviewNotStartedException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ApiError(e.getMessage()));
     }
 
     @ExceptionHandler({

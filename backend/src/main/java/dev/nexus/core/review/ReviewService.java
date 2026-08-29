@@ -3,6 +3,7 @@ package dev.nexus.core.review;
 import dev.nexus.core.activity.ActivityRecorder;
 import dev.nexus.core.domain.Review;
 import dev.nexus.core.domain.ReviewRepository;
+import dev.nexus.core.domain.TrackingStatus;
 import dev.nexus.core.domain.UserEntry;
 import dev.nexus.core.tracking.TrackingService;
 import java.util.List;
@@ -41,6 +42,12 @@ public class ReviewService {
     @Transactional
     public Review write(Long userId, Long entryId, String body, boolean containsSpoilers) {
         UserEntry entry = tracking.requireOwned(entryId, userId);
+
+        // Checked here rather than only on the page: a rule the client alone keeps is a
+        // suggestion, and this one decides what the review feed is worth reading for.
+        if (entry.getStatus() == TrackingStatus.PLANNING) {
+            throw new ReviewNotStartedException();
+        }
 
         Review review = reviews.findByEntryId(entry.getId())
                 .map(existing -> {

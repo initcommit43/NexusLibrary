@@ -135,6 +135,8 @@ class ActivityAndReviewIntegrationTest extends PostgresIntegrationTest {
 
     @Test
     void writingAReviewStoresItAndRecordsActivity() {
+        started();
+
         Response written = writeReview("A genuinely excellent game.", false);
 
         assertThat(written.status()).isEqualTo(200);
@@ -144,6 +146,7 @@ class ActivityAndReviewIntegrationTest extends PostgresIntegrationTest {
 
     @Test
     void writingAgainReplacesTheReviewRatherThanAddingASecond() {
+        started();
         writeReview("First take.", false);
         writeReview("Considered take.", true);
 
@@ -157,6 +160,7 @@ class ActivityAndReviewIntegrationTest extends PostgresIntegrationTest {
     /** Only the first review is news; edits would otherwise flood the feed. */
     @Test
     void editingAReviewDoesNotRecordASecondActivity() {
+        started();
         writeReview("First take.", false);
         long afterFirst = activities.count();
 
@@ -167,11 +171,14 @@ class ActivityAndReviewIntegrationTest extends PostgresIntegrationTest {
 
     @Test
     void anEmptyReviewIsRejected() {
+        started();
+
         assertThat(writeReview("   ", false).status()).isEqualTo(400);
     }
 
     @Test
     void aReviewCanBeDeleted() {
+        started();
         writeReview("Regrettable opinion.", false);
 
         assertThat(http.delete("/entries/" + entryId + "/review", "Authorization", "Bearer " + token)
@@ -189,6 +196,7 @@ class ActivityAndReviewIntegrationTest extends PostgresIntegrationTest {
 
     @Test
     void anotherUserCannotReadWriteOrDeleteYourReview() {
+        started();
         writeReview("Private thoughts.", false);
         String otherToken = registerAndGetToken(http, "intruder@example.com", "intruder");
 
@@ -209,6 +217,24 @@ class ActivityAndReviewIntegrationTest extends PostgresIntegrationTest {
         assertThat(reviews.count()).isEqualTo(1);
     }
 
+    /**
+     * Planning to play something is not an opinion of it. Every other shelf means the reader
+     * started, which is what a review is written from.
+     */
+    @Test
+    void aTitleNobodyHasStartedCannotBeReviewedYet() {
+        assertThat(writeReview("Looks good from here.", false).status()).isEqualTo(409);
+        assertThat(reviews.count()).isZero();
+    }
+
+    @Test
+    void aDroppedTitleCanStillBeReviewed() {
+        patch(Map.of("status", "DROPPED"));
+
+        assertThat(writeReview("Gave up on it, and here is why.", false).status())
+                .isEqualTo(200);
+    }
+
     @Test
     void reviewAndActivityEndpointsRequireAuthentication() {
         assertThat(http.get("/activity").status()).isEqualTo(401);
@@ -219,6 +245,11 @@ class ActivityAndReviewIntegrationTest extends PostgresIntegrationTest {
     }
 
     // --- helpers ----------------------------------------------------------
+
+    /** Moves the fixture off the planning shelf, which is where a review becomes writable. */
+    private void started() {
+        patch(Map.of("status", "IN_PROGRESS"));
+    }
 
     private Response track(String status) {
         return http.postJson(

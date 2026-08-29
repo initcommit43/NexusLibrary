@@ -4,6 +4,7 @@ import { ApiError, api, type MediaDetail, type MediaType, type TrackedItem } fro
 import { AppShell } from '../components/AppShell'
 import { EntryEditDialog } from '../components/EntryEditDialog'
 import { MediaAchievements } from '../components/MediaAchievements'
+import { MediaReview } from '../components/MediaReview'
 import { MediaFacts } from '../components/MediaFacts'
 import { StatusMenu } from '../components/StatusMenu'
 import { MediaRecommendations, MediaRelations } from '../components/MediaRelations'
@@ -189,6 +190,7 @@ export const MediaPage = () => {
           <MediaGallery images={view.gallery} />
           <MediaRecommendations recommendations={view.recommendations} source={media.source} />
           <MediaStats statuses={view.statusDistribution} scores={view.scoreDistribution} />
+          <MediaReview entry={entry} />
         </div>
       </div>
 
