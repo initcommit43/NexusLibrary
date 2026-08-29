@@ -52,6 +52,17 @@ const releaseState = (mediaType: string, itemState: string | null): string => {
   return serial ? 'Finished' : 'Released'
 }
 
+/**
+ * The year it came out, which is what this row is read for — the state it is in only
+ * answers the question while there is no year to give.
+ */
+const released = (media: MediaDetail): string => {
+  const year = media.releaseDate ? String(new Date(media.releaseDate).getFullYear()) : null
+  return year && media.itemState !== 'UPCOMING'
+    ? year
+    : releaseState(media.mediaType, media.itemState)
+}
+
 export const MediaFacts = ({ media }: { media: MediaDetail }) => {
   const meta = media.metadata
   const detail = (meta.detail ?? {}) as Record<string, unknown>
@@ -64,13 +75,14 @@ export const MediaFacts = ({ media }: { media: MediaDetail }) => {
     ['Volumes', text(meta.volumes)],
     ['Episode duration', text(detail.duration) ? `${text(detail.duration)} mins` : null],
     /*
-     * The release, not the reader's progress. Plain "Status: Finished" on a game reads as a
-     * game you have finished, which is the one thing on this page that is not about you.
+     * The release, not the reader's progress. A bare "Finished" on a game reads as a game
+     * you have finished, which is the one thing on this page that is not about you — and a
+     * title that is out is better described by the year it came out than by being out.
      *
      * Serial media are still described as finishing, because that is what an anime or a
      * comic does; a game or a film is released once and then simply is.
      */
-    ['Release', releaseState(media.mediaType, media.itemState)],
+    ['Release', released(media)],
     ['Start date', date(media.releaseDate)],
     ['Season', season(detail)],
     ['Average score', text(meta.externalRating) ? `${text(meta.externalRating)}%` : null],
