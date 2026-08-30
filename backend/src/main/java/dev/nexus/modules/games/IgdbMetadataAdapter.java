@@ -55,6 +55,14 @@ public class IgdbMetadataAdapter implements MetadataAdapter {
 
     private static final int MAX_WEBSITES = 10;
 
+    /**
+     * IGDB's "Visits" measure: how many people opened a game's page, refreshed daily.
+     *
+     * <p>Their own, rather than one of the Steam-sourced measures beside it, because a shelf
+     * of games covers every platform and a peak-player count only knows about one of them.
+     */
+    private static final int POPULARITY_VISITS = 1;
+
     static final String SHELF_POPULAR = "popular";
     static final String SHELF_TOP_RATED = "top-rated";
     static final String SHELF_COMING_SOON = "coming-soon";
@@ -334,11 +342,7 @@ public class IgdbMetadataAdapter implements MetadataAdapter {
 
         List<Map<String, Object>> games =
                 switch (shelfId) {
-                    case SHELF_POPULAR -> client.browseGames(
-                            "total_rating_count > %d & first_release_date < %d".formatted(POPULAR_VOTE_FLOOR, now),
-                            "total_rating_count desc",
-                            offset,
-                            size);
+                    case SHELF_POPULAR -> trending(offset, size);
                     case SHELF_TOP_RATED -> client.browseGames(
                             "total_rating_count > %d & first_release_date < %d".formatted(TOP_RATED_VOTE_FLOOR, now),
                             "total_rating desc",
@@ -358,6 +362,30 @@ public class IgdbMetadataAdapter implements MetadataAdapter {
 
         // A full page is the only signal IGDB gives that there is another one behind it.
         return new BrowseResults(toSearchResults(games), games.size() == size);
+    }
+
+    /**
+     * What is being looked at right now, in IGDB's own ranking.
+     *
+     * <p>Two calls: the ranking is a table of ids, and the games come after it. The order is
+     * the whole point, so it is carried across the second call by hand — IGDB answers a list
+     * of ids in whatever order it likes, and sorted by anything else this is just another
+     * rating shelf.
+     *
+     * <p>An id the games call does not answer for is dropped rather than held as a gap: it is
+     * a game IGDB has since removed, and a shelf is not a place to explain that.
+     */
+    private List<Map<String, Object>> trending(int offset, int size) {
+        List<String> ranked = client.popularGameIds(POPULARITY_VISITS, offset, size);
+        if (ranked.isEmpty()) {
+            return List.of();
+        }
+
+        Map<String, Map<String, Object>> games = client.findGamesByIds(ranked).stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        game -> string(game.get("id")), game -> game, (first, second) -> first));
+
+        return ranked.stream().map(games::get).filter(java.util.Objects::nonNull).toList();
     }
 
     /**

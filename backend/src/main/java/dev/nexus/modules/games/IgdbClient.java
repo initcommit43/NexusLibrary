@@ -93,6 +93,30 @@ public class IgdbClient {
     }
 
     /**
+     * The games people are actually looking at, most first.
+     *
+     * <p>IGDB keeps this apart from the games themselves: {@code popularity_primitives} is a
+     * daily table of game ids against a number, and the games have to be fetched after. Two
+     * calls, then, for the one shelf that is worth them — a rating count says what was
+     * popular for the last decade, and this says what is popular this week.
+     *
+     * @param type which measure to read, from {@code popularity_types}
+     * @return game ids, in the order IGDB ranks them
+     */
+    public List<String> popularGameIds(int type, int offset, int limit) {
+        List<Map<String, Object>> rows = post(
+                "fields game_id,value; where popularity_type = %d; sort value desc; offset %d; limit %d;"
+                        .formatted(type, offset, Math.min(limit, MAX_BATCH)),
+                "/popularity_primitives");
+
+        return rows.stream()
+                .map(row -> row.get("game_id"))
+                .filter(Number.class::isInstance)
+                .map(id -> String.valueOf(((Number) id).longValue()))
+                .toList();
+    }
+
+    /**
      * Names for the platforms worth offering, asked for by id.
      *
      * <p>IGDB knows 220 platforms, most of them things nobody is choosing between — the
