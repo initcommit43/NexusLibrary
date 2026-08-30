@@ -4,6 +4,7 @@ import static dev.nexus.support.AuthenticatedTest.registerAndGetToken;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -12,7 +13,10 @@ import static org.mockito.Mockito.when;
 import dev.nexus.auth.AppUserRepository;
 import dev.nexus.core.domain.MediaType;
 import dev.nexus.core.domain.Provider;
+import dev.nexus.core.domain.ProviderActivity;
+import dev.nexus.core.domain.ProviderActivityRepository;
 import dev.nexus.core.domain.TrackableItemRepository;
+import dev.nexus.core.domain.TrackingStatus;
 import dev.nexus.core.domain.UserEntry;
 import dev.nexus.core.domain.UserEntryRepository;
 import dev.nexus.core.importing.ExternalAccountService;
@@ -23,6 +27,8 @@ import dev.nexus.support.HttpTestClient;
 import dev.nexus.support.HttpTestClient.Response;
 import dev.nexus.support.PostgresIntegrationTest;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,6 +70,9 @@ class AniListImportIntegrationTest extends PostgresIntegrationTest {
     @Autowired
     ExternalAccountService accounts;
 
+    @Autowired
+    ProviderActivityRepository providerActivity;
+
     private HttpTestClient http;
     private String token;
     private Long userId;
@@ -82,6 +91,55 @@ class AniListImportIntegrationTest extends PostgresIntegrationTest {
         when(anilistClient.fetchList("reader", MediaType.MANGA, "tok")).thenReturn(List.of(listRow(30013, "MANGA", 90)));
         when(anilistClient.findMediaByIds(anyCollection()))
                 .thenReturn(List.of(media(21, "ANIME"), media(30013, "MANGA")));
+
+        // Every import is followed by the activity sync, so every test in here runs one.
+        when(anilistClient.viewerId(anyString())).thenReturn(7);
+        when(anilistClient.fetchActivity(anyInt(), anyInt(), anyString()))
+                .thenReturn(new AniListClient.ActivityPage(List.of(), false));
+    }
+
+    /**
+     * The reason the stream is imported at all: a list entry knows the day something was
+     * started and the day it was finished, and the stream knows every day in between.
+     */
+    @Test
+    void theActivityStreamComesInBehindTheLibrary() {
+        LocalDate watched = LocalDate.now().minusDays(4);
+        when(anilistClient.fetchActivity(7, 1, "tok"))
+                .thenReturn(new AniListClient.ActivityPage(
+                        List.of(activity(1, 21, watched, "5"), activity(2, 21, watched.minusDays(1), "4")),
+                        false));
+
+        awaitFollowUp(runImport());
+
+        assertThat(providerActivity.findAll())
+                .extracting(ProviderActivity::getHappenedOn)
+                .containsExactlyInAnyOrder(watched, watched.minusDays(1));
+    }
+
+    /** A square on the map has to belong to something the shelf can explain. */
+    @Test
+    void eventsAboutTitlesThatAreNotOnTheShelfAreLeftOut() {
+        when(anilistClient.fetchActivity(7, 1, "tok"))
+                .thenReturn(new AniListClient.ActivityPage(
+                        List.of(activity(1, 999, LocalDate.now(), "1")), false));
+
+        awaitFollowUp(runImport());
+
+        assertThat(providerActivity.count()).isZero();
+    }
+
+    /** The stream is walked newest first, so a second run reaches its own history and stops. */
+    @Test
+    void aSecondImportBringsTheSameActivityInOnlyOnce() {
+        when(anilistClient.fetchActivity(7, 1, "tok"))
+                .thenReturn(new AniListClient.ActivityPage(
+                        List.of(activity(1, 21, LocalDate.now(), "5")), false));
+
+        awaitFollowUp(runImport());
+        awaitFollowUp(runImport());
+
+        assertThat(providerActivity.count()).isEqualTo(1);
     }
 
     @Test
@@ -164,7 +222,9 @@ class AniListImportIntegrationTest extends PostgresIntegrationTest {
     /** Nothing running is answered with an empty body, which a client has to survive. */
     @Test
     void thereIsNoCurrentJobOnceTheImportHasFinished() {
-        runImport();
+        // Including the activity sync behind it: what the indicator watches is whether
+        // anything at all is still running, not whether the import itself is done.
+        awaitFollowUp(runImport());
 
         Response current = http.get("/integrations/jobs/current", "Authorization", "Bearer " + token);
         assertThat(current.status()).isEqualTo(200);
@@ -184,15 +244,41 @@ class AniListImportIntegrationTest extends PostgresIntegrationTest {
         verify(steamAchievements, never()).fetch(anyString(), anyString());
     }
 
+    /** A second run finds the same library, so it adds nothing and touches nothing. */
     @Test
-    void aSecondRunUpdatesRatherThanDuplicating() {
+    void aSecondRunLeavesWhatHasNotChangedAlone() {
         runImport();
         Response second = runImport();
 
         assertThat(reportOf(second)).containsEntry("created", 0);
-        assertThat(reportOf(second)).containsEntry("updated", 2);
+        assertThat(reportOf(second)).containsEntry("updated", 0);
         assertThat(entries.count()).isEqualTo(2);
         assertThat(items.count()).isEqualTo(2);
+    }
+
+    /**
+     * The other half of that: what did move must move here too. Finishing a series on AniList
+     * and finding it still listed as watching afterwards is the import having done half its
+     * job, whatever the entry looked like before.
+     */
+    @Test
+    void statusAndProgressChangedOnAniListLandOnTheNextImport() {
+        runImport();
+
+        Map<String, Object> finished = listRow(21, "ANIME", 1000);
+        finished.put("status", "COMPLETED");
+        when(anilistClient.fetchList("reader", MediaType.ANIME, "tok")).thenReturn(List.of(finished));
+
+        Response second = runImport();
+
+        assertThat(reportOf(second)).containsEntry("updated", 1);
+        assertThat(entries.findByUserIdOrderByUpdatedAtDesc(userId))
+                .filteredOn(entry -> entry.getItem().getMediaType() == MediaType.ANIME)
+                .singleElement()
+                .satisfies(entry -> {
+                    assertThat(entry.getStatus()).isEqualTo(TrackingStatus.COMPLETED);
+                    assertThat(entry.getProgressCurrent()).isEqualTo(1000);
+                });
     }
 
     @Test
@@ -201,6 +287,24 @@ class AniListImportIntegrationTest extends PostgresIntegrationTest {
 
         assertThat(entries.findByUserIdOrderByUpdatedAtDesc(userId))
                 .allSatisfy(entry -> assertThat(entry.getImportedFrom()).isEqualTo(Provider.ANILIST));
+    }
+
+    /** The activity sync is started by the import and runs behind it, on its own job. */
+    private void awaitFollowUp(Response job) {
+        Object followUp = job.body().get("followUpJobId");
+        assertThat(followUp).as("the import should have started an activity sync").isNotNull();
+        assertThat(awaitJob(String.valueOf(followUp)).body().get("state")).isEqualTo("COMPLETE");
+    }
+
+    /** One event as AniList reports it: seconds since the epoch, and the title it was about. */
+    private static Map<String, Object> activity(int id, int mediaId, LocalDate day, String progress) {
+        Map<String, Object> row = new HashMap<>();
+        row.put("id", id);
+        row.put("createdAt", day.atTime(12, 0).atZone(ZoneId.systemDefault()).toEpochSecond());
+        row.put("status", "watched episode");
+        row.put("progress", progress);
+        row.put("media", new HashMap<>(Map.of("id", mediaId, "type", "ANIME")));
+        return row;
     }
 
     private Response runImport() {
@@ -240,6 +344,7 @@ class AniListImportIntegrationTest extends PostgresIntegrationTest {
         return (Map<String, Object>) job.body().get("report");
     }
 
+    /** Mutable on purpose: a test changes what AniList says between one run and the next. */
     private static Map<String, Object> listRow(int id, String type, int progress) {
         Map<String, Object> row = new HashMap<>();
         row.put("status", "CURRENT");

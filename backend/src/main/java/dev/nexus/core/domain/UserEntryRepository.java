@@ -34,30 +34,36 @@ public interface UserEntryRepository extends JpaRepository<UserEntry, Long> {
     }
 
     /**
-     * What a reader started and finished, by the day it happened.
+     * What a reader did, by the day it happened: what they started, what they finished, and
+     * everything a provider's own activity stream recorded in between.
      *
-     * <p>Starting and finishing are counted separately and summed: a day that finished three
-     * series and began two saw five things happen, and collapsing that to "a day with
-     * activity" throws away the only number the square has to show.
+     * <p>A square counts titles, not events. The three sources are unioned on the title and
+     * the day, so a series started and finished on one afternoon is one thing that happened,
+     * and four episodes of it watched that evening do not make it four more.
      *
-     * <p>Read off the entries rather than the activity log because the log holds what was
-     * done in this app, while these dates come in with an import and stretch back years —
+     * <p>Read off the entries rather than this app's activity log, because the log holds what
+     * was done in this app while these dates come in with an import and stretch back years —
      * which is the history the map is for. Media types the caller has no dates for are
-     * excluded by the caller, since a shelf that never records a date would otherwise read
-     * as a shelf nobody touched.
+     * excluded by the caller, since a shelf that never records a date would otherwise read as
+     * a shelf nobody touched.
      */
     @Query(
             value =
                     """
                     SELECT day, count(*) AS amount FROM (
-                        SELECT e.started_at AS day
+                        SELECT e.trackable_item_id AS item, e.started_at AS day
                           FROM user_entry e JOIN trackable_item i ON i.id = e.trackable_item_id
                          WHERE e.user_id = :userId AND e.started_at >= :from
                            AND i.media_type NOT IN (:excluded)
-                        UNION ALL
-                        SELECT e.finished_at
+                        UNION
+                        SELECT e.trackable_item_id, e.finished_at
                           FROM user_entry e JOIN trackable_item i ON i.id = e.trackable_item_id
                          WHERE e.user_id = :userId AND e.finished_at >= :from
+                           AND i.media_type NOT IN (:excluded)
+                        UNION
+                        SELECT a.trackable_item_id, a.happened_on
+                          FROM provider_activity a JOIN trackable_item i ON i.id = a.trackable_item_id
+                         WHERE a.user_id = :userId AND a.happened_on >= :from
                            AND i.media_type NOT IN (:excluded)
                     ) days
                     GROUP BY day ORDER BY day

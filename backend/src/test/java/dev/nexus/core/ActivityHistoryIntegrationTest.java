@@ -5,6 +5,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
+import dev.nexus.core.domain.Provider;
+import dev.nexus.core.domain.ProviderActivity;
+import dev.nexus.core.domain.ProviderActivityRepository;
+import dev.nexus.core.domain.UserEntry;
+import dev.nexus.core.domain.UserEntryRepository;
 import dev.nexus.modules.anime.AniListClient;
 import dev.nexus.modules.games.IgdbClient;
 import dev.nexus.support.GamesTestData;
@@ -17,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
@@ -31,6 +37,12 @@ class ActivityHistoryIntegrationTest extends PostgresIntegrationTest {
 
     @MockitoBean
     AniListClient anilistClient;
+
+    @Autowired
+    ProviderActivityRepository providerActivity;
+
+    @Autowired
+    UserEntryRepository entries;
 
     private HttpTestClient http;
     private String token;
@@ -55,12 +67,68 @@ class ActivityHistoryIntegrationTest extends PostgresIntegrationTest {
         assertThat(history()).isEmpty();
     }
 
-    /** Starting and finishing are two things that happened, even on the same day. */
+    /**
+     * A square counts titles, not the things that happened to them: a series begun and
+     * finished in one afternoon is one thing that happened that day, and the tooltip above
+     * the square says as much.
+     */
     @Test
-    void aDayCountsWhatWasStartedAndWhatWasFinished() {
+    void aTitleCountsOnceOnADayHoweverMuchHappenedToIt() {
         dated(trackAnime("21"), today.minusDays(3), today.minusDays(3));
 
+        assertThat(history()).containsExactly(Map.entry(today.minusDays(3).toString(), 1));
+    }
+
+    @Test
+    void twoTitlesOnOneDayCountTwice() {
+        dated(trackAnime("21"), today.minusDays(3), null);
+        dated(trackAnime("30013"), today.minusDays(3), null);
+
         assertThat(history()).containsExactly(Map.entry(today.minusDays(3).toString(), 2));
+    }
+
+    /**
+     * The point of importing an activity stream: the days between starting something and
+     * finishing it are the days a reader actually had.
+     */
+    @Test
+    void importedActivityPutsDaysOnTheMapThatNoStartOrFinishDid() {
+        long entryId = trackAnime("21");
+        dated(entryId, today.minusDays(9), null);
+        imported(entryId, today.minusDays(6));
+        imported(entryId, today.minusDays(4));
+
+        assertThat(history())
+                .containsExactly(
+                        Map.entry(today.minusDays(9).toString(), 1),
+                        Map.entry(today.minusDays(6).toString(), 1),
+                        Map.entry(today.minusDays(4).toString(), 1));
+    }
+
+    /** The last episode is watched on the day the series is finished; that is one day, once. */
+    @Test
+    void activityOnTheDaySomethingWasFinishedDoesNotCountTwice() {
+        long entryId = trackAnime("21");
+        dated(entryId, today.minusDays(8), today.minusDays(2));
+        imported(entryId, today.minusDays(2));
+
+        assertThat(history())
+                .containsExactly(
+                        Map.entry(today.minusDays(8).toString(), 1),
+                        Map.entry(today.minusDays(2).toString(), 1));
+    }
+
+    /** Imported activity belongs to its title's shelf, as its start and finish dates do. */
+    @Test
+    void importedActivityFollowsTheModuleTheMapIsPointedAt() {
+        imported(trackAnime("21"), today.minusDays(5));
+        imported(trackManga("30002"), today.minusDays(5));
+
+        assertThat(history("&mediaTypes=ANIME"))
+                .containsExactly(Map.entry(today.minusDays(5).toString(), 1));
+        assertThat(history("&mediaTypes=MANGA"))
+                .containsExactly(Map.entry(today.minusDays(5).toString(), 1));
+        assertThat(history()).containsExactly(Map.entry(today.minusDays(5).toString(), 2));
     }
 
     @Test
@@ -126,6 +194,20 @@ class ActivityHistoryIntegrationTest extends PostgresIntegrationTest {
         return response.list().stream()
                 .map(day -> Map.entry((String) day.get("date"), ((Number) day.get("amount")).intValue()))
                 .toList();
+    }
+
+    /** One event as an import would have written it, against the entry's own title. */
+    private void imported(long entryId, LocalDate day) {
+        UserEntry entry = entries.findById(entryId).orElseThrow();
+
+        providerActivity.save(new ProviderActivity(
+                entry.getUserId(),
+                Provider.ANILIST,
+                "activity-" + entryId + "-" + day,
+                entry.getItem().getId(),
+                day,
+                "watched episode of",
+                "5"));
     }
 
     private void dated(long entryId, LocalDate started, LocalDate finished) {
