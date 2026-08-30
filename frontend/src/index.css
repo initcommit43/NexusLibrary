@@ -2426,10 +2426,6 @@ input.filter-control::-webkit-search-cancel-button {
   margin-top: var(--space-2);
 }
 
- * tiles divide it — both blocks start and stop on the same lines.
-   * the lane they are given rather than stopping a third of the way short of it — the map is
- * a shade apart is no difference at all — so the ladder starts high and the blank is left
- * Days that have not happened yet are not drawn — but they keep their place, so the week
 /* A fact that leads somewhere says so on hover rather than by being blue in a list of facts. */
 .fact-link {
   color: inherit;
@@ -2441,6 +2437,35 @@ input.filter-control::-webkit-search-cancel-button {
 .fact-link:focus-visible {
   color: var(--accent);
   text-decoration: none;
+}
+
+ * tiles divide it — both blocks start and stop on the same lines.
+   * the lane they are given rather than stopping a third of the way short of it — the map is
+ * a shade apart is no difference at all — so the ladder starts high and the blank is left
+ * Days that have not happened yet are not drawn — but they keep their place, so the week
+/* The line you type into, at the top of a menu too long to read down. */
+.filter-search {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: var(--space-1);
+  background: var(--surface);
+  border-bottom: 1px solid var(--card-border);
+}
+
+.filter-search input {
+  width: 100%;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+  font-size: var(--text-sm);
+}
+
+.filter-empty {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
 }
 
 /* A studio's name, and the two controls over their catalogue. */

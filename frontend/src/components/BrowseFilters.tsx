@@ -1,6 +1,9 @@
-import { useId } from 'react'
+import { useId, useState } from 'react'
 import type { FilterField, FilterValues } from '../api/client'
 import { useMenuDismiss } from './useMenuDismiss'
+
+/** How many options make a list worth searching rather than reading. */
+const SEARCHABLE_FROM = 12
 
 const ChevronIcon = () => (
   <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" aria-hidden>
@@ -68,7 +71,24 @@ const Dropdown = ({
 }) => {
   const { open, setOpen, container } = useMenuDismiss<HTMLDivElement>()
   const id = useId()
+  const [typed, setTyped] = useState('')
   const filled = chosen.length > 0
+
+  /*
+   * A list long enough to be hunted through rather than read gets something to type into.
+   * AniList files under a few dozen genres and several hundred tags, and scrolling a menu of
+   * three hundred words to find "found family" is not looking for it.
+   */
+  const searchable = field.options.length > SEARCHABLE_FROM
+  const term = typed.trim().toLowerCase()
+  const offered = term
+    ? field.options.filter((option) => option.label.toLowerCase().includes(term))
+    : field.options
+
+  /** What is chosen, in the words it was chosen by rather than the values it is sent as. */
+  const labelled = chosen.map(
+    (value) => field.options.find((option) => option.value === value)?.label ?? value,
+  )
 
   const pick = (value: string) => {
     if (!multiple) {
@@ -94,13 +114,26 @@ const Dropdown = ({
         aria-expanded={open}
         onClick={() => setOpen((wasOpen) => !wasOpen)}
       >
-        <span>{chosen.join(', ')}</span>
+        <span>{labelled.join(', ')}</span>
       </button>
 
       <Affordance filled={filled} hasList label={field.label} onClear={() => onChange([])} />
 
       {open && (
         <ul className="filter-options">
+          {searchable && (
+            <li className="filter-search">
+              <input
+                type="search"
+                value={typed}
+                autoFocus
+                placeholder={`Search ${field.label.toLowerCase()}`}
+                aria-label={`Search ${field.label}`}
+                onChange={(event) => setTyped(event.target.value)}
+              />
+            </li>
+          )}
+
           {/* Named here, where it is a choice among others, rather than in the closed box,
               where it would be a word standing in for the nothing it means. */}
           {!multiple && (
@@ -118,7 +151,11 @@ const Dropdown = ({
             </li>
           )}
 
-          {field.options.map((option) =>
+          {offered.length === 0 && (
+            <li className="filter-empty muted">Nothing by that name</li>
+          )}
+
+          {offered.map((option) =>
             multiple ? (
               <li key={option.value}>
                 <label>
