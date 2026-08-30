@@ -320,6 +320,7 @@ public class AniListClient {
             MediaType mediaType,
             String search,
             List<String> genres,
+            List<String> tags,
             Integer year,
             String season,
             String format,

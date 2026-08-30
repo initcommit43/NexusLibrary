@@ -6,14 +6,21 @@ import dev.nexus.core.adapter.DiscoverFilters;
 import dev.nexus.core.adapter.FilterField;
 import dev.nexus.core.adapter.MetadataAdapter;
 import dev.nexus.core.adapter.MetadataAdapterRegistry;
+import dev.nexus.core.adapter.StudioBrowse;
 import dev.nexus.core.domain.MediaType;
+import dev.nexus.core.domain.Source;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 /**
@@ -49,11 +56,32 @@ public class BrowseService {
     private record CachedShelf(BrowseResults results, Instant fetchedAt) {}
 
     private final MetadataAdapterRegistry adapters;
+    /** The sources that keep studio credits; empty is a perfectly good answer here. */
+    private final List<StudioBrowse> studios;
+
     private final Duration ttl;
     private final Map<CacheKey, CachedShelf> cache = new ConcurrentHashMap<>();
+    /** Which shelves are being replaced right now, so a busy page refreshes each of them once. */
+    private final Set<CacheKey> refreshing = ConcurrentHashMap.newKeySet();
 
-    public BrowseService(MetadataAdapterRegistry adapters, BrowseProperties properties) {
+    /**
+     * A few threads, and a queue in front of them.
+     *
+     * <p>Refreshing a shelf is waiting on a source, and one source being slow — AniList on a
+     * bad afternoon takes its thirty seconds and then times out — must not hold up the shelves
+     * of the four that are answering. Each source paces itself with its own rate limiter, so
+     * the threads cost nothing but the waiting they do.
+     */
+    private final ExecutorService refresher = Executors.newFixedThreadPool(3, runnable -> {
+        Thread thread = new Thread(runnable, "browse-refresh");
+        thread.setDaemon(true);
+        return thread;
+    });
+
+    public BrowseService(
+            MetadataAdapterRegistry adapters, List<StudioBrowse> studios, BrowseProperties properties) {
         this.adapters = adapters;
+        this.studios = List.copyOf(studios);
         this.ttl = properties.ttl();
     }
 
@@ -71,6 +99,21 @@ public class BrowseService {
      */
     public BrowseResults discover(MediaType mediaType, DiscoverFilters filters, int page) {
         return adapters.requireForMediaType(mediaType).discover(mediaType, filters, page, PAGE_SIZE);
+    }
+
+    /**
+     * What one studio made, from whichever source keeps that credit.
+     *
+     * <p>A source that does not answer for studios answers with nothing rather than an error:
+     * the link only exists on pages of sources that do, so reaching here for another is a URL
+     * typed by hand.
+     */
+    public StudioBrowse.Works worksOf(Source source, String studioId, int page) {
+        return studios.stream()
+                .filter(studio -> studio.source() == source)
+                .findFirst()
+                .map(studio -> studio.worksOf(studioId, page, PAGE_SIZE))
+                .orElseGet(StudioBrowse.Works::none);
     }
 
     /** What this media type can show, straight from its adapter. Never cached: it is a constant. */

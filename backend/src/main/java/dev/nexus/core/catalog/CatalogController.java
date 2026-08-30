@@ -6,6 +6,7 @@ import dev.nexus.core.adapter.BrowseShelf;
 import dev.nexus.core.adapter.DiscoverFilters;
 import dev.nexus.core.adapter.FilterField;
 import dev.nexus.core.adapter.ItemSearchResult;
+import dev.nexus.core.adapter.StudioBrowse;
 import dev.nexus.core.adapter.MetadataAdapterRegistry;
 import dev.nexus.core.domain.MediaType;
 import dev.nexus.core.domain.Source;
@@ -165,12 +166,40 @@ public class CatalogController {
      * and comes from memory, so a reader refreshing the page spends no external budget.
      */
     @GetMapping("/browse")
-    public BrowseResults browseShelf(
+    public ResponseEntity<BrowseResults> browseShelf(
             @RequestParam MediaType mediaType,
             @RequestParam @NotBlank @Size(max = 50) String shelf,
             @RequestParam(defaultValue = "1") @Positive int page) {
 
-        return timings.time("browse", () -> browse.page(mediaType, shelf, page));
+        BrowseResults results = timings.time("browse", () -> browse.page(mediaType, shelf, page));
+
+        /*
+         * Held by the reader's own browser for a few minutes.
+         *
+         * <p>A shelf is the same list for everyone and changes by the day at most, so opening
+         * home again should not be four round trips to be told the same thing. Private because
+         * the route is behind a login, not because the answer is anybody's in particular.
+         */
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(BROWSER_CACHE).cachePrivate())
+                .body(results);
+    }
+
+    /**
+     * What one studio made, newest first.
+     *
+     * <p>Rate-limited like search rather than free like a shelf: it is one reader's question
+     * about one company, and every page of it costs a request to the source.
+     */
+    @GetMapping("/studios/{source}/{studioId}")
+    public StudioBrowse.Works studioWorks(
+            @AuthenticationPrincipal CurrentUser user,
+            @PathVariable Source source,
+            @PathVariable @NotBlank @Size(max = 40) String studioId,
+            @RequestParam(defaultValue = "1") @Positive int page) {
+
+        rateLimiter.check("studio:" + user.id(), searchesPerMinute);
+        return timings.time("studio", () -> browse.worksOf(source, studioId, page));
     }
 
     /** The controls this media type's browse bar offers, so the client renders what exists. */
