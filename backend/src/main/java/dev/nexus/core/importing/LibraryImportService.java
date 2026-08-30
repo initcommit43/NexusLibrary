@@ -12,11 +12,14 @@ import dev.nexus.core.domain.ExternalAccount;
 import dev.nexus.core.domain.ExternalIds;
 import dev.nexus.core.domain.Provider;
 import dev.nexus.core.domain.Source;
+import dev.nexus.core.domain.ProgressUnit;
 import dev.nexus.core.domain.TrackableItem;
+import dev.nexus.core.domain.TrackingStatus;
 import dev.nexus.core.jobs.SyncJob;
 import dev.nexus.core.domain.TrackableItemRepository;
 import dev.nexus.core.domain.UserEntry;
 import dev.nexus.core.domain.UserEntryRepository;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -153,7 +156,7 @@ public class LibraryImportService {
             Upserted result = upsert(userId, provider, item, entry);
             if (result.created()) {
                 created++;
-            } else {
+            } else if (result.changed()) {
                 updated++;
             }
             if (result.advanced()) {
@@ -225,10 +228,12 @@ public class LibraryImportService {
     }
 
     /**
-     * @return true when a new entry was created, false when an existing one was updated
+     * What one title's import did, which is what the feed reports about the run.
+     *
+     * @param changed whether anything was actually written; a title found exactly as it was
+     *     left is neither created nor updated
      */
-    /** What one title's import did, which is what the feed reports about the run. */
-    private record Upserted(boolean created, Integer from, Integer to) {
+    private record Upserted(boolean created, boolean changed, Integer from, Integer to) {
 
         boolean advanced() {
             return !created && !java.util.Objects.equals(from, to);
@@ -244,7 +249,7 @@ public class LibraryImportService {
             entry.setImportedFrom(provider);
             applyProgress(entry, imported);
             entries.save(entry);
-            return new Upserted(true, null, entry.getProgressCurrent());
+            return new Upserted(true, true, null, entry.getProgressCurrent());
         }
 
         // An entry added by hand and later found in an import did come from there too.
@@ -253,13 +258,57 @@ public class LibraryImportService {
         }
 
         Integer before = existing.getProgressCurrent();
+        State held = State.of(existing);
 
-        // An import must not overwrite what the user set by hand. Progress is objective and
-        // comes from the provider; status and rating are the user's own judgement, so they
-        // are only filled in where the user has expressed nothing.
+        /*
+         * Progress and status both come across, because both are what the provider knows and
+         * what the reader went there to record: finishing a series on AniList and finding it
+         * still listed as watching here is the import having done half its job.
+         *
+         * <p>A rating is left alone once it exists, and so are dates already set. Those are
+         * the reader's own judgement about a title, and an import is a mirror of a shelf
+         * rather than an opinion about one.
+         */
         applyProgress(existing, imported);
+        if (imported.status() != null) {
+            existing.setStatus(imported.status());
+        }
+
+        // An entry that came back identical is one the run did not update, and saying it did
+        // would make every re-import read as if the whole library had moved.
+        if (held.equals(State.of(existing))) {
+            return new Upserted(false, false, before, before);
+        }
+
         entries.save(existing);
-        return new Upserted(false, before, existing.getProgressCurrent());
+        return new Upserted(false, true, before, existing.getProgressCurrent());
+    }
+
+    /**
+     * What an import may change about an entry, for telling a run that changed something from
+     * one that found everything already as it was.
+     */
+    private record State(
+            TrackingStatus status,
+            Integer progressCurrent,
+            Integer progressMax,
+            ProgressUnit progressUnit,
+            Short rating,
+            LocalDate startedAt,
+            LocalDate finishedAt,
+            Provider importedFrom) {
+
+        static State of(UserEntry entry) {
+            return new State(
+                    entry.getStatus(),
+                    entry.getProgressCurrent(),
+                    entry.getProgressMax(),
+                    entry.getProgressUnit(),
+                    entry.getRating(),
+                    entry.getStartedAt(),
+                    entry.getFinishedAt(),
+                    entry.getImportedFrom());
+        }
     }
 
     private void applyProgress(UserEntry entry, ImportedEntry imported) {
