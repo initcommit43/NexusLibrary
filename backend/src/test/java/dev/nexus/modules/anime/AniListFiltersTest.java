@@ -44,8 +44,8 @@ class AniListFiltersTest {
 
     @Test
     void animeIsFilteredBySeasonAndMangaIsNot() {
-        List<FilterField> anime = AniListFilters.forMediaType(MediaType.ANIME, List.of("Action"), TODAY);
-        List<FilterField> manga = AniListFilters.forMediaType(MediaType.MANGA, List.of("Action"), TODAY);
+        List<FilterField> anime = AniListFilters.forMediaType(MediaType.ANIME, List.of("Action"), List.of("Isekai"), TODAY);
+        List<FilterField> manga = AniListFilters.forMediaType(MediaType.MANGA, List.of("Action"), List.of("Isekai"), TODAY);
 
         assertThat(idsOf(anime)).containsExactly("q", "genres", "year", "season", "format", "status");
         assertThat(idsOf(manga)).containsExactly("q", "genres", "year", "format", "status");
@@ -53,22 +53,22 @@ class AniListFiltersTest {
 
     @Test
     void aStatusIsWordedForTheMediumItDescribes() {
-        assertThat(byId(AniListFilters.forMediaType(MediaType.ANIME, List.of(), TODAY), "status")
+        assertThat(byId(AniListFilters.forMediaType(MediaType.ANIME, List.of(), List.of(), TODAY), "status")
                         .label())
                 .isEqualTo("Airing Status");
-        assertThat(byId(AniListFilters.forMediaType(MediaType.MANGA, List.of(), TODAY), "status")
+        assertThat(byId(AniListFilters.forMediaType(MediaType.MANGA, List.of(), List.of(), TODAY), "status")
                         .label())
                 .isEqualTo("Publishing Status");
     }
 
     @Test
     void formatsDifferByMediaType() {
-        List<String> anime = byId(AniListFilters.forMediaType(MediaType.ANIME, List.of(), TODAY), "format")
+        List<String> anime = byId(AniListFilters.forMediaType(MediaType.ANIME, List.of(), List.of(), TODAY), "format")
                 .options()
                 .stream()
                 .map(FilterField.FilterOption::value)
                 .toList();
-        List<String> manga = byId(AniListFilters.forMediaType(MediaType.MANGA, List.of(), TODAY), "format")
+        List<String> manga = byId(AniListFilters.forMediaType(MediaType.MANGA, List.of(), List.of(), TODAY), "format")
                 .options()
                 .stream()
                 .map(FilterField.FilterOption::value)
@@ -81,7 +81,7 @@ class AniListFiltersTest {
     /** Anime is announced a season ahead, so next year has to be choosable before it arrives. */
     @Test
     void yearsRunFromNextYearBackwards() {
-        List<String> years = byId(AniListFilters.forMediaType(MediaType.ANIME, List.of(), TODAY), "year")
+        List<String> years = byId(AniListFilters.forMediaType(MediaType.ANIME, List.of(), List.of(), TODAY), "year")
                 .options()
                 .stream()
                 .map(FilterField.FilterOption::value)
@@ -91,16 +91,42 @@ class AniListFiltersTest {
         assertThat(years).endsWith("1940");
     }
 
+    /** The word is what a reader picks; the mark on it is how the two lists stay apart. */
     @Test
-    void aGenreIsItsOwnLabel() {
-        FilterField genres =
-                byId(AniListFilters.forMediaType(MediaType.ANIME, List.of("Slice of Life"), TODAY), "genres");
+    void genresAndTagsShareOneBoxAndSayWhichTheyAre() {
+        FilterField box = byId(
+                AniListFilters.forMediaType(
+                        MediaType.ANIME, List.of("Slice of Life"), List.of("Iyashikei"), TODAY),
+                "genres");
 
-        assertThat(genres.kind()).isEqualTo(FilterField.Kind.MULTI);
-        assertThat(genres.options()).singleElement().satisfies(option -> {
-            assertThat(option.value()).isEqualTo("Slice of Life");
-            assertThat(option.label()).isEqualTo("Slice of Life");
-        });
+        assertThat(box.kind()).isEqualTo(FilterField.Kind.MULTI);
+        assertThat(box.label()).isEqualTo("Genres & Tags");
+        assertThat(box.options())
+                .extracting(FilterField.FilterOption::value, FilterField.FilterOption::label)
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("genre:Slice of Life", "Slice of Life"),
+                        org.assertj.core.groups.Tuple.tuple("tag:Iyashikei", "Iyashikei"));
+    }
+
+    /** Hundreds of them, and they move: a failure costs the tags, not the whole box. */
+    @Test
+    void aFailedTagCallLeavesTheGenresStanding() {
+        when(client.genres()).thenReturn(List.of("Action"));
+        when(client.tags()).thenThrow(new AniListUnavailableException("down"));
+
+        assertThat(byId(adapter.discoverFilters(MediaType.ANIME), "genres").options())
+                .extracting(FilterField.FilterOption::value)
+                .containsExactly("genre:Action");
+    }
+
+    @Test
+    void theTagListIsFetchedOnceAndThenReused() {
+        when(client.tags()).thenReturn(List.of("Isekai"));
+
+        adapter.discoverFilters(MediaType.ANIME);
+        adapter.discoverFilters(MediaType.MANGA);
+
+        verify(client, times(1)).tags();
     }
 
     @Test
@@ -129,6 +155,7 @@ class AniListFiltersTest {
                         any(MediaType.class),
                         anyString(),
                         any(),
+                        any(),
                         anyInt(),
                         anyString(),
                         anyString(),
@@ -141,7 +168,7 @@ class AniListFiltersTest {
                 MediaType.ANIME,
                 new DiscoverFilters(Map.of(
                         "q", List.of("frieren"),
-                        "genres", List.of("Fantasy"),
+                        "genres", List.of("genre:Fantasy", "tag:Isekai"),
                         "year", List.of("2023"),
                         "season", List.of("FALL"),
                         "format", List.of("TV"),
@@ -154,6 +181,7 @@ class AniListFiltersTest {
                         eq(MediaType.ANIME),
                         eq("frieren"),
                         eq(List.of("Fantasy")),
+                        eq(List.of("Isekai")),
                         eq(2023),
                         eq("FALL"),
                         eq("TV"),
@@ -164,6 +192,29 @@ class AniListFiltersTest {
         assertThat(results.items()).singleElement().satisfies(item -> assertThat(item.externalId())
                 .isEqualTo("21"));
         assertThat(results.hasMore()).isTrue();
+    }
+
+    /** A link written before the tags joined the box still means the genre it named. */
+    @Test
+    void anUnmarkedValueIsReadAsAGenre() {
+        when(client.discoverMedia(
+                        any(MediaType.class), any(), any(), any(), any(), any(), any(), any(), anyInt(), anyInt()))
+                .thenReturn(new AniListClient.MediaPage(List.of(media()), false));
+
+        adapter.discover(MediaType.ANIME, new DiscoverFilters(Map.of("genres", List.of("Fantasy"))), 1, 20);
+
+        verify(client)
+                .discoverMedia(
+                        eq(MediaType.ANIME),
+                        any(),
+                        eq(List.of("Fantasy")),
+                        eq(List.of()),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        eq(1),
+                        eq(20));
     }
 
     private static Map<String, Object> media() {

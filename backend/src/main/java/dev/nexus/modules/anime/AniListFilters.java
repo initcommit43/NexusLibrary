@@ -79,14 +79,23 @@ final class AniListFilters {
             new FilterOption("CANCELLED", "Cancelled"),
             new FilterOption("HIATUS", "Hiatus"));
 
+    /** What a chosen value is marked with, so the adapter can hand it to the right argument. */
+    static final String GENRE = "genre:";
+
+    static final String TAG = "tag:";
+
     private AniListFilters() {}
 
-    static List<FilterField> forMediaType(MediaType mediaType, List<String> genres, LocalDate today) {
+    static List<FilterField> forMediaType(
+            MediaType mediaType, List<String> genres, List<String> tags, LocalDate today) {
         boolean anime = mediaType == MediaType.ANIME;
         List<FilterField> fields = new ArrayList<>();
 
         fields.add(FilterField.text("q", "Search"));
-        fields.add(FilterField.multi("genres", "Genres", options(genres)));
+        // One box holding both, as AniList's own is: a reader narrowing by "Isekai" is not
+        // asking a different kind of question from one narrowing by "Fantasy", and two boxes
+        // means knowing which of the two a word is before you can look for it.
+        fields.add(FilterField.multi("genres", "Genres & Tags", genresAndTags(genres, tags)));
         fields.add(FilterField.select("year", "Year", years(today)));
         if (anime) {
             fields.add(FilterField.select("season", "Season", SEASONS));
@@ -98,9 +107,23 @@ final class AniListFilters {
         return List.copyOf(fields);
     }
 
-    /** A genre is its own label; AniList's values are already the words a reader reads. */
-    private static List<FilterOption> options(List<String> genres) {
-        return genres.stream().map(genre -> new FilterOption(genre, genre)).toList();
+    /**
+     * Both lists in one, each value saying which side it came from.
+     *
+     * <p>The label is the bare word, because that is what a reader picks; the value carries
+     * the prefix, because AniList takes genres and tags as different arguments and there is
+     * no telling them apart afterwards otherwise — "Mecha" is both.
+     */
+    private static List<FilterOption> genresAndTags(List<String> genres, List<String> tags) {
+        List<FilterOption> options = new ArrayList<>(prefixed(GENRE, genres));
+        options.addAll(prefixed(TAG, tags));
+        return List.copyOf(options);
+    }
+
+    private static List<FilterOption> prefixed(String prefix, List<String> values) {
+        return values.stream()
+                .map(value -> new FilterOption(prefix + value, value))
+                .toList();
     }
 
     /**

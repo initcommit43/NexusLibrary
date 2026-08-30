@@ -346,6 +346,13 @@ public class AniListClient {
                 "genre_in",
                 "[String]",
                 genres == null || genres.isEmpty() ? null : List.copyOf(genres));
+        addOptional(
+                declarations,
+                arguments,
+                variables,
+                "tag_in",
+                "[String]",
+                tags == null || tags.isEmpty() ? null : List.copyOf(tags));
         addYear(declarations, arguments, variables, mediaType, year);
         addOptional(declarations, arguments, variables, "season", "MediaSeason", blankToNull(season));
         addOptional(declarations, arguments, variables, "format", "MediaFormat", blankToNull(format));
@@ -353,6 +360,31 @@ public class AniListClient {
 
         Map<String, Object> data = post(browseQuery(declarations, arguments), variables);
         return new MediaPage(pageMedia(data), hasNextPage(data));
+    }
+
+    /**
+     * Every tag AniList files anything under, minus the adult ones.
+     *
+     * <p>Tags are the finer half of how AniList describes a title — a genre says "fantasy",
+     * a tag says "isekai" or "found family" — and a filter bar with only the genres in it can
+     * ask for a twentieth of what a reader can see on the page in front of them.
+     *
+     * <p>As slow-moving as the genre list, and held on to by the caller for the same reason.
+     */
+    @SuppressWarnings("unchecked")
+    public List<String> tags() {
+        Map<String, Object> data = post("query { MediaTagCollection { name isAdult } }", Map.of());
+        if (!(data.get("MediaTagCollection") instanceof List<?> collection)) {
+            return List.of();
+        }
+
+        return collection.stream()
+                .filter(Map.class::isInstance)
+                .map(tag -> (Map<String, Object>) tag)
+                .filter(tag -> !Boolean.TRUE.equals(tag.get("isAdult")))
+                .map(tag -> String.valueOf(tag.get("name")))
+                .filter(name -> !name.isBlank() && !"null".equals(name))
+                .toList();
     }
 
     /**

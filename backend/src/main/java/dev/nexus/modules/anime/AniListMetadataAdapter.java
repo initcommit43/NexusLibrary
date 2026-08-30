@@ -6,6 +6,7 @@ import dev.nexus.core.adapter.DiscoverFilters;
 import dev.nexus.core.adapter.FilterField;
 import dev.nexus.core.adapter.FetchProgress;
 import dev.nexus.core.adapter.ItemSearchResult;
+import dev.nexus.core.adapter.StudioBrowse;
 import dev.nexus.core.adapter.MetadataAdapter;
 import dev.nexus.core.adapter.TrackableItemData;
 import dev.nexus.core.domain.ItemState;
@@ -25,7 +26,7 @@ import java.util.Set;
  * shared, and a media record says which it is.
  */
 @org.springframework.stereotype.Component
-public class AniListMetadataAdapter implements MetadataAdapter {
+public class AniListMetadataAdapter implements MetadataAdapter, StudioBrowse {
 
     private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(AniListMetadataAdapter.class);
 
@@ -37,6 +38,7 @@ public class AniListMetadataAdapter implements MetadataAdapter {
      * request to be told the same eighteen words.
      */
     private volatile List<String> genres;
+    private volatile List<String> tags;
 
     public AniListMetadataAdapter(AniListClient client) {
         this.client = client;
@@ -99,15 +101,18 @@ public class AniListMetadataAdapter implements MetadataAdapter {
 
     @Override
     public List<FilterField> discoverFilters(MediaType mediaType) {
-        return AniListFilters.forMediaType(mediaType, genres(), LocalDate.now());
+        return AniListFilters.forMediaType(mediaType, genres(), tags(), LocalDate.now());
     }
 
     @Override
     public BrowseResults discover(MediaType mediaType, DiscoverFilters filters, int page, int size) {
+        List<String> narrowed = filters.all("genres");
+
         AniListClient.MediaPage found = client.discoverMedia(
                 mediaType,
                 filters.one("q"),
-                filters.all("genres"),
+                chosen(narrowed, AniListFilters.GENRE),
+                chosen(narrowed, AniListFilters.TAG),
                 filters.number("year"),
                 filters.one("season"),
                 filters.one("format"),
@@ -117,6 +122,39 @@ public class AniListMetadataAdapter implements MetadataAdapter {
 
         return new BrowseResults(
                 found.media().stream().map(this::toSearchResult).toList(), found.hasNextPage());
+    }
+
+    /**
+     * What a studio made, newest first.
+     *
+     * <p>Their whole catalogue rather than the anime half of it: AniList files a studio's
+     * manga adaptations and its films together, and a page called "everything by Pierrot"
+     * that quietly dropped some of it would be lying by omission.
+     */
+    @Override
+    public Works worksOf(String studioId, int page, int size) {
+        AniListClient.StudioPage found = client.fetchStudioWorks(studioId, page, size);
+
+        return new Works(
+                found.name(),
+                found.media().stream().map(this::toSearchResult).toList(),
+                found.hasNextPage());
+    }
+
+    /**
+     * The chosen values belonging to one side of the box, with their mark taken off.
+     *
+     * <p>An unmarked value is read as a genre: that is what the field held before tags joined
+     * it, and a link or a bookmark from then still means what it said.
+     */
+    private static List<String> chosen(List<String> values, String prefix) {
+        boolean genres = AniListFilters.GENRE.equals(prefix);
+
+        return values.stream()
+                .filter(value -> value.startsWith(prefix)
+                        || (genres && !value.startsWith(AniListFilters.TAG)))
+                .map(value -> value.startsWith(prefix) ? value.substring(prefix.length()) : value)
+                .toList();
     }
 
     /**
@@ -140,6 +178,31 @@ public class AniListMetadataAdapter implements MetadataAdapter {
             log.warn("Could not fetch the AniList genre list, using the known one: {}", e.toString());
         }
         return AniListFilters.FALLBACK_GENRES;
+    }
+
+    /**
+     * The tag list, held for the life of the process like the genres.
+     *
+     * <p>No fallback list to fall back to — there are hundreds of them and they move — so a
+     * failure leaves the field empty and the rest of the bar standing. A reader arriving from
+     * a tag on a detail page still gets their answer, since the filter is sent by name.
+     */
+    private List<String> tags() {
+        List<String> known = tags;
+        if (known != null) {
+            return known;
+        }
+
+        try {
+            List<String> fetched = client.tags();
+            if (!fetched.isEmpty()) {
+                tags = fetched;
+                return fetched;
+            }
+        } catch (RuntimeException e) {
+            log.warn("Could not fetch the AniList tag list, leaving the filter empty: {}", e.toString());
+        }
+        return List.of();
     }
 
     /**
