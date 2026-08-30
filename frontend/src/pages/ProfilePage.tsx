@@ -14,15 +14,21 @@ import { BannerPicker } from '../components/BannerPicker'
 import { ProfileBannerFrame } from '../components/ProfileBannerFrame'
 import { Figures } from '../components/Figures'
 import { summarise, timeSpent } from '../components/stats'
+import { FavouriteBands } from '../components/FavouriteBands'
 import { FavouriteGrid } from '../components/FavouriteGrid'
-import { FavouriteRows } from '../components/FavouriteRows'
 import { Grip } from '../components/Grip'
 import { ScopePicker } from '../components/ScopePicker'
 import { useAuth } from '../auth/useAuth'
 import { MODULES, mediaPathFor, type ModuleDefinition } from '../modules/registry'
 import { useCurrentModule } from '../modules/useCurrentModule'
 
-/** Half a year, which is what fits one lane of the page at a square worth hovering. */
+/**
+ * The weeks the map holds, and it always holds this many.
+ *
+ * <p>Anchored to the week today is in, so the window slides by a whole column the moment a
+ * week is out: the oldest week drops off the left as the new one opens on the right. The map
+ * is the same table on every day of the year and sits in the same place.
+ */
 const HISTORY_WEEKS = 26
 
 /*
@@ -54,8 +60,16 @@ export const ProfilePage = () => {
   const module = useCurrentModule()
   const [entries, setEntries] = useState<TrackedItem[] | null>(null)
   const [rowOrder, setRowOrder] = useState<MediaType[]>([])
+  /** The rows that share a band with the row before them. */
+  const [paired, setPaired] = useState<MediaType[]>([])
   const [banner, setBanner] = useState<ProfileBanner | null>(null)
   const [history, setHistory] = useState<ActivityDay[]>([])
+  /*
+   * The same days over every module, which is what the figures beside the map count. A day
+   * that saw an episode, a film and a chapter is one day either way: the query groups by the
+   * day itself, so nothing here has to take the same date out three times.
+   */
+  const [everyDay, setEveryDay] = useState<ActivityDay[]>([])
 
   /*
    * The map opens on whatever module the header is set to, and then follows the picker
@@ -71,11 +85,21 @@ export const ProfilePage = () => {
   const [arranging, setArranging] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Not asked again when the map is pointed elsewhere: the figures are the whole library,
+  // and the picker only moves the map.
+  useEffect(() => {
+    api
+      .activityHistory(HISTORY_WEEKS)
+      .then(setEveryDay)
+      .catch(() => setEveryDay([]))
+  }, [])
+
   useEffect(() => {
     Promise.all([api.listEntries(), api.favouriteRowOrder(), api.profileBanner()])
       .then(([library, arrangement, chosen]) => {
         setEntries(library)
         setRowOrder(arrangement.order)
+        setPaired(arrangement.paired)
         setBanner(chosen)
       })
       .catch((err) =>
@@ -131,26 +155,62 @@ export const ProfilePage = () => {
   }, [entries, rowOrder])
 
   /**
-   * Writes an arrangement of the rows, the ones with nothing in them included.
+   * The rows as bands: one across the page, or two sharing it half and half.
    *
-   * <p>An empty row is not drawn but keeps its place: it is put back at the index it was
-   * stored at, so unfavouriting the last title in a row and marking another later brings the
-   * row back where it was rather than at the end.
+   * <p>Read against the rows actually drawn rather than the stored order, so a row stored as
+   * sharing with an empty one — which is drawn nowhere — stands on its own rather than
+   * beside a gap.
    */
-  const writeRows = async (ordered: MediaType[]) => {
-    const hidden = rowOrder.filter((type) => !ordered.includes(type))
-    const next = [...ordered]
-    for (const type of hidden) {
-      next.splice(Math.min(rowOrder.indexOf(type), next.length), 0, type)
+  const bands = useMemo(() => {
+    const grouped: (typeof favourites)[] = []
+
+    for (const row of favourites) {
+      const band = grouped[grouped.length - 1]
+      if (paired.includes(row.key) && band?.length === 1) band.push(row)
+      else grouped.push([row])
+    }
+    return grouped
+  }, [favourites, paired])
+
+  /**
+   * Writes an arrangement of the bands, the rows with nothing in them included.
+   *
+   * <p>An empty row is not drawn but keeps its place: it is put back among the bands where
+   * it was stored, so unfavouriting the last title in a row and marking another later brings
+   * the row back where it was rather than at the end. Between bands, never inside one — a
+   * row that came to sit between two that share a band would break the pair on the way back
+   * from the server, which reads the pairing off the row before.
+   */
+  const writeBands = async (arranged: string[][]) => {
+    const drawn = arranged.flat() as MediaType[]
+    const sharing = arranged.filter((band) => band.length === 2).map((band) => band[1] as MediaType)
+
+    const units: MediaType[][] = arranged.map((band) => band as MediaType[])
+    for (const type of rowOrder.filter((row) => !drawn.includes(row))) {
+      const before = rowOrder.slice(0, rowOrder.indexOf(type)).filter((row) => drawn.includes(row))
+
+      let seen = 0
+      let at = 0
+      while (at < units.length && seen < before.length) {
+        seen += units[at].filter((row) => drawn.includes(row)).length
+        at += 1
+      }
+      units.splice(at, 0, [type])
     }
 
-    const held = rowOrder
-    setRowOrder(next)
+    const order = units.flat()
+    const held = { order: rowOrder, paired }
+    setRowOrder(order)
+    setPaired(sharing)
+
     try {
-      setRowOrder((await api.replaceFavouriteRowOrder(next)).order)
+      const saved = await api.replaceFavouriteRowOrder(order, sharing)
+      setRowOrder(saved.order)
+      setPaired(saved.paired)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not save that order.')
-      setRowOrder(held)
+      setRowOrder(held.order)
+      setPaired(held.paired)
     }
   }
 
@@ -314,7 +374,7 @@ export const ProfilePage = () => {
                   { label: 'favourites', value: favouriteCount.toLocaleString() },
                   {
                     label: 'active days',
-                    value: String(history.length),
+                    value: String(everyDay.length),
                     hint: 'last 7 months',
                   },
                 ]}
@@ -347,7 +407,9 @@ export const ProfilePage = () => {
             {/* Said once, where it is needed: the mode is what the button already named. */}
             {arranging && (
               <p className="arrange-hint">
-                Drag a cover to reorder it, or a row by its handle to move the whole row.
+                Drag a cover to reorder it. Drag a row by its handle and the grid of places it
+                can go opens: a free cell takes the row, a taken one trades places with it, and
+                two rows in one band share it half and half.
               </p>
             )}
 
@@ -357,21 +419,24 @@ export const ProfilePage = () => {
                 here.
               </p>
             ) : (
-              <FavouriteRows
+              <FavouriteBands
                 arranging={arranging}
-                onReorder={(rows) => void writeRows(rows.map((row) => row.key as MediaType))}
-                rows={favourites.map(({ key, label, marked }) => ({
-                  key,
-                  label,
-                  content: (
-                    <FavouriteGrid
-                      entries={marked}
-                      label={label}
-                      arranging={arranging}
-                      onReorder={(ordered) => void reorder(key, ordered)}
-                    />
-                  ),
-                }))}
+                onArrange={(next) => void writeBands(next)}
+                bands={bands.map((band) =>
+                  band.map(({ key, label, marked }) => ({
+                    key,
+                    label,
+                    count: marked.length,
+                    content: (
+                      <FavouriteGrid
+                        entries={marked}
+                        label={label}
+                        arranging={arranging}
+                        onReorder={(ordered) => void reorder(key, ordered)}
+                      />
+                    ),
+                  })),
+                )}
               />
             )}
           </section>
