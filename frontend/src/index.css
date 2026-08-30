@@ -2363,10 +2363,6 @@ input.filter-control::-webkit-search-cancel-button {
   display: none;
 }
 
- * tiles divide it — both blocks start and stop on the same lines.
-   * the lane they are given rather than stopping a third of the way short of it — the map is
- * a shade apart is no difference at all — so the ladder starts high and the blank is left
- * Days that have not happened yet are not drawn — but they keep their place, so the week
 /*
  * The end of an activity row holds two things in one place: when it happened, and — once the
  * row is reached for — the way to be rid of it. Stacked rather than side by side, so nothing
@@ -2428,6 +2424,47 @@ input.filter-control::-webkit-search-cancel-button {
 .feed-more {
   width: 100%;
   margin-top: var(--space-2);
+}
+
+ * tiles divide it — both blocks start and stop on the same lines.
+   * the lane they are given rather than stopping a third of the way short of it — the map is
+ * a shade apart is no difference at all — so the ladder starts high and the blank is left
+ * Days that have not happened yet are not drawn — but they keep their place, so the week
+/* A fact that leads somewhere says so on hover rather than by being blue in a list of facts. */
+.fact-link {
+  color: inherit;
+  text-decoration: none;
+  width: fit-content;
+}
+
+.fact-link:hover,
+.fact-link:focus-visible {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+/* A studio's name, and the two controls over their catalogue. */
+.studio-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.studio-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.studio-controls .check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
 }
 
 /* A feed row's title reads as a heading and behaves as a link. */

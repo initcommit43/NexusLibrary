@@ -246,6 +246,22 @@ export const defaultTypeOf = (module: ModuleDefinition): MediaTypeDefinition =>
 export const typeDefinitionFor = (mediaType: MediaType): MediaTypeDefinition | undefined =>
   MODULES.flatMap((module) => module.types).find((type) => type.mediaType === mediaType)
 
+/**
+ * Browse, narrowed to one filter value — a genre, a tag — for the kind of thing named.
+ *
+ * <p>The page reads every search param it does not own as a filter, so a link into it is a
+ * filter already chosen: arriving from "isekai" on a title's page lands on the isekai list
+ * rather than on an empty bar to fill in again.
+ */
+export const browsePathFor = (mediaType: MediaType, field: string, value: string): string => {
+  const module = moduleForMediaType(mediaType)
+  const type = typeDefinitionFor(mediaType)
+  if (!module || !type) return '/browse'
+
+  const params = new URLSearchParams({ module: module.slug, type: type.slug, [field]: value })
+  return `/browse?${params}`
+}
+
 /** The words for one kind of thing, falling back to plain ones for anything unmapped. */
 export const statusLabelsFor = (mediaType: MediaType): Record<TrackingStatus, string> =>
   typeDefinitionFor(mediaType)?.statusLabels ?? {

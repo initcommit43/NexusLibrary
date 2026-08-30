@@ -11,6 +11,7 @@ import { StatsPage } from './pages/StatsPage'
 import { LoginPage } from './pages/LoginPage'
 import { SearchPage } from './pages/SearchPage'
 import { SettingsPage } from './pages/SettingsPage'
+import { StudioPage } from './pages/StudioPage'
 import { AniListCallbackPage } from './pages/AniListCallbackPage'
 import { MalCallbackPage } from './pages/MalCallbackPage'
 import { SimklCallbackPage } from './pages/SimklCallbackPage'
@@ -47,6 +48,7 @@ export const App = () => (
       <Route path="/stats/:lens" element={<StatsPage />} />
       {/* The bare path and a lens without a section both resolve inside the page itself. */}
       <Route path="/media/:source/:externalId" element={<MediaPage />} />
+      <Route path="/studio/:source/:studioId" element={<StudioPage />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/settings/steam/callback" element={<SteamCallbackPage />} />
       <Route path="/settings/anilist/callback" element={<AniListCallbackPage />} />

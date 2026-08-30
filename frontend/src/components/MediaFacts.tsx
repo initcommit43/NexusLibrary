@@ -1,4 +1,6 @@
+import { Link } from 'react-router-dom'
 import type { MediaDetail } from '../api/client'
+import { browsePathFor } from '../modules/registry'
 import { countdown, readNextEpisode, readRankings } from './mediaDetail'
 
 const text = (value: unknown): string | null =>
@@ -40,17 +42,58 @@ const date = (iso: string | null) =>
  * The companies behind a title, split the way the source splits them: the studio that made
  * it and the producers who paid for it are different credits, and conflating them is wrong.
  */
-const companies = (detail: Record<string, unknown>, main: boolean): string[] => {
+const companies = (
+  detail: Record<string, unknown>,
+  main: boolean,
+  source: string,
+): Fact[] => {
   const edges = record(detail.studios).edges
   if (!Array.isArray(edges)) return []
 
   return edges.flatMap((raw) => {
     const edge = record(raw)
     if ((edge.isMain === true) !== main) return []
-    const name = text(record(edge.node).name)
+
+    const node = record(edge.node)
+    const name = text(node.name)
+    const id = text(node.id)
+    if (!name) return []
+
+    // Their own page where the source gave them an id, which is what makes "what else did
+    // they make" a question this app can answer rather than one to go and ask elsewhere.
+    return [{ label: name, to: id ? `/studio/${source}/${id}` : undefined }]
+  })
+}
+
+/** One value in the column, and where it leads if it leads anywhere. */
+type Fact = { label: string; to?: string }
+
+/**
+ * The tags AniList files a title under, its own order — most agreed-with first.
+ *
+ * <p>Spoiler tags are left out. They are how a tag list tells you the twist before you have
+ * watched the thing, and a sidebar is read at a glance rather than opened deliberately.
+ */
+const tagsOf = (detail: Record<string, unknown>): string[] => {
+  const tags = detail.tags
+  if (!Array.isArray(tags)) return []
+
+  return tags.flatMap((raw) => {
+    const tag = record(raw)
+    if (tag.isMediaSpoiler === true) return []
+    const name = text(tag.name)
     return name ? [name] : []
   })
 }
+
+/**
+ * Which media types have a browse filter whose values are the words shown here.
+ *
+ * <p>AniList files by name, so a genre on this page is the genre a filter takes. TMDB and
+ * IGDB file by id and show a name, so the same link would ask for a genre called "Action"
+ * where the filter wanted 28 — those stay as plain text until their filters take names.
+ */
+const FILTERS_BY_NAME = new Set(['ANIME', 'MANGA'])
 
 /**
  * The column of facts beside a title. Rows appear only when the source actually knows the
@@ -114,18 +157,30 @@ export const MediaFacts = ({ media }: { media: MediaDetail }) => {
   ]
 
   // Studios come from the detail when it is loaded, since only there are they split by role.
-  const studios = companies(detail, true)
-  const producers = companies(detail, false)
-  const stacked: [string, string[]][] = [
-    ['Studios', studios.length > 0 ? studios : list(meta.studios)],
+  const studios = companies(detail, true, media.source)
+  const producers = companies(detail, false, media.source)
+  /** Which values lead into the browse filter, where the filter takes the words shown here. */
+  const narrows = FILTERS_BY_NAME.has(media.mediaType)
+  const plain = (values: string[]): Fact[] => values.map((label) => ({ label }))
+
+  /** Both lead into the one box that holds them, marked with the side they came from. */
+  const narrowing = (values: string[], mark: string): Fact[] =>
+    values.map((label) => ({
+      label,
+      to: narrows ? browsePathFor(media.mediaType, 'genres', mark + label) : undefined,
+    }))
+
+  const stacked: [string, Fact[]][] = [
+    ['Studios', studios.length > 0 ? studios : plain(list(meta.studios))],
     ['Producers', producers],
-    ['Authors', list(meta.authors)],
-    ['Networks', list(detail.networks)],
-    ['Platforms', list(meta.platforms)],
-    ['Genres', list(meta.genres)],
-    ['Romaji', [text(titles.romaji) ?? ''].filter(Boolean)],
-    ['English', [text(titles.english) ?? ''].filter(Boolean)],
-    ['Native', [text(titles.native) ?? ''].filter(Boolean)],
+    ['Authors', plain(list(meta.authors))],
+    ['Networks', plain(list(detail.networks))],
+    ['Platforms', plain(list(meta.platforms))],
+    ['Genres', narrowing(list(meta.genres), 'genre:')],
+    ['Tags', narrowing(tagsOf(detail), 'tag:')],
+    ['Romaji', plain([text(titles.romaji) ?? ''].filter(Boolean))],
+    ['English', plain([text(titles.english) ?? ''].filter(Boolean))],
+    ['Native', plain([text(titles.native) ?? ''].filter(Boolean))],
   ]
 
   const rankings = readRankings(detail)
@@ -166,11 +221,20 @@ export const MediaFacts = ({ media }: { media: MediaDetail }) => {
           <div key={label} className="fact">
             <span className="fact-label">{label}</span>
             {/* One per line: a run of comma-separated genres is unreadable in a narrow column. */}
-            {values.map((value) => (
-              <span key={value} className="fact-value">
-                {value}
-              </span>
-            ))}
+            {values.map((value) =>
+              value.to ? (
+                // A genre, a tag, a studio: each of them is the same question — what else is
+                // like this, what else did they make — asked where it is read rather than
+                // remembered and typed in somewhere else.
+                <Link key={value.label} className="fact-value fact-link" to={value.to}>
+                  {value.label}
+                </Link>
+              ) : (
+                <span key={value.label} className="fact-value">
+                  {value.label}
+                </span>
+              ),
+            )}
           </div>
         ))}
     </aside>
