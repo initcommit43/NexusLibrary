@@ -17,6 +17,13 @@ spring:
       # that and still small enough that nobody can post a film through the upload field.
       max-file-size: 5MB
       max-request-size: 6MB
+  http:
+    client:
+      # Every outbound call gets an end. Without these a source that accepts a connection and
+      # then says nothing holds the calling thread for good: an AniList 504 left an activity
+      # sync stopped mid-walk with no error and no way to tell it apart from a finished run.
+      connect-timeout: 10s
+      read-timeout: 30s
   web:
     # Pin validation messages to English; otherwise they follow the server's system
     # locale and the API answers in whatever language the host happens to run in.

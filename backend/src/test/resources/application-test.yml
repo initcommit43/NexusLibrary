@@ -1,4 +1,8 @@
 nexus:
+  notifications:
+    # A sweep that starts itself midway through a test writes rows the test is about to
+    # truncate. Tests that want one call the detector.
+    sweep: false
   jwt:
     # Test-only value; the real secret comes from the environment.
     secret: test-only-signing-key-not-used-anywhere-else-0123456789
@@ -22,32 +26,41 @@ nexus:
     # Tests stub the transport; these are never used to reach the real IGDB.
     client-id: test-client-id
     client-secret: test-client-secret
-    api-base-url: https://igdb.test/v4
-    token-url: https://twitch.test/oauth2/token
+    api-base-url: http://127.0.0.1:1/igdb/v4
+    token-url: http://127.0.0.1:1/twitch/oauth2/token
     requests-per-second: 1000
   anilist:
     # Tests stub the transport; this never reaches the real AniList.
-    api-url: https://anilist.test/graphql
+    api-url: http://127.0.0.1:1/anilist/graphql
     client-id: test-anilist-client
     client-secret: test-anilist-secret
-    authorize-url: https://anilist.test/oauth/authorize
-    token-url: https://anilist.test/oauth/token
+    authorize-url: http://127.0.0.1:1/anilist/oauth/authorize
+    token-url: http://127.0.0.1:1/anilist/oauth/token
     requests-per-minute: 6000
     retry-backoff-ms: 1
   mal:
     # Tests stub the transport; this never reaches the real MyAnimeList.
-    api-url: https://mal.test/v2
+    api-url: http://127.0.0.1:1/mal/v2
     client-id: test-mal-client
     client-secret: test-mal-secret
-    authorize-url: https://mal.test/oauth2/authorize
-    token-url: https://mal.test/oauth2/token
+    authorize-url: http://127.0.0.1:1/mal/oauth2/authorize
+    token-url: http://127.0.0.1:1/mal/oauth2/token
     requests-per-second: 1000
     retry-backoff-ms: 1
   steam:
     api-key: test-steam-key
-    api-base-url: https://steam.test
-    open-id-endpoint: https://steam.test/openid/login
+    api-base-url: http://127.0.0.1:1/steam
+    open-id-endpoint: http://127.0.0.1:1/steam/openid/login
     achievement-requests-per-second: 1000
   encryption:
     # Test-only key; production reads NEXUS_ENCRYPTION_KEY from the environment.
     key: bmV4dXMtdGVzdC1vbmx5LWVuY3J5cHRpb24ta2V5ISE=
+
+spring:
+  http:
+    client:
+      # The hosts named in here do not exist. A test that reaches one is testing what happens
+      # when a source is unreachable, and that should take a moment rather than the ten
+      # seconds a real deployment is right to wait.
+      connect-timeout: 500ms
+      read-timeout: 1s
