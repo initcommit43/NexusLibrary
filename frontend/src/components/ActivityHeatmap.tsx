@@ -39,6 +39,11 @@ const startOfWeek = (day: Date) => {
  * <p>The scale is relative to the reader's own busiest day rather than to a fixed number.
  * Someone finishing two things a week and someone finishing twenty both get a map that uses
  * its whole range, which is what makes the shape of a year readable at all.
+ *
+ * <p>Always the same table: as many weeks across as it is asked for, seven days down. The
+ * week today falls in is the last column, and the days it has not reached yet are left
+ * undrawn while keeping their places — the map is the same size on the day a week opens as
+ * on the day it closes, and when the week is out the whole table moves along by a column.
  */
 export const ActivityHeatmap = ({ days, weeks }: { days: ActivityDay[]; weeks: number }) => {
   const { tip, show, hide } = useTooltip()
