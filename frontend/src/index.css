@@ -1350,7 +1350,6 @@ input.filter-control::-webkit-search-cancel-button {
 /*
  * The year across, the totals down: each shape gets the lane that suits it. The lanes are
  * the same height and the map is the taller of the two, so it sets that height and the
- * tiles divide it â€” both blocks start and stop on the same lines.
  */
 .profile-overview {
   display: grid;
@@ -1377,7 +1376,6 @@ input.filter-control::-webkit-search-cancel-button {
 
   /*
    * The space between days, across and down alike. Wide enough that twenty-six weeks fill
-   * the lane they are given rather than stopping a third of the way short of it â€” the map is
    * half of what the page's head shows, and a panel that does not fill reads as one that
    * failed to.
    */
@@ -1437,7 +1435,6 @@ input.filter-control::-webkit-search-cancel-button {
 /*
  * The first step is a long way from blank on purpose. A day with one thing on it and a day
  * with nothing are the two squares a reader compares most, and at a tenth of an inch across
- * a shade apart is no difference at all â€” so the ladder starts high and the blank is left
  * pale, rather than the steps being spread evenly from one end to the other.
  */
 .heatmap-day[data-step='1'] {
@@ -1457,7 +1454,6 @@ input.filter-control::-webkit-search-cancel-button {
 }
 
 /*
- * Days that have not happened yet are not drawn â€” but they keep their place, so the week
  * they are in is as wide and as tall as every other week and the map is the same table on
  * the Sunday a week opens as on the Saturday it closes.
  */
@@ -2365,6 +2361,86 @@ input.filter-control::-webkit-search-cancel-button {
 
 .carousel-arrow[hidden] {
   display: none;
+}
+
+ * tiles divide it — both blocks start and stop on the same lines.
+   * the lane they are given rather than stopping a third of the way short of it — the map is
+ * a shade apart is no difference at all — so the ladder starts high and the blank is left
+ * Days that have not happened yet are not drawn — but they keep their place, so the week
+/*
+ * The end of an activity row holds two things in one place: when it happened, and — once the
+ * row is reached for — the way to be rid of it. Stacked rather than side by side, so nothing
+ * on the row moves as the one gives way to the other.
+ */
+.activity-when {
+  position: relative;
+  display: grid;
+  align-items: center;
+  justify-items: end;
+}
+
+.activity-forget {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center end;
+  /* No box of its own: it stands where the time stands, in the row's own ground. */
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease);
+}
+
+.activity-row:hover .activity-when time,
+.activity-row:focus-within .activity-when time {
+  visibility: hidden;
+}
+
+.activity-row:hover .activity-forget,
+.activity-forget:focus-visible {
+  opacity: 1;
+}
+
+/*
+ * The colour is the whole of the feedback. Buttons in this app take a border and a ground on
+ * hover; here that would draw a box around a mark that stands in the middle of a row and is
+ * only there while the row is under the pointer.
+ */
+/*
+ * Written to outweigh `button:hover:not(:disabled)`, which is what was putting the accent
+ * behind it: that rule carries a pseudo-class more than a plain class-and-hover does, so the
+ * ground came back however plainly this said none.
+ */
+.activity-forget:hover:not(:disabled),
+.activity-forget:focus-visible:not(:disabled) {
+  border: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--danger);
+}
+
+/* Under the feed and across it, so it reads as the end of the list rather than a control. */
+.feed-more {
+  width: 100%;
+  margin-top: var(--space-2);
+}
+
+/* A feed row's title reads as a heading and behaves as a link. */
+.activity-title {
+  color: var(--text);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.activity-title:hover,
+.activity-title:focus-visible {
+  color: var(--accent);
+  text-decoration: none;
 }
 
 /* --- ranked shelves --- */

@@ -49,6 +49,17 @@ export const describe = (activity: ActivityEntry): string => {
     return [brought, moved].filter(Boolean).join(', ')
   }
 
+  /*
+   * An imported event is said in the words the provider said it in — "watched episode 5",
+   * "read chapter 12", "completed". Mapping those onto this app's own vocabulary would lose
+   * what they actually record: a chapter read on a Tuesday is not a status change.
+   */
+  if (activity.type === 'EXTERNAL') {
+    const { status, progress } = activity.payload
+    const said = [status, progress].filter(Boolean).join(' ')
+    return said.charAt(0).toUpperCase() + said.slice(1)
+  }
+
   const labels = statusLabelsFor(activity.mediaType ?? 'GAME')
   const statusLabel = (raw?: string | null) =>
     raw && raw in labels ? labels[raw as TrackingStatus] : raw

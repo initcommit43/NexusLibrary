@@ -1,31 +1,15 @@
-import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ApiError, api, type ActivityEntry } from '../api/client'
 import { ActivityFeed } from '../components/ActivityFeed'
 import { AppShell } from '../components/AppShell'
-import { moduleOf } from '../components/activity'
+import { useActivityFeed } from '../components/useActivityFeed'
 import { useCurrentModule } from '../modules/useCurrentModule'
+
+/** A page of the feed, and what one press of "Load more" adds to it. */
+const PAGE_ROWS = 25
 
 export const ActivityPage = () => {
   const module = useCurrentModule()
-  const [feed, setFeed] = useState<ActivityEntry[] | null>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    api
-      .activityFeed()
-      .then(setFeed)
-      .catch((err) =>
-        setError(err instanceof ApiError ? err.message : 'Could not load your activity.'),
-      )
-  }, [])
-
-  /*
-   * One feed comes back for everything tracked; the module decides what belongs on it. A run
-   * says which module it belongs to through the provider it ran against, since an import has
-   * no medium of its own.
-   */
-  const mine = feed?.filter((entry) => moduleOf(entry)?.slug === module.slug) ?? []
+  const { rows, hasMore, more, forget, loading, error } = useActivityFeed(module.slug, PAGE_ROWS)
 
   return (
     <AppShell>
@@ -37,9 +21,9 @@ export const ActivityPage = () => {
         </p>
       )}
 
-      {feed === null && !error && <p className="muted">Loading…</p>}
+      {loading && !error && <p className="muted">Loading…</p>}
 
-      {feed !== null && mine.length === 0 && (
+      {!loading && rows.length === 0 && (
         <p className="muted">
           Nothing yet.{' '}
           <Link to={`/search?module=${module.slug}`}>Track something</Link> and your history
@@ -47,7 +31,13 @@ export const ActivityPage = () => {
         </p>
       )}
 
-      <ActivityFeed feed={mine} />
+      <ActivityFeed feed={rows} onForget={(id) => void forget(id)} />
+
+      {rows.length > 0 && hasMore && (
+        <button type="button" className="ghost feed-more" onClick={more}>
+          Load more
+        </button>
+      )}
     </AppShell>
   )
 }

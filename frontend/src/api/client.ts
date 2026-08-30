@@ -157,6 +157,8 @@ export type ActivityType =
   | 'IMPORTED'
   /** A later run of the same provider, recorded only where it changed something. */
   | 'SYNCED'
+  /** Something a provider recorded rather than this app — an episode watched on AniList. */
+  | 'EXTERNAL'
 
 /** One title a run touched, as the row's hover card reads it. */
 export type ActivityChange = { title: string; from: string | null; to: string }
@@ -168,23 +170,56 @@ export type ActivityChange = { title: string; from: string | null; to: string }
  * and a name, and says what it did in its payload instead.
  */
 export type ActivityEntry = {
-  id: number
+  /** Prefixed by which half of the feed it came from: this app's own, or an import's. */
+  id: string
   type: ActivityType
   mediaType: MediaType | null
   title: string | null
   coverUrl: string | null
+  /** With the id beside it, this is the way from a row in the feed to the title's own page. */
+  source: string | null
   externalId: string | null
   payload: {
     from?: string | null
     to?: string | null
     unit?: string
     status?: string
+    /** How far an imported event got, in the provider's own words: "5", or "5 - 7". */
+    progress?: string | null
     provider?: Provider
     added?: number
     advanced?: number
     titles?: ActivityChange[]
   }
   createdAt: string
+}
+
+/** What happened to a title while the reader was away. */
+export type NotificationEntry = {
+  id: number
+  type: 'EPISODE_AIRED' | 'TITLE_ADDED'
+  mediaType: MediaType
+  title: string
+  coverUrl: string | null
+  source: string
+  externalId: string
+  payload: { episode?: number; title?: string }
+  /** Whether it has been seen. The one thing that makes a row look new. */
+  read: boolean
+  createdAt: string
+}
+
+/** What is waiting, and how much of it is new. */
+export type Waiting = {
+  items: NotificationEntry[]
+  unread: number
+}
+
+/** A studio, and one page of what it made. */
+export type StudioWorks = {
+  name: string | null
+  items: SearchResult[]
+  hasMore: boolean
 }
 
 export type Review = {
@@ -473,10 +508,28 @@ export const api = {
 
   /** Null when the reader has chosen none, which is a bare profile head rather than an error. */
   /** Only the days that saw something; the map draws its own blanks. */
-  activityHistory: (weeks: number, mediaTypes: MediaType[]) =>
+  /** Days that saw anything; no media types asked for means every one that keeps dates. */
+  activityHistory: (weeks: number, mediaTypes: MediaType[] = []) =>
     request<ActivityDay[]>(
-      `/activity/history?weeks=${weeks}&mediaTypes=${mediaTypes.join(',')}`,
+      `/activity/history?weeks=${weeks}${
+        mediaTypes.length === 0 ? '' : `&mediaTypes=${mediaTypes.join(',')}`
+      }`,
     ),
+
+  /** Forgets one event. The entry it was about is untouched: the shelf is the state. */
+  forgetActivity: (activityId: string) =>
+    request<void>(`/activity/${activityId}`, { method: 'DELETE' }),
+
+  /** What one studio made, newest first, a page at a time. */
+  studioWorks: (source: string, studioId: string, page = 1) =>
+    request<StudioWorks>(
+      `/catalog/studios/${source}/${encodeURIComponent(studioId)}?page=${page}`,
+    ),
+
+  notifications: (limit = 50) => request<Waiting>(`/notifications?limit=${limit}`),
+
+  /** Says the reader has seen the lot; answers with what is left, which is nothing new. */
+  readAllNotifications: () => request<Waiting>('/notifications/read', { method: 'POST' }),
 
   profileBanner: () => request<ProfileBanner | null>('/settings/profile-banner'),
 
