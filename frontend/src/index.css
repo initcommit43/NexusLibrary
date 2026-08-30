@@ -1244,10 +1244,39 @@ input.filter-control::-webkit-search-cancel-button {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  min-width: 0;
 }
 
-.profile-favourites + .profile-favourites {
-  margin-top: var(--space-4);
+/*
+ * A band holds one row across the page or two sharing it half and half. Two halves of one
+ * band, not two columns of a page: the gutter between them is the gutter between covers, so
+ * a row of four on the left and four on the right reads as the eight a whole row holds.
+ */
+.band-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* Beats the rule above it, which would otherwise keep the rows up over the hidden attribute. */
+.band-rows[hidden] {
+  display: none;
+}
+
+.favourite-band {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--browse-gap);
+  align-items: start;
+}
+
+.favourite-band[data-rows='2'] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* Half the band, so half the covers — each one still the size it is in a whole row. */
+.favourite-band[data-rows='2'] .favourite-carousel .browse-row {
+  --browse-across: 4;
 }
 
 .profile-favourites h3 {
@@ -2539,7 +2568,7 @@ input.filter-control::-webkit-search-cancel-button {
  * answers to, and taking the touch gesture away from the browser outside the mode would stop
  * a finger scrolling the page over a grid of covers.
  */
-.cover-grid.is-arranging .sortable-card {
+.favourite-carousel.is-arranging .sortable-card {
   touch-action: none;
   cursor: grab;
 }
@@ -2569,19 +2598,18 @@ input.filter-control::-webkit-search-cancel-button {
   --browse-across: 8;
 }
 
-.favourite-grid {
-  /* The carousel's own gutter, so entering arrange mode does not resize a single cover. */
-  grid-template-columns: repeat(8, minmax(0, 1fr));
-  gap: var(--browse-gap);
-}
-
+/*
+ * Too narrow for two halves: a shared band stacks, and each of its rows takes the whole
+ * width at the same count as a row of its own.
+ */
 @media (max-width: 64rem) {
-  .favourite-carousel .browse-row {
+  .favourite-carousel .browse-row,
+  .favourite-band[data-rows='2'] .favourite-carousel .browse-row {
     --browse-across: 5;
   }
 
-  .favourite-grid {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+  .favourite-band[data-rows='2'] {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -2661,11 +2689,11 @@ input.filter-control::-webkit-search-cancel-button {
  * While the profile is being arranged the covers are not links: a drag that ends a pixel
  * short of the threshold would otherwise open the title it was meant to move.
  */
-.cover-grid.is-arranging .cover-link {
+.favourite-carousel.is-arranging .cover-link {
   pointer-events: none;
 }
 
-.cover-grid.is-arranging .sortable-card {
+.favourite-carousel.is-arranging .sortable-card {
   outline: 1px dashed var(--border-strong);
   outline-offset: 4px;
   border-radius: var(--radius-md);

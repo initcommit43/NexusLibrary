@@ -13,7 +13,7 @@ import {
 import {
   SortableContext,
   arrayMove,
-  rectSortingStrategy,
+  horizontalListSortingStrategy,
   sortableKeyboardCoordinates,
   useSortable,
 } from '@dnd-kit/sortable'
@@ -54,7 +54,7 @@ const SortableCard = ({ entry, arranging }: { entry: TrackedItem; arranging: boo
     <div
       ref={setNodeRef}
       className={isDragging ? 'sortable-card is-dragging' : 'sortable-card'}
-      // dnd-kit measures the grid and hands back where this card should sit while another is
+      // dnd-kit measures the row and hands back where this card should sit while another is
       // being carried; the transition is what makes it slide there rather than jump.
       style={{ transform: CSS.Transform.toString(transform), transition }}
       {...handle}
@@ -68,8 +68,13 @@ const SortableCard = ({ entry, arranging }: { entry: TrackedItem; arranging: boo
 /**
  * Favourites in the order their owner put them in, rearranged by dragging one somewhere else.
  *
- * <p>The card being carried is drawn above the grid rather than moved inside it, so the gap
- * it came from stays open and the cards it displaces settle into their new places underneath.
+ * <p>A row is one row, arranging or not. However many covers it holds it scrolls rather than
+ * wraps — eight across on its own, four when it shares its band — because a second line of
+ * covers is a second shelf, and a row that grows a line when it is picked at moves everything
+ * under it. Carrying a card to the edge scrolls the row along under it.
+ *
+ * <p>The card being carried is drawn above the row rather than moved inside it, so the gap it
+ * came from stays open and the cards it displaces settle into their new places underneath.
  *
  * <p>Cards move only while the profile is being arranged. A cover that can be dragged at any
  * time is a cover that cannot quite be clicked: the drag threshold decides which of the two a
@@ -109,14 +114,6 @@ export const FavouriteGrid = ({
     onReorder(arrayMove(entries, from, to))
   }
 
-  /*
-   * A row is one row. However many favourites it holds, it scrolls rather than wraps: a
-   * second line of covers reads as a second shelf, and the arrows show themselves only when
-   * there is something past the edge, so a row of three looks like a row of three.
-   *
-   * <p>Arranging is the exception. Scrolling and dragging want the same gesture, and nothing
-   * can be dropped where it cannot be seen, so the mode lays every cover out at once.
-   */
   if (!arranging) {
     return (
       <div className="favourite-carousel">
@@ -137,11 +134,16 @@ export const FavouriteGrid = ({
       onDragEnd={end}
       onDragCancel={() => setCarried(null)}
     >
-      <SortableContext items={entries.map((entry) => entry.id)} strategy={rectSortingStrategy}>
-        <div className="cover-grid favourite-grid is-arranging">
-          {entries.map((entry) => (
-            <SortableCard key={entry.id} entry={entry} arranging={arranging} />
-          ))}
+      <SortableContext
+        items={entries.map((entry) => entry.id)}
+        strategy={horizontalListSortingStrategy}
+      >
+        <div className="favourite-carousel is-arranging">
+          <Carousel label={label}>
+            {entries.map((entry) => (
+              <SortableCard key={entry.id} entry={entry} arranging={arranging} />
+            ))}
+          </Carousel>
         </div>
       </SortableContext>
 
