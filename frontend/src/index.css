@@ -1350,6 +1350,7 @@ input.filter-control::-webkit-search-cancel-button {
 /*
  * The year across, the totals down: each shape gets the lane that suits it. The lanes are
  * the same height and the map is the taller of the two, so it sets that height and the
+ * tiles divide it — both blocks start and stop on the same lines.
  */
 .profile-overview {
   display: grid;
@@ -1376,6 +1377,7 @@ input.filter-control::-webkit-search-cancel-button {
 
   /*
    * The space between days, across and down alike. Wide enough that twenty-six weeks fill
+   * the lane they are given rather than stopping a third of the way short of it — the map is
    * half of what the page's head shows, and a panel that does not fill reads as one that
    * failed to.
    */
@@ -1435,6 +1437,7 @@ input.filter-control::-webkit-search-cancel-button {
 /*
  * The first step is a long way from blank on purpose. A day with one thing on it and a day
  * with nothing are the two squares a reader compares most, and at a tenth of an inch across
+ * a shade apart is no difference at all — so the ladder starts high and the blank is left
  * pale, rather than the steps being spread evenly from one end to the other.
  */
 .heatmap-day[data-step='1'] {
@@ -1454,6 +1457,7 @@ input.filter-control::-webkit-search-cancel-button {
 }
 
 /*
+ * Days that have not happened yet are not drawn — but they keep their place, so the week
  * they are in is as wide and as tall as every other week and the map is the same table on
  * the Sunday a week opens as on the Saturday it closes.
  */
@@ -2501,10 +2505,6 @@ input.filter-control::-webkit-search-cancel-button {
   text-decoration: none;
 }
 
- * tiles divide it — both blocks start and stop on the same lines.
-   * the lane they are given rather than stopping a third of the way short of it — the map is
- * a shade apart is no difference at all — so the ladder starts high and the blank is left
- * Days that have not happened yet are not drawn — but they keep their place, so the week
 /* The section's own name, which opens onto the other list. */
 .feed-picker {
   position: relative;

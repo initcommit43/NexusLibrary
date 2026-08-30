@@ -1,20 +1,27 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   ApiError,
   api,
-  type ActivityEntry,
+  type BrowseShelf,
   type MediaType,
   type TrackedItem,
+  type Waiting,
 } from '../api/client'
 import { ActivityFeed } from '../components/ActivityFeed'
+import { FeedPicker, type FeedKind } from '../components/FeedPicker'
+import { NotificationList } from '../components/NotificationList'
 import { AppShell } from '../components/AppShell'
 import { PosterGallery, type Poster } from '../components/PosterGallery'
 import { ShelfGallery } from '../components/ShelfGallery'
-import { moduleOf } from '../components/activity'
 import { countdown } from '../components/mediaDetail'
 import { episodesWaiting, progressSummary } from '../components/progress'
-import { detailPathFor } from '../modules/registry'
+import { useActivityFeed } from '../components/useActivityFeed'
+import {
+  detailPathFor,
+  statusLabelsFor,
+  type MediaTypeDefinition,
+} from '../modules/registry'
 import { useCurrentModule } from '../modules/useCurrentModule'
 
 /*
@@ -22,6 +29,19 @@ import { useCurrentModule } from '../modules/useCurrentModule'
  * is twenty covers, and a shelf that stopped at ten would hide exactly the ones a countdown is
  * for. Only the catalogue shelves cut off, because those lists have no end.
  */
+
+/**
+ * What the shelf of things you are partway through is called, in the module's own words:
+ * playing a game, watching a film, reading a book. The medium is named too where a module
+ * holds more than one of them, since "Watching" twice over says nothing about which is which.
+ */
+const inProgressTitle = (type: MediaTypeDefinition, types: number) => {
+  const verb = statusLabelsFor(type.mediaType).IN_PROGRESS
+  return types > 1 ? `${verb} ${type.listLabel.toLowerCase()}` : verb
+}
+
+/** The fewest rows the feed is cut to, however short the column beside it happens to be. */
+const MIN_FEED_ROWS = 6
 
 /** A home feed is the last while, not the whole history; the activity page holds the rest. */
 const FEED_ROWS = 12
@@ -111,15 +131,113 @@ export const HomePage = () => {
   const module = useCurrentModule()
 
   const [entries, setEntries] = useState<TrackedItem[] | null>(null)
-  const [feed, setFeed] = useState<ActivityEntry[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+  /*
+   * The feed ends where the column beside it ends.
+   *
+   * <p>A page of it is however many rows fit alongside the shelves — measured rather than
+   * guessed at, because the shelves are a different height for every reader and a fixed count
+   * either stops halfway up the page or runs a long way past the bottom of it. "Load more"
+   * then adds another column's worth.
+   */
+  const side = useRef<HTMLDivElement>(null)
+  const main = useRef<HTMLDivElement>(null)
+  const [feedRows, setFeedRows] = useState(FEED_ROWS)
+  const feed = useActivityFeed(module.slug, feedRows)
+
+  /*
+   * Which of the two lists the section is showing. Not remembered between visits: the page is
+   * opened to see what has happened, and what has happened is usually the feed.
+   */
+  const [showing, setShowing] = useState<FeedKind>('activity')
+  const [waiting, setWaiting] = useState<Waiting>({ items: [], unread: 0 })
 
   useEffect(() => {
-    Promise.all([api.listEntries(), api.activityFeed()])
-      .then(([library, activity]) => {
-        setEntries(library)
-        setFeed(activity)
-      })
+    let current = true
+
+    api
+      .notifications()
+      // Nothing waiting is the answer for anyone who has just arrived, and a panel that
+      // cannot load is not worth an alarm on a page about your own library.
+      .then((answer) => current && setWaiting(answer))
+      .catch(() => {})
+
+    return () => {
+      current = false
+    }
+  }, [])
+
+  const readAll = async () => {
+    const held = waiting
+    setWaiting({ items: waiting.items.map((item) => ({ ...item, read: true })), unread: 0 })
+    try {
+      setWaiting(await api.readAllNotifications())
+    } catch {
+      setWaiting(held)
+    }
+  }
+
+  useEffect(() => {
+    const column = side.current
+    if (!column) return
+
+    /*
+     * Measured against where the two columns actually end rather than by adding up the page's
+     * parts: the feed grows by however many rows fit in the space left under it, and shrinks
+     * when it overruns. Repeats until the two ends are within a row of each other, which is
+     * one pass in practice and needs to know nothing about the headings or the button.
+     */
+    const measure = () => {
+      const list = main.current?.querySelector('.activity-feed')
+      const row = list?.firstElementChild
+      if (!list || !row) return
+
+      const gap = parseFloat(getComputedStyle(list).rowGap) || 0
+      const step = row.getBoundingClientRect().height + gap
+      const button = main.current?.querySelector('.feed-more')?.getBoundingClientRect().height ?? 0
+
+      const slack = column.getBoundingClientRect().bottom - list.getBoundingClientRect().bottom - button
+      if (Math.abs(slack) < step) return
+
+      setFeedRows((held) => Math.max(MIN_FEED_ROWS, held + Math.trunc(slack / step)))
+    }
+
+    measure()
+    const watcher = new ResizeObserver(measure)
+    watcher.observe(column)
+    if (main.current) watcher.observe(main.current)
+    return () => watcher.disconnect()
+    // Re-measured as rows arrive; the observer keeps up with the column beside them.
+  }, [module.slug, feed.loading, feed.rows.length])
+
+  /*
+   * Which rows this module leads with, asked once per medium. Cheap and cached server-side:
+   * the shelf list is a constant the adapter states, not a query against the source.
+   */
+  const [featured, setFeatured] = useState<Record<string, BrowseShelf[]>>({})
+
+  useEffect(() => {
+    let current = true
+
+    Promise.all(
+      module.types.map((type) =>
+        api
+          .browseShelves(type.mediaType)
+          .then((shelves) => [type.mediaType, shelves.filter((shelf) => shelf.onHome)] as const)
+          // A module whose shelves will not load simply leads with none of them.
+          .catch(() => [type.mediaType, [] as BrowseShelf[]] as const),
+      ),
+    ).then((answers) => current && setFeatured(Object.fromEntries(answers)))
+
+    return () => {
+      current = false
+    }
+  }, [module])
+
+  useEffect(() => {
+    api
+      .listEntries()
+      .then(setEntries)
       .catch((err) =>
         setError(err instanceof ApiError ? err.message : 'Could not load your library.'),
       )
@@ -148,8 +266,37 @@ export const HomePage = () => {
     [entries, module],
   )
 
+  /**
+   * When the reader was last at this title, and nothing else.
+   *
+   * <p>What happened to the title: an episode logged on the service it came from, a status
+   * moved here, the day it was added. Never the entry's own timestamp — an import writes
+   * hundreds of rows in one second, and a title it merely rewrote would otherwise sort above
+   * one the reader actually watched last week.
+   *
+   * <p>A title nothing has ever happened to comes last, which is what it is: an import put it
+   * on the shelf and it has not been opened since.
+   */
+  const lastTouched = (entry: TrackedItem) =>
+    entry.lastActivityAt === null ? 0 : Date.parse(entry.lastActivityAt)
+
+  /**
+   * Last touched first.
+   *
+   * <p>What someone is partway through is a queue they are working down, and the one they
+   * were at a moment ago is the one they are on.
+   */
+  const byLastTouched = (a: TrackedItem, b: TrackedItem) => {
+    const moved = lastTouched(b) - lastTouched(a)
+    // A tie is two rows written in the same instant — an import, in practice. Newest entry
+    // first there too, so the order is at least the same on every load.
+    return moved !== 0 ? moved : b.id - a.id
+  }
+
   const withStatus = (mediaType: MediaType, status: TrackedItem['status']) =>
-    mine.filter((entry) => entry.mediaType === mediaType && entry.status === status)
+    mine
+      .filter((entry) => entry.mediaType === mediaType && entry.status === status)
+      .sort(byLastTouched)
 
   /*
    * What airs next, soonest first, and only from what you are watching — a countdown for
@@ -181,12 +328,10 @@ export const HomePage = () => {
   // useful way to show that half of what you are watching.
   const counting = useMemo(() => new Set(airing.map((poster) => poster.key)), [airing])
 
-  const onHold = useMemo(() => mine.filter((entry) => entry.status === 'PAUSED'), [mine])
-
-  const activity = useMemo(
-    () =>
-      (feed ?? []).filter((entry) => moduleOf(entry)?.slug === module.slug).slice(0, FEED_ROWS),
-    [feed, module],
+  const onHold = useMemo(
+    () => mine.filter((entry) => entry.status === 'PAUSED').sort(byLastTouched),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [mine],
   )
 
   /**
@@ -227,7 +372,7 @@ export const HomePage = () => {
       return [
         {
           key: `progress-${type.mediaType}`,
-          title: `${type.label} in progress`,
+          title: inProgressTitle(type, module.types.length),
           posters: reading.map((entry) => posterOf(entry, progressSummary(entry))),
           to: `/library/${module.slug}/${type.slug}`,
           count: reading.length,
@@ -247,7 +392,7 @@ export const HomePage = () => {
       : []),
   ]
 
-  const loaded = entries !== null && feed !== null
+  const loaded = entries !== null && !feed.loading
 
   const drawShelf = (shelf: Shelf) => (
     <section key={shelf.key} className="status-section">
@@ -293,29 +438,28 @@ export const HomePage = () => {
     </div>
   )
 
+  /*
+   * The rows a module leads with are the module's own answer, not two shelf ids named here.
+   * Asking for "trending" and "newly-added" everywhere meant every module that files its
+   * shelves under other names — games under popular and coming soon, films under this week's
+   * list — had a home page of empty headings.
+   */
   const catalogue = (
     <>
-      {module.types.map((type) => (
-        <ShelfGallery
-          key={`trending-${type.mediaType}`}
-          title={`Trending ${type.label.toLowerCase()}`}
-          mediaType={type.mediaType}
-          shelf="trending"
-          moduleSlug={module.slug}
-          typeSlug={type.slug}
-        />
-      ))}
-
-      {module.types.map((type) => (
-        <ShelfGallery
-          key={`new-${type.mediaType}`}
-          title={`Newly added ${type.label.toLowerCase()}`}
-          mediaType={type.mediaType}
-          shelf="newly-added"
-          moduleSlug={module.slug}
-          typeSlug={type.slug}
-        />
-      ))}
+      {module.types.flatMap((type) =>
+        (featured[type.mediaType] ?? []).map((shelf) => (
+          <ShelfGallery
+            key={`${shelf.id}-${type.mediaType}`}
+            // The module named the row; the medium is added only where the module holds more
+            // than one, since "Popular now" twice over says nothing about which is which.
+            title={module.types.length > 1 ? `${shelf.label} · ${type.label}` : shelf.label}
+            mediaType={type.mediaType}
+            shelf={shelf.id}
+            moduleSlug={module.slug}
+            typeSlug={type.slug}
+          />
+        )),
+      )}
     </>
   )
 
@@ -336,16 +480,49 @@ export const HomePage = () => {
 
       {loaded && (
         <div className="home-layout">
-          <div className="home-main">
+          <div className="home-main" ref={main}>
             <section className="status-section">
               <h2>
-                Activity
-                <Link className="section-action" to="/activity">
-                  See all →
-                </Link>
+                {/* Two lists in one place, because they answer the same question from either
+                    side: what has happened lately — by me, and to what I keep. */}
+                <FeedPicker current={showing} unread={waiting.unread} onChoose={setShowing} />
+
+                {showing === 'activity' ? (
+                  <Link className="section-action" to="/activity">
+                    See all →
+                  </Link>
+                ) : (
+                  waiting.unread > 0 && (
+                    <button
+                      type="button"
+                      className="section-action ghost small"
+                      onClick={() => void readAll()}
+                    >
+                      Read all
+                    </button>
+                  )
+                )}
               </h2>
-              {activity.length > 0 ? (
-                <ActivityFeed feed={activity} />
+
+              {showing === 'notifications' ? (
+                waiting.items.length > 0 ? (
+                  <NotificationList notifications={waiting.items} />
+                ) : (
+                  <p className="muted">
+                    Nothing yet. An episode airing, or a season appearing, turns up here.
+                  </p>
+                )
+              ) : feed.rows.length > 0 ? (
+                <>
+                  <ActivityFeed feed={feed.rows} onForget={(id) => void feed.forget(id)} />
+                  {/* The feed stops with the page rather than running past everything beside
+                      it; a history goes back years, and this is the last while of it. */}
+                  {feed.hasMore && (
+                    <button type="button" className="ghost feed-more" onClick={feed.more}>
+                      Load more
+                    </button>
+                  )}
+                </>
               ) : (
                 <p className="muted">
                   Nothing recorded here yet.{' '}
@@ -356,7 +533,7 @@ export const HomePage = () => {
             </section>
           </div>
 
-          <aside className="home-side">
+          <aside className="home-side" ref={side}>
             {!foldedOut && shelfStack}
             {catalogue}
           </aside>

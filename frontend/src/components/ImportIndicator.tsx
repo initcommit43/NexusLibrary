@@ -24,6 +24,12 @@ const describe = (job: SyncJob): string => {
     return `${who} achievements — ${job.processed} of ${job.total}`
   }
 
+  // Counted rather than measured: how far back an activity stream goes is only known by
+  // reaching the end of it, so there is no total to be so many of.
+  if (job.kind === 'ACTIVITY') {
+    return `${who} activity — ${job.processed} events`
+  }
+
   const verb = PHASE_VERBS[job.phase ?? '']
   return verb && job.total > 0
     ? `${verb} ${who} — ${job.processed} of ${job.total}`

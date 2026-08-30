@@ -45,6 +45,7 @@ export const ShelfGallery = ({
         if (!entry.isIntersecting) return
         observer.disconnect()
 
+
         api
           .browse(mediaType, shelf)
           .then((results) =>

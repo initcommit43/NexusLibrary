@@ -32,6 +32,8 @@ export type SearchResult = {
 export type BrowseShelf = {
   id: string
   label: string
+  /** Whether the module wants this row on its home page as well as on browse. */
+  onHome: boolean
 }
 
 /** One page of a shelf. `hasMore` is all a "next" button needs, and all every source knows. */
@@ -83,6 +85,16 @@ export type TrackedItem = {
   /** Set when an import put this here rather than the reader adding it by hand. */
   importedFrom: Provider | null
   notes: string | null
+  /** When the entry last changed here — an edit, or an import that moved something. */
+  updatedAt: string
+  /**
+   * When anything last happened to this title — an episode logged on the service it came
+   * from, a change made here. Null for a title nothing has happened to yet.
+   *
+   * <p>Distinct from `updatedAt`, which is when the row was last written: an import writes a
+   * whole library at one moment and says nothing about when the reader was last at any of it.
+   */
+  lastActivityAt: string | null
 }
 
 /**
@@ -233,7 +245,7 @@ export type Review = {
 
 export type SyncJob = {
   id: string
-  kind: 'IMPORT' | 'ACHIEVEMENTS'
+  kind: 'IMPORT' | 'ACHIEVEMENTS' | 'ACTIVITY'
   /** Which connection the run belongs to, so its progress shows under that one. */
   provider: Provider | null
   /** Which stretch of an import the count belongs to; null for work with only one. */
