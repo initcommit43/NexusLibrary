@@ -14,6 +14,7 @@ import dev.nexus.core.domain.TrackableItem;
 import dev.nexus.core.tracking.TrackingService;
 import dev.nexus.core.tracking.dto.TrackedItemResponse;
 import dev.nexus.modules.games.AchievementCatalogue;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -28,6 +29,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import java.util.List;
+import org.springframework.http.CacheControl;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -41,6 +44,9 @@ import org.springframework.web.bind.annotation.RestController;
 public class CatalogController {
 
     private static final int MAX_RESULTS = 20;
+
+    /** How long a reader's own browser may reuse a shelf before asking for it again. */
+    private static final Duration BROWSER_CACHE = Duration.ofMinutes(10);
 
     /** Past these a request is not a narrower question, it is a slower one. */
     private static final int MAX_FILTERS = 12;

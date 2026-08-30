@@ -8,7 +8,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer.CacheControlConfig;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.header.writers.CacheControlHeadersWriter;
+import org.springframework.security.web.header.writers.DelegatingRequestMatcherHeaderWriter;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
+import org.springframework.security.web.util.matcher.NegatedRequestMatcher;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -57,6 +62,17 @@ public class SecurityConfig {
                         // data of its own, and every route behind it calls the API above.
                         .anyRequest()
                         .permitAll())
+                /*
+                 * Everything the API answers is a reader's own and must not be held anywhere,
+                 * which is what Spring's default no-store is for — except the browse shelves,
+                 * which are the same list for every reader and change by the day at most.
+                 * Those say for themselves how long they may be kept; the rest keep no-store.
+                 */
+                .headers(headers -> headers.cacheControl(CacheControlConfig::disable)
+                        .addHeaderWriter(new DelegatingRequestMatcherHeaderWriter(
+                                new NegatedRequestMatcher(
+                                        PathPatternRequestMatcher.withDefaults().matcher("/api/catalog/browse")),
+                                new CacheControlHeadersWriter())))
                 .exceptionHandling(handling ->
                         handling.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)

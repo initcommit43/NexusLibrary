@@ -159,17 +159,74 @@ public class BrowseService {
             return cached.results();
         }
 
-        MetadataAdapter adapter = adapters.requireForMediaType(mediaType);
-        try {
-            BrowseResults fresh = adapter.browse(mediaType, shelfId, 1, size);
-            cache.put(key, new CachedShelf(fresh, Instant.now()));
-            return fresh;
-        } catch (RuntimeException e) {
-            if (cached == null) {
-                throw e;
-            }
-            log.debug("Serving a stale {} shelf for {}: {}", shelfId, mediaType, e.toString());
+        /*
+         * A stale copy is handed back at once and replaced behind the reader.
+         *
+         * <p>Nobody should wait a second and a half for a row of covers because they were the
+         * first to open the page after the hour turned. What is popular this morning is a fine
+         * answer this afternoon, and by the next page view it is the new list anyway.
+         */
+        if (cached != null) {
+            refreshInBackground(key, mediaType, shelfId, size);
             return cached.results();
+        }
+
+        return fetchAndStore(key, mediaType, shelfId, size);
+    }
+
+    private BrowseResults fetchAndStore(CacheKey key, MediaType mediaType, String shelfId, int size) {
+        BrowseResults fresh = adapters.requireForMediaType(mediaType).browse(mediaType, shelfId, 1, size);
+        cache.put(key, new CachedShelf(fresh, Instant.now()));
+        return fresh;
+    }
+
+    /** One refresh per shelf at a time: a busy page must not become a burst at the source. */
+    private void refreshInBackground(CacheKey key, MediaType mediaType, String shelfId, int size) {
+        if (!refreshing.add(key)) {
+            return;
+        }
+
+        refresher.execute(() -> {
+            try {
+                fetchAndStore(key, mediaType, shelfId, size);
+            } catch (RuntimeException e) {
+                // The stale copy stands. A browse page is discovery rather than data anyone
+                // depends on being current, and yesterday's popular titles beat an error page.
+                log.debug("Keeping the stale {} shelf for {}: {}", shelfId, mediaType, e.toString());
+            } finally {
+                refreshing.remove(key);
+            }
+        });
+    }
+
+    /**
+     * Fills the shelves a module leads with, once, at startup.
+     *
+     * <p>An empty cache is the only time anyone waits for a source, and it is empty exactly
+     * when the app has just started — so it is filled before a reader arrives rather than by
+     * the first one to.
+     */
+    @EventListener(ApplicationReadyEvent.class)
+    public void warmHomeShelves() {
+        // One task per medium rather than one for all of them, so a source that is down costs
+        // its own shelves and nobody else's.
+        for (MediaType mediaType : MediaType.values()) {
+            refresher.execute(() -> {
+                try {
+                    for (BrowseShelf shelf : shelves(mediaType)) {
+                        if (shelf.onHome()) {
+                            // The page the reader lands on, at the size it asks for: a shelf
+                            // warmed at any other size is an entry nothing ever reads.
+                            page(mediaType, shelf.id(), 1);
+                        }
+                    }
+                    log.debug("Warmed the {} home shelves", mediaType);
+                } catch (RuntimeException e) {
+                    // A source that is down, or a module with no adapter: the next reader
+                    // fetches it, and the ones that did warm are warm.
+                    log.debug("Could not warm the {} shelves: {}", mediaType, e.toString());
+                }
+            });
         }
     }
 

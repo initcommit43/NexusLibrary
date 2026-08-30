@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -37,7 +38,7 @@ class BrowseServiceTest {
     private BrowseService serviceWith(Duration ttl) {
         when(adapter.mediaTypes()).thenReturn(Set.of(MediaType.GAME));
         when(adapter.source()).thenReturn(Source.IGDB);
-        return new BrowseService(new MetadataAdapterRegistry(List.of(adapter)), new BrowseProperties(ttl));
+        return new BrowseService(new MetadataAdapterRegistry(List.of(adapter)), List.of(), new BrowseProperties(ttl));
     }
 
     private BrowseResults results(ItemSearchResult... items) {
@@ -72,15 +73,47 @@ class BrowseServiceTest {
         assertThat(service.shelf(MediaType.GAME, "coming-soon").items()).hasSize(2);
     }
 
+    /**
+     * An expired shelf is replaced behind the reader rather than in front of them: the copy
+     * on hand is handed over at once and the source is asked again on another thread.
+     */
     @Test
-    void fetchesAgainOnceTheEntryHasExpired() {
+    void replacesAnExpiredShelfWithoutMakingTheReaderWait() {
         BrowseService service = serviceWith(Duration.ZERO);
         when(adapter.browse(any(), anyString(), anyInt(), anyInt())).thenReturn(results(game("1")));
 
         service.shelf(MediaType.GAME, "popular");
-        service.shelf(MediaType.GAME, "popular");
+        when(adapter.browse(any(), anyString(), anyInt(), anyInt())).thenReturn(results(game("2")));
 
-        verify(adapter, times(2)).browse(MediaType.GAME, "popular", 1, 24);
+        // The second read is the copy already held, not the new one.
+        assertThat(service.shelf(MediaType.GAME, "popular").items())
+                .singleElement()
+                .satisfies(item -> assertThat(item.externalId()).isEqualTo("1"));
+
+        verify(adapter, timeout(2000).times(2)).browse(MediaType.GAME, "popular", 1, 24);
+
+        // And by a later read it is the new one.
+        assertThat(eventualFirstId(service)).isEqualTo("2");
+    }
+
+    /** The replacement lands on another thread, so a read polls for it rather than assuming. */
+    private String eventualFirstId(BrowseService service) {
+        for (int attempt = 0; attempt < 100; attempt++) {
+            String id = service.shelf(MediaType.GAME, "popular")
+                    .items()
+                    .getFirst()
+                    .externalId();
+            if ("2".equals(id)) {
+                return id;
+            }
+            try {
+                Thread.sleep(20);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException(e);
+            }
+        }
+        return null;
     }
 
     /**
@@ -156,7 +189,7 @@ class BrowseServiceTest {
             }
         };
         BrowseService service =
-                new BrowseService(new MetadataAdapterRegistry(List.of(plain)), new BrowseProperties(Duration.ZERO));
+                new BrowseService(new MetadataAdapterRegistry(List.of(plain)), List.of(), new BrowseProperties(Duration.ZERO));
 
         assertThat(service.shelves(MediaType.BOOK)).isEmpty();
         assertThat(service.shelf(MediaType.BOOK, "popular").items()).isEmpty();
