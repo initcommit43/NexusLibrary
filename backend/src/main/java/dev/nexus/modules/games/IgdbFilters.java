@@ -23,8 +23,8 @@ final class IgdbFilters {
             6, // PC
             3, // Linux
             14, // Mac
-            34, // Android
-            39, // iOS
+            // Android and iOS are deliberately absent: a phone game is not what this app is
+            // for, and a platform nobody can filter to is one nothing arrives from.
             7, 8, 9, 48, 167, // PlayStation 1-5
             38, 46, // PSP, Vita
             11, 12, 49, 169, // Xbox, 360, One, Series

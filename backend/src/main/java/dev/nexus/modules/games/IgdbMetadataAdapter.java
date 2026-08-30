@@ -111,6 +111,7 @@ public class IgdbMetadataAdapter implements MetadataAdapter {
     @Override
     public List<ItemSearchResult> search(MediaType mediaType, String query, int limit) {
         return client.searchGames(query, limit).stream()
+                .filter(IgdbMobile::isNotMobileOnly)
                 .map(game -> new ItemSearchResult(
                         MediaType.GAME,
                         Source.IGDB,
@@ -396,6 +397,7 @@ public class IgdbMetadataAdapter implements MetadataAdapter {
      */
     private List<ItemSearchResult> toSearchResults(List<Map<String, Object>> games) {
         return games.stream()
+                .filter(IgdbMobile::isNotMobileOnly)
                 .map(game -> new ItemSearchResult(
                         MediaType.GAME,
                         Source.IGDB,

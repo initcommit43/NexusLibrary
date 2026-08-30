@@ -26,7 +26,8 @@ public class IgdbClient {
     private static final String BASE_CONDITIONS = "parent_game = null & version_parent = null";
 
     private static final String GAME_FIELDS =
-            "id,name,summary,first_release_date,cover.url,platforms.name,genres.name,total_rating,status";
+            "id,name,summary,first_release_date,cover.url,platforms.id,platforms.name,"
+                    + "genres.name,total_rating,status";
 
     private final RestClient restClient;
     private final IgdbAuthClient auth;
