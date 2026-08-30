@@ -3222,6 +3222,43 @@ input.filter-control::-webkit-search-cancel-button {
   width: 100%;
 }
 
+/* The status takes the line, the heart takes a square at the end of it. */
+.media-action-row {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-2);
+}
+
+.media-action-row .status-menu {
+  flex: 1;
+  min-width: 0;
+}
+
+.media-actions .favourite-action {
+  flex: none;
+  width: 2.75rem;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
+/*
+ * Red, always: a heart is what it is whether or not it has been pressed, and a control that
+ * only takes its colour once it is on is one nobody finds the first time. The heart inside it
+ * fills to say the title is a favourite.
+ */
+.favourite-action {
+  border-color: var(--danger);
+  background: var(--danger);
+  color: #fff;
+}
+
+.favourite-action:hover:not(:disabled) {
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 82%, black);
+  color: #fff;
+}
+
 .status-menu {
   position: relative;
 }

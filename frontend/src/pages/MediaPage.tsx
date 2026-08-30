@@ -6,6 +6,7 @@ import { EntryEditDialog } from '../components/EntryEditDialog'
 import { MediaAchievements } from '../components/MediaAchievements'
 import { MediaReview } from '../components/MediaReview'
 import { MediaFacts } from '../components/MediaFacts'
+import { FavouriteToggle } from '../components/FavouriteToggle'
 import { StatusMenu } from '../components/StatusMenu'
 import { MediaRecommendations, MediaRelations } from '../components/MediaRelations'
 import {
@@ -143,11 +144,17 @@ export const MediaPage = () => {
 
             <div className="media-actions">
               {entry ? (
-                <StatusMenu
-                  entry={entry}
-                  onChanged={load}
-                  onOpenEditor={() => setEditing(entry)}
-                />
+                // The status and the heart on one line, as they are on the services this
+                // library is imported from: where a title sits and whether it is loved are
+                // two different things to say about it.
+                <div className="media-action-row">
+                  <StatusMenu
+                    entry={entry}
+                    onChanged={load}
+                    onOpenEditor={() => setEditing(entry)}
+                  />
+                  <FavouriteToggle entry={entry} onChanged={load} />
+                </div>
               ) : (
                 <button type="button" disabled={busy} onClick={() => void track()}>
                   {busy ? 'Adding…' : 'Add to list'}

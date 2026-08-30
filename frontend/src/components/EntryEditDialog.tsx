@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { ApiError, api, type TrackedItem, type TrackingStatus } from '../api/client'
 import { statusLabelsFor, typeDefinitionFor } from '../modules/registry'
+import { Heart } from './Heart'
 import { STATUS_ORDER } from './trackingStatus'
 import { MINUTES_PER_HOUR } from './progress'
 
@@ -138,13 +139,7 @@ export const EntryEditDialog = ({
             aria-label="Favourite"
             onClick={() => void toggleFavourite()}
           >
-            <svg viewBox="0 0 24 24" width="16" height="16" fill={favorite ? 'currentColor' : 'none'} stroke="currentColor" aria-hidden>
-              <path
-                d="M12 20s-7-4.35-7-9a4 4 0 0 1 7-2.65A4 4 0 0 1 19 11c0 4.65-7 9-7 9Z"
-                strokeWidth="1.8"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <Heart filled={favorite} />
           </button>
 
           <button type="button" className="ghost icon-button" aria-label="Close" onClick={onClose}>
