@@ -2300,7 +2300,8 @@ input.filter-control::-webkit-search-cancel-button {
  * ending short of everything else on the page.
  */
 .carousel {
-  --carousel-arrow-size: 2.25rem;
+  /* Small enough to sit clear of whatever the row is drawn beside; the lane follows it. */
+  --carousel-arrow-size: 1.75rem;
   /* One number for both sides, so the two arrows cannot drift apart. */
   --carousel-arrow-lane: calc(var(--carousel-arrow-size) + var(--space-2));
 
@@ -2336,7 +2337,7 @@ input.filter-control::-webkit-search-cancel-button {
   padding: 0;
   display: grid;
   place-items: center;
-  font-size: 1.5rem;
+  font-size: 1.15rem;
   line-height: 1;
   border-radius: 50%;
   box-shadow: var(--shadow-2);

@@ -16,6 +16,12 @@ interface Props {
 const SLACK = 4
 
 /**
+ * What a wheel notch is worth in pixels, for the mice that report their turn in lines rather
+ * than in pixels. Roughly a line of text, which is what the number means.
+ */
+const LINE_HEIGHT = 16
+
+/**
  * A shelf you can step through, rather than six covers and a "view all".
  *
  * <p>The row is a real scroll container, so a trackpad, a touchscreen and the keyboard all
@@ -55,6 +61,41 @@ export const Carousel = ({ children, label }: Props) => {
       element.removeEventListener('scrollend', readPosition)
     }
   }, [children])
+
+  /*
+   * A wheel turned over the row scrolls the row, and only the row: a shelf under the pointer
+   * is what the wheel is being turned at, and a page that starts moving the moment the last
+   * cover is reached takes the shelf out from under it mid-read. The page is reached by
+   * moving off the row, which is a smaller ask than getting a shelf back.
+   *
+   * <p>A row too short to scroll keeps nothing, since there is nothing in it to scroll and a
+   * page held still under the pointer would simply be stuck.
+   *
+   * <p>Listened for here rather than with onWheel: React attaches wheel handlers passively,
+   * and a passive listener is one that cannot hold the page still while the row moves.
+   */
+  useEffect(() => {
+    const element = row.current
+    if (!element) return
+
+    const wheel = (event: WheelEvent) => {
+      // A trackpad's sideways swipe is already scrolling the row; only a turn down the page
+      // is the one being borrowed.
+      if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return
+
+      const far = element.scrollWidth - element.clientWidth
+      if (far <= 0) return
+
+      const step =
+        event.deltaMode === WheelEvent.DOM_DELTA_PIXEL ? event.deltaY : event.deltaY * LINE_HEIGHT
+      event.preventDefault()
+      element.scrollLeft = element.scrollLeft + step
+      readPosition()
+    }
+
+    element.addEventListener('wheel', wheel, { passive: false })
+    return () => element.removeEventListener('wheel', wheel)
+  }, [])
 
   /** Just under a full row, so one card stays on screen as an anchor between steps. */
   const step = (direction: 1 | -1) => {
