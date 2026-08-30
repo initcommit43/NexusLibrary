@@ -1,7 +1,43 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { rememberModule } from '../modules/useCurrentModule'
 import { useModules } from '../modules/useModules'
-import type { ModuleDefinition } from '../modules/registry'
+import { defaultTypeOf, type ModuleDefinition } from '../modules/registry'
+
+/**
+ * The same page, in the module being switched to.
+ *
+ * <p>Switching module is switching what you are looking at, not where you are looking: a
+ * reader on browse who switches to films wants that module's browse, and one on their profile
+ * wants their profile. Only the pages whose address names a module have to be rebuilt; the
+ * rest simply follow the choice, which is why nothing is returned for them.
+ *
+ * <p>Filters are dropped on the way. They are named per module — a genre AniList files under
+ * "Slice of Life" is not one TMDB has — so carrying them over asks the new module for things
+ * it has never heard of and answers with an empty page.
+ */
+const sameKindOfPage = (path: string, search: string, module: ModuleDefinition): string | null => {
+  const type = defaultTypeOf(module)
+
+  if (path.startsWith('/library/')) return `/library/${module.slug}/${type.slug}`
+
+  // Both the browse page and a shelf of it, since a shelf id belongs to the module that
+  // named it and means nothing in another.
+  if (path.startsWith('/browse')) return `/browse?module=${module.slug}&type=${type.slug}`
+
+  if (path.startsWith('/search')) {
+    const params = new URLSearchParams(search)
+    params.set('module', module.slug)
+    params.delete('type')
+    return `/search?${params}`
+  }
+
+  // A title's page belongs to the source that holds the title, so there is no such page in
+  // another module: the module's own home is where switching from one lands.
+  if (path.startsWith('/media/')) return '/'
+
+  return null
+}
 
 /**
  * Names the module you are in, and switches to another. A menu rather than a list of links:
@@ -13,6 +49,7 @@ export const ModuleSwitcher = ({ current }: { current: ModuleDefinition }) => {
   const [open, setOpen] = useState(false)
   const container = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
+  const location = useLocation()
 
   useEffect(() => {
     if (!open) return
@@ -34,7 +71,11 @@ export const ModuleSwitcher = ({ current }: { current: ModuleDefinition }) => {
 
   const choose = (module: ModuleDefinition) => {
     setOpen(false)
-    navigate(`/library/${module.slug}`)
+    // Said before navigating, so a page with no module in its address redraws as this one.
+    rememberModule(module.slug)
+
+    const to = sameKindOfPage(location.pathname, location.search, module)
+    if (to) navigate(to)
   }
 
   /*
