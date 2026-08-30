@@ -16,6 +16,7 @@ import dev.nexus.core.preferences.BannerNotSetException;
 import dev.nexus.core.preferences.NoBannerException;
 import dev.nexus.core.review.ReviewNotFoundException;
 import dev.nexus.core.review.ReviewNotStartedException;
+import dev.nexus.core.activity.ActivityNotFoundException;
 import dev.nexus.core.tracking.EntryNotFoundException;
 import dev.nexus.modules.anime.AniListNotConfiguredException;
 import dev.nexus.modules.anime.AniListUnavailableException;
@@ -170,6 +171,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler({
+        ActivityNotFoundException.class,
         BannerNotSetException.class,
         EntryNotFoundException.class,
         ItemNotFoundException.class,

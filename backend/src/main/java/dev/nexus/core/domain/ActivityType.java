@@ -11,5 +11,12 @@ public enum ActivityType {
     IMPORTED,
 
     /** A later run of the same provider, recorded only when it actually changed something. */
-    SYNCED
+    SYNCED,
+
+    /**
+     * Something a provider recorded rather than this app: an episode watched on AniList, read
+     * back out of {@link ProviderActivity}. Never written to the activity table — the feed
+     * reads the two side by side, and this is what the imported half calls itself.
+     */
+    EXTERNAL
 }

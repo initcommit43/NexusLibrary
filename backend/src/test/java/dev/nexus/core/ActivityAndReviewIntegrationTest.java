@@ -7,6 +7,9 @@ import static org.mockito.Mockito.when;
 
 import dev.nexus.auth.AppUserRepository;
 import dev.nexus.core.domain.ActivityRepository;
+import dev.nexus.core.domain.Provider;
+import dev.nexus.core.domain.ProviderActivity;
+import dev.nexus.core.domain.ProviderActivityRepository;
 import dev.nexus.core.domain.ReviewRepository;
 import dev.nexus.core.domain.TrackableItemRepository;
 import dev.nexus.core.domain.UserEntryRepository;
@@ -15,6 +18,7 @@ import dev.nexus.support.GamesTestData;
 import dev.nexus.support.HttpTestClient;
 import dev.nexus.support.HttpTestClient.Response;
 import dev.nexus.support.PostgresIntegrationTest;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,6 +49,9 @@ class ActivityAndReviewIntegrationTest extends PostgresIntegrationTest {
 
     @Autowired
     ReviewRepository reviews;
+
+    @Autowired
+    ProviderActivityRepository imported;
 
     private HttpTestClient http;
     private String token;
@@ -244,7 +251,88 @@ class ActivityAndReviewIntegrationTest extends PostgresIntegrationTest {
                 .isEqualTo(401);
     }
 
+    // --- imported activity ------------------------------------------------
+
+    /**
+     * A reader has one history. What AniList recorded before any of this existed belongs on
+     * the same feed as what they did here, said in the words the provider said it in.
+     */
+    @Test
+    void importedEventsShareTheFeedWithWhatWasDoneHere() {
+        importedEvent("watched episode", "5", LocalDate.now());
+
+        assertThat(feed())
+                .anySatisfy(event -> {
+                    assertThat(event).containsEntry("type", "EXTERNAL");
+                    assertThat(event).containsEntry("title", GamesTestData.botw().get("name"));
+                    assertThat(payloadOf(event)).containsEntry("progress", "5");
+                });
+    }
+
+    /** Newest first, whichever half of the feed a row came from. */
+    @Test
+    void bothHalvesOfTheFeedAreInOneOrder() {
+        importedEvent("watched episode", "5", LocalDate.now().minusDays(2));
+        patch(Map.of("status", "IN_PROGRESS"));
+
+        assertThat(feed().getFirst()).containsEntry("type", "STATUS_CHANGE");
+        assertThat(feed().getLast()).containsEntry("type", "EXTERNAL");
+    }
+
+    @Test
+    void anImportedEventCanBeForgottenAndIsGoneFromTheMapToo() {
+        importedEvent("watched episode", "5", LocalDate.now());
+        String id = (String) feed().stream()
+                .filter(event -> "EXTERNAL".equals(event.get("type")))
+                .findFirst()
+                .orElseThrow()
+                .get("id");
+
+        assertThat(forget(id).status()).isEqualTo(204);
+        assertThat(feed()).noneSatisfy(event -> assertThat(event).containsEntry("type", "EXTERNAL"));
+        assertThat(imported.count()).isZero();
+    }
+
+    @Test
+    void anEventOfYourOwnCanBeForgotten() {
+        String id = (String) feed().getFirst().get("id");
+
+        assertThat(forget(id).status()).isEqualTo(204);
+        assertThat(feed()).noneSatisfy(event -> assertThat(event).containsEntry("id", id));
+    }
+
+    /** An id that is not the caller's is answered as one that does not exist. */
+    @Test
+    void anotherReadersEventCannotBeForgotten() {
+        String id = (String) feed().getFirst().get("id");
+        String stranger = registerAndGetToken(http, "someone@example.com", "someone");
+
+        Response refused = http.delete("/activity/" + id, "Authorization", "Bearer " + stranger);
+
+        assertThat(refused.status()).isEqualTo(404);
+        assertThat(feed()).isNotEmpty();
+    }
+
+    @Test
+    void nonsenseIdsAreNotFoundRatherThanAServerError() {
+        assertThat(forget("own:not-a-number").status()).isEqualTo(404);
+        assertThat(forget("imported:9999").status()).isEqualTo(404);
+    }
+
     // --- helpers ----------------------------------------------------------
+
+    /** One event as an import would have written it, against the fixture's own title. */
+    private void importedEvent(String status, String progress, LocalDate day) {
+        Long userId = users.findByEmail("player@example.com").orElseThrow().getId();
+        Long itemId = entries.findById(entryId).orElseThrow().getItem().getId();
+
+        imported.save(new ProviderActivity(
+                userId, Provider.ANILIST, "event-" + day + "-" + progress, itemId, day, status, progress));
+    }
+
+    private Response forget(String feedId) {
+        return http.delete("/activity/" + feedId, "Authorization", "Bearer " + token);
+    }
 
     /** Moves the fixture off the planning shelf, which is where a review becomes writable. */
     private void started() {
