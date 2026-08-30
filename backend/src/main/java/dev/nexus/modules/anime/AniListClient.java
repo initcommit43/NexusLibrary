@@ -155,6 +155,58 @@ public class AniListClient {
             """;
 
     /**
+     * A reader's own activity stream, newest first, anime and manga alike.
+     *
+     * <p>This is the history a map is drawn from. A list entry carries the day it was started
+     * and the day it was finished; the stream carries the day of every episode in between,
+     * which is the difference between two squares a title and a year that looks lived in.
+     *
+     * <p>Text posts and message replies share the connection with list activity, so the type
+     * is pinned to the two list kinds — everything else on it is someone's blog.
+     */
+    private static final String ACTIVITY_QUERY =
+            """
+            query ($userId: Int, $page: Int, $perPage: Int) {
+              Page(page: $page, perPage: $perPage) {
+                pageInfo { hasNextPage }
+                activities(userId: $userId, type_in: [ANIME_LIST, MANGA_LIST], sort: ID_DESC) {
+                  ... on ListActivity {
+                    id
+                    createdAt
+                    status
+                    progress
+                    media { id type }
+                  }
+                }
+              }
+            }
+            """;
+
+    /**
+     * What one studio made, newest first.
+     *
+     * <p>Asked of the studio rather than of the media list, because that is where AniList
+     * keeps the relation: a studio's page is its own connection, and filtering all of anime by
+     * a studio name would match the words rather than the company.
+     */
+    private static final String STUDIO_QUERY =
+            """
+            query ($id: Int, $page: Int, $perPage: Int) {
+              Studio(id: $id) {
+                name
+                media(sort: START_DATE_DESC, page: $page, perPage: $perPage) {
+                  pageInfo { hasNextPage }
+                  nodes { %s }
+                }
+              }
+            }
+            """
+                    .formatted(MEDIA_FIELDS);
+
+    /** Who the token belongs to, as a number: the activity stream is not addressable by name. */
+    private static final String VIEWER_ID_QUERY = "query { Viewer { id } }";
+
+    /**
      * Everything the detail page shows. One call, kept apart from the fields every list row
      * needs: relations alone carry a nested media record each.
      *
@@ -430,6 +482,87 @@ public class AniListClient {
             }
         }
         return entries;
+    }
+
+    /** A studio, and one page of what it made. */
+    public record StudioPage(String name, List<Map<String, Object>> media, boolean hasNextPage) {}
+
+    /** Empty when AniList has no such studio, which is a miss rather than a failure. */
+    @SuppressWarnings("unchecked")
+    public StudioPage fetchStudioWorks(String studioId, int page, int perPage) {
+        Map<String, Object> data = post(
+                STUDIO_QUERY,
+                Map.of(
+                        "id", Integer.parseInt(studioId),
+                        "page", page,
+                        "perPage", Math.min(perPage, MAX_BATCH)));
+
+        if (!(data.get("Studio") instanceof Map<?, ?> found)) {
+            return new StudioPage(null, List.of(), false);
+        }
+
+        Map<String, Object> studio = (Map<String, Object>) found;
+        String name = studio.get("name") instanceof String called ? called : null;
+        if (!(studio.get("media") instanceof Map<?, ?> media)) {
+            return new StudioPage(name, List.of(), false);
+        }
+
+        Map<String, Object> works = (Map<String, Object>) media;
+        List<Map<String, Object>> nodes = works.get("nodes") instanceof List<?> rows
+                ? rows.stream().filter(Map.class::isInstance).map(row -> (Map<String, Object>) row).toList()
+                : List.of();
+
+        boolean more = works.get("pageInfo") instanceof Map<?, ?> info
+                && Boolean.TRUE.equals(info.get("hasNextPage"));
+
+        return new StudioPage(name, nodes, more);
+    }
+
+    /** One page of a reader's activity, and whether there is another behind it. */
+    public record ActivityPage(List<Map<String, Object>> activities, boolean hasNextPage) {}
+
+    /**
+     * One page of the reader's own activity stream, sent with their token so a private
+     * account still answers about itself.
+     *
+     * <p>Newest first, which is what lets a sync stop as soon as it reaches events it already
+     * has rather than walking a decade to find out it learned nothing.
+     */
+    @SuppressWarnings("unchecked")
+    public ActivityPage fetchActivity(int userId, int page, String accessToken) {
+        Map<String, Object> data = post(
+                ACTIVITY_QUERY,
+                Map.of("userId", userId, "page", page, "perPage", MAX_BATCH),
+                accessToken);
+
+        if (!(data.get("Page") instanceof Map<?, ?> found)) {
+            return new ActivityPage(List.of(), false);
+        }
+
+        Map<String, Object> body = (Map<String, Object>) found;
+        List<Map<String, Object>> activities = new java.util.ArrayList<>();
+        if (body.get("activities") instanceof List<?> rows) {
+            rows.stream()
+                    // A ListActivity is the only kind asked for, but the field is a union and
+                    // an inline fragment leaves an empty object where another kind stood.
+                    .filter(Map.class::isInstance)
+                    .map(row -> (Map<String, Object>) row)
+                    .filter(row -> row.get("id") != null)
+                    .forEach(activities::add);
+        }
+        // Read off the whole answer, not off the page inside it: that is where the helper
+        // every other paged call uses looks for the flag.
+        return new ActivityPage(activities, hasNextPage(data));
+    }
+
+    /** The numeric id of whoever the token belongs to. */
+    public int viewerId(String accessToken) {
+        Map<String, Object> data = post(VIEWER_ID_QUERY, Map.of(), accessToken);
+
+        if (data.get("Viewer") instanceof Map<?, ?> viewer && viewer.get("id") instanceof Number id) {
+            return id.intValue();
+        }
+        throw new AniListUnavailableException("AniList did not identify the account");
     }
 
     /** Empty when AniList has no such media; the caller treats that as nothing to add. */

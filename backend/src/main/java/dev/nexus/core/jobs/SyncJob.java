@@ -17,7 +17,9 @@ public class SyncJob {
 
     public enum Kind {
         IMPORT,
-        ACHIEVEMENTS
+        ACHIEVEMENTS,
+        /** A provider's own record of what a reader did, day by day, behind their library. */
+        ACTIVITY
     }
 
     /**
