@@ -7,6 +7,7 @@ import dev.nexus.core.domain.Source;
 import dev.nexus.core.domain.TrackableItem;
 import dev.nexus.core.domain.TrackingStatus;
 import dev.nexus.core.domain.UserEntry;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Map;
 
@@ -34,9 +35,24 @@ public record TrackedItemResponse(
         Integer favoriteRank,
         /** Which service this entry was imported from, if it was not added by hand. */
         Provider importedFrom,
-        String notes) {
+        String notes,
+        /** When the entry last changed here — an edit, or an import that moved something. */
+        Instant updatedAt,
+        /**
+         * When anything last happened to this title — an episode logged on the service it was
+         * imported from, a change made here. Null for a title nothing has happened to yet.
+         *
+         * <p>Distinct from {@code updatedAt}, which is when the row was last written: an
+         * import writes a whole library at one moment and says nothing about when the reader
+         * was last at any of it.
+         */
+        Instant lastActivityAt) {
 
     public static TrackedItemResponse from(UserEntry entry) {
+        return from(entry, null);
+    }
+
+    public static TrackedItemResponse from(UserEntry entry, Instant lastActivityAt) {
         TrackableItem item = entry.getItem();
         return new TrackedItemResponse(
                 entry.getId(),
@@ -58,6 +74,8 @@ public record TrackedItemResponse(
                 entry.isFavorite(),
                 entry.getFavoriteRank(),
                 entry.getImportedFrom(),
-                entry.getNotes());
+                entry.getNotes(),
+                entry.getUpdatedAt(),
+                lastActivityAt);
     }
 }

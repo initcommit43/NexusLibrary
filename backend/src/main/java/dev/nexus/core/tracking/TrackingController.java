@@ -6,7 +6,9 @@ import dev.nexus.core.tracking.dto.TrackRequest;
 import dev.nexus.core.tracking.dto.TrackedItemResponse;
 import dev.nexus.core.tracking.dto.UpdateEntryRequest;
 import jakarta.validation.Valid;
+import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -32,7 +34,11 @@ public class TrackingController {
 
     @GetMapping
     public List<TrackedItemResponse> list(@AuthenticationPrincipal CurrentUser user) {
-        return tracking.listFor(user.id()).stream().map(TrackedItemResponse::from).toList();
+        Map<Long, Instant> lastActivity = tracking.lastActivityByItem(user.id());
+
+        return tracking.listFor(user.id()).stream()
+                .map(entry -> TrackedItemResponse.from(entry, lastActivity.get(entry.getItem().getId())))
+                .toList();
     }
 
     @GetMapping("/{id}")
