@@ -120,11 +120,13 @@ public class IgdbMetadataAdapter implements MetadataAdapter {
 
     @Override
     public List<BrowseShelf> browseShelves(MediaType mediaType) {
+        // All four lead the games home, in this order: what people are playing, what is worth
+        // playing, what just landed, what is next.
         return List.of(
-                new BrowseShelf(SHELF_POPULAR, "Popular now"),
-                new BrowseShelf(SHELF_TOP_RATED, "Top rated"),
-                new BrowseShelf(SHELF_COMING_SOON, "Coming soon"),
-                new BrowseShelf(SHELF_RECENT, "Recently released"));
+                new BrowseShelf(SHELF_POPULAR, "Popular now", true),
+                new BrowseShelf(SHELF_TOP_RATED, "Top rated", true),
+                new BrowseShelf(SHELF_RECENT, "Recently released", true),
+                new BrowseShelf(SHELF_COMING_SOON, "Coming soon", true));
     }
 
     /**

@@ -2,6 +2,7 @@ package dev.nexus.modules.film;
 
 import dev.nexus.core.adapter.BrowseShelf;
 import java.util.List;
+import java.util.Set;
 
 /**
  * What the film and TV browse pages offer, and the TMDB list behind each row.
@@ -46,9 +47,13 @@ final class TmdbShelves {
         return kind == TmdbKind.SHOW ? SHOWS : MOVIES;
     }
 
+    /** The week's own list first, then the standing one. */
+    private static final Set<String> ON_HOME = Set.of("trending", "popular");
+
     static List<BrowseShelf> shelvesFor(TmdbKind kind) {
         return definitionsFor(kind).stream()
-                .map(definition -> new BrowseShelf(definition.id(), definition.label()))
+                .map(definition ->
+                        new BrowseShelf(definition.id(), definition.label(), ON_HOME.contains(definition.id())))
                 .toList();
     }
 

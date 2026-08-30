@@ -2,6 +2,7 @@ package dev.nexus.modules.books;
 
 import dev.nexus.core.adapter.BrowseShelf;
 import java.util.List;
+import java.util.Set;
 
 /**
  * What the books browse page offers, and where Open Library keeps each row.
@@ -48,11 +49,15 @@ final class OpenLibraryShelves {
             Definition.subject("horror", "Horror", "horror"),
             Definition.subject("romance", "Romance", "romance"));
 
+    /** What is being read now, and the broadest shelf under it. */
+    private static final Set<String> ON_HOME = Set.of("trending", "fiction");
+
     private OpenLibraryShelves() {}
 
     static List<BrowseShelf> shelves() {
         return SHELVES.stream()
-                .map(definition -> new BrowseShelf(definition.id(), definition.label()))
+                .map(definition ->
+                        new BrowseShelf(definition.id(), definition.label(), ON_HOME.contains(definition.id())))
                 .toList();
     }
 

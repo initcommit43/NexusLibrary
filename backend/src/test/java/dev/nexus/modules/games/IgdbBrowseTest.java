@@ -48,22 +48,59 @@ class IgdbBrowseTest {
     void offersTheFourShelvesInReadingOrder() {
         assertThat(adapter.browseShelves(MediaType.GAME))
                 .extracting(BrowseShelf::id)
-                .containsExactly("popular", "top-rated", "coming-soon", "recent");
+                .containsExactly("popular", "top-rated", "recent", "coming-soon");
+    }
+
+    /** A games home leads with all four: what is played, what is worth it, what is next. */
+    @Test
+    void everyGamesShelfLeadsTheHomePage() {
+        assertThat(adapter.browseShelves(MediaType.GAME)).allMatch(BrowseShelf::onHome);
     }
 
     /** Without a vote floor, one enthusiastic rating outranks everything ever made. */
     @Test
-    void putsAVoteFloorUnderBothRatingShelves() {
-        assertThat(whereFor("popular")).contains("total_rating_count > 20");
-        setUp();
+    void putsAVoteFloorUnderTopRated() {
         assertThat(whereFor("top-rated")).contains("total_rating_count > 200");
     }
 
     @Test
-    void sortsPopularByVoteCountAndTopRatedByScore() {
-        assertThat(sortFor("popular")).isEqualTo("total_rating_count desc");
-        setUp();
+    void sortsTopRatedByScore() {
         assertThat(sortFor("top-rated")).isEqualTo("total_rating desc");
+    }
+
+    /**
+     * What is popular now is what people are opening now, which IGDB keeps in a table of its
+     * own — a rating count is a decade of votes and answers a different question.
+     */
+    @Test
+    void readsPopularNowFromIgdbsOwnRanking() {
+        when(client.popularGameIds(anyInt(), anyInt(), anyInt())).thenReturn(List.of("7", "3"));
+        when(client.findGamesByIds(anyCollection()))
+                .thenReturn(List.of(Map.of("id", 3, "name", "Second"), Map.of("id", 7, "name", "First")));
+
+        List<ItemSearchResult> ranked = adapter.browse(MediaType.GAME, "popular", 1, 20).items();
+
+        // IGDB answers the games in whatever order it likes; the ranking is the whole point.
+        assertThat(ranked).extracting(ItemSearchResult::title).containsExactly("First", "Second");
+        verify(client, never()).browseGames(anyString(), anyString(), anyInt(), anyInt());
+    }
+
+    @Test
+    void turnsAPageOfPopularNowIntoAnOffsetOnTheRanking() {
+        when(client.popularGameIds(anyInt(), anyInt(), anyInt())).thenReturn(List.of());
+
+        adapter.browse(MediaType.GAME, "popular", 3, 40);
+
+        verify(client).popularGameIds(anyInt(), eq(80), eq(40));
+    }
+
+    /** A ranked id IGDB no longer has a game for is dropped, not held open as a gap. */
+    @Test
+    void dropsARankedIdWithNoGameBehindIt() {
+        when(client.popularGameIds(anyInt(), anyInt(), anyInt())).thenReturn(List.of("7", "9"));
+        when(client.findGamesByIds(anyCollection())).thenReturn(List.of(Map.of("id", 7, "name", "Only one")));
+
+        assertThat(adapter.browse(MediaType.GAME, "popular", 1, 20).items()).hasSize(1);
     }
 
     /** A shelf of what is out next is useless sorted the other way: it opens on 2031. */
@@ -72,11 +109,9 @@ class IgdbBrowseTest {
         assertThat(sortFor("coming-soon")).isEqualTo("first_release_date asc");
     }
 
-    /** Both rating shelves are about released games; an unreleased one has no score to sort by. */
+    /** A rating shelf is about released games; an unreleased one has no score to sort by. */
     @Test
-    void keepsUnreleasedGamesOffTheRatingShelves() {
-        assertThat(whereFor("popular")).contains("first_release_date <");
-        setUp();
+    void keepsUnreleasedGamesOffTopRated() {
         assertThat(whereFor("top-rated")).contains("first_release_date <");
     }
 

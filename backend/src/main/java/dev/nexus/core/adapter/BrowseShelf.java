@@ -10,5 +10,14 @@ package dev.nexus.core.adapter;
  *
  * @param id what {@link MetadataAdapter#browse} is called back with; stable, and part of a URL
  * @param label what a reader sees above the row
+ * @param onHome whether the module wants this row on its home page as well as on browse. The
+ *     module decides, because only it knows which of its rows are the ones worth leading with
+ *     — a games home is about what is next, an anime home about what is airing.
  */
-public record BrowseShelf(String id, String label) {}
+public record BrowseShelf(String id, String label, boolean onHome) {
+
+    /** A row of the browse page and nowhere else, which is what most of them are. */
+    public BrowseShelf(String id, String label) {
+        this(id, label, false);
+    }
+}

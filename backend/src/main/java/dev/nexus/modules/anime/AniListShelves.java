@@ -4,6 +4,7 @@ import dev.nexus.core.adapter.BrowseShelf;
 import dev.nexus.core.domain.MediaType;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 
 /**
  * What the anime and manga browse pages offer, and the AniList query behind each row.
@@ -81,9 +82,13 @@ final class AniListShelves {
         return mediaType == MediaType.MANGA ? MANGA : ANIME;
     }
 
+    /** What a reader wants on the way in: what everyone is on now, and what has just arrived. */
+    private static final Set<String> ON_HOME = Set.of("trending", "newly-added");
+
     static List<BrowseShelf> shelvesFor(MediaType mediaType) {
         return definitionsFor(mediaType).stream()
-                .map(definition -> new BrowseShelf(definition.id(), definition.label()))
+                .map(definition ->
+                        new BrowseShelf(definition.id(), definition.label(), ON_HOME.contains(definition.id())))
                 .toList();
     }
 
