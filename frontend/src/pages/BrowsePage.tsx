@@ -181,8 +181,12 @@ export const BrowsePage = () => {
 
     api
       .browseShelves(mediaType)
-      .then((found) => {
+      .then((all) => {
         if (cancelled) return
+
+        // A module may keep a row for its home page alone; browse shows what is browsable.
+        const found = all.filter((shelf) => shelf.onBrowse)
+
         setLoaded({
           mediaType,
           error: null,

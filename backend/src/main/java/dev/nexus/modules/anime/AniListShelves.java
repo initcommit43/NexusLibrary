@@ -85,10 +85,21 @@ final class AniListShelves {
     /** What a reader wants on the way in: what everyone is on now, and what has just arrived. */
     private static final Set<String> ON_HOME = Set.of("trending", "newly-added");
 
+    /**
+     * Rows that lead the home page and belong nowhere else.
+     *
+     * <p>"Newly added" answers what has landed since you last looked, which is a question for
+     * the way in. On browse it is a category nobody was asking for, sitting under the top 100.
+     */
+    private static final Set<String> HOME_ONLY = Set.of("newly-added");
+
     static List<BrowseShelf> shelvesFor(MediaType mediaType) {
         return definitionsFor(mediaType).stream()
-                .map(definition ->
-                        new BrowseShelf(definition.id(), definition.label(), ON_HOME.contains(definition.id())))
+                .map(definition -> new BrowseShelf(
+                        definition.id(),
+                        definition.label(),
+                        ON_HOME.contains(definition.id()),
+                        !HOME_ONLY.contains(definition.id())))
                 .toList();
     }
 

@@ -182,4 +182,27 @@ class AniListBrowseTest {
 
         assertThat(adapter.browse(MediaType.ANIME, "trending", 2, 24).hasMore()).isTrue();
     }
+
+    /**
+     * A row the home page leads with is not automatically a browse category.
+     *
+     * <p>"Newly added" answers what has landed since you last looked, which is a question for
+     * the way in. Home used to be a filtered view of browse, so asking for it there put it on
+     * browse as well — under the top 100, where nobody had asked for it.
+     */
+    @Test
+    void newlyAddedLeadsTheHomePageAndDoesNotAppearOnBrowse() {
+        List<BrowseShelf> shelves = AniListShelves.shelvesFor(MediaType.ANIME);
+
+        assertThat(shelves)
+                .filteredOn(BrowseShelf::onHome)
+                .extracting(BrowseShelf::id)
+                .contains("newly-added");
+
+        assertThat(shelves)
+                .filteredOn(BrowseShelf::onBrowse)
+                .extracting(BrowseShelf::id)
+                .doesNotContain("newly-added")
+                .contains("trending", "this-season", "next-season", "popular", "top");
+    }
 }

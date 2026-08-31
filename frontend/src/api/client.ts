@@ -34,6 +34,8 @@ export type BrowseShelf = {
   label: string
   /** Whether the module wants this row on its home page as well as on browse. */
   onHome: boolean
+  /** Whether the row belongs on browse; a home row is not automatically a browse category. */
+  onBrowse: boolean
 }
 
 /** One page of a shelf. `hasMore` is all a "next" button needs, and all every source knows. */
