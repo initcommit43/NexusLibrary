@@ -6,11 +6,11 @@ import {
   type BrowseShelf,
   type MediaType,
   type TrackedItem,
-  type Waiting,
 } from '../api/client'
 import { ActivityFeed } from '../components/ActivityFeed'
 import { FeedPicker, type FeedKind } from '../components/FeedPicker'
 import { NotificationList } from '../components/NotificationList'
+import { useNotifications } from '../components/useNotifications'
 import { AppShell } from '../components/AppShell'
 import { PosterGallery, type Poster } from '../components/PosterGallery'
 import { ShelfGallery } from '../components/ShelfGallery'
@@ -19,6 +19,7 @@ import { episodesWaiting, progressSummary } from '../components/progress'
 import { useActivityFeed } from '../components/useActivityFeed'
 import {
   detailPathFor,
+  mediaTypesOf,
   statusLabelsFor,
   type MediaTypeDefinition,
 } from '../modules/registry'
@@ -150,32 +151,10 @@ export const HomePage = () => {
    * opened to see what has happened, and what has happened is usually the feed.
    */
   const [showing, setShowing] = useState<FeedKind>('activity')
-  const [waiting, setWaiting] = useState<Waiting>({ items: [], unread: 0 })
-
-  useEffect(() => {
-    let current = true
-
-    api
-      .notifications()
-      // Nothing waiting is the answer for anyone who has just arrived, and a panel that
-      // cannot load is not worth an alarm on a page about your own library.
-      .then((answer) => current && setWaiting(answer))
-      .catch(() => {})
-
-    return () => {
-      current = false
-    }
-  }, [])
-
-  const readAll = async () => {
-    const held = waiting
-    setWaiting({ items: waiting.items.map((item) => ({ ...item, read: true })), unread: 0 })
-    try {
-      setWaiting(await api.readAllNotifications())
-    } catch {
-      setWaiting(held)
-    }
-  }
+  // Scoped to the module the page is showing, as the feed beside it is: the picker swaps two
+  // lists under one heading, and one of them answering about every medium would make the
+  // count beside it mean something different from the rows under it.
+  const { waiting, read, readAll } = useNotifications(mediaTypesOf(module), FEED_ROWS)
 
   useEffect(() => {
     const column = side.current
@@ -491,22 +470,24 @@ export const HomePage = () => {
                   <Link className="section-action" to="/activity">
                     See all →
                   </Link>
+                ) : waiting.unread > 0 ? (
+                  <button
+                    type="button"
+                    className="section-action ghost small"
+                    onClick={() => void readAll()}
+                  >
+                    Read all
+                  </button>
                 ) : (
-                  waiting.unread > 0 && (
-                    <button
-                      type="button"
-                      className="section-action ghost small"
-                      onClick={() => void readAll()}
-                    >
-                      Read all
-                    </button>
-                  )
+                  <Link className="section-action" to="/notifications">
+                    See all →
+                  </Link>
                 )}
               </h2>
 
               {showing === 'notifications' ? (
                 waiting.items.length > 0 ? (
-                  <NotificationList notifications={waiting.items} />
+                  <NotificationList notifications={waiting.items} onRead={(id) => void read(id)} />
                 ) : (
                   <p className="muted">
                     Nothing yet. An episode airing, or a season appearing, turns up here.

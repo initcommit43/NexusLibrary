@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes, useParams } from 'react-router-dom'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { ActivityPage } from './pages/ActivityPage'
+import { NotificationsPage } from './pages/NotificationsPage'
 import { BrowsePage } from './pages/BrowsePage'
 import { ShelfPage } from './pages/ShelfPage'
 import { LibraryPage } from './pages/LibraryPage'
@@ -43,6 +44,7 @@ export const App = () => (
       <Route path="/browse/:moduleSlug/:typeSlug/:shelfId" element={<ShelfPage />} />
       <Route path="/search" element={<SearchPage />} />
       <Route path="/activity" element={<ActivityPage />} />
+      <Route path="/notifications" element={<NotificationsPage />} />
       <Route path="/profile" element={<ProfilePage />} />
       <Route path="/stats" element={<StatsPage />} />
       <Route path="/stats/:lens" element={<StatsPage />} />

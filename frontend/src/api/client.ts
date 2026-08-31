@@ -221,6 +221,16 @@ export type NotificationEntry = {
   createdAt: string
 }
 
+/**
+ * What every notification call asks with.
+ *
+ * <p>Written once because the three of them have to agree: reading one answers with the panel
+ * around it, and a read that asked a different question than the load did would hand back a
+ * different list than the reader is looking at.
+ */
+const waitingQuery = (limit: number, mediaTypes: MediaType[]) =>
+  `limit=${limit}${mediaTypes.length === 0 ? '' : `&mediaTypes=${mediaTypes.join(',')}`}`
+
 /** What is waiting, and how much of it is new. */
 export type Waiting = {
   items: NotificationEntry[]
@@ -538,10 +548,19 @@ export const api = {
       `/catalog/studios/${source}/${encodeURIComponent(studioId)}?page=${page}`,
     ),
 
-  notifications: (limit = 50) => request<Waiting>(`/notifications?limit=${limit}`),
+  /** What is waiting, for one module's media types; no types asked for means every one. */
+  notifications: (limit = 50, mediaTypes: MediaType[] = []) =>
+    request<Waiting>(`/notifications?${waitingQuery(limit, mediaTypes)}`),
+
+  /** Says the reader has seen one; answers with the panel, whose count has changed with it. */
+  readNotification: (id: number, limit = 50, mediaTypes: MediaType[] = []) =>
+    request<Waiting>(`/notifications/${id}/read?${waitingQuery(limit, mediaTypes)}`, {
+      method: 'POST',
+    }),
 
   /** Says the reader has seen the lot; answers with what is left, which is nothing new. */
-  readAllNotifications: () => request<Waiting>('/notifications/read', { method: 'POST' }),
+  readAllNotifications: (limit = 50, mediaTypes: MediaType[] = []) =>
+    request<Waiting>(`/notifications/read?${waitingQuery(limit, mediaTypes)}`, { method: 'POST' }),
 
   profileBanner: () => request<ProfileBanner | null>('/settings/profile-banner'),
 

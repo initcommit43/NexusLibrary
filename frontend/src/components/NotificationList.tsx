@@ -9,9 +9,16 @@ import { mediaPathFor } from '../modules/registry'
  * <p>The title is the link and the rest is the sentence around it, so the row reads as one
  * line rather than as a label with a title bolted on: "Episode 9 of Sekirei aired".
  */
-const sentence = (notification: NotificationEntry) => {
+const sentence = (notification: NotificationEntry, onRead?: (id: number) => void) => {
   const title = (
-    <Link className="notification-title" to={mediaPathFor(notification)}>
+    <Link
+      className="notification-title"
+      to={mediaPathFor(notification)}
+      // Opening it is what marks it seen. A row nobody opens stays new, which is what
+      // "Read all" is for — there is no separate control for one row, because opening the
+      // thing the row is about is the only reason anyone touches it.
+      onClick={() => !notification.read && onRead?.(notification.id)}
+    >
       {notification.payload.title ?? notification.title}
     </Link>
   )
@@ -35,8 +42,11 @@ const sentence = (notification: NotificationEntry) => {
  */
 export const NotificationList = ({
   notifications,
+  onRead,
 }: {
   notifications: NotificationEntry[]
+  /** Called when a row is opened, which is what marks that one seen. */
+  onRead?: (id: number) => void
 }) => (
   <ul className="activity-feed">
     {notifications.map((notification) => (
@@ -51,7 +61,7 @@ export const NotificationList = ({
         )}
 
         <div className="activity-text">
-          <span>{sentence(notification)}</span>
+          <span>{sentence(notification, onRead)}</span>
         </div>
 
         <time className="muted" dateTime={notification.createdAt}>
