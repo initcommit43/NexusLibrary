@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   ApiError,
@@ -150,8 +150,18 @@ export const HomePage = () => {
    * either stops halfway up the page or runs a long way past the bottom of it. "Load more"
    * then adds another column's worth.
    */
-  const side = useRef<HTMLDivElement>(null)
-  const main = useRef<HTMLDivElement>(null)
+  /*
+   * Held as state rather than in a ref, so that the measurement below runs when the two
+   * columns actually appear.
+   *
+   * <p>A ref filling in does not re-run an effect. Both columns are behind the same wait for
+   * the shelves to load, so whether the measuring ever happened came down to which fetch
+   * finished last: if the shelves arrived after the feed, nothing in the dependency list
+   * changed on the render that first put the column on the page, and the feed kept the
+   * dozen rows it started with for good.
+   */
+  const [side, setSide] = useState<HTMLElement | null>(null)
+  const [main, setMain] = useState<HTMLElement | null>(null)
   const [feedRows, setFeedRows] = useState(FEED_ROWS)
   const feed = useActivityFeed(module.slug, feedRows)
 
@@ -178,8 +188,8 @@ export const HomePage = () => {
   const rowsShown = showing === 'notifications' ? waiting.items.length : feed.rows.length
 
   useEffect(() => {
-    const column = side.current
-    if (!column || feed.expanded) return
+    const column = side
+    if (!column || !main || feed.expanded) return
 
     /*
      * How many rows fit between the top of the list and the bottom of the column beside it,
@@ -192,7 +202,7 @@ export const HomePage = () => {
      * already holds changes nothing and ends the pass.
      */
     const measure = () => {
-      const list = main.current?.querySelector('.activity-feed')
+      const list = main.querySelector('.activity-feed')
       const row = list?.firstElementChild
       if (!list || !row) return
 
@@ -200,7 +210,7 @@ export const HomePage = () => {
       const step = row.getBoundingClientRect().height + gap
       if (step <= 0) return
 
-      const button = main.current?.querySelector('.feed-more')?.getBoundingClientRect().height ?? 0
+      const button = main.querySelector('.feed-more')?.getBoundingClientRect().height ?? 0
       const room = column.getBoundingClientRect().bottom - list.getBoundingClientRect().top - button
 
       // The last row needs no gap under it, so the room is worth one more than it divides into.
@@ -211,10 +221,10 @@ export const HomePage = () => {
     measure()
     const watcher = new ResizeObserver(measure)
     watcher.observe(column)
-    if (main.current) watcher.observe(main.current)
+    watcher.observe(main)
     return () => watcher.disconnect()
     // Re-measured as rows arrive; the observer keeps up with the column beside them.
-  }, [module.slug, showing, feed.expanded, rowsShown, feed.loading])
+  }, [side, main, module.slug, showing, feed.expanded, rowsShown, feed.loading])
 
   /*
    * Which rows this module leads with, asked once per medium. Cheap and cached server-side:
@@ -486,7 +496,7 @@ export const HomePage = () => {
 
       {loaded && (
         <div className="home-layout">
-          <div className="home-main" ref={main}>
+          <div className="home-main" ref={setMain}>
             <section className="status-section">
               <h2>
                 {/* Two lists in one place, because they answer the same question from either
@@ -541,7 +551,7 @@ export const HomePage = () => {
             </section>
           </div>
 
-          <aside className="home-side" ref={side}>
+          <aside className="home-side" ref={setSide}>
             {!foldedOut && shelfStack}
             {catalogue}
           </aside>
