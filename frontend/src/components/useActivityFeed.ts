@@ -21,6 +21,16 @@ const FETCHED_PER_PAGE = 5
 const MOST_FETCHED = 1000
 
 /**
+ * How many rows one press of "Load more" adds.
+ *
+ * <p>A fixed number rather than another measured page. The measured count is what it takes to
+ * reach the bottom of the column beside the feed, and multiplying it by the number of presses
+ * meant every later nudge of the measurement moved the feed by several rows at once — which
+ * read as the list jumping under the button that had just been pressed.
+ */
+const LOAD_MORE_ROWS = 12
+
+/**
  * The feed of one module, a page at a time.
  *
  * <p>A feed has no natural end — an imported library brings years of it — so it stops at a
@@ -30,11 +40,11 @@ const MOST_FETCHED = 1000
 export const useActivityFeed = (moduleSlug: string, pageRows: number) => {
   const [all, setAll] = useState<ActivityEntry[] | null>(null)
   /*
-   * Counted in pages rather than in rows, because how many rows a page holds is decided by
-   * the page around it and can change under a reader — a window resized while they read.
-   * Holding pages keeps "one more" meaning one more of whatever a page currently is.
+   * Rows added by pressing "Load more", on top of however many the page measured itself to
+   * hold. Counted in rows rather than in pages so that a press adds the same amount whatever
+   * the column beside it is doing.
    */
-  const [pages, setPages] = useState(1)
+  const [added, setAdded] = useState(0)
   const [fetching, setFetching] = useState(pageRows * FETCHED_PER_PAGE)
   /** Set once the server answers with less than was asked for: there is no more behind it. */
   const [complete, setComplete] = useState(false)
@@ -46,8 +56,8 @@ export const useActivityFeed = (moduleSlug: string, pageRows: number) => {
    */
   const wanted = useRef(pageRows)
   useEffect(() => {
-    wanted.current = pages * pageRows
-  }, [pages, pageRows])
+    wanted.current = pageRows + added
+  }, [added, pageRows])
 
   useEffect(() => {
     let current = true
@@ -82,18 +92,18 @@ export const useActivityFeed = (moduleSlug: string, pageRows: number) => {
     }
   }, [fetching, moduleSlug, pageRows])
 
-  const shown = pages * pageRows
+  const shown = pageRows + added
   const mine = (all ?? []).filter((event) => moduleOf(event)?.slug === moduleSlug)
   const rows = mine.slice(0, shown)
 
 
   const more = () => {
-    const next = shown + pageRows
-    setPages((held) => held + 1)
+    const next = shown + LOAD_MORE_ROWS
+    setAdded((held) => held + LOAD_MORE_ROWS)
     // Reach for more from the server only when this module's share of what is held would not
     // fill the next page anyway.
     if (mine.length < next && !complete) {
-      setFetching((held) => held + pageRows * FETCHED_PER_PAGE)
+      setFetching((held) => held + LOAD_MORE_ROWS * FETCHED_PER_PAGE)
     }
   }
 
@@ -116,6 +126,8 @@ export const useActivityFeed = (moduleSlug: string, pageRows: number) => {
 
   return {
     rows,
+    /** Whether "Load more" has been pressed, after which the page stops measuring itself. */
+    expanded: added > 0,
     /**
      * Whether there is more of this module's history to show.
      *

@@ -156,9 +156,21 @@ export const HomePage = () => {
   // count beside it mean something different from the rows under it.
   const { waiting, read, readAll } = useNotifications(mediaTypesOf(module), feedRows)
 
+  /*
+   * How many rows the section is actually showing, and whether measuring can still change it.
+   *
+   * <p>Two things end the measuring, and both have to: a list holding fewer rows than were
+   * asked for has run out, so growing the count only asks the server the same question again
+   * — and once "Load more" has been pressed the reader has said how long they want it, which
+   * is not the measurement's to take back. Without the first of these the page grows and
+   * refetches without end, which React stops as a maximum update depth.
+   */
+  const rowsShown = showing === 'notifications' ? waiting.items.length : feed.rows.length
+  const measuring = !feed.expanded && rowsShown >= feedRows
+
   useEffect(() => {
     const column = side.current
-    if (!column) return
+    if (!column || !measuring) return
 
     /*
      * Measured against where the two columns actually end rather than by adding up the page's
@@ -187,7 +199,7 @@ export const HomePage = () => {
     if (main.current) watcher.observe(main.current)
     return () => watcher.disconnect()
     // Re-measured as rows arrive; the observer keeps up with the column beside them.
-  }, [module.slug, feed.loading, feed.rows.length])
+  }, [module.slug, showing, measuring, rowsShown, feed.loading])
 
   /*
    * Which rows this module leads with, asked once per medium. Cheap and cached server-side:
