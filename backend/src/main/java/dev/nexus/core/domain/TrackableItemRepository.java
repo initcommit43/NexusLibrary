@@ -37,6 +37,25 @@ public interface TrackableItemRepository extends JpaRepository<TrackableItem, Lo
             nativeQuery = true)
     List<AiredEpisode> airedSince(@Param("now") long now);
 
+    /**
+     * When the next episode anyone is waiting for lands, as Unix seconds.
+     *
+     * <p>What makes the sweep exact rather than periodic: the moment is already on the item,
+     * so there is nothing to poll for and nothing to ask a source about. Null when no tracked
+     * title has one ahead of it, which is most of a night.
+     */
+    @Query(
+            value =
+                    """
+                    SELECT MIN((i.metadata -> 'nextEpisode' ->> 'airingAt')::bigint)
+                      FROM trackable_item i
+                      JOIN user_entry e ON e.trackable_item_id = i.id
+                     WHERE i.metadata -> 'nextEpisode' ->> 'airingAt' IS NOT NULL
+                       AND (i.metadata -> 'nextEpisode' ->> 'airingAt')::bigint > :now
+                    """,
+            nativeQuery = true)
+    Long nextAiringAfter(@Param("now") long now);
+
     /** One reader, one title, and the episode of it that has landed. */
     interface AiredEpisode {
         Long getUserId();
