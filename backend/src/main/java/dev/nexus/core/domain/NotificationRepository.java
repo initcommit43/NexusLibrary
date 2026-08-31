@@ -1,6 +1,7 @@
 package dev.nexus.core.domain;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import org.springframework.data.domain.Limit;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -25,6 +26,26 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Notification n SET n.readAt = :now WHERE n.userId = :userId AND n.readAt IS NULL")
     int markAllRead(@Param("userId") Long userId, @Param("now") Instant now);
+
+    /**
+     * Everything a reader has already been told about a set of titles, in one query.
+     *
+     * <p>The per-title check below answers for one title at a time, which is what a detector
+     * sweeping a handful of aired episodes needs. An import arrives fifty rows at a time and
+     * would ask fifty times for the same answer.
+     */
+    @Query("SELECT n.item.id AS itemId, n.type AS type, n.subject AS subject FROM Notification n "
+            + "WHERE n.userId = :userId AND n.item.id IN :itemIds")
+    List<Told> toldAbout(@Param("userId") Long userId, @Param("itemIds") Collection<Long> itemIds);
+
+    /** One thing a reader has already been told. */
+    interface Told {
+        Long getItemId();
+
+        NotificationType getType();
+
+        String getSubject();
+    }
 
     /** Which of a batch about to be written are already there, so a re-run writes nothing. */
     @Query("SELECT n.subject FROM Notification n WHERE n.userId = :userId "

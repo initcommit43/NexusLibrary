@@ -56,7 +56,14 @@ public class Notification {
     @Column(nullable = false)
     private Map<String, Object> payload = new HashMap<>();
 
-    @Column(name = "created_at", nullable = false, insertable = false, updatable = false)
+    /**
+     * When it happened, not when the row was written.
+     *
+     * <p>Supplied rather than defaulted because an import carries its own: a stream brought in
+     * from AniList is years of events arriving in one second, and a feed sorted by the moment
+     * each row was inserted would stack all of them under the same minute.
+     */
+    @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
     /** Null until it has been seen, which is the whole of what makes one new. */
@@ -73,6 +80,17 @@ public class Notification {
             NotificationType type,
             String subject,
             Map<String, Object> payload) {
+        this(userId, item, type, subject, payload, Instant.now());
+    }
+
+    public Notification(
+            Long userId,
+            TrackableItem item,
+            NotificationType type,
+            String subject,
+            Map<String, Object> payload,
+            Instant createdAt) {
+        this.createdAt = createdAt;
         this.userId = userId;
         this.item = item;
         this.type = type;
