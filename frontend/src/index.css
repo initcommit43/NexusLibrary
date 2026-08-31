@@ -925,9 +925,9 @@ input.filter-control::-webkit-search-cancel-button {
    * stops being a detail and becomes the subject.
    */
   box-shadow:
-    0 0 0 2px rgb(11 18 32 / 35%),
+    0 0 0 2px var(--scrim-ring),
     0 0 7px 1px color-mix(in srgb, var(--success) 70%, transparent);
-  color: #fff;
+  color: var(--scrim-text);
   font-size: 0.625rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -1041,7 +1041,7 @@ input.filter-control::-webkit-search-cancel-button {
   padding: 0;
   border: none;
   border-radius: var(--radius-full);
-  background: rgb(11 18 32 / 55%);
+  background: var(--scrim);
   color: var(--banner-text);
   cursor: pointer;
   opacity: 0;
@@ -1054,7 +1054,7 @@ input.filter-control::-webkit-search-cancel-button {
 }
 
 .banner-adjust-button:hover {
-  background: rgb(11 18 32 / 78%);
+  background: var(--scrim-strong);
 }
 
 /*
@@ -1069,7 +1069,7 @@ input.filter-control::-webkit-search-cancel-button {
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-2) var(--space-3);
-  background: rgb(11 18 32 / 78%);
+  background: var(--scrim-strong);
   color: var(--banner-text);
 }
 
@@ -2036,7 +2036,7 @@ input.filter-control::-webkit-search-cancel-button {
   align-items: center;
   gap: var(--space-3);
   padding: 6rem var(--space-4) var(--space-4);
-  background: rgb(11 18 32 / 55%);
+  background: var(--scrim);
 }
 
 .search-overlay-panel {
@@ -2579,7 +2579,7 @@ input.filter-control::-webkit-search-cancel-button {
   padding: 0 var(--space-1);
   border-radius: var(--radius-full);
   background: var(--accent);
-  color: var(--on-accent, #fff);
+  color: var(--accent-contrast);
   font-family: var(--font-sans);
   font-size: var(--text-xs);
   font-weight: 700;
@@ -3004,8 +3004,8 @@ input.filter-control::-webkit-search-cancel-button {
   width: 1.9rem;
   height: 1.9rem;
   border-radius: var(--radius-full);
-  background: rgb(11 18 32 / 78%);
-  color: #fff;
+  background: var(--scrim-strong);
+  color: var(--scrim-text);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -3092,8 +3092,8 @@ input.filter-control::-webkit-search-cancel-button {
   padding: 0;
   border: none;
   border-radius: var(--radius-full);
-  background: rgb(11 18 32 / 78%);
-  color: #fff;
+  background: var(--scrim-strong);
+  color: var(--scrim-text);
   opacity: 0;
   visibility: hidden;
   transition:
@@ -3140,8 +3140,8 @@ input.filter-control::-webkit-search-cancel-button {
   transform: translateY(-50%);
   padding: 2px var(--space-2);
   border-radius: var(--radius-sm);
-  background: rgb(11 18 32 / 92%);
-  color: #fff;
+  background: var(--scrim-solid);
+  color: var(--scrim-text);
   font-size: var(--text-xs);
   font-weight: 500;
   line-height: 1.5;
@@ -3464,13 +3464,13 @@ input.filter-control::-webkit-search-cancel-button {
 .favourite-action {
   border-color: var(--danger);
   background: var(--danger);
-  color: #fff;
+  color: var(--danger-contrast);
 }
 
 .favourite-action:hover:not(:disabled) {
   border-color: var(--danger);
   background: color-mix(in srgb, var(--danger) 82%, black);
-  color: #fff;
+  color: var(--danger-contrast);
 }
 
 .status-menu {
@@ -3908,7 +3908,7 @@ input.filter-control::-webkit-search-cancel-button {
   display: grid;
   place-items: center;
   padding: var(--space-4);
-  background: rgb(11 18 32 / 55%);
+  background: var(--scrim);
 }
 
 .dialog {
@@ -4770,9 +4770,9 @@ a.icon-button.active {
   gap: 1px;
   padding: 3px var(--space-1);
   /* Solid enough that bright artwork behind it cannot soften the letters. */
-  background: rgb(11 18 32 / 92%);
+  background: var(--scrim-solid);
   /* Just off pure white: full white on a near-black strip glares rather than reads. */
-  color: rgb(255 255 255 / 86%);
+  color: var(--scrim-text-muted);
   font-size: var(--text-xs);
   font-weight: 600;
   font-variant-numeric: tabular-nums;

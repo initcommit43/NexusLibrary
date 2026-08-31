@@ -68,9 +68,25 @@
   --module-accent: var(--accent);
   --module-accent-soft: var(--accent-soft);
 
+  /*
+   * Scrims — the dark wash over cover art, and the text that sits on it.
+   *
+   * Outside the light/dark split on purpose. These lie on artwork rather than on the page,
+   * and artwork does not change with the theme: a wash that inverted would stop being a
+   * scrim and start being a haze. Four weights because the app already used four.
+   */
+  --scrim: rgb(11 18 32 / 55%);
+  --scrim-strong: rgb(11 18 32 / 78%);
+  --scrim-solid: rgb(11 18 32 / 92%);
+  --scrim-ring: rgb(11 18 32 / 35%);
+  --scrim-text: #ffffff;
+  --scrim-text-muted: rgb(255 255 255 / 86%);
+
   /* --- feedback: derived, the direction does not specify these --- */
   --danger: #c62334;
   --danger-soft: #fdecee;
+  /* Text on a filled danger control; the fill is dark in both themes. */
+  --danger-contrast: #ffffff;
   --success: #12855c;
   --success-soft: #e3f6ee;
   --warning: #9a6410;
