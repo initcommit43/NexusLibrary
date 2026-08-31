@@ -1,6 +1,8 @@
 package dev.nexus.modules.anime;
 
+import dev.nexus.core.domain.Provider;
 import dev.nexus.core.jobs.SyncJob;
+import dev.nexus.core.jobs.SyncProgressService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
@@ -28,12 +30,17 @@ public class AniListActivityRunner {
      */
     static final int MAX_PAGES = 20;
 
+    private final SyncProgressService progress;
     private final AniListClient client;
     private final AniListActivityWriter writer;
     private final AniListNotificationService notifications;
 
     public AniListActivityRunner(
-            AniListClient client, AniListActivityWriter writer, AniListNotificationService notifications) {
+            SyncProgressService progress,
+            AniListClient client,
+            AniListActivityWriter writer,
+            AniListNotificationService notifications) {
+        this.progress = progress;
         this.client = client;
         this.writer = writer;
         this.notifications = notifications;
@@ -41,17 +48,25 @@ public class AniListActivityRunner {
 
     @Async
     public void run(SyncJob job, Long userId, String accessToken) {
+        // Where the last run stopped, so a capped walk finishes over several presses rather
+        // than fetching the same first thousand events every time.
+        int from = progress.startPage(userId, Provider.ANILIST, SyncJob.Kind.ACTIVITY);
+        int page = from;
+        boolean reachedTheEnd = false;
+
         try {
             int viewer = client.viewerId(accessToken);
 
-            for (int page = 1; page <= MAX_PAGES; page++) {
+            for (; page < from + MAX_PAGES; page++) {
                 if (job.isCancelled()) {
+                    progress.stoppedAt(userId, Provider.ANILIST, SyncJob.Kind.ACTIVITY, page);
                     job.markCancelled("Stopped. The activity brought in so far has been kept.");
                     return;
                 }
 
                 AniListClient.ActivityPage answer = client.fetchActivity(viewer, page, accessToken);
                 if (answer.activities().isEmpty()) {
+                    reachedTheEnd = true;
                     break;
                 }
 
@@ -83,10 +98,24 @@ public class AniListActivityRunner {
                  * AniList's, and being wrong about it costs one request that comes back empty.
                  */
                 if (!answer.hasNextPage() && answer.activities().size() < AniListClient.MAX_BATCH) {
+                    reachedTheEnd = true;
                     break;
                 }
             }
-            log.debug("AniList activity sync finished after {} events", job.getProcessed());
+
+            if (reachedTheEnd) {
+                progress.reachedTheEnd(userId, Provider.ANILIST, SyncJob.Kind.ACTIVITY);
+            } else {
+                // Stopped at the cap with the stream still going. Said so rather than
+                // reported as finished, or the rest of it would never be asked for.
+                progress.stoppedAt(userId, Provider.ANILIST, SyncJob.Kind.ACTIVITY, page);
+                job.completePartly("Brought in " + job.getProcessed()
+                        + " events, as much as one run does. Run it again to carry on from there.");
+            }
+            log.debug(
+                    "AniList activity sync finished after {} events, reached the end: {}",
+                    job.getProcessed(),
+                    reachedTheEnd);
 
             /*
              * The notification backfill is chained here rather than registered as a second
@@ -98,8 +127,11 @@ public class AniListActivityRunner {
              * spends it twice as fast for no gain.
              */
             job.setFollowUp(notifications.start(userId, accessToken));
-            job.complete();
+            if (job.getState() != SyncJob.State.COMPLETE) {
+                job.complete();
+            }
         } catch (AniListUnavailableException e) {
+            progress.stoppedAt(userId, Provider.ANILIST, SyncJob.Kind.ACTIVITY, page);
             // Every page committed on its own, so what landed stays landed.
             log.warn("AniList activity sync lost AniList for job {}", job.getId(), e);
             job.failUpstream(
@@ -107,6 +139,7 @@ public class AniListActivityRunner {
                     "AniList stopped answering. The activity brought in so far has been kept — "
                             + "run the import again once AniList is back to finish the rest.");
         } catch (RuntimeException e) {
+            progress.stoppedAt(userId, Provider.ANILIST, SyncJob.Kind.ACTIVITY, page);
             log.warn("AniList activity sync failed for job {}", job.getId(), e);
             job.fail("Your AniList activity could not be brought in. Please try again.");
         }

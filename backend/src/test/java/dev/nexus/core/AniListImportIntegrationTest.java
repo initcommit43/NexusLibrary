@@ -6,6 +6,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -34,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -294,6 +297,67 @@ class AniListImportIntegrationTest extends PostgresIntegrationTest {
 
         assertThat(entries.findByUserIdOrderByUpdatedAtDesc(userId))
                 .allSatisfy(entry -> assertThat(entry.getImportedFrom()).isEqualTo(Provider.ANILIST));
+    }
+
+    /**
+     * The whole point of capping a run: it stops, says so, and the next press carries on
+     * from where it stopped rather than fetching the same first thousand rows again.
+     *
+     * <p>Written without naming the cap. What matters is that the second run begins after
+     * the last page the first one reached, whatever that number happens to be.
+     */
+    @Test
+    void aCappedWalkCarriesOnWhereItStopped() {
+        // Always a full page with more behind it, so the walk can only ever end at its cap.
+        when(anilistClient.fetchActivity(eq(7), anyInt(), anyString()))
+                .thenAnswer(call -> new AniListClient.ActivityPage(fullPage(call.getArgument(1)), true));
+
+        runImport();
+        Response first = awaitHistory();
+
+        assertThat(String.valueOf(first.body().get("message")))
+                .as("a run that stopped at its limit should say so")
+                .contains("Run it again");
+
+        int lastPage = pagesFetched().stream().mapToInt(Integer::intValue).max().orElseThrow();
+        assertThat(lastPage).as("the walk should have been stopped by its cap").isGreaterThan(1);
+
+        awaitHistory();
+
+        // The second press begins on the page the first one never reached, and never at the top.
+        assertThat(pagesFetched()).contains(lastPage + 1);
+        assertThat(pagesFetched().stream().filter(page -> page == 1).count())
+                .as("page 1 belongs to the first run only")
+                .isEqualTo(1);
+    }
+
+    /** Every page number the client has been asked for, in order. */
+    private List<Integer> pagesFetched() {
+        ArgumentCaptor<Integer> pages = ArgumentCaptor.forClass(Integer.class);
+        verify(anilistClient, atLeastOnce()).fetchActivity(eq(7), pages.capture(), anyString());
+        return pages.getAllValues();
+    }
+
+    /** One full page as AniList would hand it over; it caps a page at fifty. */
+    private static List<Map<String, Object>> fullPage(int page) {
+        List<Map<String, Object>> events = new java.util.ArrayList<>();
+        for (int at = 0; at < 50; at++) {
+            events.add(activity(page * 1000 + at, 21, LocalDate.now().minusDays(at % 20), "1"));
+        }
+        return events;
+    }
+
+    /** Runs the history walk and hands back the activity job, however it ended. */
+    private Response awaitHistory() {
+        Response started = http.post("/integrations/anilist/activity", "Authorization", "Bearer " + token);
+        assertThat(started.status()).isEqualTo(200);
+
+        Response finished = awaitJob(String.valueOf(started.body().get("id")));
+        Object followUp = finished.body().get("followUpJobId");
+        if (followUp != null) {
+            awaitJob(String.valueOf(followUp));
+        }
+        return finished;
     }
 
     /**
