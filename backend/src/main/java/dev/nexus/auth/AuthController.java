@@ -29,6 +29,9 @@ public class AuthController {
     private final RateLimiter rateLimiter;
     private final int authRequestsPerMinute;
 
+    /** Whether this deployment still takes new accounts. Signing in is never affected. */
+    private final boolean registrationOpen;
+
     public AuthController(
             AuthService authService,
             JwtService jwtService,
@@ -40,10 +43,17 @@ public class AuthController {
         this.refreshCookies = refreshCookies;
         this.rateLimiter = rateLimiter;
         this.authRequestsPerMinute = properties.rateLimit().authRequestsPerMinute();
+        this.registrationOpen = properties.security().registrationOpen();
     }
 
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request, HttpServletRequest http) {
+        // Checked before the rate limiter has anything to say: a closed door is not a
+        // question about how often it is being knocked on.
+        if (!registrationOpen) {
+            throw new RegistrationClosedException();
+        }
+
         rateLimiter.check("register:" + http.getRemoteAddr(), authRequestsPerMinute);
         return sessionResponse(authService.register(request), HttpStatus.CREATED);
     }

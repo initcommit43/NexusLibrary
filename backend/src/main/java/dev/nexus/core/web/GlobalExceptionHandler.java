@@ -16,6 +16,7 @@ import dev.nexus.core.preferences.BannerNotSetException;
 import dev.nexus.core.preferences.NoBannerException;
 import dev.nexus.core.review.ReviewNotFoundException;
 import dev.nexus.core.review.ReviewNotStartedException;
+import dev.nexus.auth.RegistrationClosedException;
 import dev.nexus.core.activity.ActivityNotFoundException;
 import dev.nexus.core.tracking.EntryNotFoundException;
 import dev.nexus.modules.anime.AniListNotConfiguredException;
@@ -163,6 +164,15 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(ReviewNotStartedException.class)
     public ResponseEntity<ApiError> handleReviewNotStarted(ReviewNotStartedException e) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(new ApiError(e.getMessage()));
+    }
+
+    /**
+     * Closed rather than broken, and said plainly: someone who cannot sign up should be told
+     * that the app is not taking accounts, not left guessing at a form that refuses them.
+     */
+    @ExceptionHandler(RegistrationClosedException.class)
+    public ResponseEntity<ApiError> handleRegistrationClosed(RegistrationClosedException e) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ApiError(e.getMessage()));
     }
 
     @ExceptionHandler(NoBannerException.class)

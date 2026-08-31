@@ -12,6 +12,7 @@ nexus:
     cookie-secure: false
     allowed-origins: http://localhost:5173
     frontend-url: http://localhost:5173
+    registration-open: true
   rate-limit:
     auth-requests-per-minute: 100
     search-requests-per-minute: 1000

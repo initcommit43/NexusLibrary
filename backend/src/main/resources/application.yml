@@ -56,6 +56,9 @@ nexus:
     allowed-origins: ${ALLOWED_ORIGINS:}
     # Where Steam sends the browser back to. Built from config, never from the request.
     frontend-url: ${FRONTEND_URL:http://localhost:5173}
+    # Set REGISTRATION_OPEN=false on a deployment once its accounts exist: the URL is public,
+    # and an open sign-up on it is a stranger spending the API budget. Signing in is untouched.
+    registration-open: ${REGISTRATION_OPEN:true}
   rate-limit:
     auth-requests-per-minute: 10
     search-requests-per-minute: 30

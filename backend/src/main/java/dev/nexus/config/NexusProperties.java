@@ -17,7 +17,16 @@ public record NexusProperties(Jwt jwt, Security security, RateLimit rateLimit) {
             @Positive long accessTtlMinutes,
             @Positive long refreshTtlDays) {}
 
-    public record Security(boolean cookieSecure, List<String> allowedOrigins, String frontendUrl) {}
+    /**
+     * @param registrationOpen whether anyone may still create an account. A deployment with a
+     *     public URL is reachable by whoever finds it, and an open sign-up there is a stranger
+     *     spending someone else's API budget. Existing accounts sign in either way.
+     */
+    public record Security(
+            boolean cookieSecure,
+            List<String> allowedOrigins,
+            String frontendUrl,
+            boolean registrationOpen) {}
 
     public record RateLimit(
             @Positive int authRequestsPerMinute,
