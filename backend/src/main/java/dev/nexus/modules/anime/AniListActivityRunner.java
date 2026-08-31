@@ -28,10 +28,13 @@ public class AniListActivityRunner {
 
     private final AniListClient client;
     private final AniListActivityWriter writer;
+    private final AniListNotificationService notifications;
 
-    public AniListActivityRunner(AniListClient client, AniListActivityWriter writer) {
+    public AniListActivityRunner(
+            AniListClient client, AniListActivityWriter writer, AniListNotificationService notifications) {
         this.client = client;
         this.writer = writer;
+        this.notifications = notifications;
     }
 
     @Async
@@ -82,6 +85,17 @@ public class AniListActivityRunner {
                 }
             }
             log.debug("AniList activity sync finished after {} events", job.getProcessed());
+
+            /*
+             * The notification backfill is chained here rather than registered as a second
+             * follow-up of the import: core picks one PostImportSync per provider and a job
+             * carries one follow-up, so a second hook for AniList would never be reached.
+             *
+             * <p>After rather than alongside, for the reason the import gives about its own
+             * follow-ups: both walks spend the same reader's rate budget, and racing them
+             * spends it twice as fast for no gain.
+             */
+            job.setFollowUp(notifications.start(userId, accessToken));
             job.complete();
         } catch (AniListUnavailableException e) {
             // Every page committed on its own, so what landed stays landed.
