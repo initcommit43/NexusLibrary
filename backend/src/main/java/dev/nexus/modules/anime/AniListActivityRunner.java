@@ -19,12 +19,14 @@ public class AniListActivityRunner {
     private static final Logger log = LoggerFactory.getLogger(AniListActivityRunner.class);
 
     /**
-     * As far back as one run will walk: fifty events a page, so ten thousand events.
+     * As far back as one run will walk: fifty events a page, so a thousand events.
      *
-     * <p>A ceiling rather than a limit anyone should reach — it is there so a stream that
-     * never says it has ended cannot spend a reader's whole rate budget proving it.
+     * <p>A limit meant to be reached, not a safety net. Someone with years on AniList has
+     * more history than anyone wants to sit through in one press, and the whole of it against
+     * a rate budget shared by everybody using the app is minutes of the app being slow for
+     * other people. The run stops here and the next one carries on from where it stopped.
      */
-    static final int MAX_PAGES = 200;
+    static final int MAX_PAGES = 20;
 
     private final AniListClient client;
     private final AniListActivityWriter writer;

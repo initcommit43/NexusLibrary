@@ -18,12 +18,12 @@ public class AniListNotificationRunner {
     private static final Logger log = LoggerFactory.getLogger(AniListNotificationRunner.class);
 
     /**
-     * As far back as one run will walk: fifty a page, so five thousand notifications.
+     * As far back as one run will walk: fifty a page, so a thousand notifications.
      *
-     * <p>Lower than the activity walk's ceiling because AniList keeps far fewer of these than
-     * it keeps events — a stream that reaches this has stopped saying it has ended.
+     * <p>The same limit the activity walk has, for the same reason: it runs straight after
+     * that one, against the same budget, on the same press of the same button.
      */
-    static final int MAX_PAGES = 100;
+    static final int MAX_PAGES = 20;
 
     private final AniListClient client;
     private final AniListNotificationWriter writer;

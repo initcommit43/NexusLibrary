@@ -98,6 +98,7 @@ public class IntegrationController {
     private final LibraryImportService importService;
     private final SteamOpenIdService steamOpenId;
     private final AniListOAuthService anilistOAuth;
+    private final dev.nexus.modules.anime.AniListActivityService anilistActivity;
     private final dev.nexus.modules.anime.MalOAuthService malOAuth;
     private final SimklOAuthService simklOAuth;
     private final ImportRunner runner;
@@ -113,6 +114,7 @@ public class IntegrationController {
             LibraryImportService importService,
             SteamOpenIdService steamOpenId,
             AniListOAuthService anilistOAuth,
+            dev.nexus.modules.anime.AniListActivityService anilistActivity,
             dev.nexus.modules.anime.MalOAuthService malOAuth,
             SimklOAuthService simklOAuth,
             ImportRunner runner,
@@ -125,6 +127,7 @@ public class IntegrationController {
         this.importService = importService;
         this.steamOpenId = steamOpenId;
         this.anilistOAuth = anilistOAuth;
+        this.anilistActivity = anilistActivity;
         this.malOAuth = malOAuth;
         this.simklOAuth = simklOAuth;
         this.runner = runner;
@@ -292,6 +295,23 @@ public class IntegrationController {
                 });
 
         return SyncJobResponse.from(job);
+    }
+
+    /**
+     * Brings in a reader's AniList history: what they did, and what happened to what they
+     * keep. The notification walk runs straight after the activity one, on this same press.
+     *
+     * <p>Its own button rather than the tail of the library import. The two are wanted at
+     * different times and cost very differently: a library is the thing you need before
+     * anything else works, and a history is years deep and worth waiting for separately.
+     */
+    @PostMapping("/anilist/activity")
+    public SyncJobResponse importAniListActivity(@AuthenticationPrincipal CurrentUser user) {
+        // Throttled with the library import: both walk somebody else's API for minutes.
+        rateLimiter.check("import:" + user.id(), importsPerMinute);
+
+        ExternalAccount account = accounts.requireConnected(user.id(), Provider.ANILIST);
+        return SyncJobResponse.from(anilistActivity.start(account));
     }
 
     /**

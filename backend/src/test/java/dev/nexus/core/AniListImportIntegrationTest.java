@@ -92,10 +92,13 @@ class AniListImportIntegrationTest extends PostgresIntegrationTest {
         when(anilistClient.findMediaByIds(anyCollection()))
                 .thenReturn(List.of(media(21, "ANIME"), media(30013, "MANGA")));
 
-        // Every import is followed by the activity sync, so every test in here runs one.
+        // The history walk is its own press now, and several tests in here make it.
         when(anilistClient.viewerId(anyString())).thenReturn(7);
         when(anilistClient.fetchActivity(anyInt(), anyInt(), anyString()))
                 .thenReturn(new AniListClient.ActivityPage(List.of(), false));
+        // Chained behind the activity walk on the same press, so it always answers.
+        when(anilistClient.fetchNotifications(anyInt(), anyString()))
+                .thenReturn(new AniListClient.NotificationPage(List.of(), false));
     }
 
     /**
@@ -110,7 +113,8 @@ class AniListImportIntegrationTest extends PostgresIntegrationTest {
                         List.of(activity(1, 21, watched, "5"), activity(2, 21, watched.minusDays(1), "4")),
                         false));
 
-        awaitFollowUp(runImport());
+        runImport();
+        awaitActivity();
 
         assertThat(providerActivity.findAll())
                 .extracting(ProviderActivity::getHappenedOn)
@@ -124,7 +128,8 @@ class AniListImportIntegrationTest extends PostgresIntegrationTest {
                 .thenReturn(new AniListClient.ActivityPage(
                         List.of(activity(1, 999, LocalDate.now(), "1")), false));
 
-        awaitFollowUp(runImport());
+        runImport();
+        awaitActivity();
 
         assertThat(providerActivity.count()).isZero();
     }
@@ -136,8 +141,9 @@ class AniListImportIntegrationTest extends PostgresIntegrationTest {
                 .thenReturn(new AniListClient.ActivityPage(
                         List.of(activity(1, 21, LocalDate.now(), "5")), false));
 
-        awaitFollowUp(runImport());
-        awaitFollowUp(runImport());
+        runImport();
+        awaitActivity();
+        awaitActivity();
 
         assertThat(providerActivity.count()).isEqualTo(1);
     }
@@ -224,7 +230,8 @@ class AniListImportIntegrationTest extends PostgresIntegrationTest {
     void thereIsNoCurrentJobOnceTheImportHasFinished() {
         // Including the activity sync behind it: what the indicator watches is whether
         // anything at all is still running, not whether the import itself is done.
-        awaitFollowUp(runImport());
+        runImport();
+        awaitActivity();
 
         Response current = http.get("/integrations/jobs/current", "Authorization", "Bearer " + token);
         assertThat(current.status()).isEqualTo(200);
@@ -289,10 +296,23 @@ class AniListImportIntegrationTest extends PostgresIntegrationTest {
                 .allSatisfy(entry -> assertThat(entry.getImportedFrom()).isEqualTo(Provider.ANILIST));
     }
 
-    /** The activity sync is started by the import and runs behind it, on its own job. */
-    private void awaitFollowUp(Response job) {
-        Object followUp = job.body().get("followUpJobId");
-        assertThat(followUp).as("the import should have started an activity sync").isNotNull();
+    /**
+     * The history walk, on its own press.
+     *
+     * <p>It used to run off the back of the library import. It is a button of its own now:
+     * the two are wanted at different times, and a history is years deep where a library is
+     * the thing everything else needs first.
+     */
+    private void awaitActivity() {
+        Response started = http.post("/integrations/anilist/activity", "Authorization", "Bearer " + token);
+        assertThat(started.status()).isEqualTo(200);
+
+        Response finished = awaitJob(String.valueOf(started.body().get("id")));
+        assertThat(finished.body().get("state")).isEqualTo("COMPLETE");
+
+        // The notification walk is chained behind it on the same press.
+        Object followUp = finished.body().get("followUpJobId");
+        assertThat(followUp).as("the activity walk should have started the notification one").isNotNull();
         assertThat(awaitJob(String.valueOf(followUp)).body().get("state")).isEqualTo("COMPLETE");
     }
 
