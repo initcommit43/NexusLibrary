@@ -103,6 +103,18 @@ public class SyncJob {
         this.finishedAt = Instant.now();
     }
 
+    /**
+     * Finished this run, but not the work.
+     *
+     * <p>A walk that stops at its limit has succeeded at what it was asked to do, so it is
+     * not a failure — but a reader told only "done" would never press the button again, and
+     * the rest of their history would never arrive. The message is what tells them to.
+     */
+    public void completePartly(String message) {
+        this.message = message;
+        complete();
+    }
+
     /** The message is user-facing, so callers pass something a person can act on. */
     public void fail(String message) {
         this.state = State.FAILED;
