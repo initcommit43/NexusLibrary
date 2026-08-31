@@ -56,6 +56,12 @@ const jobLabel = (job: SyncJob): string => {
   }
 
   if (job.state === 'COMPLETE') {
+    /*
+     * A run that stopped at its limit is complete and unfinished at once, and says so in its
+     * own words. Told only "done", nobody would press the button again and the rest of their
+     * history would never arrive.
+     */
+    if (job.message) return job.message
     if (isHistory(job)) return `Brought in ${job.processed} ${noun}.`
     return isImport
       ? `Imported ${job.total} titles.`
@@ -67,6 +73,9 @@ const jobLabel = (job: SyncJob): string => {
     return `Stopped after ${job.processed} of ${job.total}. What was imported was kept.`
   }
 
+  // Failed, which is a different thing from having reached the limit, and reads as one:
+  // the reason comes from the run itself where it had one to give.
+  if (job.message) return job.message
   if (isHistory(job)) {
     return `Stopped after ${job.processed} ${noun}. Run it again to carry on from there.`
   }
@@ -424,7 +433,9 @@ export const SettingsPage = () => {
 
       {job && runningFor === provider.provider && (
         <>
-          <p className="muted">{jobLabel(job)}</p>
+          <p className={job.state === 'FAILED' ? 'alert' : 'muted'} role={job.state === 'FAILED' ? 'alert' : undefined}>
+            {jobLabel(job)}
+          </p>
           {/* A run with a total fills towards it; one without says only that it is going. */}
           {job.total > 0 ? (
             <div className="achievement-bar">

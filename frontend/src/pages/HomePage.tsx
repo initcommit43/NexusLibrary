@@ -47,6 +47,15 @@ const MIN_FEED_ROWS = 6
 /** A home feed is the last while, not the whole history; the activity page holds the rest. */
 const FEED_ROWS = 12
 
+/**
+ * How often the home page looks for what has arrived since it was opened.
+ *
+ * <p>Only here. An episode airing is noticed the moment it lands, but a page already open
+ * hears nothing until it is loaded again, and this is the page people leave open. A shelf or
+ * a profile rearranging itself under someone mid-drag is a different matter, so they do not.
+ */
+const REFRESH_EVERY_MS = 60_000
+
 /** Once the airing time has passed, the copy has simply not caught up yet. */
 const OUT_NOW = 'out now'
 
@@ -154,29 +163,33 @@ export const HomePage = () => {
   // Scoped to the module the page is showing, as the feed beside it is: the picker swaps two
   // lists under one heading, and one of them answering about every medium would make the
   // count beside it mean something different from the rows under it.
-  const { waiting, read, readAll } = useNotifications(mediaTypesOf(module), feedRows)
+  const { waiting, read, readAll } = useNotifications(
+    mediaTypesOf(module),
+    feedRows,
+    REFRESH_EVERY_MS,
+  )
 
   /*
-   * How many rows the section is actually showing, and whether measuring can still change it.
+   * How many rows the section is showing, and whether the measurement still has a say.
    *
-   * <p>Two things end the measuring, and both have to: a list holding fewer rows than were
-   * asked for has run out, so growing the count only asks the server the same question again
-   * — and once "Load more" has been pressed the reader has said how long they want it, which
-   * is not the measurement's to take back. Without the first of these the page grows and
-   * refetches without end, which React stops as a maximum update depth.
+   * <p>Once "Load more" has been pressed the reader has said how long they want the list,
+   * which is not the measurement's to take back.
    */
   const rowsShown = showing === 'notifications' ? waiting.items.length : feed.rows.length
-  const measuring = !feed.expanded && rowsShown >= feedRows
 
   useEffect(() => {
     const column = side.current
-    if (!column || !measuring) return
+    if (!column || feed.expanded) return
 
     /*
-     * Measured against where the two columns actually end rather than by adding up the page's
-     * parts: the feed grows by however many rows fit in the space left under it, and shrinks
-     * when it overruns. Repeats until the two ends are within a row of each other, which is
-     * one pass in practice and needs to know nothing about the headings or the button.
+     * How many rows fit between the top of the list and the bottom of the column beside it,
+     * worked out in one go from the room there is and the height of a row.
+     *
+     * <p>Not nudged towards it a row at a time. Asking for a few more, measuring what that
+     * did, and asking again is a loop that can overshoot, oscillate, or — if the list has
+     * run out of rows to add — never settle at all. The room and the row height are both
+     * known, so the count is a division rather than a search, and setting it to the number it
+     * already holds changes nothing and ends the pass.
      */
     const measure = () => {
       const list = main.current?.querySelector('.activity-feed')
@@ -185,12 +198,14 @@ export const HomePage = () => {
 
       const gap = parseFloat(getComputedStyle(list).rowGap) || 0
       const step = row.getBoundingClientRect().height + gap
+      if (step <= 0) return
+
       const button = main.current?.querySelector('.feed-more')?.getBoundingClientRect().height ?? 0
+      const room = column.getBoundingClientRect().bottom - list.getBoundingClientRect().top - button
 
-      const slack = column.getBoundingClientRect().bottom - list.getBoundingClientRect().bottom - button
-      if (Math.abs(slack) < step) return
-
-      setFeedRows((held) => Math.max(MIN_FEED_ROWS, held + Math.trunc(slack / step)))
+      // The last row needs no gap under it, so the room is worth one more than it divides into.
+      const fits = Math.floor((room + gap) / step)
+      setFeedRows(Math.max(MIN_FEED_ROWS, fits))
     }
 
     measure()
@@ -199,7 +214,7 @@ export const HomePage = () => {
     if (main.current) watcher.observe(main.current)
     return () => watcher.disconnect()
     // Re-measured as rows arrive; the observer keeps up with the column beside them.
-  }, [module.slug, showing, measuring, rowsShown, feed.loading])
+  }, [module.slug, showing, feed.expanded, rowsShown, feed.loading])
 
   /*
    * Which rows this module leads with, asked once per medium. Cheap and cached server-side:
