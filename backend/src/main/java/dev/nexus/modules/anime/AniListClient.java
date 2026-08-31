@@ -212,6 +212,11 @@ public class AniListClient {
      *
      * <p>{@code resetNotificationCount: false} is not a default worth trusting to stay one:
      * reading a stream must not be what clears the unread badge on somebody's AniList.
+     *
+     * <p>Of the media only the id, as the activity walk asks: the row is matched against the
+     * shelf and the shelf already holds the rest. Asking for the full media on fifty
+     * notifications across two fragments is a large answer for one field of it, and AniList
+     * answered 500 rather than trimming it.
      */
     private static final String NOTIFICATIONS_QUERY =
             """
@@ -219,13 +224,12 @@ public class AniListClient {
               Page(page: $page, perPage: $perPage) {
                 pageInfo { hasNextPage }
                 notifications(type_in: [AIRING, RELATED_MEDIA_ADDITION], resetNotificationCount: false) {
-                  ... on AiringNotification { id type episode createdAt media { %s } }
-                  ... on RelatedMediaAdditionNotification { id type context createdAt media { %s } }
+                  ... on AiringNotification { id type episode createdAt media { id type } }
+                  ... on RelatedMediaAdditionNotification { id type context createdAt media { id type } }
                 }
               }
             }
-            """
-                    .formatted(MEDIA_FIELDS, MEDIA_FIELDS);
+            """;
 
     private static final String VIEWER_ID_QUERY = "query { Viewer { id } }";
 
