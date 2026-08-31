@@ -54,7 +54,7 @@ const FEED_ROWS = 12
  * hears nothing until it is loaded again, and this is the page people leave open. A shelf or
  * a profile rearranging itself under someone mid-drag is a different matter, so they do not.
  */
-const REFRESH_EVERY_MS = 60_000
+const REFRESH_EVERY_MS = 190_000
 
 /** Once the airing time has passed, the copy has simply not caught up yet. */
 const OUT_NOW = 'out now'
