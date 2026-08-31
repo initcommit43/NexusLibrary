@@ -4,7 +4,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Blocking token bucket for calls out to an external API, each of which publishes its own
- * ceiling: IGDB permits four requests a second, AniList ninety a minute.
+ * ceiling: IGDB permits four requests a second, AniList thirty a minute.
  *
  * <p>Distinct from {@code core.web.RateLimiter}, which rejects excess inbound requests. Here
  * rejecting would turn a busy moment into a user-visible failure, so callers wait instead.
