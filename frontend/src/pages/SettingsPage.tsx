@@ -29,10 +29,25 @@ const PHASE_VERBS: Record<string, string> = {
 }
 
 /** What a run says about itself, running or finished. */
+/**
+ * A history walk counts what it has been through rather than what is left.
+ *
+ * <p>How far back a stream goes is only known by reaching the end of it, so these say a
+ * number and not a fraction. A bar that invents a length is a bar that lies twice.
+ */
+const isHistory = (job: SyncJob) => job.kind === 'ACTIVITY' || job.kind === 'NOTIFICATIONS'
+
+const HISTORY_NOUNS: Record<string, string> = {
+  ACTIVITY: 'events',
+  NOTIFICATIONS: 'notifications',
+}
+
 const jobLabel = (job: SyncJob): string => {
   const isImport = job.kind === 'IMPORT'
+  const noun = HISTORY_NOUNS[job.kind ?? ''] ?? 'rows'
 
   if (job.state === 'RUNNING') {
+    if (isHistory(job)) return `Reading your AniList history — ${job.processed} ${noun}…`
     if (!isImport) return `Syncing achievements — ${job.processed} of ${job.total} games…`
     const verb = PHASE_VERBS[job.phase ?? '']
     return verb && job.total > 0
@@ -41,15 +56,20 @@ const jobLabel = (job: SyncJob): string => {
   }
 
   if (job.state === 'COMPLETE') {
+    if (isHistory(job)) return `Brought in ${job.processed} ${noun}.`
     return isImport
       ? `Imported ${job.total} titles.`
       : `Achievements synced — ${job.changed} of ${job.total} games updated.`
   }
 
   if (job.state === 'CANCELLED') {
+    if (isHistory(job)) return `Stopped after ${job.processed} ${noun}. What arrived was kept.`
     return `Stopped after ${job.processed} of ${job.total}. What was imported was kept.`
   }
 
+  if (isHistory(job)) {
+    return `Stopped after ${job.processed} ${noun}. Run it again to carry on from there.`
+  }
   return isImport ? 'The import stopped early.' : 'Achievement sync failed.'
 }
 
@@ -88,7 +108,7 @@ export const SettingsPage = () => {
    */
   const [busy, setBusy] = useState<{
     provider: ModuleProvider['provider']
-    action: 'connect' | 'import' | 'disconnect' | 'achievements'
+    action: 'connect' | 'import' | 'disconnect' | 'achievements' | 'activity'
   } | null>(null)
 
   const working = (provider: ModuleProvider['provider'], action?: string) =>
@@ -147,6 +167,32 @@ export const SettingsPage = () => {
       }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'The import could not be completed.')
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  /**
+   * A reader's AniList history, on its own press.
+   *
+   * <p>The notification walk is chained behind the activity one server-side, so this follows
+   * the follow-up the same way the Steam import follows its achievements.
+   */
+  const runAniListActivity = async () => {
+    setBusy({ provider: 'ANILIST', action: 'activity' })
+    setError(null)
+    setReport(null)
+    setJob(null)
+    setRunningFor('ANILIST')
+    try {
+      const started = await api.importAniListActivity()
+      const finished = await watchJob(started.id)
+      if (finished?.followUpJobId) {
+        await watchJob(finished.followUpJobId)
+      }
+      load()
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Your AniList history could not be read.')
     } finally {
       setBusy(null)
     }
@@ -274,6 +320,14 @@ export const SettingsPage = () => {
               type="button"
               className="ghost"
               disabled={busy !== null}
+              onClick={() => void runAniListActivity()}
+            >
+              {working('ANILIST', 'activity') ? 'Reading…' : 'Import AniList activity'}
+            </button>
+            <button
+              type="button"
+              className="ghost"
+              disabled={busy !== null}
               onClick={() => void disconnect('ANILIST')}
             >
               Disconnect
@@ -371,13 +425,20 @@ export const SettingsPage = () => {
       {job && runningFor === provider.provider && (
         <>
           <p className="muted">{jobLabel(job)}</p>
-          {job.total > 0 && (
+          {/* A run with a total fills towards it; one without says only that it is going. */}
+          {job.total > 0 ? (
             <div className="achievement-bar">
               <div
                 className="achievement-bar-fill"
                 style={{ width: `${Math.round((job.processed / job.total) * 100)}%` }}
               />
             </div>
+          ) : (
+            job.state === 'RUNNING' && (
+              <div className="achievement-bar">
+                <div className="achievement-bar-fill is-running" />
+              </div>
+            )
           )}
         </>
       )}

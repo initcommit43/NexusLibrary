@@ -255,7 +255,7 @@ export type Review = {
 
 export type SyncJob = {
   id: string
-  kind: 'IMPORT' | 'ACHIEVEMENTS' | 'ACTIVITY'
+  kind: 'IMPORT' | 'ACHIEVEMENTS' | 'ACTIVITY' | 'NOTIFICATIONS' | 'ACTIVITY'
   /** Which connection the run belongs to, so its progress shows under that one. */
   provider: Provider | null
   /** Which stretch of an import the count belongs to; null for work with only one. */
@@ -623,6 +623,10 @@ export const api = {
     }),
 
   /** Answers immediately with a job to watch: an import is minutes of background work. */
+  /** A reader's AniList history: what they did, and what happened to what they keep. */
+  importAniListActivity: () =>
+    request<SyncJob>('/integrations/anilist/activity', { method: 'POST' }),
+
   importLibrary: (provider: Provider) =>
     request<SyncJob>(`/integrations/${provider}/import`, { method: 'POST' }),
 

@@ -2,7 +2,6 @@ import { NavLink, useParams } from 'react-router-dom'
 import { ModuleSwitcher } from './ModuleSwitcher'
 import { AccountMenu } from './AccountMenu'
 import { HeaderSearch } from './HeaderSearch'
-import { ImportIndicator } from './ImportIndicator'
 import { OutageBanner } from './OutageBanner'
 import { ThemeToggle } from './ThemeToggle'
 import { useCurrentModule } from '../modules/useCurrentModule'
@@ -79,7 +78,6 @@ export const AppShell = ({
       </div>
 
       {/* Sits outside the page, since a run outlives whichever page started it. */}
-      <ImportIndicator />
     </div>
   )
 }

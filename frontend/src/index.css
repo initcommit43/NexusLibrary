@@ -3357,33 +3357,6 @@ input.filter-control::-webkit-search-cancel-button {
 /* --- running work --- */
 
 /* Bottom left, out of the way of everything and readable from anywhere. */
-.import-indicator {
-  position: fixed;
-  bottom: var(--space-3);
-  left: var(--space-3);
-  z-index: 30;
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  min-width: 16rem;
-  max-width: min(24rem, calc(100vw - var(--space-5)));
-  padding: var(--space-3);
-  background: var(--surface);
-  border: 2px solid var(--card-border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-2);
-  font-size: var(--text-sm);
-}
-
-.import-indicator-text {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  color: var(--text-body);
-}
-
 /* --- media page --- */
 
 /*
@@ -4302,6 +4275,35 @@ button.ghost.danger:hover:not(:disabled) {
   border-radius: var(--radius-full);
   background: var(--module-accent);
   transition: width var(--duration-base) var(--ease);
+}
+
+/*
+ * A bar for a run whose length is not known.
+ *
+ * <p>A history walk has no total — how far back a stream goes is only known by reaching the
+ * end of it — so there is nothing to fill towards. It travels instead, which says "still
+ * working" without claiming to know how much of it is done.
+ */
+.achievement-bar-fill.is-running {
+  width: 35%;
+  animation: bar-travel 1.4s var(--ease) infinite;
+}
+
+@keyframes bar-travel {
+  from {
+    margin-left: -35%;
+  }
+  to {
+    margin-left: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .achievement-bar-fill.is-running {
+    animation: none;
+    width: 100%;
+    opacity: 0.4;
+  }
 }
 
 .achievement-list {
