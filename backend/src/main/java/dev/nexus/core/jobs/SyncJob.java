@@ -19,7 +19,9 @@ public class SyncJob {
         IMPORT,
         ACHIEVEMENTS,
         /** A provider's own record of what a reader did, day by day, behind their library. */
-        ACTIVITY
+        ACTIVITY,
+        /** A provider's own record of what happened to the titles a reader keeps. */
+        NOTIFICATIONS
     }
 
     /**

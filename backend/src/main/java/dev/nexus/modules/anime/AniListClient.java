@@ -204,6 +204,29 @@ public class AniListClient {
                     .formatted(MEDIA_FIELDS);
 
     /** Who the token belongs to, as a number: the activity stream is not addressable by name. */
+    /**
+     * What AniList noticed about the titles a reader keeps, newest first.
+     *
+     * <p>Only the two kinds this app has a shelf for. The rest of the union is social — likes,
+     * replies, follows — and belongs to AniList's own site rather than to a library.
+     *
+     * <p>{@code resetNotificationCount: false} is not a default worth trusting to stay one:
+     * reading a stream must not be what clears the unread badge on somebody's AniList.
+     */
+    private static final String NOTIFICATIONS_QUERY =
+            """
+            query ($page: Int, $perPage: Int) {
+              Page(page: $page, perPage: $perPage) {
+                pageInfo { hasNextPage }
+                notifications(type_in: [AIRING, RELATED_MEDIA_ADDITION], resetNotificationCount: false) {
+                  ... on AiringNotification { id type episode createdAt media { %s } }
+                  ... on RelatedMediaAdditionNotification { id type context createdAt media { %s } }
+                }
+              }
+            }
+            """
+                    .formatted(MEDIA_FIELDS, MEDIA_FIELDS);
+
     private static final String VIEWER_ID_QUERY = "query { Viewer { id } }";
 
     /**
@@ -586,6 +609,36 @@ public class AniListClient {
         // Read off the whole answer, not off the page inside it: that is where the helper
         // every other paged call uses looks for the flag.
         return new ActivityPage(activities, hasNextPage(data));
+    }
+
+    /** One page of what AniList noticed, and whether there is another behind it. */
+    public record NotificationPage(List<Map<String, Object>> notifications, boolean hasNextPage) {}
+
+    /**
+     * One page of the reader's own notifications, sent with their token: unlike activity,
+     * these are nobody else's to read, so there is no user id to ask about.
+     */
+    @SuppressWarnings("unchecked")
+    public NotificationPage fetchNotifications(int page, String accessToken) {
+        Map<String, Object> data =
+                post(NOTIFICATIONS_QUERY, Map.of("page", page, "perPage", MAX_BATCH), accessToken);
+
+        if (!(data.get("Page") instanceof Map<?, ?> found)) {
+            return new NotificationPage(List.of(), false);
+        }
+
+        Map<String, Object> body = (Map<String, Object>) found;
+        List<Map<String, Object>> rows = new java.util.ArrayList<>();
+        if (body.get("notifications") instanceof List<?> found_rows) {
+            found_rows.stream()
+                    // The field is a union and an inline fragment leaves an empty object
+                    // where a kind that was not asked for stood.
+                    .filter(Map.class::isInstance)
+                    .map(row -> (Map<String, Object>) row)
+                    .filter(row -> row.get("id") != null)
+                    .forEach(rows::add);
+        }
+        return new NotificationPage(rows, hasNextPage(data));
     }
 
     /** The numeric id of whoever the token belongs to. */
