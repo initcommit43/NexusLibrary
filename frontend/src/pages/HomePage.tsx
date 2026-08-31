@@ -154,7 +154,7 @@ export const HomePage = () => {
   // Scoped to the module the page is showing, as the feed beside it is: the picker swaps two
   // lists under one heading, and one of them answering about every medium would make the
   // count beside it mean something different from the rows under it.
-  const { waiting, read, readAll } = useNotifications(mediaTypesOf(module), FEED_ROWS)
+  const { waiting, read, readAll } = useNotifications(mediaTypesOf(module), feedRows)
 
   useEffect(() => {
     const column = side.current
