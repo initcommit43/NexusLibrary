@@ -14,7 +14,30 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 
     List<Notification> findByUserIdOrderByCreatedAtDesc(Long userId, Limit limit);
 
+    /**
+     * The same list, narrowed to the media types a module owns.
+     *
+     * <p>Narrowed here rather than after the fact: the panel shows one module at a time, and a
+     * reader whose last month was all anime would otherwise ask for fifty and be shown none.
+     */
+    List<Notification> findByUserIdAndItemMediaTypeInOrderByCreatedAtDesc(
+            Long userId, Collection<MediaType> mediaTypes, Limit limit);
+
     long countByUserIdAndReadAtIsNull(Long userId);
+
+    long countByUserIdAndItemMediaTypeInAndReadAtIsNull(Long userId, Collection<MediaType> mediaTypes);
+
+    /**
+     * Marks one as seen, by the reader who owns it.
+     *
+     * <p>Scoped by {@code userId} in the statement itself rather than by reading the row and
+     * checking it: an id from anyone is an id for somebody's row, and the only safe answer to
+     * one that is not theirs is to change nothing.
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Notification n SET n.readAt = :now "
+            + "WHERE n.id = :id AND n.userId = :userId AND n.readAt IS NULL")
+    int markRead(@Param("id") Long id, @Param("userId") Long userId, @Param("now") Instant now);
 
     /**
      * Marks everything a reader has as seen.
@@ -26,6 +49,22 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Notification n SET n.readAt = :now WHERE n.userId = :userId AND n.readAt IS NULL")
     int markAllRead(@Param("userId") Long userId, @Param("now") Instant now);
+
+    /**
+     * The same, for the module the reader is looking at.
+     *
+     * <p>"Read all" said under one module's heading means the ones under it. Clearing games a
+     * reader has never opened because they read their anime is a button that does more than
+     * it says.
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Notification n SET n.readAt = :now WHERE n.userId = :userId "
+            + "AND n.readAt IS NULL AND n.item.id IN "
+            + "(SELECT i.id FROM TrackableItem i WHERE i.mediaType IN :mediaTypes)")
+    int markAllRead(
+            @Param("userId") Long userId,
+            @Param("mediaTypes") Collection<MediaType> mediaTypes,
+            @Param("now") Instant now);
 
     /**
      * Everything a reader has already been told about a set of titles, in one query.

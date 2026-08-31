@@ -125,6 +125,67 @@ class NotificationIntegrationTest extends PostgresIntegrationTest {
                 .containsEntry("read", true));
     }
 
+    /** Reading one leaves the others alone: it is the row that was opened, not the list. */
+    @Test
+    void readingOneLeavesTheRestNew() {
+        track();
+        airedAt(Instant.now().minusSeconds(3600), 9);
+        detector.sweep();
+        airedAt(Instant.now().minusSeconds(60), 10);
+        detector.sweep();
+
+        Object first = notifications().get(0).get("id");
+        Response read = http.post("/notifications/" + first + "/read", "Authorization", "Bearer " + token);
+
+        assertThat(read.status()).isEqualTo(200);
+        assertThat(read.body()).containsEntry("unread", 1);
+    }
+
+    /** Somebody else's id changes nothing, and says nothing about whose it was. */
+    @Test
+    void readingSomebodyElsesChangesNothing() {
+        track();
+        airedAt(Instant.now().minusSeconds(60), 9);
+        detector.sweep();
+        Object mine = notifications().get(0).get("id");
+
+        String stranger = registerAndGetToken(http, "stranger@example.com", "stranger");
+        Response theirs = http.post("/notifications/" + mine + "/read", "Authorization", "Bearer " + stranger);
+
+        assertThat(theirs.status()).isEqualTo(200);
+        assertThat(waiting()).containsEntry("unread", 1);
+    }
+
+    /** The panel shows one module at a time, and the count beside it has to mean the same. */
+    @Test
+    void anotherModulesTypesHoldNoneOfIt() {
+        track();
+        airedAt(Instant.now().minusSeconds(60), 9);
+        detector.sweep();
+
+        Response games = http.get("/notifications?mediaTypes=GAME", "Authorization", "Bearer " + token);
+
+        assertThat(games.body()).containsEntry("unread", 0);
+        assertThat(games.body().get("items")).asInstanceOf(
+                        org.assertj.core.api.InstanceOfAssertFactories.LIST)
+                .isEmpty();
+
+        Response anime = http.get("/notifications?mediaTypes=ANIME", "Authorization", "Bearer " + token);
+        assertThat(anime.body()).containsEntry("unread", 1);
+    }
+
+    /** "Read all" under one module's heading means the ones under it. */
+    @Test
+    void readingAllOfAnotherModuleLeavesTheseNew() {
+        track();
+        airedAt(Instant.now().minusSeconds(60), 9);
+        detector.sweep();
+
+        http.post("/notifications/read?mediaTypes=GAME", "Authorization", "Bearer " + token);
+
+        assertThat(waiting()).containsEntry("unread", 1);
+    }
+
     /** A notification is one reader's; another's list must never carry it. */
     @Test
     void nothingWaitsForSomebodyElse() {
