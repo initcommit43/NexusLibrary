@@ -54,7 +54,7 @@ public class HttpTestClient {
 
     public HttpTestClient(int port) {
         this.rootUri = "http://localhost:" + port;
-        this.baseUri = rootUri + "/api";
+        this.baseUri = rootUri + dev.nexus.config.ApiPaths.PREFIX;
     }
 
     /** Hits a path outside the /api prefix — the app shell, actuator, static assets. */

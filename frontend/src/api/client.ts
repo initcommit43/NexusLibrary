@@ -1,6 +1,9 @@
 import { reportOutage } from './outages'
 
-const BASE = '/api'
+// Versioned because the web app is no longer the only client: it ships with the backend and
+// always speaks the current version, but an installed phone build keeps whatever it shipped
+// with. Bumping this means bumping ApiPaths.VERSION on the backend to match.
+const BASE = '/api/v1'
 
 export type User = {
   id: number

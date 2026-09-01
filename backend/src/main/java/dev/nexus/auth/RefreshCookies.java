@@ -1,5 +1,6 @@
 package dev.nexus.auth;
 
+import dev.nexus.config.ApiPaths;
 import dev.nexus.config.NexusProperties;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Duration;
@@ -45,6 +46,6 @@ public class RefreshCookies {
                 // Strict keeps the cookie off cross-site requests entirely, which is what
                 // makes disabling CSRF tokens safe for these endpoints.
                 .sameSite("Strict")
-                .path("/api/auth");
+                .path(ApiPaths.PREFIX + "/auth");
     }
 }

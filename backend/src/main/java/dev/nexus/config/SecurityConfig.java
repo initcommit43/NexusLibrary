@@ -29,7 +29,11 @@ public class SecurityConfig {
 
     /** The only API paths reachable without a token. */
     private static final String[] PUBLIC_API_ENDPOINTS = {
-        "/api/auth/register", "/api/auth/login", "/api/auth/refresh", "/api/auth/logout", "/api/health"
+        ApiPaths.PREFIX + "/auth/register",
+        ApiPaths.PREFIX + "/auth/login",
+        ApiPaths.PREFIX + "/auth/refresh",
+        ApiPaths.PREFIX + "/auth/logout",
+        ApiPaths.PREFIX + "/health"
     };
 
     private final NexusProperties properties;
@@ -71,7 +75,8 @@ public class SecurityConfig {
                 .headers(headers -> headers.cacheControl(CacheControlConfig::disable)
                         .addHeaderWriter(new DelegatingRequestMatcherHeaderWriter(
                                 new NegatedRequestMatcher(
-                                        PathPatternRequestMatcher.withDefaults().matcher("/api/catalog/browse")),
+                                        PathPatternRequestMatcher.withDefaults()
+                                                .matcher(ApiPaths.PREFIX + "/catalog/browse")),
                                 new CacheControlHeadersWriter())))
                 .exceptionHandling(handling ->
                         handling.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))

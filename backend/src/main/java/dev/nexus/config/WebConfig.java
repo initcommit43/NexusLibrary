@@ -24,13 +24,12 @@ import org.springframework.web.servlet.resource.PathResourceResolver;
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
-    private static final String API_PREFIX = "/api";
     private static final String STATIC_LOCATION = "classpath:/static/";
     private static final String SPA_ENTRY_POINT = "static/index.html";
 
     @Override
     public void configurePathMatch(PathMatchConfigurer configurer) {
-        configurer.addPathPrefix(API_PREFIX, HandlerTypePredicate.forAnnotation(RestController.class));
+        configurer.addPathPrefix(ApiPaths.PREFIX, HandlerTypePredicate.forAnnotation(RestController.class));
     }
 
     @Override
