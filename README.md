@@ -1,4 +1,4 @@
-# Nexus Media Tracker
+# NexusLibrary
 
 A unified media tracker: one dashboard with switchable modules for games, films and TV,
 anime and manga, and books — replacing the need to juggle a separate service per medium.

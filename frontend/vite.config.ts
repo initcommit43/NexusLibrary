@@ -12,7 +12,7 @@ export default defineConfig(({ mode }) => {
         registerType: 'autoUpdate',
         includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
         manifest: {
-          name: 'Nexus Media Tracker',
+          name: 'NexusLibrary',
           short_name: 'Nexus',
           description: 'Track your games, films, shows, anime and books in one place.',
           theme_color: '#f5f7fa',

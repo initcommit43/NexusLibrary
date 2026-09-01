@@ -137,7 +137,7 @@ nexus:
     cover-size: L
     # Open Library asks callers to identify themselves and leave a contact address, and
     # throttles the ones that do not. This is a condition of use, not a nicety.
-    user-agent: ${OPEN_LIBRARY_USER_AGENT:NexusMediaTracker/1.0 (https://github.com/initcommit43/NexusMediaTracker)}
+    user-agent: ${OPEN_LIBRARY_USER_AGENT:NexusLibrary/1.0 (https://github.com/initcommit43/NexusLibrary)}
     # Nothing meters this — there is no account. It is a courtesy to a nonprofit's servers,
     # so a large import does not arrive looking like an attack.
     requests-per-second: 10
