@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -47,16 +48,94 @@ class IgdbBrowseTest {
     }
 
     @Test
-    void offersTheFourShelvesInReadingOrder() {
+    void offersTheShelvesInReadingOrder() {
         assertThat(adapter.browseShelves(MediaType.GAME))
+                .extracting(BrowseShelf::id)
+                .containsExactly(
+                        "popular",
+                        "playing",
+                        "anticipated",
+                        "top-rated",
+                        "recent",
+                        "coming-soon",
+                        "rpg",
+                        "shooter",
+                        "strategy",
+                        "indie",
+                        "most-played");
+    }
+
+    /**
+     * The whole point of the page. Browse used to be the home page again: four shelves, all
+     * four on home, so opening it showed what the reader had just scrolled past.
+     */
+    @Test
+    void offersMoreOnBrowseThanItLeadsTheHomePageWith() {
+        List<BrowseShelf> shelves = adapter.browseShelves(MediaType.GAME);
+
+        assertThat(shelves.stream().filter(BrowseShelf::onBrowse)).hasSizeGreaterThan(
+                (int) shelves.stream().filter(BrowseShelf::onHome).count());
+    }
+
+    /** Every games row is a browse row; home is the subset, not the other way round. */
+    @Test
+    void putsEveryShelfOnBrowse() {
+        assertThat(adapter.browseShelves(MediaType.GAME)).allMatch(BrowseShelf::onBrowse);
+    }
+
+    /** The home page keeps the four it always led with, in the order it led with them. */
+    @Test
+    void leadsTheHomePageWithTheOriginalFour() {
+        assertThat(adapter.browseShelves(MediaType.GAME))
+                .filteredOn(BrowseShelf::onHome)
                 .extracting(BrowseShelf::id)
                 .containsExactly("popular", "top-rated", "recent", "coming-soon");
     }
 
-    /** A games home leads with all four: what is played, what is worth it, what is next. */
+    /** A home leads; it does not categorise. Genre rows belong to browse alone. */
     @Test
-    void everyGamesShelfLeadsTheHomePage() {
-        assertThat(adapter.browseShelves(MediaType.GAME)).allMatch(BrowseShelf::onHome);
+    void keepsGenreShelvesOffTheHomePage() {
+        assertThat(adapter.browseShelves(MediaType.GAME))
+                .filteredOn(shelf -> List.of("rpg", "shooter", "strategy", "indie").contains(shelf.id()))
+                .hasSize(4)
+                .noneMatch(BrowseShelf::onHome);
+    }
+
+    /**
+     * Without the high floor a genre sorted by score fills with fan projects carrying a
+     * handful of perfect ratings, and the row stops being the case for the genre.
+     */
+    @Test
+    void putsTheHighVoteFloorUnderAGenreShelf() {
+        assertThat(whereFor("rpg")).contains("total_rating_count > 200");
+    }
+
+    @Test
+    void queriesAGenreShelfByItsGenreId() {
+        assertThat(whereFor("shooter")).contains("genres = (5)");
+    }
+
+    @Test
+    void sortsAGenreShelfByScore() {
+        assertThat(sortFor("strategy")).isEqualTo("total_rating desc");
+    }
+
+    /**
+     * Anticipation and attention are different tables. Read from the same one, "most
+     * anticipated" would just be "popular now" with unreleased games in it.
+     */
+    @Test
+    void readsEachRankedShelfFromItsOwnPopularityTable() {
+        when(client.popularGameIds(anyInt(), anyInt(), anyInt())).thenReturn(List.of());
+        ArgumentCaptor<Integer> type = ArgumentCaptor.forClass(Integer.class);
+
+        adapter.browse(MediaType.GAME, "popular", 1, 20);
+        adapter.browse(MediaType.GAME, "playing", 1, 20);
+        adapter.browse(MediaType.GAME, "anticipated", 1, 20);
+        adapter.browse(MediaType.GAME, "most-played", 1, 20);
+        verify(client, times(4)).popularGameIds(type.capture(), anyInt(), anyInt());
+
+        assertThat(type.getAllValues()).containsExactly(1, 3, 10, 4).doesNotHaveDuplicates();
     }
 
     /** Without a vote floor, one enthusiastic rating outranks everything ever made. */
