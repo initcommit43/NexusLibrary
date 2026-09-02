@@ -33,7 +33,9 @@ public class SecurityConfig {
         ApiPaths.PREFIX + "/auth/login",
         ApiPaths.PREFIX + "/auth/refresh",
         ApiPaths.PREFIX + "/auth/logout",
-        ApiPaths.PREFIX + "/health"
+        ApiPaths.PREFIX + "/health",
+        // An app too old to be served is too old to be asked for a token first.
+        ApiPaths.PREFIX + "/client-version"
     };
 
     private final NexusProperties properties;

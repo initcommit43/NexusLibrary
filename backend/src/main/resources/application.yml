@@ -69,6 +69,11 @@ nexus:
     search-requests-per-minute: 30
     # An import touches a whole library and spends external API budget.
     import-requests-per-minute: 3
+  client-version:
+    # The oldest installed app build this deployment still answers. Raise it only alongside a
+    # release that is already in the store, or the app tells people to fetch one that is not
+    # there yet. The default forces nothing, which is what a deployment with no app wants.
+    minimum: ${CLIENT_MINIMUM_VERSION:0.0.0}
   browse:
     # A browse shelf is the same list for every reader, so it is fetched once and shared.
     # Long enough that a page view costs nothing; short enough that "coming soon" stays true.
