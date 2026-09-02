@@ -59,6 +59,11 @@ nexus:
     # Set REGISTRATION_OPEN=false on a deployment once its accounts exist: the URL is public,
     # and an open sign-up on it is a stranger spending the API budget. Signing in is untouched.
     registration-open: ${REGISTRATION_OPEN:true}
+    # How many proxies stand in front, which is how far in from the end of X-Forwarded-For
+    # the caller's own address sits. Nothing in front locally, so nothing is forwarded and
+    # the peer is the caller. Raise it per deployment, never above the real number: too high
+    # reads an entry the caller wrote themselves and hands them a rate-limit bucket each.
+    trusted-proxy-count: ${TRUSTED_PROXY_COUNT:0}
   rate-limit:
     auth-requests-per-minute: 10
     search-requests-per-minute: 30

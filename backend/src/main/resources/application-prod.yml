@@ -1,6 +1,9 @@
 nexus:
   security:
     cookie-secure: true
+    # Railway's edge is the one proxy in front, so it appends the caller's address last.
+    # A CDN in front of Railway makes it 2; set TRUSTED_PROXY_COUNT rather than editing this.
+    trusted-proxy-count: ${TRUSTED_PROXY_COUNT:1}
 
 logging:
   level:

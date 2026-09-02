@@ -5,6 +5,7 @@ import dev.nexus.auth.dto.LoginRequest;
 import dev.nexus.auth.dto.RegisterRequest;
 import dev.nexus.auth.dto.UserResponse;
 import dev.nexus.config.NexusProperties;
+import dev.nexus.core.web.ClientIpResolver;
 import dev.nexus.core.web.RateLimiter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -27,6 +28,7 @@ public class AuthController {
     private final JwtService jwtService;
     private final RefreshCookies refreshCookies;
     private final RateLimiter rateLimiter;
+    private final ClientIpResolver clientIp;
     private final int authRequestsPerMinute;
 
     /** Whether this deployment still takes new accounts. Signing in is never affected. */
@@ -37,11 +39,13 @@ public class AuthController {
             JwtService jwtService,
             RefreshCookies refreshCookies,
             RateLimiter rateLimiter,
+            ClientIpResolver clientIp,
             NexusProperties properties) {
         this.authService = authService;
         this.jwtService = jwtService;
         this.refreshCookies = refreshCookies;
         this.rateLimiter = rateLimiter;
+        this.clientIp = clientIp;
         this.authRequestsPerMinute = properties.rateLimit().authRequestsPerMinute();
         this.registrationOpen = properties.security().registrationOpen();
     }
@@ -54,13 +58,13 @@ public class AuthController {
             throw new RegistrationClosedException();
         }
 
-        rateLimiter.check("register:" + http.getRemoteAddr(), authRequestsPerMinute);
+        rateLimiter.check("register:" + clientIp.resolve(http), authRequestsPerMinute);
         return sessionResponse(authService.register(request), HttpStatus.CREATED);
     }
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request, HttpServletRequest http) {
-        rateLimiter.check("login:" + http.getRemoteAddr(), authRequestsPerMinute);
+        rateLimiter.check("login:" + clientIp.resolve(http), authRequestsPerMinute);
         return sessionResponse(authService.authenticate(request), HttpStatus.OK);
     }
 
