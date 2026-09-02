@@ -1,6 +1,7 @@
 package dev.nexus.auth.dto;
 
 import jakarta.validation.constraints.Email;
+import dev.nexus.auth.AuthClient;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -15,4 +16,11 @@ public record RegisterRequest(
                 String username,
         // bcrypt silently ignores input past 72 bytes, so cap it rather than let a
         // longer password give a false sense of strength.
-        @NotBlank @Size(min = 12, max = 72) String password) {}
+        @NotBlank @Size(min = 12, max = 72) String password,
+        /** Absent means a browser; see {@link LoginRequest}. */
+        AuthClient client) {
+
+    public AuthClient clientOrBrowser() {
+        return client == null ? AuthClient.WEB : client;
+    }
+}

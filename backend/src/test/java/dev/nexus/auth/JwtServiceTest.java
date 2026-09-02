@@ -34,10 +34,27 @@ class JwtServiceTest {
 
     @Test
     void refreshTokenIsRejectedWhereAnAccessTokenIsExpected() {
-        String refreshToken = jwtService.issueRefreshToken(user);
+        String refreshToken = jwtService.issueRefreshToken(user).token();
 
-        assertThat(jwtService.readRefreshToken(refreshToken)).contains(42L);
+        assertThat(jwtService.readRefreshToken(refreshToken).map(JwtService.RefreshTokenClaims::userId))
+                .contains(42L);
         assertThat(jwtService.readAccessToken(refreshToken)).isEmpty();
+    }
+
+    /** The id is what the store lists, so a token whose id cannot be read back is unusable. */
+    @Test
+    void refreshTokenCarriesTheIdItWasIssuedWith() {
+        JwtService.IssuedRefreshToken issued = jwtService.issueRefreshToken(user);
+
+        assertThat(jwtService.readRefreshToken(issued.token()).map(JwtService.RefreshTokenClaims::jti))
+                .contains(issued.jti());
+    }
+
+    /** Two sessions must be separately withdrawable, which they are not if they share an id. */
+    @Test
+    void everyRefreshTokenGetsItsOwnId() {
+        assertThat(jwtService.issueRefreshToken(user).jti())
+                .isNotEqualTo(jwtService.issueRefreshToken(user).jti());
     }
 
     @Test

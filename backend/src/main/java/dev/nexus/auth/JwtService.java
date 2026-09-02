@@ -10,6 +10,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 import java.util.Optional;
+import java.util.UUID;
 import javax.crypto.SecretKey;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +20,12 @@ public class JwtService {
     private static final String CLAIM_TOKEN_TYPE = "typ";
     private static final String TYPE_ACCESS = "access";
     private static final String TYPE_REFRESH = "refresh";
+
+    /** A refresh token, and what the store needs to be able to withdraw it later. */
+    public record IssuedRefreshToken(String token, UUID jti, Instant expiresAt) {}
+
+    /** Who a refresh token is for, and which token it is. */
+    public record RefreshTokenClaims(Long userId, UUID jti) {}
 
     private final SecretKey key;
     private final Duration accessTtl;
@@ -34,8 +41,26 @@ public class JwtService {
         return issue(user.getId(), TYPE_ACCESS, accessTtl);
     }
 
-    public String issueRefreshToken(AppUser user) {
-        return issue(user.getId(), TYPE_REFRESH, refreshTtl);
+    /**
+     * A refresh token carries an id of its own so it can be withdrawn. The signature alone
+     * says a token was issued here, never that it is still meant to work; the id is what
+     * {@code refresh_token} lists, and a token whose id is absent or retired buys nothing.
+     */
+    public IssuedRefreshToken issueRefreshToken(AppUser user) {
+        Instant now = Instant.now();
+        Instant expiresAt = now.plus(refreshTtl);
+        UUID jti = UUID.randomUUID();
+
+        String token = Jwts.builder()
+                .subject(String.valueOf(user.getId()))
+                .id(jti.toString())
+                .claim(CLAIM_TOKEN_TYPE, TYPE_REFRESH)
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(expiresAt))
+                .signWith(key)
+                .compact();
+
+        return new IssuedRefreshToken(token, jti, expiresAt);
     }
 
     public Duration refreshTtl() {
@@ -43,11 +68,22 @@ public class JwtService {
     }
 
     public Optional<Long> readAccessToken(String token) {
-        return readSubject(token, TYPE_ACCESS);
+        return parse(token, TYPE_ACCESS).map(claims -> Long.valueOf(claims.getSubject()));
     }
 
-    public Optional<Long> readRefreshToken(String token) {
-        return readSubject(token, TYPE_REFRESH);
+    /**
+     * Empty for a token that was never signed here, has expired, is an access token, or
+     * predates tokens carrying an id — the last of which signs out whoever still holds one.
+     */
+    public Optional<RefreshTokenClaims> readRefreshToken(String token) {
+        return parse(token, TYPE_REFRESH).flatMap(claims -> {
+            try {
+                return Optional.of(
+                        new RefreshTokenClaims(Long.valueOf(claims.getSubject()), UUID.fromString(claims.getId())));
+            } catch (IllegalArgumentException | NullPointerException e) {
+                return Optional.empty();
+            }
+        });
     }
 
     private String issue(Long userId, String type, Duration ttl) {
@@ -65,7 +101,7 @@ public class JwtService {
      * Rejects a token signed for a different purpose, so a long-lived refresh token can
      * never be replayed as an access token.
      */
-    private Optional<Long> readSubject(String token, String expectedType) {
+    private Optional<Claims> parse(String token, String expectedType) {
         try {
             Claims claims = Jwts.parser()
                     .verifyWith(key)
@@ -76,7 +112,7 @@ public class JwtService {
             if (!expectedType.equals(claims.get(CLAIM_TOKEN_TYPE, String.class))) {
                 return Optional.empty();
             }
-            return Optional.of(Long.valueOf(claims.getSubject()));
+            return Optional.of(claims);
         } catch (JwtException | IllegalArgumentException e) {
             return Optional.empty();
         }
