@@ -130,6 +130,43 @@ class SessionRevocationIntegrationTest extends PostgresIntegrationTest {
         assertThat(refreshOf(phone).status()).isEqualTo(401);
     }
 
+    /**
+     * Most of the reason anyone changes a password in a hurry: to put out the sessions
+     * somebody else is holding. Before the token store this could not be done at all.
+     */
+    @Test
+    void changingAPasswordEndsEverySessionButTheOneThatChangedIt() {
+        register("player@example.com", "player");
+        Response phone = login("player@example.com", AuthClient.NATIVE);
+        Response browser = login("player@example.com", AuthClient.WEB);
+
+        Response changed = changePassword(browser.accessToken(), null);
+        assertThat(changed.status()).isEqualTo(200);
+
+        assertThat(refreshOf(phone).status()).isEqualTo(401);
+        assertThat(http.post("/auth/refresh", "Cookie", browser.refreshCookiePair())
+                        .status())
+                .isEqualTo(401);
+
+        // The session handed back with the change is live, so whoever changed it works on.
+        assertThat(http.post("/auth/refresh", "Cookie", changed.refreshCookiePair())
+                        .status())
+                .isEqualTo(200);
+    }
+
+    @Test
+    void aPhoneChangingItsPasswordIsHandedTheReplacementToken() {
+        register("player@example.com", "player");
+        Response phone = login("player@example.com", AuthClient.NATIVE);
+
+        Response changed = changePassword(phone.accessToken(), AuthClient.NATIVE);
+
+        assertThat(changed.body().get("refreshToken")).isNotNull();
+        assertThat(changed.refreshCookie()).isEmpty();
+        assertThat(refreshOf(changed).status()).isEqualTo(200);
+        assertThat(refreshOf(phone).status()).isEqualTo(401);
+    }
+
     @Test
     void theSweepDropsRowsWhoseTokensHaveExpired() {
         register("player@example.com", "player");
@@ -154,6 +191,20 @@ class SessionRevocationIntegrationTest extends PostgresIntegrationTest {
 
     private Response refreshOf(Response session) {
         return http.postJson("/auth/refresh", Map.of("refreshToken", refreshTokenOf(session)));
+    }
+
+    private Response changePassword(String accessToken, AuthClient client) {
+        Map<String, String> body = client == null
+                ? Map.of("currentPassword", PASSWORD, "newPassword", "a whole new one")
+                : Map.of(
+                        "currentPassword",
+                        PASSWORD,
+                        "newPassword",
+                        "a whole new one",
+                        "client",
+                        client.name());
+
+        return http.postJson("/settings/account/password", body, "Authorization", "Bearer " + accessToken);
     }
 
     private Response register(String email, String username) {

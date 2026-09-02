@@ -11,9 +11,7 @@ import dev.nexus.core.web.RateLimiter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.Optional;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,6 +28,7 @@ public class AuthController {
     private final JwtService jwtService;
     private final RefreshCookies refreshCookies;
     private final RefreshTokenService refreshTokens;
+    private final SessionResponses sessions;
     private final RateLimiter rateLimiter;
     private final ClientIpResolver clientIp;
     private final int authRequestsPerMinute;
@@ -42,6 +41,7 @@ public class AuthController {
             JwtService jwtService,
             RefreshCookies refreshCookies,
             RefreshTokenService refreshTokens,
+            SessionResponses sessions,
             RateLimiter rateLimiter,
             ClientIpResolver clientIp,
             NexusProperties properties) {
@@ -49,6 +49,7 @@ public class AuthController {
         this.jwtService = jwtService;
         this.refreshCookies = refreshCookies;
         this.refreshTokens = refreshTokens;
+        this.sessions = sessions;
         this.rateLimiter = rateLimiter;
         this.clientIp = clientIp;
         this.authRequestsPerMinute = properties.rateLimit().authRequestsPerMinute();
@@ -64,21 +65,21 @@ public class AuthController {
         }
 
         rateLimiter.check("register:" + clientIp.resolve(http), authRequestsPerMinute);
-        return sessionResponse(
+        return sessions.issue(
                 refreshTokens.begin(authService.register(request), request.clientOrBrowser()), HttpStatus.CREATED);
     }
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request, HttpServletRequest http) {
         rateLimiter.check("login:" + clientIp.resolve(http), authRequestsPerMinute);
-        return sessionResponse(
+        return sessions.issue(
                 refreshTokens.begin(authService.authenticate(request), request.clientOrBrowser()), HttpStatus.OK);
     }
 
     @PostMapping("/refresh")
     public ResponseEntity<AuthResponse> refresh(
             @RequestBody(required = false) RefreshRequest request, HttpServletRequest http) {
-        return sessionResponse(refreshTokens.renew(presentedToken(request, http)), HttpStatus.OK);
+        return sessions.issue(refreshTokens.renew(presentedToken(request, http)), HttpStatus.OK);
     }
 
     /**
@@ -88,7 +89,7 @@ public class AuthController {
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(@RequestBody(required = false) RefreshRequest request, HttpServletRequest http) {
         readToken(request, http).ifPresent(refreshTokens::end);
-        return clearedSession();
+        return sessions.cleared();
     }
 
     /**
@@ -98,7 +99,7 @@ public class AuthController {
     @PostMapping("/logout-all")
     public ResponseEntity<Void> logoutEverywhere(@AuthenticationPrincipal CurrentUser currentUser) {
         refreshTokens.endEverySession(currentUser.id());
-        return clearedSession();
+        return sessions.cleared();
     }
 
     @GetMapping("/me")
@@ -120,33 +121,4 @@ public class AuthController {
                 .orElseThrow(() -> new AuthenticationFailedException("Session expired. Please sign in again."));
     }
 
-    private ResponseEntity<Void> clearedSession() {
-        return ResponseEntity.noContent()
-                .header(HttpHeaders.SET_COOKIE, refreshCookies.clear().toString())
-                .build();
-    }
-
-    /**
-     * Hands the refresh token back the only way its client can keep it. A browser gets a
-     * cookie it cannot read, so a script injected into the page cannot read it either; a
-     * native client gets the value, because the keychain is not somewhere a server can write.
-     *
-     * <p>Either way the token is a fresh one and its predecessor has already been retired,
-     * so a copy taken earlier is worthless rather than merely superseded.
-     */
-    private ResponseEntity<AuthResponse> sessionResponse(RefreshTokenService.Session session, HttpStatus status) {
-        AppUser user = session.user();
-        String accessToken = jwtService.issueAccessToken(user);
-        UserResponse body = UserResponse.from(user);
-
-        if (session.client() == AuthClient.NATIVE) {
-            return ResponseEntity.status(status)
-                    .body(AuthResponse.forNativeClient(accessToken, session.refreshToken(), body));
-        }
-
-        ResponseCookie cookie = refreshCookies.issue(session.refreshToken(), jwtService.refreshTtl());
-        return ResponseEntity.status(status)
-                .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                .body(AuthResponse.forBrowser(accessToken, body));
-    }
 }

@@ -1,5 +1,6 @@
 package dev.nexus.core.account;
 
+import dev.nexus.auth.AuthClient;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -27,7 +28,15 @@ public final class AccountRequests {
             @NotBlank String currentPassword,
             // bcrypt silently ignores input past 72 bytes, so cap it rather than let a
             // longer password give a false sense of strength.
-            @NotBlank @Size(min = 12, max = 72) String newPassword) {}
+            @NotBlank @Size(min = 12, max = 72) String newPassword,
+            // Changing a password ends every session and starts one more, so the caller has
+            // to say where the replacement goes. Absent means a browser, as it does on login.
+            AuthClient client) {
+
+        public AuthClient clientOrBrowser() {
+            return client == null ? AuthClient.WEB : client;
+        }
+    }
 
     /** Deleting everything is worth one more proof that it is the account's owner asking. */
     public record AccountDeletion(@NotBlank String password) {}

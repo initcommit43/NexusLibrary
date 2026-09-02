@@ -108,7 +108,9 @@ class AccountIntegrationTest extends PostgresIntegrationTest {
                 "Authorization",
                 auth());
 
-        assertThat(right.status()).isEqualTo(204);
+        // Answers with a session rather than 204: the change ends every session the old
+        // password could have left behind, and hands the caller its replacement.
+        assertThat(right.status()).isEqualTo(200);
         assertThat(login("reader@example.com", PASSWORD).status()).isEqualTo(401);
         assertThat(login("reader@example.com", "a whole new one").status()).isEqualTo(200);
     }

@@ -81,8 +81,9 @@ public class AccountService {
         return users.save(user);
     }
 
+    /** Answers with the account so the caller can put it back into a session of its own. */
     @Transactional
-    public void changePassword(long userId, PasswordChange change) {
+    public AppUser changePassword(long userId, PasswordChange change) {
         AppUser user = require(userId);
 
         if (!passwordEncoder.matches(change.currentPassword(), user.getPasswordHash())) {
@@ -90,7 +91,7 @@ public class AccountService {
         }
 
         user.changePasswordHash(passwordEncoder.encode(change.newPassword()));
-        users.save(user);
+        return users.save(user);
     }
 
     /**
