@@ -58,6 +58,18 @@ nexus:
     key: bmV4dXMtdGVzdC1vbmx5LWVuY3J5cHRpb24ta2V5ISE=
 
 spring:
+  datasource:
+    hikari:
+      # Every cached Spring context holds a pool of its own, and the suite keeps a dozen or
+      # more alive at once — one per distinct set of mocks or overridden properties. At the
+      # default size of ten that is more connections than Postgres allows, and the classes
+      # loaded last fail to start at all with "too many clients already".
+      #
+      # Nothing here needs a deep pool: a test makes one request at a time. Four rather than
+      # one because an achievement sync runs on a background thread and takes a second
+      # connection while the test thread holds its own.
+      maximum-pool-size: 4
+      minimum-idle: 0
   http:
     client:
       # The hosts named in here do not exist. A test that reaches one is testing what happens
