@@ -428,12 +428,27 @@ const filenameFrom = (header: string | null): string | null => {
   return match ? match[1] : null
 }
 
+/**
+ * Which client this is, on every request that opens a session.
+ *
+ * The server requires it rather than defaulting: a caller that says nothing about itself
+ * would have to be guessed at, and guessing browser hands a native client a session with no
+ * refresh token in it - working until its access token expires, then gone.
+ */
+const WEB_CLIENT = 'WEB'
+
 export const api = {
   register: (payload: { email: string; username: string; password: string }) =>
-    request<AuthResponse>('/auth/register', { method: 'POST', body: JSON.stringify(payload) }),
+    request<AuthResponse>('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ ...payload, client: WEB_CLIENT }),
+    }),
 
   login: (payload: { email: string; password: string }) =>
-    request<AuthResponse>('/auth/login', { method: 'POST', body: JSON.stringify(payload) }),
+    request<AuthResponse>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ ...payload, client: WEB_CLIENT }),
+    }),
 
   logout: () => request<void>('/auth/logout', { method: 'POST' }),
 
@@ -454,7 +469,7 @@ export const api = {
   changePassword: (currentPassword: string, newPassword: string) =>
     request<void>('/settings/account/password', {
       method: 'POST',
-      body: JSON.stringify({ currentPassword, newPassword }),
+      body: JSON.stringify({ currentPassword, newPassword, client: WEB_CLIENT }),
     }),
 
   deleteAccount: (password: string) =>
