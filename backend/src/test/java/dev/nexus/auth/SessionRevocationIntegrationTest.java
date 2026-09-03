@@ -140,7 +140,7 @@ class SessionRevocationIntegrationTest extends PostgresIntegrationTest {
         Response phone = login("player@example.com", AuthClient.NATIVE);
         Response browser = login("player@example.com", AuthClient.WEB);
 
-        Response changed = changePassword(browser.accessToken(), null);
+        Response changed = changePassword(browser.accessToken(), AuthClient.WEB);
         assertThat(changed.status()).isEqualTo(200);
 
         assertThat(refreshOf(phone).status()).isEqualTo(401);
@@ -196,20 +196,15 @@ class SessionRevocationIntegrationTest extends PostgresIntegrationTest {
     private Response changePassword(String accessToken, AuthClient client) {
         Map<String, String> body = client == null
                 ? Map.of("currentPassword", PASSWORD, "newPassword", "a whole new one")
-                : Map.of(
-                        "currentPassword",
-                        PASSWORD,
-                        "newPassword",
-                        "a whole new one",
-                        "client",
-                        client.name());
+                : Map.of("currentPassword", PASSWORD, "newPassword", "a whole new one", "client", client.name());
 
         return http.postJson("/settings/account/password", body, "Authorization", "Bearer " + accessToken);
     }
 
     private Response register(String email, String username) {
         return http.postJson(
-                "/auth/register", Map.of("email", email, "username", username, "password", PASSWORD));
+                "/auth/register",
+                Map.of("email", email, "username", username, "password", PASSWORD, "client", "WEB"));
     }
 
     private Response login(String email, AuthClient client) {

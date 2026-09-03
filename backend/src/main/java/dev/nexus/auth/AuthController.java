@@ -66,14 +66,14 @@ public class AuthController {
 
         rateLimiter.check("register:" + clientIp.resolve(http), authRequestsPerMinute);
         return sessions.issue(
-                refreshTokens.begin(authService.register(request), request.clientOrBrowser()), HttpStatus.CREATED);
+                refreshTokens.begin(authService.register(request), request.client()), HttpStatus.CREATED);
     }
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request, HttpServletRequest http) {
         rateLimiter.check("login:" + clientIp.resolve(http), authRequestsPerMinute);
         return sessions.issue(
-                refreshTokens.begin(authService.authenticate(request), request.clientOrBrowser()), HttpStatus.OK);
+                refreshTokens.begin(authService.authenticate(request), request.client()), HttpStatus.OK);
     }
 
     @PostMapping("/refresh")

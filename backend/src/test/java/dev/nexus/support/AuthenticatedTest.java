@@ -12,7 +12,9 @@ public final class AuthenticatedTest {
 
     public static String registerAndGetToken(HttpTestClient http, String email, String username) {
         Response response =
-                http.postJson("/auth/register", Map.of("email", email, "username", username, "password", PASSWORD));
+                http.postJson(
+                        "/auth/register",
+                        Map.of("email", email, "username", username, "password", PASSWORD, "client", "WEB"));
         if (response.status() != 201) {
             throw new IllegalStateException("Could not register " + email + ": " + response.rawBody());
         }

@@ -96,7 +96,7 @@ class AccountIntegrationTest extends PostgresIntegrationTest {
     void changingAPasswordNeedsTheOldOne() {
         Response wrong = http.postJson(
                 "/settings/account/password",
-                Map.of("currentPassword", "not it at all", "newPassword", "a whole new one"),
+                Map.of("currentPassword", "not it at all", "newPassword", "a whole new one", "client", "WEB"),
                 "Authorization",
                 auth());
 
@@ -104,7 +104,7 @@ class AccountIntegrationTest extends PostgresIntegrationTest {
 
         Response right = http.postJson(
                 "/settings/account/password",
-                Map.of("currentPassword", PASSWORD, "newPassword", "a whole new one"),
+                Map.of("currentPassword", PASSWORD, "newPassword", "a whole new one", "client", "WEB"),
                 "Authorization",
                 auth());
 
@@ -156,6 +156,6 @@ class AccountIntegrationTest extends PostgresIntegrationTest {
     }
 
     private Response login(String email, String password) {
-        return http.postJson("/auth/login", Map.of("email", email, "password", password));
+        return http.postJson("/auth/login", Map.of("email", email, "password", password, "client", "WEB"));
     }
 }

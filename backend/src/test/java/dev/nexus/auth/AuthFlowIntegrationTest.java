@@ -204,13 +204,30 @@ class AuthFlowIntegrationTest extends PostgresIntegrationTest {
         assertThat(http.get("/health").status()).isEqualTo(200);
     }
 
+    /**
+     * The client is required rather than guessed at. A caller that said nothing about itself
+     * used to be answered as a browser, which handed a native client a session with no refresh
+     * token in it: the app worked until its access token expired and then lost the session
+     * with nothing to point at. Refusing the request says so at the first attempt instead.
+     */
+    @Test
+    void loginRefusesACallerThatDoesNotSayWhatItIs() {
+        register("player@example.com", "player", PASSWORD);
+
+        Response response =
+                http.postJson("/auth/login", Map.of("email", "player@example.com", "password", PASSWORD));
+
+        assertThat(response.status()).isEqualTo(400);
+    }
+
     private Response register(String email, String username, String password) {
         return http.postJson(
-                "/auth/register", Map.of("email", email, "username", username, "password", password));
+                "/auth/register",
+                Map.of("email", email, "username", username, "password", password, "client", "WEB"));
     }
 
     private Response login(String email, String password) {
-        return http.postJson("/auth/login", Map.of("email", email, "password", password));
+        return http.postJson("/auth/login", Map.of("email", email, "password", password, "client", "WEB"));
     }
 
     private Response authedGet(String path, String token) {

@@ -70,7 +70,7 @@ public class AccountController {
         AppUser changed = accounts.changePassword(user.id(), change);
         refreshTokens.endEverySession(changed.getId());
 
-        return sessions.issue(refreshTokens.begin(changed, change.clientOrBrowser()), HttpStatus.OK);
+        return sessions.issue(refreshTokens.begin(changed, change.client()), HttpStatus.OK);
     }
 
     /**

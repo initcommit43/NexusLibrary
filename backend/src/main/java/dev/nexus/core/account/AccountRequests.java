@@ -3,6 +3,7 @@ package dev.nexus.core.account;
 import dev.nexus.auth.AuthClient;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
@@ -30,13 +31,9 @@ public final class AccountRequests {
             // longer password give a false sense of strength.
             @NotBlank @Size(min = 12, max = 72) String newPassword,
             // Changing a password ends every session and starts one more, so the caller has
-            // to say where the replacement goes. Absent means a browser, as it does on login.
-            AuthClient client) {
-
-        public AuthClient clientOrBrowser() {
-            return client == null ? AuthClient.WEB : client;
-        }
-    }
+            // to say where the replacement goes. Required, as it is on login: guessing browser
+            // here would hand a native client a session it cannot keep.
+            @NotNull AuthClient client) {}
 
     /** Deleting everything is worth one more proof that it is the account's owner asking. */
     public record AccountDeletion(@NotBlank String password) {}
