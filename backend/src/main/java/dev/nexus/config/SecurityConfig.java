@@ -33,6 +33,9 @@ public class SecurityConfig {
         ApiPaths.PREFIX + "/auth/login",
         ApiPaths.PREFIX + "/auth/refresh",
         ApiPaths.PREFIX + "/auth/logout",
+        // Someone who cannot sign in cannot present a token to ask for a way back in.
+        ApiPaths.PREFIX + "/auth/forgot-password",
+        ApiPaths.PREFIX + "/auth/reset-password",
         ApiPaths.PREFIX + "/health",
         // An app too old to be served is too old to be asked for a token first.
         ApiPaths.PREFIX + "/client-version"

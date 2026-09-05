@@ -1,6 +1,8 @@
 package dev.nexus.core.web;
 
 import dev.nexus.auth.AuthenticationFailedException;
+import dev.nexus.auth.PasswordResetLinkExpiredException;
+import dev.nexus.auth.PasswordResetUnavailableException;
 import dev.nexus.auth.RegistrationConflictException;
 import dev.nexus.core.account.AccountNotFoundException;
 import dev.nexus.core.account.PasswordMismatchException;
@@ -110,6 +112,28 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(AuthenticationFailedException.class)
     public ResponseEntity<ApiError> handleAuthFailure(AuthenticationFailedException e) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ApiError(e.getMessage()));
+    }
+
+    /**
+     * A dead reset link, and deliberately not a 401: nobody is signed in on that page, and the
+     * client treats a 401 as its own session ending — it would try to refresh, fail, and report
+     * a lost session instead of the one thing the reader needs to be told, which is to ask for
+     * another link. The message is the same for unknown, spent and expired; which of the three
+     * it was is not the caller's business.
+     *
+     * <p>No field error either: the token is in the URL, not in a box the reader can correct,
+     * and a client that shows field errors inline would have nowhere to put it.
+     */
+    @ExceptionHandler(PasswordResetLinkExpiredException.class)
+    public ResponseEntity<ApiError> handleExpiredResetLink(PasswordResetLinkExpiredException e) {
+        return ResponseEntity.badRequest().body(new ApiError(e.getMessage()));
+    }
+
+    /** No sender is configured, so no link can be issued. A deployment fault, said plainly. */
+    @ExceptionHandler(PasswordResetUnavailableException.class)
+    public ResponseEntity<ApiError> handleResetUnavailable(PasswordResetUnavailableException e) {
+        log.warn("A password reset was asked for but no mailer is configured on this deployment");
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body(new ApiError(e.getMessage()));
     }
 
     /**
