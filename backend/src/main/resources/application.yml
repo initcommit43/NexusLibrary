@@ -64,6 +64,9 @@ nexus:
     # the peer is the caller. Raise it per deployment, never above the real number: too high
     # reads an entry the caller wrote themselves and hands them a rate-limit bucket each.
     trusted-proxy-count: ${TRUSTED_PROXY_COUNT:0}
+    # How long a mailed password reset link works. Half an hour: it is read within minutes of
+    # arriving, and past that it is only a live credential sitting in an inbox.
+    password-reset-ttl-minutes: 30
   rate-limit:
     auth-requests-per-minute: 10
     search-requests-per-minute: 30

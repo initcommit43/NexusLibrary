@@ -26,13 +26,16 @@ public record NexusProperties(Jwt jwt, Security security, RateLimit rateLimit) {
      *     of {@code X-Forwarded-For} the caller's own address is. 0 locally, 1 behind Railway,
      *     2 with a CDN in front of that. Set it too high and a forged entry gets read as the
      *     caller; see {@link dev.nexus.core.web.ClientIpResolver}.
+     * @param passwordResetTtlMinutes how long a mailed reset link works. Short on purpose: it
+     *     sets a password without the old one being known, and it lives in an inbox.
      */
     public record Security(
             boolean cookieSecure,
             List<String> allowedOrigins,
             String frontendUrl,
             boolean registrationOpen,
-            @PositiveOrZero int trustedProxyCount) {}
+            @PositiveOrZero int trustedProxyCount,
+            @Positive long passwordResetTtlMinutes) {}
 
     public record RateLimit(
             @Positive int authRequestsPerMinute,
