@@ -10,6 +10,8 @@ import { HomePage } from './pages/HomePage'
 import { ProfilePage } from './pages/ProfilePage'
 import { StatsPage } from './pages/StatsPage'
 import { LoginPage } from './pages/LoginPage'
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage'
+import { ResetPasswordPage } from './pages/ResetPasswordPage'
 import { SearchPage } from './pages/SearchPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { StudioPage } from './pages/StudioPage'
@@ -36,6 +38,10 @@ export const App = () => (
   <Routes>
     <Route path="/login" element={<LoginPage />} />
     <Route path="/register" element={<RegisterPage />} />
+    <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+    {/* Where the mailed link lands, so it stays outside ProtectedRoute: whoever opens it
+        cannot sign in, which is the whole reason they were sent one. */}
+    <Route path="/reset-password" element={<ResetPasswordPage />} />
     <Route element={<ProtectedRoute />}>
       <Route path="/" element={<HomePage />} />
       <Route path="/library/:module" element={<ModuleRedirect />} />

@@ -452,6 +452,21 @@ export const api = {
 
   logout: () => request<void>('/auth/logout', { method: 'POST' }),
 
+  /**
+   * Asks for a reset link. Answers the same whether or not the address has an account, so
+   * there is nothing here to tell the caller which it was — and nothing to show the reader.
+   */
+  requestPasswordReset: (email: string) =>
+    request<void>('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),
+
+  /**
+   * Spends a mailed link. No session comes back: the reset ends every one the account had,
+   * including whichever this browser was holding, and signing in with the new password is
+   * what starts the next.
+   */
+  resetPassword: (token: string, password: string) =>
+    request<void>('/auth/reset-password', { method: 'POST', body: JSON.stringify({ token, password }) }),
+
   me: () => request<User>('/auth/me'),
 
   health: () => request<{ status: string }>('/health'),

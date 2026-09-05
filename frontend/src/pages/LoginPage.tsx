@@ -20,7 +20,13 @@ export const LoginPage = () => {
         await login(v.email ?? '', v.password ?? '')
         navigate(from, { replace: true })
       }}
-      footer={<>No account yet? <Link to="/register">Create one</Link></>}
+      footer={
+        <>
+          <Link to="/forgot-password">Forgot your password?</Link>
+          <br />
+          No account yet? <Link to="/register">Create one</Link>
+        </>
+      }
     />
   )
 }
