@@ -2,7 +2,6 @@ package dev.nexus.auth;
 
 import dev.nexus.auth.dto.LoginRequest;
 import dev.nexus.auth.dto.RegisterRequest;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -55,6 +54,6 @@ public class AuthService {
     }
 
     private String normalizeEmail(String email) {
-        return email.trim().toLowerCase(Locale.ROOT);
+        return EmailAddresses.normalise(email);
     }
 }
