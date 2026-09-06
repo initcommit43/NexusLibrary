@@ -6,11 +6,14 @@ import {
   type ActivityDay,
   type MediaType,
   type ProfileBanner,
+  type ProfilePicture,
   type TrackedItem,
 } from '../api/client'
 import { ActivityHeatmap } from '../components/ActivityHeatmap'
 import { AppShell } from '../components/AppShell'
 import { BannerPicker } from '../components/BannerPicker'
+import { CharacterPicker } from '../components/CharacterPicker'
+import { ProfileAvatar } from '../components/ProfileAvatar'
 import { ProfileBannerFrame } from '../components/ProfileBannerFrame'
 import { Figures } from '../components/Figures'
 import { summarise, timeSpent } from '../components/stats'
@@ -63,6 +66,7 @@ export const ProfilePage = () => {
   /** The rows that share a band with the row before them. */
   const [paired, setPaired] = useState<MediaType[]>([])
   const [banner, setBanner] = useState<ProfileBanner | null>(null)
+  const [picture, setPicture] = useState<ProfilePicture | null>(null)
   const [history, setHistory] = useState<ActivityDay[]>([])
   /*
    * The same days over every module, which is what the figures beside the map count. A day
@@ -82,6 +86,8 @@ export const ProfilePage = () => {
   )
   const [picking, setPicking] = useState(false)
   const [adjusting, setAdjusting] = useState(false)
+  const [pickingCharacter, setPickingCharacter] = useState(false)
+  const [adjustingPicture, setAdjustingPicture] = useState(false)
   const [arranging, setArranging] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -95,12 +101,18 @@ export const ProfilePage = () => {
   }, [])
 
   useEffect(() => {
-    Promise.all([api.listEntries(), api.favouriteRowOrder(), api.profileBanner()])
-      .then(([library, arrangement, chosen]) => {
+    Promise.all([
+      api.listEntries(),
+      api.favouriteRowOrder(),
+      api.profileBanner(),
+      api.profilePicture(),
+    ])
+      .then(([library, arrangement, chosen, face]) => {
         setEntries(library)
         setRowOrder(arrangement.order)
         setPaired(arrangement.paired)
         setBanner(chosen)
+        setPicture(face)
       })
       .catch((err) =>
         setError(err instanceof ApiError ? err.message : 'Could not load your library.'),
@@ -289,9 +301,16 @@ export const ProfilePage = () => {
         )}
 
         <div className="profile-identity">
-          <span className="profile-avatar" aria-hidden>
-            {user?.username.charAt(0).toUpperCase()}
-          </span>
+          <ProfileAvatar
+            picture={picture}
+            adjusting={adjustingPicture}
+            onEdit={() => {
+              setAdjustingPicture(false)
+              setPickingCharacter(true)
+            }}
+            onFramed={setPicture}
+            onClose={() => setAdjustingPicture(false)}
+          />
           <div className="profile-name">
             <h2>{user?.username}</h2>
             <p className="muted">{user?.email}</p>
@@ -305,6 +324,11 @@ export const ProfilePage = () => {
             * the thing it changes, but a profile is not read for its wallpaper.
             */}
           <div className="profile-head-aside">
+            {picture && (
+              <p className="profile-picture-credit muted">
+                {picture.characterName} from <Link to={mediaPathFor(picture)}>{picture.title}</Link>
+              </p>
+            )}
             {banner && (
               <p className="profile-banner-credit muted">
                 Banner from <Link to={mediaPathFor(banner)}>{banner.title}</Link>
@@ -332,6 +356,21 @@ export const ProfilePage = () => {
           onChosen={setBanner}
           onCleared={() => setBanner(null)}
           onClose={() => setPicking(false)}
+        />
+      )}
+
+      {pickingCharacter && entries !== null && (
+        <CharacterPicker
+          entries={entries}
+          chosen={picture}
+          // Straight into the crop: a portrait dropped into a circle almost never lands where
+          // the reader wants it, so the adjustment is the same gesture as the choice.
+          onChosen={(face) => {
+            setPicture(face)
+            setAdjustingPicture(true)
+          }}
+          onCleared={() => setPicture(null)}
+          onClose={() => setPickingCharacter(false)}
         />
       )}
 
