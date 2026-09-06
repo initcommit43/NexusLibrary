@@ -189,4 +189,62 @@ class AniListMetadataAdapterTest {
         assertThat(adapter.bannerFrom(Map.of("title", Map.of("romaji", "One Piece")))).isEmpty();
     }
 
+    /** AniList numbers its characters, and the detail carries them as edges around a node. */
+    private Map<String, Object> detailWithCharacters() {
+        return Map.of(
+                "characters",
+                Map.of(
+                        "edges",
+                        List.of(
+                                Map.of(
+                                        "role",
+                                        "MAIN",
+                                        "node",
+                                        Map.of(
+                                                "id",
+                                                40,
+                                                "name",
+                                                Map.of("full", "Monkey D. Luffy"),
+                                                "image",
+                                                Map.of("medium", "https://anilist.co/character/40.jpg"))),
+                                Map.of(
+                                        "role",
+                                        "SUPPORTING",
+                                        "node",
+                                        Map.of(
+                                                "id",
+                                                62,
+                                                "name",
+                                                Map.of("full", "Nami"),
+                                                "image",
+                                                Map.of("medium", ""))))));
+    }
+
+    @Test
+    void aCharacterIsFoundByItsAniListId() {
+        assertThat(adapter.characterFrom(detailWithCharacters(), "40"))
+                .get()
+                .satisfies(portrait -> {
+                    assertThat(portrait.id()).isEqualTo("40");
+                    assertThat(portrait.name()).isEqualTo("Monkey D. Luffy");
+                    assertThat(portrait.imageUrl()).isEqualTo("https://anilist.co/character/40.jpg");
+                });
+    }
+
+    @Test
+    void aCharacterFromAnotherTitleIsNotFound() {
+        assertThat(adapter.characterFrom(detailWithCharacters(), "999")).isEmpty();
+    }
+
+    /** A character with no portrait cannot stand as a picture, so it is not offered as one. */
+    @Test
+    void aCharacterWithNoPortraitIsNotOffered() {
+        assertThat(adapter.characterFrom(detailWithCharacters(), "62")).isEmpty();
+    }
+
+    @Test
+    void aDetailWithNoCharactersAtAllHasNone() {
+        assertThat(adapter.characterFrom(Map.of("title", Map.of("romaji", "One Piece")), "40")).isEmpty();
+    }
+
 }
