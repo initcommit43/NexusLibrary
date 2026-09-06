@@ -16,6 +16,8 @@ import dev.nexus.core.importing.SyncJobNotFoundException;
 import dev.nexus.core.importing.UpstreamUnavailableException;
 import dev.nexus.core.preferences.BannerNotSetException;
 import dev.nexus.core.preferences.NoBannerException;
+import dev.nexus.core.preferences.NoCharacterException;
+import dev.nexus.core.preferences.PictureNotSetException;
 import dev.nexus.core.review.ReviewNotFoundException;
 import dev.nexus.core.review.ReviewNotStartedException;
 import dev.nexus.auth.RegistrationClosedException;
@@ -199,8 +201,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ApiError(e.getMessage()));
     }
 
-    @ExceptionHandler(NoBannerException.class)
-    public ResponseEntity<ApiError> handleNoBanner(NoBannerException e) {
+    @ExceptionHandler({NoBannerException.class, NoCharacterException.class})
+    public ResponseEntity<ApiError> handleNothingToTake(RuntimeException e) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(new ApiError(e.getMessage()));
     }
 
@@ -209,6 +211,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         BannerNotSetException.class,
         EntryNotFoundException.class,
         ItemNotFoundException.class,
+        PictureNotSetException.class,
         ExternalAccountNotConnectedException.class,
         ReviewNotFoundException.class,
         SyncJobNotFoundException.class

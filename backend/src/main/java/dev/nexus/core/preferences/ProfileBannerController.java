@@ -4,8 +4,6 @@ import dev.nexus.auth.CurrentUser;
 import dev.nexus.core.domain.MediaType;
 import dev.nexus.core.domain.Source;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -31,16 +29,6 @@ public class ProfileBannerController {
 
     /** Which of the reader's entries to take the banner from. */
     public record Choice(@NotNull Long entryId) {}
-
-    /**
-     * How the image sits in the strip: the point of it to hold in view, as percentages, and
-     * how far in. Bounded here rather than trusted, since these go straight into the style
-     * the profile is drawn with.
-     */
-    public record Framing(
-            @NotNull @Min(0) @Max(100) Integer focusX,
-            @NotNull @Min(0) @Max(100) Integer focusY,
-            @NotNull @Min(100) @Max(300) Integer zoom) {}
 
     /**
      * The image, and enough of the title behind it to name it and link to its page — the
