@@ -1,20 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
-import { ApiError, api, type BannerFraming, type ProfileBanner } from '../api/client'
-
-/** Below a pixel of room there is nothing to move: the image already fits the strip there. */
-const NO_ROOM = 1
-
-/** A banner may be magnified, never shrunk below the crop that fills the strip. */
-const COVER = 100
-const CLOSEST = 300
-
-const framingOf = (banner: ProfileBanner): BannerFraming => ({
-  focusX: banner.focusX,
-  focusY: banner.focusY,
-  zoom: banner.zoom,
-})
-
-const clamp = (value: number) => Math.min(100, Math.max(0, value))
+import { ApiError, api, type Framing, type ProfileBanner } from '../api/client'
+import {
+  CLOSEST,
+  COVER,
+  type DragOrigin,
+  draggedTo,
+  framedStyle,
+  framingOf,
+  hidden,
+} from './framing'
 
 /** Arrows to opposite corners: the gesture for taking hold of a picture and sizing it. */
 const ResizeIcon = () => (
@@ -74,7 +68,7 @@ export const ProfileBannerFrame = ({
   const framing = held.framing
   const error = held.error
 
-  const setFraming = (next: BannerFraming) => setEdit({ ...held, framing: next })
+  const setFraming = (next: Framing) => setEdit({ ...held, framing: next })
 
   const [busy, setBusy] = useState(false)
 
@@ -87,7 +81,7 @@ export const ProfileBannerFrame = ({
   const [shapes, setShapes] = useState<{ picture: number; strip: number } | null>(null)
 
   const image = useRef<HTMLImageElement>(null)
-  const drag = useRef<{ x: number; y: number; from: BannerFraming } | null>(null)
+  const drag = useRef<DragOrigin | null>(null)
 
   useEffect(() => {
     if (!adjusting) return
@@ -98,23 +92,6 @@ export const ProfileBannerFrame = ({
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
   }, [adjusting, onClose])
-
-  /** How much of the image is out of sight in each axis, in pixels of the strip. */
-  const hidden = () => {
-    const node = image.current
-    if (!node?.naturalWidth || !node.naturalHeight) return null
-
-    // The laid-out size, not the drawn one: getBoundingClientRect would carry the zoom.
-    const width = node.offsetWidth
-    const height = node.offsetHeight
-    const aspect = node.naturalWidth / node.naturalHeight
-    const zoom = framing.zoom / 100
-
-    return {
-      x: (Math.max(width, height * aspect) - width) * zoom + width * (zoom - 1),
-      y: (Math.max(height, width / aspect) - height) * zoom + height * (zoom - 1),
-    }
-  }
 
   const zoomed = framing.zoom > COVER
   const canMoveDown = zoomed || (shapes !== null && shapes.picture < shapes.strip)
@@ -128,20 +105,10 @@ export const ProfileBannerFrame = ({
 
   const moveDrag = (event: React.PointerEvent<HTMLImageElement>) => {
     const from = drag.current
-    const room = hidden()
+    const room = hidden(image.current, framing.zoom)
     if (!from || !room) return
 
-    setFraming({
-      ...from.from,
-      focusX:
-        room.x < NO_ROOM
-          ? from.from.focusX
-          : clamp(from.from.focusX - ((event.clientX - from.x) * 100) / room.x),
-      focusY:
-        room.y < NO_ROOM
-          ? from.from.focusY
-          : clamp(from.from.focusY - ((event.clientY - from.y) * 100) / room.y),
-    })
+    setFraming(draggedTo(from, room, event.clientX, event.clientY))
   }
 
   const endDrag = () => {
@@ -179,13 +146,7 @@ export const ProfileBannerFrame = ({
         src={banner.imageUrl}
         alt=""
         draggable={false}
-        style={{
-          objectPosition: `${framing.focusX}% ${framing.focusY}%`,
-          transform: `scale(${framing.zoom / 100})`,
-          // Anchored to the same point the crop is, so zooming closes in on what is in view
-          // rather than on the middle of a picture the reader has already moved away from.
-          transformOrigin: `${framing.focusX}% ${framing.focusY}%`,
-        }}
+        style={framedStyle(framing)}
         onLoad={(event) =>
           setShapes({
             picture: event.currentTarget.naturalWidth / event.currentTarget.naturalHeight,

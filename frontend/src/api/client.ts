@@ -125,8 +125,24 @@ export type ProfileBanner = {
   zoom: number
 }
 
-/** Where the image sits inside the strip, which is not a change of which image it is. */
-export type BannerFraming = { focusX: number; focusY: number; zoom: number }
+/** The character standing for a reader, the title they are from, and how they are framed. */
+export type ProfilePicture = {
+  imageUrl: string
+  characterName: string
+  title: string
+  mediaType: MediaType
+  source: string
+  externalId: string
+  focusX: number
+  focusY: number
+  zoom: number
+}
+
+/**
+ * Where an image sits inside the frame showing it, which is not a change of which image it is.
+ * A strip and a circle crop the same way, so the banner and the picture share this.
+ */
+export type Framing = { focusX: number; focusY: number; zoom: number }
 
 export type MediaDetail = {
   mediaType: MediaType
@@ -609,13 +625,34 @@ export const api = {
       body: JSON.stringify({ entryId }),
     }),
 
-  frameProfileBanner: (framing: BannerFraming) =>
+  frameProfileBanner: (framing: Framing) =>
     request<ProfileBanner>('/settings/profile-banner', {
       method: 'PATCH',
       body: JSON.stringify(framing),
     }),
 
   clearProfileBanner: () => request<void>('/settings/profile-banner', { method: 'DELETE' }),
+
+  profilePicture: () => request<ProfilePicture | null>('/settings/profile-picture'),
+
+  /**
+   * Takes the entry and a character within it, never an image: the server reads the portrait
+   * out of that title's detail, so a profile can only ever wear a face from the reader's own
+   * library. Only AniList titles carry characters at all.
+   */
+  chooseProfilePicture: (entryId: number, characterId: string) =>
+    request<ProfilePicture>('/settings/profile-picture', {
+      method: 'PUT',
+      body: JSON.stringify({ entryId, characterId }),
+    }),
+
+  frameProfilePicture: (framing: Framing) =>
+    request<ProfilePicture>('/settings/profile-picture', {
+      method: 'PATCH',
+      body: JSON.stringify(framing),
+    }),
+
+  clearProfilePicture: () => request<void>('/settings/profile-picture', { method: 'DELETE' }),
 
   listIntegrations: () => request<ConnectedAccount[]>('/integrations'),
 
