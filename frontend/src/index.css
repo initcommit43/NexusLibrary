@@ -1129,10 +1129,14 @@ input.filter-control::-webkit-search-cancel-button {
   flex-shrink: 0;
 }
 
+/*
+ * Centred, not tucked in a corner: the circle clips its own corners away, and the whole
+ * picture is what the pencil stands for anyway.
+ */
 .avatar-edit-button {
   position: absolute;
-  right: 0.25rem;
-  bottom: 0.25rem;
+  inset: 0;
+  margin: auto;
   display: grid;
   place-items: center;
   width: 1.75rem;
@@ -1200,8 +1204,11 @@ input.filter-control::-webkit-search-cancel-button {
   padding-inline: var(--space-3);
 }
 
-.has-profile-banner .profile-avatar {
+.has-profile-banner .profile-avatar-holder {
   margin-top: -3rem;
+}
+
+.has-profile-banner .profile-avatar {
   border: 3px solid var(--bg);
   box-shadow: var(--shadow-2);
 }
