@@ -7,7 +7,12 @@ export type AuthContextValue = {
   user: User | null
   status: AuthStatus
   login: (email: string, password: string) => Promise<void>
-  register: (email: string, username: string, password: string) => Promise<void>
+  register: (
+    email: string,
+    username: string,
+    password: string,
+    acceptedTerms: boolean,
+  ) => Promise<void>
   logout: () => Promise<void>
   /** Re-reads the signed-in reader, for when a page has just changed who they are. */
   refresh: () => Promise<void>

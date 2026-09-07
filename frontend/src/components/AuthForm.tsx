@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { ApiError } from '../api/client'
+import { Footer } from './Footer'
 
 export type AuthField = {
   name: string
@@ -14,13 +15,20 @@ type Props = {
   fields: AuthField[]
   onSubmit: (values: Record<string, string>) => Promise<void>
   footer: React.ReactNode
+  /**
+   * What the reader has to agree to before the form will send, if anything. Registration
+   * passes the terms and privacy policy; signing in passes nothing, because agreeing again
+   * to something you agreed to when you registered is a click that means nothing.
+   */
+  consent?: React.ReactNode
 }
 
-export const AuthForm = ({ title, submitLabel, fields, onSubmit, footer }: Props) => {
+export const AuthForm = ({ title, submitLabel, fields, onSubmit, footer, consent }: Props) => {
   const [values, setValues] = useState<Record<string, string>>({})
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [formError, setFormError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [consented, setConsented] = useState(false)
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
@@ -44,7 +52,7 @@ export const AuthForm = ({ title, submitLabel, fields, onSubmit, footer }: Props
   }
 
   return (
-    <div className="page-centered">
+    <div className="page-centered auth-page">
       <form className="card auth-form" onSubmit={handleSubmit} noValidate>
         <h1>{title}</h1>
 
@@ -71,12 +79,33 @@ export const AuthForm = ({ title, submitLabel, fields, onSubmit, footer }: Props
           </label>
         ))}
 
-        <button type="submit" disabled={busy}>
+        {consent && (
+          <label className="consent">
+            <input
+              type="checkbox"
+              name="acceptedTerms"
+              checked={consented}
+              aria-invalid={Boolean(fieldErrors.acceptedTerms)}
+              onChange={(e) => setConsented(e.target.checked)}
+            />
+            <span>{consent}</span>
+          </label>
+        )}
+
+        {/*
+          * Unchecked consent disables the button rather than failing on submit. The server
+          * refuses it either way, but a reader should not have to press send to be told
+          * about a box they have not ticked yet.
+          */}
+        <button type="submit" disabled={busy || (Boolean(consent) && !consented)}>
           {busy ? 'Working…' : submitLabel}
         </button>
 
         <p className="muted">{footer}</p>
       </form>
+
+      {/* Reachable before there is an account, which is the point of putting it here. */}
+      <Footer />
     </div>
   )
 }

@@ -454,7 +454,17 @@ const filenameFrom = (header: string | null): string | null => {
 const WEB_CLIENT = 'WEB'
 
 export const api = {
-  register: (payload: { email: string; username: string; password: string }) =>
+  /**
+   * @param acceptedTerms whether the reader ticked the box. Travels rather than being
+   *   assumed server-side: which version they accepted is recorded against the account, and
+   *   an account created without it is one nobody can show consent for.
+   */
+  register: (payload: {
+    email: string
+    username: string
+    password: string
+    acceptedTerms: boolean
+  }) =>
     request<AuthResponse>('/auth/register', {
       method: 'POST',
       body: JSON.stringify({ ...payload, client: WEB_CLIENT }),

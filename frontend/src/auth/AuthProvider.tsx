@@ -43,12 +43,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setStatus('authenticated')
   }, [])
 
-  const register = useCallback(async (email: string, username: string, password: string) => {
-    const res = await api.register({ email, username, password })
-    setAccessToken(res.accessToken)
-    setUser(res.user)
-    setStatus('authenticated')
-  }, [])
+  const register = useCallback(
+    async (email: string, username: string, password: string, acceptedTerms: boolean) => {
+      const res = await api.register({ email, username, password, acceptedTerms })
+      setAccessToken(res.accessToken)
+      setUser(res.user)
+      setStatus('authenticated')
+    },
+    [],
+  )
 
   const logout = useCallback(async () => {
     try {
