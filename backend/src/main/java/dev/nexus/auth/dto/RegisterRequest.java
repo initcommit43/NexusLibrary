@@ -1,5 +1,6 @@
 package dev.nexus.auth.dto;
 
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Email;
 import dev.nexus.auth.AuthClient;
 import jakarta.validation.constraints.NotBlank;
@@ -19,4 +20,11 @@ public record RegisterRequest(
         // longer password give a false sense of strength.
         @NotBlank @Size(min = 12, max = 72) String password,
         /** Required; see {@link LoginRequest}. */
-        @NotNull AuthClient client) {}
+        @NotNull AuthClient client,
+        /**
+         * Whether the reader accepted the terms and the privacy policy. Checked here rather
+         * than trusted from the form: the web client disables its own button until the box
+         * is ticked, but a native client and a direct call to this endpoint go through no
+         * such form, and an account with no recorded consent is one nobody can account for.
+         */
+        @AssertTrue(message = "Please accept the terms and privacy policy.") boolean acceptedTerms) {}

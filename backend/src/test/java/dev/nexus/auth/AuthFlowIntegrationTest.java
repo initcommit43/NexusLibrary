@@ -48,6 +48,38 @@ class AuthFlowIntegrationTest extends PostgresIntegrationTest {
         assertThat(response.setCookie()).noneMatch(cookie -> cookie.contains(response.accessToken()));
     }
 
+    /**
+     * The web form disables its own button until the box is ticked, which is a courtesy to
+     * the reader and not a control: a native client and a direct call go through no form at
+     * all. Refusing it here is what makes the recorded consent mean something.
+     */
+    @Test
+    void registerRefusesAnAccountThatHasNotAcceptedTheTerms() {
+        Response response = http.postJson(
+                "/auth/register",
+                Map.of(
+                        "email", "player@example.com",
+                        "username", "player",
+                        "password", PASSWORD,
+                        "client", "WEB",
+                        "acceptedTerms", false));
+
+        assertThat(response.status()).isEqualTo(400);
+        assertThat(response.fieldErrors()).containsKey("acceptedTerms");
+        assertThat(users.findByEmail("player@example.com")).isEmpty();
+    }
+
+    /** Which text was accepted, not only that something was: see {@link PolicyVersion}. */
+    @Test
+    void registerRecordsWhichPolicyVersionWasAccepted() {
+        register("player@example.com", "player", PASSWORD);
+
+        AppUser user = users.findByEmail("player@example.com").orElseThrow();
+
+        assertThat(user.getTermsAcceptedAt()).isNotNull();
+        assertThat(user.getTermsVersion()).isEqualTo(PolicyVersion.CURRENT);
+    }
+
     @Test
     void registerRejectsADuplicateEmailWithAFieldError() {
         register("player@example.com", "player", PASSWORD);
@@ -223,7 +255,7 @@ class AuthFlowIntegrationTest extends PostgresIntegrationTest {
     private Response register(String email, String username, String password) {
         return http.postJson(
                 "/auth/register",
-                Map.of("email", email, "username", username, "password", password, "client", "WEB"));
+                Map.of("email", email, "username", username, "password", password, "client", "WEB", "acceptedTerms", true));
     }
 
     private Response login(String email, String password) {

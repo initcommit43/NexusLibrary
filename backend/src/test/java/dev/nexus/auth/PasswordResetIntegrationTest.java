@@ -243,7 +243,7 @@ class PasswordResetIntegrationTest extends PostgresIntegrationTest {
     private Response register(String email, String username) {
         return http.postJson(
                 "/auth/register",
-                Map.of("email", email, "username", username, "password", PASSWORD, "client", "WEB"));
+                Map.of("email", email, "username", username, "password", PASSWORD, "client", "WEB", "acceptedTerms", true));
     }
 
     private Response login(String email, String password) {

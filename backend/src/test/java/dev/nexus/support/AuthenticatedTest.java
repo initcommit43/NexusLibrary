@@ -14,7 +14,7 @@ public final class AuthenticatedTest {
         Response response =
                 http.postJson(
                         "/auth/register",
-                        Map.of("email", email, "username", username, "password", PASSWORD, "client", "WEB"));
+                        Map.of("email", email, "username", username, "password", PASSWORD, "client", "WEB", "acceptedTerms", true));
         if (response.status() != 201) {
             throw new IllegalStateException("Could not register " + email + ": " + response.rawBody());
         }

@@ -28,6 +28,13 @@ public class AppUser {
     @Column(name = "created_at", nullable = false, updatable = false, insertable = false)
     private Instant createdAt;
 
+    /** Null for an account created before consent was recorded; see V21. */
+    @Column(name = "terms_accepted_at")
+    private Instant termsAcceptedAt;
+
+    @Column(name = "terms_version", length = 32)
+    private String termsVersion;
+
     protected AppUser() {
         // JPA
     }
@@ -56,6 +63,20 @@ public class AppUser {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public Instant getTermsAcceptedAt() {
+        return termsAcceptedAt;
+    }
+
+    public String getTermsVersion() {
+        return termsVersion;
+    }
+
+    /** Records which text was accepted, and when. Set once, at registration. */
+    public void acceptTerms(String version, Instant at) {
+        this.termsVersion = version;
+        this.termsAcceptedAt = at;
     }
 
     public void rename(String username) {

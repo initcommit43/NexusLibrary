@@ -2,6 +2,7 @@ package dev.nexus.auth;
 
 import dev.nexus.auth.dto.LoginRequest;
 import dev.nexus.auth.dto.RegisterRequest;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -32,7 +33,12 @@ public class AuthService {
             throw new RegistrationConflictException("username", "That username is taken.");
         }
 
-        return users.save(new AppUser(email, request.username(), passwordEncoder.encode(request.password())));
+        AppUser user = new AppUser(email, request.username(), passwordEncoder.encode(request.password()));
+        // Recorded in the same transaction as the account. An account that exists without a
+        // consent record beside it is one we could not answer an Art. 7(1) question about.
+        user.acceptTerms(PolicyVersion.CURRENT, Instant.now());
+
+        return users.save(user);
     }
 
     @Transactional(readOnly = true)
