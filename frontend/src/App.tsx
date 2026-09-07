@@ -20,6 +20,9 @@ import { MalCallbackPage } from './pages/MalCallbackPage'
 import { SimklCallbackPage } from './pages/SimklCallbackPage'
 import { SteamCallbackPage } from './pages/SteamCallbackPage'
 import { RegisterPage } from './pages/RegisterPage'
+import { CreditsPage } from './pages/CreditsPage'
+import { PrivacyPage } from './pages/PrivacyPage'
+import { TermsPage } from './pages/TermsPage'
 import { defaultTypeOf, moduleBySlug } from './modules/registry'
 
 /** '/' is whichever module you were last in, so a bookmark or a reload lands where you left. */
@@ -42,6 +45,11 @@ export const App = () => (
     {/* Where the mailed link lands, so it stays outside ProtectedRoute: whoever opens it
         cannot sign in, which is the whole reason they were sent one. */}
     <Route path="/reset-password" element={<ResetPasswordPage />} />
+    {/* Outside ProtectedRoute, and it has to be: the register form asks a reader to accept
+        two of these before they have an account to read them with. */}
+    <Route path="/credits" element={<CreditsPage />} />
+    <Route path="/privacy" element={<PrivacyPage />} />
+    <Route path="/terms" element={<TermsPage />} />
     <Route element={<ProtectedRoute />}>
       <Route path="/" element={<HomePage />} />
       <Route path="/library/:module" element={<ModuleRedirect />} />
