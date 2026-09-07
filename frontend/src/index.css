@@ -408,6 +408,15 @@ button.small {
  * tracks back, and a page of settings becomes a very long line of text.
  */
 .shell {
+  /*
+   * A column at least as tall as the window, so the footer sits on the bottom edge of a
+   * short page instead of halfway up it. The sticky header is unaffected: it still scrolls
+   * against the viewport, which is the scroll container either way.
+   */
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+
   --shell-max: 86rem;
 
   /* A browse row is read across, a shelf is read down; they are not the same card. */
@@ -423,6 +432,8 @@ button.small {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+  /* Takes the slack, which is what pushes the footer down. */
+  flex: 1 0 auto;
 }
 
 /* --- theme dock --- */
@@ -4930,3 +4941,181 @@ a.icon-button.active {
  * would inherit the page's idea of "soft" and turn navy on navy in the dark theme. Both lines
  * take the same white — they are one caption in two rows, not a label and a footnote.
  */
+
+/* --- site footer --- */
+
+/*
+ * Quiet by design. What it links to is read once, if ever, and a legal floor that competes
+ * with the shelves above it is a footer that has misunderstood its job.
+ */
+.site-footer {
+  width: 100%;
+  max-width: var(--shell-max);
+  margin-inline: auto;
+  padding: var(--space-4);
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.site-footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+/* Muted until hovered: these are not the links anyone came for. */
+.site-footer-links a {
+  color: var(--text-muted);
+}
+
+.site-footer-links a:hover {
+  color: var(--accent);
+}
+
+.site-footer-note {
+  color: var(--text-muted);
+}
+
+/*
+ * A gutter for the theme dock, which is fixed to the window's bottom-right corner and so
+ * lands on top of this the moment the page is scrolled to the end. Asymmetric on purpose:
+ * the dock is only ever on one side, and padding the other edge to match would push the
+ * links off centre to fix a collision that never happens there.
+ *
+ * Scoped to the shell because that is the only layout the dock appears in — the legal pages
+ * carry the same footer with nothing floating over it.
+ */
+.shell .site-footer {
+  padding-right: calc(var(--space-4) + 3.5rem);
+}
+
+/*
+ * The sign-in card centres in the space above the footer rather than in the window, so
+ * adding the footer does not push the form off-centre.
+ */
+.auth-page {
+  grid-template-rows: 1fr auto;
+  gap: var(--space-5);
+}
+
+/* --- legal pages --- */
+
+.legal-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.legal-header {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+
+/*
+ * Measured for prose, not for cards. A policy is read in sentences, and the width that
+ * makes a grid of covers work is the width that makes a paragraph unreadable.
+ */
+.legal-main {
+  flex: 1 0 auto;
+  width: 100%;
+  max-width: 44rem;
+  margin-inline: auto;
+  padding: var(--space-6) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.legal-main h2 {
+  margin-top: var(--space-4);
+}
+
+.legal-main h3 {
+  margin-top: var(--space-2);
+  color: var(--text-body);
+}
+
+.legal-main ul {
+  margin: 0;
+  padding-left: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.legal-main code {
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  font-size: var(--text-sm);
+}
+
+.legal-updated {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+/* --- credits --- */
+
+.credit-list {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.credit dt {
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  font-weight: 600;
+}
+
+.credit dd {
+  margin: var(--space-1) 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+/*
+ * A provider's required wording, set apart from our description of what they are for. The
+ * rule down the side marks it as quoted rather than written, because it is.
+ */
+.credit-notice {
+  padding-left: var(--space-3);
+  border-left: 2px solid var(--border-strong);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+/* --- consent --- */
+
+/*
+ * The box and its sentence, laid out so the text wraps against itself rather than under the
+ * checkbox. Aligned to the top: the label runs to two lines and a centred box would drift
+ * away from the line it belongs to.
+ */
+.consent {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--text-body);
+  cursor: pointer;
+}
+
+.consent input {
+  /* Nudged down to sit on the first line's baseline rather than above its cap height. */
+  margin-top: 0.15rem;
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}

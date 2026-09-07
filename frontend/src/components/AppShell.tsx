@@ -1,6 +1,7 @@
 import { NavLink, useParams } from 'react-router-dom'
 import { ModuleSwitcher } from './ModuleSwitcher'
 import { AccountMenu } from './AccountMenu'
+import { Footer } from './Footer'
 import { HeaderSearch } from './HeaderSearch'
 import { OutageBanner } from './OutageBanner'
 import { ThemeToggle } from './ThemeToggle'
@@ -67,6 +68,9 @@ export const AppShell = ({
       <main className="shell-main" data-module={current.slug}>
         {children}
       </main>
+
+      {/* Below the page rather than inside it: what it links to is true of the whole app. */}
+      <Footer />
 
       {/*
         * Pinned to the corner of the viewport rather than carried in the header, which
