@@ -106,7 +106,10 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+        // Bcrypt writes its cost into the hash, so raising this leaves every existing hash
+        // verifying at the cost it was made with; only passwords set from here use 12.
+        // 10 was the constructor default and is behind current guidance.
+        return new BCryptPasswordEncoder(12);
     }
 
     @Bean
