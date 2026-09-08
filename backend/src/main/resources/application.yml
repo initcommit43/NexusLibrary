@@ -162,3 +162,11 @@ nexus:
   encryption:
     # 32 bytes, base64. Generate with: openssl rand -base64 32
     key: ${NEXUS_ENCRYPTION_KEY}
+  turnstile:
+    # Cloudflare Turnstile, in front of the forms reachable without an account. Registered at
+    # dash.cloudflare.com. The site key is public and goes to the browser; the secret key never
+    # leaves the server. Unset locally, which switches the check off so dev can still register —
+    # a deployment on a public URL must set both, and the app warns at boot when it has not.
+    site-key: ${TURNSTILE_SITE_KEY:}
+    secret-key: ${TURNSTILE_SECRET_KEY:}
+    verify-url: https://challenges.cloudflare.com/turnstile/v0/siteverify
