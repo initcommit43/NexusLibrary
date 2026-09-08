@@ -14,7 +14,7 @@ class RefreshCookiesTest {
 
     private static RefreshCookies cookies(boolean secure) {
         return new RefreshCookies(new NexusProperties(
-                new NexusProperties.Jwt("a-signing-key-long-enough-for-hs256-0123", 15, 30),
+                new NexusProperties.Jwt("a-signing-key-long-enough-for-hs256-0123", 15, 30, 10),
                 new NexusProperties.Security(secure, List.of(), "http://localhost:5173", true, 0, 30),
                 new NexusProperties.RateLimit(10, 30, 3)));
     }

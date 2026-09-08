@@ -65,6 +65,26 @@ class SessionRevocationIntegrationTest extends PostgresIntegrationTest {
                 .isEqualTo(200);
     }
 
+    /**
+     * Two clients refreshing at once. The loser is refused, and inside the grace window that
+     * is the whole of it: the account's other sessions are left alone. The opposite case,
+     * where the window has passed, is {@link RefreshTokenReuseTest}.
+     */
+    @Test
+    void aRaceToRefreshLeavesTheOtherSessionsAlone() {
+        register("player@example.com", "player");
+        Response browser = login("player@example.com", AuthClient.WEB);
+        Response phone = login("player@example.com", AuthClient.NATIVE);
+
+        String original = browser.refreshCookiePair();
+        assertThat(http.post("/auth/refresh", "Cookie", original).status()).isEqualTo(200);
+
+        // The token the winner just replaced, presented immediately after it.
+        assertThat(http.post("/auth/refresh", "Cookie", original).status()).isEqualTo(401);
+
+        assertThat(refreshOf(phone).status()).isEqualTo(200);
+    }
+
     /** The case the whole table exists for: a session that cannot be reached to be signed out. */
     @Test
     void signingOutEverywhereEndsSessionsThisClientNeverSaw() {

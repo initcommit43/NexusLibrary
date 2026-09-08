@@ -50,6 +50,11 @@ nexus:
     secret: ${JWT_SECRET}
     access-ttl-minutes: ${JWT_ACCESS_TTL_MINUTES:15}
     refresh-ttl-days: 30
+    # A retired refresh token presented again inside this window is two clients refreshing at
+    # once, not theft. Past it, nobody holds one for an innocent reason. Long enough for a
+    # phone waking two requests together, short enough that a stolen copy is caught the first
+    # time it is spent.
+    refresh-reuse-grace-seconds: 10
   security:
     # Browsers reject Secure cookies over plain http, which local dev uses.
     cookie-secure: true

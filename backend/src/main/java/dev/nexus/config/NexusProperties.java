@@ -16,7 +16,13 @@ public record NexusProperties(Jwt jwt, Security security, RateLimit rateLimit) {
             // HS256 needs >= 256 bits of key material; a short secret weakens every token.
             @NotBlank @Size(min = 32) String secret,
             @Positive long accessTtlMinutes,
-            @Positive long refreshTtlDays) {}
+            @Positive long refreshTtlDays,
+            /**
+             * How long after a refresh token is retired its holder may present it again
+             * without that being read as theft. Covers two clients refreshing at once; see
+             * {@link dev.nexus.auth.RefreshTokenService#renew}.
+             */
+            @PositiveOrZero long refreshReuseGraceSeconds) {}
 
     /**
      * @param registrationOpen whether anyone may still create an account. A deployment with a
