@@ -13,6 +13,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.header.writers.CacheControlHeadersWriter;
 import org.springframework.security.web.header.writers.DelegatingRequestMatcherHeaderWriter;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
+import org.springframework.security.web.util.matcher.AnyRequestMatcher;
 import org.springframework.security.web.util.matcher.NegatedRequestMatcher;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -82,7 +83,21 @@ public class SecurityConfig {
                                 new NegatedRequestMatcher(
                                         PathPatternRequestMatcher.withDefaults()
                                                 .matcher(ApiPaths.PREFIX + "/catalog/browse")),
-                                new CacheControlHeadersWriter())))
+                                new CacheControlHeadersWriter()))
+                        /*
+                         * TLS is terminated at the edge and forwarded inward as plain http,
+                         * so request.isSecure() is false here and Spring's default HSTS
+                         * matcher never fires — the header was silently absent in production.
+                         * cookie-secure already means "this deployment is behind TLS", so it
+                         * decides this too rather than adding a second flag that says the same.
+                         */
+                        .httpStrictTransportSecurity(hsts -> {
+                            if (properties.security().cookieSecure()) {
+                                hsts.requestMatcher(AnyRequestMatcher.INSTANCE);
+                            } else {
+                                hsts.disable();
+                            }
+                        }))
                 .exceptionHandling(handling ->
                         handling.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
