@@ -3,6 +3,7 @@ package dev.nexus.auth;
 import dev.nexus.auth.dto.ForgotPasswordRequest;
 import dev.nexus.auth.dto.ResetPasswordRequest;
 import dev.nexus.config.NexusProperties;
+import dev.nexus.core.security.TurnstileVerifier;
 import dev.nexus.core.web.ClientIpResolver;
 import dev.nexus.core.web.RateLimiter;
 import jakarta.servlet.http.HttpServletRequest;
@@ -24,16 +25,19 @@ public class PasswordResetController {
 
     private final PasswordResetService passwordResets;
     private final RateLimiter rateLimiter;
+    private final TurnstileVerifier turnstile;
     private final ClientIpResolver clientIp;
     private final int authRequestsPerMinute;
 
     public PasswordResetController(
             PasswordResetService passwordResets,
             RateLimiter rateLimiter,
+            TurnstileVerifier turnstile,
             ClientIpResolver clientIp,
             NexusProperties properties) {
         this.passwordResets = passwordResets;
         this.rateLimiter = rateLimiter;
+        this.turnstile = turnstile;
         this.clientIp = clientIp;
         this.authRequestsPerMinute = properties.rateLimit().authRequestsPerMinute();
     }
@@ -45,6 +49,7 @@ public class PasswordResetController {
     @PostMapping("/forgot-password")
     public ResponseEntity<Void> requestLink(@Valid @RequestBody ForgotPasswordRequest request, HttpServletRequest http) {
         rateLimiter.check("forgot-password:" + clientIp.resolve(http), authRequestsPerMinute);
+        turnstile.verify(request.turnstileToken(), clientIp.resolve(http));
         passwordResets.requestLink(request.email());
 
         return ResponseEntity.noContent().build();

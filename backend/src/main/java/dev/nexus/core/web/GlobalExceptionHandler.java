@@ -18,6 +18,7 @@ import dev.nexus.core.preferences.BannerNotSetException;
 import dev.nexus.core.preferences.NoBannerException;
 import dev.nexus.core.preferences.NoCharacterException;
 import dev.nexus.core.preferences.PictureNotSetException;
+import dev.nexus.core.security.BotCheckFailedException;
 import dev.nexus.core.review.ReviewNotFoundException;
 import dev.nexus.core.review.ReviewNotStartedException;
 import dev.nexus.auth.RegistrationClosedException;
@@ -126,6 +127,15 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
      * <p>No field error either: the token is in the URL, not in a box the reader can correct,
      * and a client that shows field errors inline would have nowhere to put it.
      */
+    /**
+      * A failed challenge is a 400 rather than a 403: nothing about the caller was refused,
+      * the request simply arrived without usable proof it came from a browser.
+      */
+    @ExceptionHandler(BotCheckFailedException.class)
+    public ResponseEntity<ApiError> handleBotCheck(BotCheckFailedException e) {
+        return ResponseEntity.badRequest().body(new ApiError(e.getMessage()));
+    }
+
     @ExceptionHandler(PasswordResetLinkExpiredException.class)
     public ResponseEntity<ApiError> handleExpiredResetLink(PasswordResetLinkExpiredException e) {
         return ResponseEntity.badRequest().body(new ApiError(e.getMessage()));

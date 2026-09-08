@@ -27,4 +27,14 @@ public record RegisterRequest(
          * is ticked, but a native client and a direct call to this endpoint go through no
          * such form, and an account with no recorded consent is one nobody can account for.
          */
-        @AssertTrue(message = "Please accept the terms and privacy policy.") boolean acceptedTerms) {}
+        @AssertTrue(message = "Please accept the terms and privacy policy.") boolean acceptedTerms,
+        /**
+         * The Turnstile token the widget produced. Deliberately not {@code @NotBlank}: a
+         * deployment with no keys set switches the check off, and validating it here would
+         * demand a token that no client could obtain. {@link
+         * dev.nexus.core.security.TurnstileVerifier} decides whether its absence matters.
+         *
+         * <p>Required of every client, native included. {@code client} is chosen by the
+         * caller, so exempting {@code NATIVE} would exempt anyone willing to claim it.
+         */
+        String turnstileToken) {}

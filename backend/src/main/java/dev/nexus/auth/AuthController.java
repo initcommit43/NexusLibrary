@@ -6,6 +6,7 @@ import dev.nexus.auth.dto.RefreshRequest;
 import dev.nexus.auth.dto.RegisterRequest;
 import dev.nexus.auth.dto.UserResponse;
 import dev.nexus.config.NexusProperties;
+import dev.nexus.core.security.TurnstileVerifier;
 import dev.nexus.core.web.ClientIpResolver;
 import dev.nexus.core.web.RateLimiter;
 import jakarta.servlet.http.HttpServletRequest;
@@ -30,6 +31,7 @@ public class AuthController {
     private final RefreshTokenService refreshTokens;
     private final SessionResponses sessions;
     private final RateLimiter rateLimiter;
+    private final TurnstileVerifier turnstile;
     private final ClientIpResolver clientIp;
     private final int authRequestsPerMinute;
 
@@ -43,6 +45,7 @@ public class AuthController {
             RefreshTokenService refreshTokens,
             SessionResponses sessions,
             RateLimiter rateLimiter,
+            TurnstileVerifier turnstile,
             ClientIpResolver clientIp,
             NexusProperties properties) {
         this.authService = authService;
@@ -51,6 +54,7 @@ public class AuthController {
         this.refreshTokens = refreshTokens;
         this.sessions = sessions;
         this.rateLimiter = rateLimiter;
+        this.turnstile = turnstile;
         this.clientIp = clientIp;
         this.authRequestsPerMinute = properties.rateLimit().authRequestsPerMinute();
         this.registrationOpen = properties.security().registrationOpen();
@@ -64,7 +68,11 @@ public class AuthController {
             throw new RegistrationClosedException();
         }
 
+        // Throttle first: the counter is free, and confirming the challenge is an outbound
+        // call to Cloudflare that a flood should not get to spend.
         rateLimiter.check("register:" + clientIp.resolve(http), authRequestsPerMinute);
+        turnstile.verify(request.turnstileToken(), clientIp.resolve(http));
+
         return sessions.issue(
                 refreshTokens.begin(authService.register(request), request.client()), HttpStatus.CREATED);
     }
