@@ -38,6 +38,9 @@ public class SecurityConfig {
         ApiPaths.PREFIX + "/auth/forgot-password",
         ApiPaths.PREFIX + "/auth/reset-password",
         ApiPaths.PREFIX + "/health",
+        // What the signed-out screens are built from, the Turnstile site key included. That
+        // key is published to every visitor by design; nothing secret is served here.
+        ApiPaths.PREFIX + "/config",
         // An app too old to be served is too old to be asked for a token first.
         ApiPaths.PREFIX + "/client-version"
     };
