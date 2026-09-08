@@ -74,6 +74,18 @@ export const PrivacyPage = () => (
       in keeping accounts from being broken into, Art. 6(1)(f) GDPR.
     </p>
 
+    <h3>The bot check</h3>
+    <p>
+      The sign-up and password-reset forms run Cloudflare Turnstile, which is what keeps them
+      from being filled in automatically. It loads a script from Cloudflare and sends
+      Cloudflare your IP address together with the token the challenge produces, so that
+      Cloudflare can confirm a browser really solved it. Cloudflare states that Turnstile is
+      not used to track visitors across sites and that its data is not used for advertising.
+      On our side nothing is kept but the answer: passed, or not. It runs on those two forms
+      and on no other page. Legal basis: our legitimate interest in keeping automated sign-ups
+      and reset requests out, Art. 6(1)(f) GDPR.
+    </p>
+
     <h3>Server logs</h3>
     <p>
       The server records errors and warnings so faults can be diagnosed. Reset links,
@@ -84,8 +96,10 @@ export const PrivacyPage = () => (
     <h2>What is not collected</h2>
     <p>
       There is no analytics, no tracking, no advertising, no profiling and no automated
-      decision-making within the meaning of Art. 22 GDPR. No third-party script runs on this
-      site. Your data is not sold, rented or shared for anyone else's purposes.
+      decision-making within the meaning of Art. 22 GDPR. The only third-party script on this
+      site is the Cloudflare Turnstile bot check described above, which loads on the sign-up
+      and password-reset forms and nowhere else. Your data is not sold, rented or shared for
+      anyone else's purposes.
     </p>
 
     <h2>Cookies and local storage</h2>
@@ -121,6 +135,13 @@ export const PrivacyPage = () => (
       The application and its database run on Railway, which processes data on our
       instructions as a processor under Art. 28 GDPR. Railway is based in the United States,
       so hosting involves a transfer outside the EEA, made on the safeguards in Art. 46 GDPR.
+    </p>
+    <p>
+      Opening the sign-up or password-reset form loads the bot check described above, which
+      discloses your IP address to Cloudflare. Cloudflare processes it on our instructions as
+      a processor under Art. 28 GDPR, and is likewise based in the United States, so this too
+      is a transfer outside the EEA made on the safeguards in Art. 46 GDPR. No other page
+      contacts Cloudflare.
     </p>
     <p>
       When you search or open a title, a request goes to the relevant metadata provider —
