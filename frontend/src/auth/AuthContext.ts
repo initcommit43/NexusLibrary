@@ -12,6 +12,7 @@ export type AuthContextValue = {
     username: string,
     password: string,
     acceptedTerms: boolean,
+    turnstileToken: string,
   ) => Promise<void>
   logout: () => Promise<void>
   /** Re-reads the signed-in reader, for when a page has just changed who they are. */

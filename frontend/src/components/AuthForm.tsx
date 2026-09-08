@@ -1,6 +1,7 @@
-import { useState, type FormEvent } from 'react'
-import { ApiError } from '../api/client'
+import { useEffect, useState, type FormEvent } from 'react'
+import { ApiError, api } from '../api/client'
 import { Footer } from './Footer'
+import { Turnstile } from './Turnstile'
 
 export type AuthField = {
   name: string
@@ -21,14 +22,43 @@ type Props = {
    * to something you agreed to when you registered is a click that means nothing.
    */
   consent?: React.ReactNode
+  /**
+   * Whether this form is one anyone can reach without an account, and so has to prove it is
+   * being filled in by a person. Opt-in rather than automatic: signing in and spending a
+   * reset link both already hold something only the right reader has.
+   */
+  botCheck?: boolean
 }
 
-export const AuthForm = ({ title, submitLabel, fields, onSubmit, footer, consent }: Props) => {
+export const AuthForm = ({
+  title,
+  submitLabel,
+  fields,
+  onSubmit,
+  footer,
+  consent,
+  botCheck,
+}: Props) => {
   const [values, setValues] = useState<Record<string, string>>({})
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [formError, setFormError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [consented, setConsented] = useState(false)
+  const [botToken, setBotToken] = useState('')
+  const [challengeActive, setChallengeActive] = useState(false)
+  // Bumped after a failed send to remount the widget. Turnstile tokens are single-use, so
+  // the one just spent cannot be sent again and the reader would be stuck on a dead form.
+  const [attempt, setAttempt] = useState(0)
+
+  useEffect(() => {
+    if (!botCheck) return
+    // A deployment with no site key is not checking, and blocking the button on a widget
+    // that will never appear would make the form unsendable.
+    api
+      .publicConfig()
+      .then((config) => setChallengeActive(Boolean(config.turnstileSiteKey)))
+      .catch(() => setChallengeActive(false))
+  }, [botCheck])
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
@@ -37,8 +67,11 @@ export const AuthForm = ({ title, submitLabel, fields, onSubmit, footer, consent
     setFieldErrors({})
 
     try {
-      await onSubmit(values)
+      await onSubmit({ ...values, turnstileToken: botToken })
     } catch (err) {
+      setBotToken('')
+      setAttempt((n) => n + 1)
+
       if (err instanceof ApiError) {
         setFieldErrors(err.fieldErrors)
         // A field-level message is already shown inline; repeating it above is noise.
@@ -92,12 +125,19 @@ export const AuthForm = ({ title, submitLabel, fields, onSubmit, footer, consent
           </label>
         )}
 
+        {botCheck && <Turnstile key={attempt} onToken={setBotToken} />}
+
         {/*
           * Unchecked consent disables the button rather than failing on submit. The server
           * refuses it either way, but a reader should not have to press send to be told
           * about a box they have not ticked yet.
           */}
-        <button type="submit" disabled={busy || (Boolean(consent) && !consented)}>
+        <button
+          type="submit"
+          disabled={
+            busy || (Boolean(consent) && !consented) || (challengeActive && !botToken)
+          }
+        >
           {busy ? 'Working…' : submitLabel}
         </button>
 

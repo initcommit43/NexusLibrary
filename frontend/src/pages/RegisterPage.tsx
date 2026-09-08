@@ -10,6 +10,7 @@ export const RegisterPage = () => {
     <AuthForm
       title="Create account"
       submitLabel="Create account"
+      botCheck
       fields={[
         { name: 'email', label: 'Email', type: 'email', autoComplete: 'email' },
         { name: 'username', label: 'Username', type: 'text', autoComplete: 'username' },
@@ -35,7 +36,7 @@ export const RegisterPage = () => {
         // True by construction: the button is disabled until the box is ticked. Sent
         // anyway, and checked again on the server, because a client is not where a
         // requirement like this can be allowed to live.
-        await register(v.email ?? '', v.username ?? '', v.password ?? '', true)
+        await register(v.email ?? '', v.username ?? '', v.password ?? '', true, v.turnstileToken ?? '')
         navigate('/', { replace: true })
       }}
       footer={<>Already registered? <Link to="/login">Sign in</Link></>}

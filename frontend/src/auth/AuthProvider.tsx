@@ -44,8 +44,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [])
 
   const register = useCallback(
-    async (email: string, username: string, password: string, acceptedTerms: boolean) => {
-      const res = await api.register({ email, username, password, acceptedTerms })
+    async (
+      email: string,
+      username: string,
+      password: string,
+      acceptedTerms: boolean,
+      turnstileToken: string,
+    ) => {
+      const res = await api.register({ email, username, password, acceptedTerms, turnstileToken })
       setAccessToken(res.accessToken)
       setUser(res.user)
       setStatus('authenticated')

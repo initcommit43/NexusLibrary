@@ -5094,6 +5094,18 @@ a.icon-button.active {
   font-size: var(--text-sm);
 }
 
+/* --- bot check --- */
+
+/*
+ * Cloudflare renders a fixed 300px frame. The form is 21rem, so it fits without scaling;
+ * centring keeps it from sitting off to one side of inputs that fill the width.
+ */
+.bot-check {
+  display: flex;
+  justify-content: center;
+  min-height: 65px;
+}
+
 /* --- consent --- */
 
 /*

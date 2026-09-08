@@ -416,6 +416,13 @@ const send = async (path: string, init: RequestInit = {}, allowRetry = true): Pr
   return res
 }
 
+export type PublicConfig = {
+  /** Empty when the challenge is switched off, which a local run without keys is. */
+  turnstileSiteKey: string
+}
+
+let publicConfig: Promise<PublicConfig> | null = null
+
 const request = async <T>(path: string, init: RequestInit = {}): Promise<T> => {
   const res = await send(path, init)
   if (res.status === 204) return undefined as T
@@ -459,11 +466,18 @@ export const api = {
    *   assumed server-side: which version they accepted is recorded against the account, and
    *   an account created without it is one nobody can show consent for.
    */
+  /**
+   * The settings a signed-out browser needs. Asked for once per page load and then shared:
+   * the sign-up form and the widget inside it both want the same answer.
+   */
+  publicConfig: () => (publicConfig ??= request<PublicConfig>('/config')),
+
   register: (payload: {
     email: string
     username: string
     password: string
     acceptedTerms: boolean
+    turnstileToken: string
   }) =>
     request<AuthResponse>('/auth/register', {
       method: 'POST',
@@ -482,8 +496,11 @@ export const api = {
    * Asks for a reset link. Answers the same whether or not the address has an account, so
    * there is nothing here to tell the caller which it was — and nothing to show the reader.
    */
-  requestPasswordReset: (email: string) =>
-    request<void>('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),
+  requestPasswordReset: (email: string, turnstileToken: string) =>
+    request<void>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email, turnstileToken }),
+    }),
 
   /**
    * Spends a mailed link. No session comes back: the reset ends every one the account had,
