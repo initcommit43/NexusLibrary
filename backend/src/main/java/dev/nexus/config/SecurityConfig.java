@@ -54,8 +54,13 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtFilter) throws Exception {
         return http.cors(Customizer.withDefaults())
-                // No server-side session and no cookie-driven form posts: the refresh
-                // cookie is SameSite=Strict, which is what stands in for CSRF tokens here.
+                /*
+                 * Nothing is authenticated from a cookie except /auth/refresh and
+                 * /auth/logout: every other route needs an Authorization header, which a
+                 * cross-site request cannot set without a preflight the CORS allowlist
+                 * refuses. Those two are covered by the refresh cookie being SameSite=Strict
+                 * and scoped to /api/v1/auth, so no route is left needing a CSRF token.
+                 */
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth.requestMatchers(PUBLIC_API_ENDPOINTS)
