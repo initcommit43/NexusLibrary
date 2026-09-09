@@ -46,6 +46,14 @@ public class HistoryService {
                 wanted == null || wanted.isEmpty() ? Arrays.asList(MediaType.values()) : wanted);
         counted.removeAll(WITHOUT_DATES);
 
+        // Asking only for types that keep no dates leaves nothing to count. Answered here
+        // rather than by the query, which would be handed an empty NOT IN () and fail as a
+        // syntax error — today only because WITHOUT_DATES is not empty, which is not a rule
+        // anything states.
+        if (counted.isEmpty()) {
+            return List.of();
+        }
+
         // Asked for as what to leave out, because that is the shorter list and the one the
         // query can hold: a media type added later is counted without anyone remembering to.
         Set<MediaType> excluded = EnumSet.allOf(MediaType.class);

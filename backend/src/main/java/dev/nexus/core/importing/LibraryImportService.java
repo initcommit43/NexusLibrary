@@ -252,13 +252,15 @@ public class LibraryImportService {
             return new Upserted(true, true, null, entry.getProgressCurrent());
         }
 
+        Integer before = existing.getProgressCurrent();
+        State held = State.of(existing);
+
         // An entry added by hand and later found in an import did come from there too.
+        // Stamped after the snapshot above: importedFrom is part of State, so doing it first
+        // made the run that stamped it compare equal and report itself as no change.
         if (existing.getImportedFrom() == null) {
             existing.setImportedFrom(provider);
         }
-
-        Integer before = existing.getProgressCurrent();
-        State held = State.of(existing);
 
         /*
          * Progress and status both come across, because both are what the provider knows and
