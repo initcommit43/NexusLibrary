@@ -2,6 +2,12 @@ spring:
   application:
     name: nexus
   datasource:
+    # One credential for both Flyway and the runtime pool, which is enough because the two
+    # need so little: Flyway needs CREATE on schema public, and the app needs no DDL at all
+    # (ddl-auto below is validate, and nothing outside the migrations issues any). No
+    # migration needs elevated rights either — there is no CREATE EXTENSION, no schema, no
+    # function and no trigger in any of them — so this role must not be a superuser. A
+    # deployment strips it once: ALTER ROLE <user> NOSUPERUSER NOCREATEROLE NOCREATEDB.
     url: ${DB_URL}
     username: ${DB_USER}
     password: ${DB_PASSWORD}
