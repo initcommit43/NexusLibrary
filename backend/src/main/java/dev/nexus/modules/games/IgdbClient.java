@@ -42,7 +42,7 @@ public class IgdbClient {
     }
 
     public List<Map<String, Object>> searchGames(String query, int limit) {
-        String escaped = query.replace("\"", "\\\"");
+        String escaped = quotedTerm(query);
         return post("search \"%s\"; fields %s; limit %d;".formatted(escaped, GAME_FIELDS, limit));
     }
 
@@ -85,7 +85,7 @@ public class IgdbClient {
         }
 
         return post("search \"%s\"; where %s; fields %s; offset %d; limit %d;"
-                .formatted(search.replace("\"", "\\\""), conditions, GAME_FIELDS, offset, limit));
+                .formatted(quotedTerm(search), conditions, GAME_FIELDS, offset, limit));
     }
 
     /** Every genre IGDB files a game under. Two dozen of them, and they do not move. */
@@ -213,9 +213,19 @@ public class IgdbClient {
         return values.stream().map(Long::parseLong).map(String::valueOf).collect(java.util.stream.Collectors.joining(","));
     }
 
+    /**
+     * A term as an APIcalypse string literal. The backslash is escaped first and on purpose:
+     * escaping only the quote leaves a backslash the reader typed free to escape the quote
+     * this adds, which ends the literal early and hands the rest of the term to IGDB as
+     * query clauses of its own.
+     */
+    private static String quotedTerm(String term) {
+        return term.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+
     private String quotedCsv(Collection<String> values) {
         return values.stream()
-                .map(v -> "\"" + v.replace("\"", "") + "\"")
+                .map(v -> "\"" + v.replace("\\", "").replace("\"", "") + "\"")
                 .collect(java.util.stream.Collectors.joining(","));
     }
 
