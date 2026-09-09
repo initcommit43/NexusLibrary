@@ -111,7 +111,7 @@ public class MalClient {
             throw new MalReconnectRequiredException();
         }
 
-        log.debug("MAL token for account {} at its end, refreshing", account.getExternalUserId());
+        log.debug("MAL token for account {} at its end, refreshing", account.getUserId());
         MalOAuthService.Tokens fresh;
         try {
             fresh = oauth.refresh(account.getRefreshToken());
