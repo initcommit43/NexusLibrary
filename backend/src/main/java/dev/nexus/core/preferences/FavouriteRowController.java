@@ -2,6 +2,7 @@ package dev.nexus.core.preferences;
 
 import dev.nexus.auth.CurrentUser;
 import dev.nexus.core.domain.MediaType;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -47,7 +48,8 @@ public class FavouriteRowController {
     }
 
     @PutMapping
-    public RowOrder replace(@AuthenticationPrincipal CurrentUser user, @RequestBody RowOrder body) {
+    public RowOrder replace(
+            @AuthenticationPrincipal CurrentUser user, @Valid @RequestBody RowOrder body) {
         return RowOrder.of(rows.replaceFor(user.id(), body.order(), body.paired()));
     }
 }

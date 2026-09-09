@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import dev.nexus.core.web.RateLimiter;
 import dev.nexus.core.web.ServerTimings;
 import dev.nexus.config.NexusProperties;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
@@ -44,6 +45,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class CatalogController {
 
     private static final int MAX_RESULTS = 20;
+
+    /**
+     * Deep enough that nobody reaches it by paging, and shallow enough that the offset an
+     * adapter computes from it stays an int — an unbounded page silently overflows to a
+     * negative offset, which the source answers with an error the reader cannot act on.
+     */
+    private static final int MAX_PAGE = 500;
 
     /** How long a reader's own browser may reuse a shelf before asking for it again. */
     private static final Duration BROWSER_CACHE = Duration.ofMinutes(10);
@@ -175,7 +183,7 @@ public class CatalogController {
     public ResponseEntity<BrowseResults> browseShelf(
             @RequestParam MediaType mediaType,
             @RequestParam @NotBlank @Size(max = 50) String shelf,
-            @RequestParam(defaultValue = "1") @Positive int page) {
+            @RequestParam(defaultValue = "1") @Positive @Max(MAX_PAGE) int page) {
 
         BrowseResults results = timings.time("browse", () -> browse.page(mediaType, shelf, page));
 
@@ -202,7 +210,7 @@ public class CatalogController {
             @AuthenticationPrincipal CurrentUser user,
             @PathVariable Source source,
             @PathVariable @NotBlank @Size(max = 40) String studioId,
-            @RequestParam(defaultValue = "1") @Positive int page) {
+            @RequestParam(defaultValue = "1") @Positive @Max(MAX_PAGE) int page) {
 
         rateLimiter.check("studio:" + user.id(), searchesPerMinute);
         return timings.time("studio", () -> browse.worksOf(source, studioId, page));
@@ -225,7 +233,7 @@ public class CatalogController {
     public BrowseResults discover(
             @AuthenticationPrincipal CurrentUser user,
             @RequestParam MediaType mediaType,
-            @RequestParam(defaultValue = "1") @Positive int page,
+            @RequestParam(defaultValue = "1") @Positive @Max(MAX_PAGE) int page,
             @RequestParam MultiValueMap<String, String> params) {
 
         rateLimiter.check("discover:" + user.id(), searchesPerMinute);

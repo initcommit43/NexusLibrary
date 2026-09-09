@@ -71,7 +71,7 @@ public class ProfileBannerController {
 
     @PutMapping
     public BannerResponse choose(
-            @AuthenticationPrincipal CurrentUser user, @RequestBody Choice body) {
+            @AuthenticationPrincipal CurrentUser user, @Valid @RequestBody Choice body) {
         return BannerResponse.from(banners.choose(user.id(), body.entryId()));
     }
 

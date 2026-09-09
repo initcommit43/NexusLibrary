@@ -2,6 +2,7 @@ package dev.nexus.core.preferences;
 
 import dev.nexus.auth.CurrentUser;
 import dev.nexus.core.domain.MediaType;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -39,7 +40,7 @@ public class ModulePreferenceController {
 
     @PutMapping
     public ModulePreferences replace(
-            @AuthenticationPrincipal CurrentUser user, @RequestBody ModulePreferences body) {
+            @AuthenticationPrincipal CurrentUser user, @Valid @RequestBody ModulePreferences body) {
 
         return new ModulePreferences(
                 preferences.asList(preferences.replaceFor(user.id(), body.disabled())));

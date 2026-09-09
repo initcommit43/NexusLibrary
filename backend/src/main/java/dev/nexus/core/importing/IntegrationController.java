@@ -12,6 +12,7 @@ import dev.nexus.core.jobs.SyncJob;
 import dev.nexus.modules.anime.AniListOAuthService;
 import dev.nexus.modules.film.SimklOAuthService;
 import dev.nexus.modules.games.SteamOpenIdService;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import java.time.Instant;
 import java.util.List;
@@ -164,7 +165,7 @@ public class IntegrationController {
      */
     @PostMapping("/steam/callback")
     public ConnectedAccount completeSteam(
-            @AuthenticationPrincipal CurrentUser user, @RequestBody SteamCallbackRequest request) {
+            @AuthenticationPrincipal CurrentUser user, @Valid @RequestBody SteamCallbackRequest request) {
 
         String steamId = steamOpenId
                 .verifyCallback(request.params())
