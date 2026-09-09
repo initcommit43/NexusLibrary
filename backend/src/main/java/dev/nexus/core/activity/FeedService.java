@@ -137,6 +137,11 @@ public class FeedService {
     }
 
     private Long idIn(String feedId, String prefix) {
+        if (!feedId.startsWith(prefix)) {
+            // Reached by an id matching neither prefix, which substring would answer with a
+            // StringIndexOutOfBounds and the handler with a 500 for what is only a bad id.
+            throw new ActivityNotFoundException();
+        }
         try {
             return Long.valueOf(feedId.substring(prefix.length()));
         } catch (NumberFormatException e) {
