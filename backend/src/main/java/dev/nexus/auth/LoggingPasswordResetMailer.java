@@ -15,9 +15,13 @@ import org.springframework.stereotype.Component;
  * says so ({@link PasswordResetUnavailableException}) rather than quietly logging one.
  * Replacing this with a real sender is one class implementing {@link PasswordResetMailer}
  * and dropping the profile restriction.
+ *
+ * <p>The profiles are named rather than excluded. {@code !prod} reads the same until you
+ * notice what it does when no profile is set at all: the Dockerfile sets none, so the built
+ * image matched it and logged live reset links to the platform's log store.
  */
 @Component
-@Profile("!prod")
+@Profile({"dev", "test"})
 public class LoggingPasswordResetMailer implements PasswordResetMailer {
 
     private static final Logger log = LoggerFactory.getLogger(LoggingPasswordResetMailer.class);
