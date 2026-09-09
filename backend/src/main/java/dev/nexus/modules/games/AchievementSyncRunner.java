@@ -33,7 +33,7 @@ public class AchievementSyncRunner {
     public void run(SyncJob job, String steamId, List<Long> entryIds) {
         try {
             for (Long entryId : entryIds) {
-                job.advance(syncer.syncOne(entryId, steamId));
+                job.advance(syncer.syncOne(job.getUserId(), entryId, steamId));
             }
             job.complete();
         } catch (SteamProfileNotPublicException e) {

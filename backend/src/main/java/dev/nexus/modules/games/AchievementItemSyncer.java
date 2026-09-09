@@ -69,8 +69,8 @@ public class AchievementItemSyncer {
      * @return true when this game's achievement progress actually changed
      */
     @Transactional
-    public boolean syncOne(Long entryId, String steamId) {
-        UserEntry entry = entries.findById(entryId).orElse(null);
+    public boolean syncOne(Long userId, Long entryId, String steamId) {
+        UserEntry entry = entries.findByIdAndUserId(entryId, userId).orElse(null);
         if (entry == null) {
             return false;
         }

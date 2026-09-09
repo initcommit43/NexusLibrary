@@ -7,8 +7,6 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface ReviewRepository extends JpaRepository<Review, Long> {
 
-    Optional<Review> findByEntryId(Long entryId);
-
     /**
      * Scoped through the entry, so a review can only ever be reached by the user who owns
      * the entry it belongs to.

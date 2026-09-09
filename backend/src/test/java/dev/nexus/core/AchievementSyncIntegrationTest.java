@@ -59,13 +59,15 @@ class AchievementSyncIntegrationTest extends PostgresIntegrationTest {
 
     private Long entryId;
 
+    private Long userId;
+
     @BeforeEach
     void setUp() {
         resetDatabase();
 
         HttpTestClient http = new HttpTestClient(port);
         String token = registerAndGetToken(http, "player@example.com", "player");
-        Long userId = users.findByEmail("player@example.com").orElseThrow().getId();
+        userId = users.findByEmail("player@example.com").orElseThrow().getId();
 
         when(igdbClient.findGameById(anyString())).thenReturn(List.of(GamesTestData.botw()));
         http.postJson(
@@ -85,9 +87,27 @@ class AchievementSyncIntegrationTest extends PostgresIntegrationTest {
         when(steamAchievements.fetchSchema(anyString())).thenReturn(schema());
     }
 
+    /**
+     * The ids handed to a sync run all come from the caller's own library, so this defends a
+     * guarantee nothing currently attacks — and would be the whole of the defence the day an
+     * endpoint takes an entry id from a request.
+     */
+    @Test
+    void leavesAnEntryBelongingToSomeoneElseAlone() {
+        HttpTestClient http = new HttpTestClient(port);
+        registerAndGetToken(http, "stranger@example.com", "stranger");
+        Long strangerId = users.findByEmail("stranger@example.com").orElseThrow().getId();
+
+        assertThat(syncer.syncOne(strangerId, entryId, STEAM_ID)).isFalse();
+
+        verify(steamAchievements, never()).fetch(anyString(), anyString());
+        assertThat(entries.findById(entryId).orElseThrow().getProgressExtra())
+                .doesNotContainKey("achievements");
+    }
+
     @Test
     void storesUnlockedAchievementsAgainstTheEntry() {
-        assertThat(syncer.syncOne(entryId, STEAM_ID)).isTrue();
+        assertThat(syncer.syncOne(userId, entryId, STEAM_ID)).isTrue();
 
         Map<String, Object> progress = achievementsOf(entries.findById(entryId).orElseThrow());
         assertThat(unlockedOf(progress)).containsExactly("ACH_ONE");
@@ -98,14 +118,14 @@ class AchievementSyncIntegrationTest extends PostgresIntegrationTest {
     void earningEveryAchievementFinishesTheGame() {
         when(steamAchievements.fetch(anyString(), anyString())).thenReturn(Optional.of(allEarned()));
 
-        syncer.syncOne(entryId, STEAM_ID);
+        syncer.syncOne(userId, entryId, STEAM_ID);
 
         assertThat(entries.findById(entryId).orElseThrow().getStatus()).isEqualTo(TrackingStatus.COMPLETED);
     }
 
     @Test
     void aPartlyPlayedGameIsLeftWhereItIs() {
-        syncer.syncOne(entryId, STEAM_ID);
+        syncer.syncOne(userId, entryId, STEAM_ID);
 
         assertThat(entries.findById(entryId).orElseThrow().getStatus()).isEqualTo(TrackingStatus.IN_PROGRESS);
     }
@@ -117,13 +137,13 @@ class AchievementSyncIntegrationTest extends PostgresIntegrationTest {
     @Test
     void aShelfChosenAfterFinishingIsLeftAlone() {
         when(steamAchievements.fetch(anyString(), anyString())).thenReturn(Optional.of(allEarned()));
-        syncer.syncOne(entryId, STEAM_ID);
+        syncer.syncOne(userId, entryId, STEAM_ID);
 
         UserEntry entry = entries.findById(entryId).orElseThrow();
         entry.setStatus(TrackingStatus.IN_PROGRESS);
         entries.save(entry);
 
-        syncer.syncOne(entryId, STEAM_ID);
+        syncer.syncOne(userId, entryId, STEAM_ID);
 
         assertThat(entries.findById(entryId).orElseThrow().getStatus()).isEqualTo(TrackingStatus.IN_PROGRESS);
     }
@@ -131,7 +151,7 @@ class AchievementSyncIntegrationTest extends PostgresIntegrationTest {
     /** The catalogue is the same for every player, so it belongs on the shared item. */
     @Test
     void storesTheCatalogueWithIconsOnTheSharedItem() {
-        syncer.syncOne(entryId, STEAM_ID);
+        syncer.syncOne(userId, entryId, STEAM_ID);
 
         Object catalogue = entries.findById(entryId).orElseThrow().getItem().getMetadata().get("achievements");
         assertThat(catalogue).isInstanceOf(List.class);
@@ -151,10 +171,10 @@ class AchievementSyncIntegrationTest extends PostgresIntegrationTest {
      */
     @Test
     void aRecentlySyncedGameIsSkippedWithoutCallingSteam() {
-        syncer.syncOne(entryId, STEAM_ID);
+        syncer.syncOne(userId, entryId, STEAM_ID);
         verify(steamAchievements, times(1)).fetch(anyString(), anyString());
 
-        assertThat(syncer.syncOne(entryId, STEAM_ID)).isFalse();
+        assertThat(syncer.syncOne(userId, entryId, STEAM_ID)).isFalse();
 
         // Still one: the second run never reached Steam at all.
         verify(steamAchievements, times(1)).fetch(anyString(), anyString());
@@ -162,9 +182,9 @@ class AchievementSyncIntegrationTest extends PostgresIntegrationTest {
 
     @Test
     void theCatalogueIsFetchedOncePerGameRatherThanPerSync() {
-        syncer.syncOne(entryId, STEAM_ID);
+        syncer.syncOne(userId, entryId, STEAM_ID);
         stripSyncedAt();
-        syncer.syncOne(entryId, STEAM_ID);
+        syncer.syncOne(userId, entryId, STEAM_ID);
 
         verify(steamAchievements, times(1)).fetchSchema(anyString());
     }
@@ -173,7 +193,7 @@ class AchievementSyncIntegrationTest extends PostgresIntegrationTest {
     void aGameWithoutAchievementsIsLeftAlone() {
         when(steamAchievements.fetch(anyString(), anyString())).thenReturn(Optional.empty());
 
-        assertThat(syncer.syncOne(entryId, STEAM_ID)).isFalse();
+        assertThat(syncer.syncOne(userId, entryId, STEAM_ID)).isFalse();
         assertThat(entries.findById(entryId).orElseThrow().getProgressExtra()).isNull();
     }
 
@@ -183,7 +203,7 @@ class AchievementSyncIntegrationTest extends PostgresIntegrationTest {
         item.getMetadata().remove("externalIds");
         items.save(item);
 
-        assertThat(syncer.syncOne(entryId, STEAM_ID)).isFalse();
+        assertThat(syncer.syncOne(userId, entryId, STEAM_ID)).isFalse();
         verify(steamAchievements, never()).fetch(anyString(), anyString());
     }
 

@@ -49,7 +49,7 @@ public class ReviewService {
             throw new ReviewNotStartedException();
         }
 
-        Review review = reviews.findByEntryId(entry.getId())
+        Review review = reviews.findByEntryIdAndUserId(entry.getId(), userId)
                 .map(existing -> {
                     existing.setBody(body);
                     existing.setContainsSpoilers(containsSpoilers);
