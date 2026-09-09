@@ -39,6 +39,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -311,6 +312,27 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<ApiError> handleRateLimit(RateLimitExceededException e) {
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
                 .body(new ApiError("Too many attempts. Please wait a moment and try again."));
+    }
+
+    /**
+     * A uniqueness check that lost a race with a concurrent request. Registration and the
+     * email change both ask the database first, so reaching the constraint itself means two
+     * requests asked at the same moment and one of them arrived second.
+     *
+     * <p>Handled here for what it must not do rather than for what it returns: Postgres puts
+     * the offending value in its message ({@code Key (lower(email))=(…) already exists}), so
+     * letting this reach the catch-all writes a real address into the log at ERROR. Only the
+     * constraint name is recorded, which says which rule was broken without saying by whom.
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiError> handleConstraintBreach(DataIntegrityViolationException e) {
+        String constraint = e.getCause() instanceof org.hibernate.exception.ConstraintViolationException breach
+                ? breach.getConstraintName()
+                : e.getClass().getSimpleName();
+        log.warn("A write lost a race against constraint {}", constraint);
+
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ApiError("That did not save because it already exists. Please try again."));
     }
 
     /**
