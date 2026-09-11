@@ -282,11 +282,7 @@ class ActivityAndReviewIntegrationTest extends PostgresIntegrationTest {
     @Test
     void anImportedEventCanBeForgottenAndIsGoneFromTheMapToo() {
         importedEvent("watched episode", "5", LocalDate.now());
-        String id = (String) feed().stream()
-                .filter(event -> "EXTERNAL".equals(event.get("type")))
-                .findFirst()
-                .orElseThrow()
-                .get("id");
+        String id = importedFeedId();
 
         assertThat(forget(id).status()).isEqualTo(204);
         assertThat(feed()).noneSatisfy(event -> assertThat(event).containsEntry("type", "EXTERNAL"));
@@ -310,7 +306,20 @@ class ActivityAndReviewIntegrationTest extends PostgresIntegrationTest {
         Response refused = http.delete("/activity/" + id, "Authorization", "Bearer " + stranger);
 
         assertThat(refused.status()).isEqualTo(404);
-        assertThat(feed()).isNotEmpty();
+        assertThat(feed()).anySatisfy(event -> assertThat(event).containsEntry("id", id));
+    }
+
+    /** The imported half numbers its rows separately, so its prefix is a second door to hold. */
+    @Test
+    void anotherReadersImportedEventCannotBeForgotten() {
+        importedEvent("watched episode", "5", LocalDate.now());
+        String id = importedFeedId();
+        String stranger = registerAndGetToken(http, "someone@example.com", "someone");
+
+        Response refused = http.delete("/activity/" + id, "Authorization", "Bearer " + stranger);
+
+        assertThat(refused.status()).isEqualTo(404);
+        assertThat(imported.count()).isEqualTo(1);
     }
 
     @Test
@@ -328,6 +337,14 @@ class ActivityAndReviewIntegrationTest extends PostgresIntegrationTest {
 
         imported.save(new ProviderActivity(
                 userId, Provider.ANILIST, "event-" + day + "-" + progress, itemId, day, status, progress));
+    }
+
+    private String importedFeedId() {
+        return (String) feed().stream()
+                .filter(event -> "EXTERNAL".equals(event.get("type")))
+                .findFirst()
+                .orElseThrow()
+                .get("id");
     }
 
     private Response forget(String feedId) {
