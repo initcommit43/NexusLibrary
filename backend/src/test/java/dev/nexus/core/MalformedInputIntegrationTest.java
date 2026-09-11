@@ -88,6 +88,23 @@ class MalformedInputIntegrationTest extends PostgresIntegrationTest {
                 .isEqualTo(400);
     }
 
+    /** No stored item has a longer id, so asking the source for one would spend a call on nothing. */
+    @Test
+    void anExternalIdWiderThanTheColumnIsRefusedBeforeTheSourceIsAsked() {
+        String tooLong = "1".repeat(65);
+
+        assertThat(get("/catalog/media/IGDB/" + tooLong).status()).isEqualTo(400);
+        assertThat(get("/catalog/media/IGDB/" + tooLong + "/achievements").status()).isEqualTo(400);
+    }
+
+    @Test
+    void aCharacterIdWiderThanTheColumnIsRefused() {
+        Response response = put("/settings/profile-picture", Map.of("entryId", 1, "characterId", "1".repeat(65)));
+
+        assertThat(response.status()).isEqualTo(400);
+        assertThat(response.fieldErrors()).containsKey("characterId");
+    }
+
     private Response get(String path) {
         return http.get(path, "Authorization", "Bearer " + token);
     }

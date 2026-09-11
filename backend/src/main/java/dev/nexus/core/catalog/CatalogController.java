@@ -53,6 +53,12 @@ public class CatalogController {
      */
     private static final int MAX_PAGE = 500;
 
+    /**
+     * The width of {@code trackable_item.external_id}. No cached item has a longer id, so one
+     * past it is refused here rather than spent on a request to the source.
+     */
+    private static final int MAX_EXTERNAL_ID = 64;
+
     /** How long a reader's own browser may reuse a shelf before asking for it again. */
     private static final Duration BROWSER_CACHE = Duration.ofMinutes(10);
 
@@ -133,7 +139,7 @@ public class CatalogController {
     public MediaResponse media(
             @AuthenticationPrincipal CurrentUser user,
             @PathVariable Source source,
-            @PathVariable String externalId) {
+            @PathVariable @Size(max = MAX_EXTERNAL_ID) String externalId) {
 
         TrackableItem item = media.require(source, externalId);
         Optional<TrackedItemResponse> entry = timings.time(
@@ -163,7 +169,7 @@ public class CatalogController {
     public List<Map<String, Object>> achievements(
             @AuthenticationPrincipal CurrentUser user,
             @PathVariable Source source,
-            @PathVariable String externalId) {
+            @PathVariable @Size(max = MAX_EXTERNAL_ID) String externalId) {
 
         rateLimiter.check("achievements:" + user.id(), searchesPerMinute);
         return timings.time("achievements", () -> this.achievements.forMedia(source, externalId));
