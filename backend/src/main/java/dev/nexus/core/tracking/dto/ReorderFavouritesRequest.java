@@ -1,6 +1,7 @@
 package dev.nexus.core.tracking.dto;
 
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 
@@ -11,4 +12,4 @@ import java.util.List;
  * after it, and sending the list that resulted is what makes the write idempotent — replay
  * it and the shelf looks the same.
  */
-public record ReorderFavouritesRequest(@NotEmpty @Size(max = 500) List<Long> entryIds) {}
+public record ReorderFavouritesRequest(@NotEmpty @Size(max = 500) List<@NotNull Long> entryIds) {}

@@ -6,6 +6,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import dev.nexus.support.HttpTestClient;
 import dev.nexus.support.HttpTestClient.Response;
 import dev.nexus.support.PostgresIntegrationTest;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -63,7 +65,34 @@ class MalformedInputIntegrationTest extends PostgresIntegrationTest {
         assertThat(get("/catalog/studios/ANILIST/not-a-number").status()).isEqualTo(200);
     }
 
+    /** The service copies the list into an EnumSet, which throws on a null rather than skipping it. */
+    @Test
+    void aNullAmongTheSwitchedOffModulesIsRefused() {
+        assertThat(put("/settings/modules", Map.of("disabled", Arrays.asList("BOOK", null))).status())
+                .isEqualTo(400);
+    }
+
+    @Test
+    void aNullAmongTheFavouriteRowsIsRefused() {
+        assertThat(put("/settings/favourite-rows", Map.of("order", Arrays.asList("GAME", null), "paired", List.of()))
+                        .status())
+                .isEqualTo(400);
+        assertThat(put("/settings/favourite-rows", Map.of("order", List.of("GAME"), "paired", Arrays.asList("GAME", null)))
+                        .status())
+                .isEqualTo(400);
+    }
+
+    @Test
+    void aNullAmongTheFavouritesToReorderIsRefused() {
+        assertThat(put("/entries/favourites/order", Map.of("entryIds", Arrays.asList(1, null))).status())
+                .isEqualTo(400);
+    }
+
     private Response get(String path) {
         return http.get(path, "Authorization", "Bearer " + token);
+    }
+
+    private Response put(String path, Map<String, ?> body) {
+        return http.putJson(path, body, "Authorization", "Bearer " + token);
     }
 }

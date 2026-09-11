@@ -3,6 +3,7 @@ package dev.nexus.core.preferences;
 import dev.nexus.auth.CurrentUser;
 import dev.nexus.core.domain.MediaType;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -29,7 +30,7 @@ public class FavouriteRowController {
      * Media types absent from the order keep the app's own.
      */
     public record RowOrder(
-            @Size(max = 16) List<MediaType> order, @Size(max = 16) List<MediaType> paired) {
+            @Size(max = 16) List<@NotNull MediaType> order, @Size(max = 16) List<@NotNull MediaType> paired) {
 
         static RowOrder of(FavouriteRowService.Arrangement arrangement) {
             return new RowOrder(arrangement.order(), List.copyOf(arrangement.paired()));

@@ -3,6 +3,7 @@ package dev.nexus.core.preferences;
 import dev.nexus.auth.CurrentUser;
 import dev.nexus.core.domain.MediaType;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -25,7 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class ModulePreferenceController {
 
     /** The media types switched off. Everything absent from this list is on. */
-    public record ModulePreferences(@Size(max = 16) List<MediaType> disabled) {}
+    public record ModulePreferences(@Size(max = 16) List<@NotNull MediaType> disabled) {}
 
     private final ModulePreferenceService preferences;
 
