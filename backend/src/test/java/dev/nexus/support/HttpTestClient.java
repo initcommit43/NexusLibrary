@@ -3,6 +3,7 @@ package dev.nexus.support;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.URI;
 import java.net.http.HttpClient;
+import java.net.http.HttpHeaders;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.List;
@@ -15,7 +16,13 @@ import java.util.Optional;
  */
 public class HttpTestClient {
 
-    public record Response(int status, String rawBody, Map<String, Object> body, List<String> setCookie) {
+    public record Response(
+            int status, String rawBody, Map<String, Object> body, List<String> setCookie, HttpHeaders headers) {
+
+        /** First value only, matched case-insensitively as HTTP header names are. */
+        public Optional<String> header(String name) {
+            return headers.firstValue(name);
+        }
 
         public Optional<String> refreshCookie() {
             return setCookie.stream().filter(cookie -> cookie.startsWith("nexus_refresh=")).findFirst();
@@ -118,7 +125,8 @@ public class HttpTestClient {
                     response.statusCode(),
                     response.body(),
                     read(response.body()),
-                    response.headers().allValues("set-cookie"));
+                    response.headers().allValues("set-cookie"),
+                    response.headers());
         } catch (java.io.IOException e) {
             throw new IllegalStateException(e);
         } catch (InterruptedException e) {
