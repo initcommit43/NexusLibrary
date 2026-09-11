@@ -239,13 +239,21 @@ export const MediaTags = ({ tags }: { tags: MediaTag[] }) => {
   )
 }
 
+/**
+ * Only web addresses become links. These come from Open Library, TMDB and IGDB, where anyone
+ * can edit a title's links, and are cached once for every reader. React refuses a javascript:
+ * href but nothing else, so a link to an app-launching scheme would still open it.
+ */
+const isWebAddress = (url: string) => /^(https?:)?\/\//i.test(url)
+
 export const MediaLinks = ({ links }: { links: ExternalLink[] }) => {
-  if (links.length === 0) return null
+  const web = links.filter((link) => isWebAddress(link.url))
+  if (web.length === 0) return null
 
   return (
     <section className="tag-list">
       <h2>External links</h2>
-      {links.map((link) => (
+      {web.map((link) => (
         <a key={link.url} href={link.url} target="_blank" rel="noreferrer noopener">
           {link.site}
           {link.language && <span className="muted"> {link.language}</span>}
