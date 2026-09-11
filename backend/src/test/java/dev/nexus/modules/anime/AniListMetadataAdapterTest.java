@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import dev.nexus.core.adapter.TrackableItemData;
@@ -34,6 +35,17 @@ class AniListMetadataAdapterTest {
     void oneAdapterCoversBothAnimeAndManga() {
         assertThat(adapter.mediaTypes()).containsExactlyInAnyOrder(MediaType.ANIME, MediaType.MANGA);
         assertThat(adapter.source()).isEqualTo(Source.ANILIST);
+    }
+
+    /** AniList's ids are ints, so a word or a number past one is not something it has. */
+    @Test
+    void anIdAniListCouldNotHaveIssuedFindsNothingWithoutAskingAniList() {
+        assertThat(adapter.fetchById("not-a-number")).isEmpty();
+        assertThat(adapter.fetchById("99999999999")).isEmpty();
+        assertThat(adapter.fetchDetail("not-a-number")).isEmpty();
+        assertThat(adapter.worksOf("not-a-number", 1, 20).items()).isEmpty();
+
+        verifyNoInteractions(client);
     }
 
     @Test

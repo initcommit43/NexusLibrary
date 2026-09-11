@@ -111,7 +111,24 @@ public class IgdbMetadataAdapter implements MetadataAdapter {
 
     @Override
     public Optional<TrackableItemData> fetchById(String externalId) {
+        if (!isIgdbId(externalId)) {
+            return Optional.empty();
+        }
         return client.findGameById(externalId).stream().findFirst().map(this::toItemData);
+    }
+
+    /**
+     * Whether IGDB could have issued this id at all. It arrives straight from a URL and the
+     * client writes it into the query as a number, so a word is a game IGDB does not have —
+     * not a parse failure for the catch-all to answer with a 500.
+     */
+    private static boolean isIgdbId(String externalId) {
+        try {
+            Long.parseLong(externalId);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
     }
 
     @Override
@@ -134,6 +151,9 @@ public class IgdbMetadataAdapter implements MetadataAdapter {
      */
     @Override
     public Optional<Map<String, Object>> fetchDetail(String externalId) {
+        if (!isIgdbId(externalId)) {
+            return Optional.empty();
+        }
         return client.findGameDetail(externalId).map(this::toDetail);
     }
 

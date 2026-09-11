@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -39,6 +40,15 @@ class IgdbMetadataAdapterTest {
     void declaresItsMediaTypeAndSource() {
         assertThat(adapter.mediaTypes()).containsExactly(MediaType.GAME);
         assertThat(adapter.source()).isEqualTo(Source.IGDB);
+    }
+
+    /** IGDB's ids are numbers, so anything else is not a game it has, and IGDB is not asked. */
+    @Test
+    void anIdThatIsNotANumberIsNotFoundWithoutAskingIgdb() {
+        assertThat(adapter.fetchById("not-a-number")).isEmpty();
+        assertThat(adapter.fetchDetail("not-a-number")).isEmpty();
+
+        verifyNoInteractions(client);
     }
 
     @Test

@@ -70,7 +70,24 @@ public class AniListMetadataAdapter implements MetadataAdapter, StudioBrowse {
 
     @Override
     public Optional<TrackableItemData> fetchById(String externalId) {
+        if (!isAniListId(externalId)) {
+            return Optional.empty();
+        }
         return client.findMediaById(externalId).stream().findFirst().map(this::toItemData);
+    }
+
+    /**
+     * Whether AniList could have issued this id at all. Ids arrive straight from a URL and
+     * AniList's are ints, which the client parses before asking — so a word, or a number past
+     * an int, is something AniList does not have rather than a 500 from the catch-all.
+     */
+    private static boolean isAniListId(String id) {
+        try {
+            Integer.parseInt(id);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
     }
 
     @Override
@@ -134,6 +151,9 @@ public class AniListMetadataAdapter implements MetadataAdapter, StudioBrowse {
      */
     @Override
     public Works worksOf(String studioId, int page, int size) {
+        if (!isAniListId(studioId)) {
+            return Works.none();
+        }
         AniListClient.StudioPage found = client.fetchStudioWorks(studioId, page, size);
 
         return new Works(
@@ -257,6 +277,9 @@ public class AniListMetadataAdapter implements MetadataAdapter, StudioBrowse {
 
     @Override
     public Optional<Map<String, Object>> fetchDetail(String externalId) {
+        if (!isAniListId(externalId)) {
+            return Optional.empty();
+        }
         Map<String, Object> detail = client.findMediaDetail(externalId);
         return detail.isEmpty() ? Optional.empty() : Optional.of(detail);
     }
