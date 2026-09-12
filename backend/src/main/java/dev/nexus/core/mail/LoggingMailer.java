@@ -10,10 +10,10 @@ import org.springframework.stereotype.Component;
  * Writes the mail to the log instead of sending it, so a flow can be walked end to end with
  * no provider account.
  *
- * <p>Dev and test only, and the profiles are named rather than excluded for the reason
- * {@link dev.nexus.auth.LoggingPasswordResetMailer} records: {@code !prod} also matches a
- * process started with no profile at all, which is what the Dockerfile does. A verification
- * link in a production log is a working link in a log.
+ * <p>Dev and test only, and the profiles are named rather than excluded: {@code !prod} also
+ * matches a process started with no profile at all, which is what the Dockerfile does, so the
+ * built image would match it and write live links to the platform's log store. A verification
+ * or reset link in a production log is a working link in a log.
  *
  * <p>Production with no key configured therefore has no {@link Mailer} at all. That is
  * deliberate — a flow that cannot mail should fail where it is called rather than report
