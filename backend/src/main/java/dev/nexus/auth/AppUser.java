@@ -35,6 +35,14 @@ public class AppUser {
     @Column(name = "terms_version", length = 32)
     private String termsVersion;
 
+    /**
+     * When the address on this account was shown to reach its owner. Null until a verification
+     * link is followed, and null is the honest default: an account that has never proved its
+     * address is not the same as one that proved it at an unknown time.
+     */
+    @Column(name = "email_verified_at")
+    private Instant emailVerifiedAt;
+
     protected AppUser() {
         // JPA
     }
@@ -79,12 +87,44 @@ public class AppUser {
         this.termsAcceptedAt = at;
     }
 
+    public Instant getEmailVerifiedAt() {
+        return emailVerifiedAt;
+    }
+
+    public boolean isEmailVerified() {
+        return emailVerifiedAt != null;
+    }
+
+    /**
+     * Idempotent on purpose: two clicks on the same link, or a link followed while already
+     * verified, must not move the date. When it was first proved is the fact worth keeping.
+     */
+    public void verifyEmail(Instant at) {
+        if (this.emailVerifiedAt == null) {
+            this.emailVerifiedAt = at;
+        }
+    }
+
+    /**
+     * A changed address is an unproved address. Called by whatever changes the email, so the
+     * two can never drift apart into an account verified against something nobody typed.
+     */
+    public void unverifyEmail() {
+        this.emailVerifiedAt = null;
+    }
+
     public void rename(String username) {
         this.username = username;
     }
 
+    /**
+     * Changing the address unproves it in the same call, so the two cannot drift apart. Doing
+     * this at the call sites instead would mean every future one has to remember, and the one
+     * that forgets leaves an account verified against an address nobody ever confirmed.
+     */
     public void changeEmail(String email) {
         this.email = email;
+        unverifyEmail();
     }
 
     public void changePasswordHash(String passwordHash) {
