@@ -16,7 +16,8 @@ class ClientIpResolverTest {
         return new ClientIpResolver(new NexusProperties(
                 new NexusProperties.Jwt("a-signing-key-long-enough-for-hs256-0123", 15, 30, 10),
                 new NexusProperties.Security(false, List.of(), "http://localhost:5173", true, trustedProxyCount, 30),
-                new NexusProperties.RateLimit(10, 30, 3)));
+                new NexusProperties.RateLimit(10, 30, 3),
+                new NexusProperties.Registration(true, false, 2500)));
     }
 
     private static MockHttpServletRequest request(String forwardedFor) {

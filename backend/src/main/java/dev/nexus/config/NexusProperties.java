@@ -10,7 +10,7 @@ import org.springframework.validation.annotation.Validated;
 
 @Validated
 @ConfigurationProperties(prefix = "nexus")
-public record NexusProperties(Jwt jwt, Security security, RateLimit rateLimit) {
+public record NexusProperties(Jwt jwt, Security security, RateLimit rateLimit, Registration registration) {
 
     public record Jwt(
             // HS256 needs >= 256 bits of key material; a short secret weakens every token.
@@ -47,4 +47,25 @@ public record NexusProperties(Jwt jwt, Security security, RateLimit rateLimit) {
             @Positive int authRequestsPerMinute,
             @Positive int searchRequestsPerMinute,
             @Positive int importRequestsPerMinute) {}
+
+    /**
+     * What an address has to be before it may open an account.
+     *
+     * <p>Both checks are switchable because both can be wrong about a real person. A blocklist
+     * ages: a domain someone actually uses can end up on one. A DNS lookup depends on the
+     * network this process happens to be on. Neither is worth a stranger being unable to sign
+     * up with no way for anyone to see why, so each can be turned off without a rebuild.
+     *
+     * @param blockDisposableDomains refuse the throwaway-inbox services listed in
+     *     {@code disposable-email-domains.txt}.
+     * @param requireDeliverableDomain refuse a domain that publishes no way to receive mail.
+     *     This is what separates a typo or an invented address from a real one; it costs a DNS
+     *     lookup per sign-up and nothing afterwards.
+     * @param deliverabilityTimeoutMillis how long that lookup may take before the address is
+     *     allowed through unchecked. A resolver having a bad day must not become a closed door.
+     */
+    public record Registration(
+            boolean blockDisposableDomains,
+            boolean requireDeliverableDomain,
+            @Positive int deliverabilityTimeoutMillis) {}
 }
