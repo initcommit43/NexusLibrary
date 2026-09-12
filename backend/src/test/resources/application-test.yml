@@ -18,6 +18,13 @@ nexus:
     auth-requests-per-minute: 100
     search-requests-per-minute: 1000
     import-requests-per-minute: 1000
+  verification:
+    # Off for the suite at large, so the hundreds of tests that register an account and then use
+    # it keep working. EmailVerificationIntegrationTest turns it on for itself.
+    required: false
+    ttl-hours: 48
+  mail:
+    from: NexusLibrary <test@example.com>
   registration:
     # The blocklist is a set lookup and stays on, so every test registering an @example.com
     # address proves the check is wired rather than routing around it.

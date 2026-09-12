@@ -4,11 +4,15 @@ import dev.nexus.auth.dto.AuthResponse;
 import dev.nexus.auth.dto.LoginRequest;
 import dev.nexus.auth.dto.RefreshRequest;
 import dev.nexus.auth.dto.RegisterRequest;
+import dev.nexus.auth.dto.ResendVerificationRequest;
+import dev.nexus.auth.dto.VerifyEmailRequest;
 import dev.nexus.auth.dto.UserResponse;
 import dev.nexus.config.NexusProperties;
 import dev.nexus.core.security.TurnstileVerifier;
 import dev.nexus.core.web.ClientIpResolver;
 import dev.nexus.core.web.RateLimiter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.Optional;
@@ -25,6 +29,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/auth")
 public class AuthController {
 
+    private static final Logger log = LoggerFactory.getLogger(AuthController.class);
+
     private final AuthService authService;
     private final JwtService jwtService;
     private final RefreshCookies refreshCookies;
@@ -37,6 +43,8 @@ public class AuthController {
 
     /** Whether this deployment still takes new accounts. Signing in is never affected. */
     private final boolean registrationOpen;
+    private final EmailVerificationService verification;
+    private final boolean verificationRequired;
 
     public AuthController(
             AuthService authService,
@@ -47,7 +55,10 @@ public class AuthController {
             RateLimiter rateLimiter,
             TurnstileVerifier turnstile,
             ClientIpResolver clientIp,
-            NexusProperties properties) {
+            EmailVerificationService verification,
+            NexusProperties properties,
+            @org.springframework.beans.factory.annotation.Value("${nexus.verification.required:false}")
+                    boolean verificationRequired) {
         this.authService = authService;
         this.jwtService = jwtService;
         this.refreshCookies = refreshCookies;
@@ -56,6 +67,8 @@ public class AuthController {
         this.rateLimiter = rateLimiter;
         this.turnstile = turnstile;
         this.clientIp = clientIp;
+        this.verification = verification;
+        this.verificationRequired = verificationRequired;
         this.authRequestsPerMinute = properties.rateLimit().authRequestsPerMinute();
         this.registrationOpen = properties.security().registrationOpen();
     }
@@ -73,8 +86,58 @@ public class AuthController {
         rateLimiter.check("register:" + clientIp.resolve(http), authRequestsPerMinute);
         turnstile.verify(request.turnstileToken(), clientIp.resolve(http));
 
-        return sessions.issue(
-                refreshTokens.begin(authService.register(request), request.client()), HttpStatus.CREATED);
+        AppUser created = authService.register(request);
+
+        /*
+         * With the gate closed, registering hands back no session at all. Issuing one and then
+         * refusing the next sign-in would be an account that worked once and then stopped, and
+         * the reader would have no way to tell that from something broken.
+         *
+         * A failure to send is not swallowed here for the same reason: "check your inbox" for a
+         * mail that never left is an account nobody can ever open.
+         */
+        if (verificationRequired) {
+            verification.sendLink(created);
+            return ResponseEntity.status(HttpStatus.ACCEPTED).<AuthResponse>build();
+        }
+
+        // Gate open: the link still goes out where it can, but nothing waits on it. A mailer
+        // that is missing or failing must not stop an account being created.
+        try {
+            if (verification.canSend()) {
+                verification.sendLink(created);
+            }
+        } catch (RuntimeException e) {
+            log.warn("Could not send a verification link for a new account", e);
+        }
+
+        return sessions.issue(refreshTokens.begin(created, request.client()), HttpStatus.CREATED);
+    }
+
+    /**
+     * Follows a confirmation link.
+     *
+     * <p>Public, because nobody can be signed in yet — that is the whole point of the gate.
+     * The token in the body rather than the query string: a link's query travels in the
+     * browser's history and in any referrer the page sends on.
+     */
+    @PostMapping("/verify-email")
+    @org.springframework.web.bind.annotation.ResponseStatus(HttpStatus.NO_CONTENT)
+    public void verifyEmail(@Valid @RequestBody VerifyEmailRequest request, HttpServletRequest http) {
+        rateLimiter.check("verify:" + clientIp.resolve(http), authRequestsPerMinute);
+        verification.verify(request.token());
+    }
+
+    /**
+     * Sends another link. Answers the same whether or not there was an account to send to, so
+     * there is nothing here to tell the caller which it was.
+     */
+    @PostMapping("/verify-email/resend")
+    @org.springframework.web.bind.annotation.ResponseStatus(HttpStatus.ACCEPTED)
+    public void resendVerification(
+            @Valid @RequestBody ResendVerificationRequest request, HttpServletRequest http) {
+        rateLimiter.check("verify-resend:" + clientIp.resolve(http), authRequestsPerMinute);
+        verification.resend(request.email());
     }
 
     @PostMapping("/login")

@@ -15,12 +15,19 @@ public class AuthService {
     private final AppUserRepository users;
     private final PasswordEncoder passwordEncoder;
     private final EmailPolicy emailPolicy;
+    private final boolean verificationRequired;
     private final String decoyHash;
 
-    public AuthService(AppUserRepository users, PasswordEncoder passwordEncoder, EmailPolicy emailPolicy) {
+    public AuthService(
+            AppUserRepository users,
+            PasswordEncoder passwordEncoder,
+            EmailPolicy emailPolicy,
+            @org.springframework.beans.factory.annotation.Value("${nexus.verification.required:false}")
+                    boolean verificationRequired) {
         this.users = users;
         this.passwordEncoder = passwordEncoder;
         this.emailPolicy = emailPolicy;
+        this.verificationRequired = verificationRequired;
         this.decoyHash = passwordEncoder.encode(UUID.randomUUID().toString());
     }
 
@@ -56,8 +63,16 @@ public class AuthService {
         String hash = match.map(AppUser::getPasswordHash).orElse(decoyHash);
         boolean passwordMatches = passwordEncoder.matches(request.password(), hash);
 
-        return match.filter(user -> passwordMatches)
+        AppUser user = match.filter(candidate -> passwordMatches)
                 .orElseThrow(() -> new AuthenticationFailedException("Invalid email or password."));
+
+        // After the password, never before. Answering "confirm your email" to a wrong password
+        // would tell whoever guessed it that the address has an account here.
+        if (verificationRequired && !user.isEmailVerified()) {
+            throw new EmailNotVerifiedException();
+        }
+
+        return user;
     }
 
     @Transactional(readOnly = true)

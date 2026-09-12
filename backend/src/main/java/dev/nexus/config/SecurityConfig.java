@@ -37,6 +37,10 @@ public class SecurityConfig {
         // Someone who cannot sign in cannot present a token to ask for a way back in.
         ApiPaths.PREFIX + "/auth/forgot-password",
         ApiPaths.PREFIX + "/auth/reset-password",
+        // Both are reached by someone who cannot sign in yet — that is the state they exist to
+        // get a reader out of — so neither can sit behind the session they are blocked from.
+        ApiPaths.PREFIX + "/auth/verify-email",
+        ApiPaths.PREFIX + "/auth/verify-email/resend",
         ApiPaths.PREFIX + "/health",
         // What the signed-out screens are built from, the Turnstile site key included. That
         // key is published to every visitor by design; nothing secret is served here.

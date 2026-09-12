@@ -83,10 +83,27 @@ nexus:
     search-requests-per-minute: 30
     # An import touches a whole library and spends external API budget.
     import-requests-per-minute: 3
+  mail:
+    # Must be an address on a domain verified with the provider. Until one is, Resend accepts
+    # mail to the account owner's own address and silently drops everything else — the send
+    # succeeds and nothing arrives, which is why verification below defaults to off.
+    from: ${MAIL_FROM:NexusLibrary <onboarding@resend.dev>}
+    resend:
+      # Unset means no mailer at all: dev and test log the message, production sends nothing
+      # and says so rather than reporting success for a mail nobody will receive.
+      api-key: ${RESEND_API_KEY:}
+  verification:
+    # Off by default, and deliberately. On, an account cannot be signed into until its link is
+    # followed — so a deployment that cannot actually deliver mail would create accounts nobody
+    # can ever open. Turn this on once a sending domain is verified, not before.
+    required: ${REQUIRE_EMAIL_VERIFICATION:false}
+    # Longer than a reset link's half hour: this one is read when someone gets round to it and
+    # grants nothing beyond confirming an address already on the account.
+    ttl-hours: 48
   registration:
-    # Nothing here sends a confirmation mail, so sign-up is the only moment an address is ever
-    # examined. Both checks can turn a real person away, so both can be switched off without a
-    # rebuild if one starts doing that.
+    # Confirming the address is a separate gate above; these three decide whether an address is
+    # worth sending anything to in the first place. Both checks can turn a real person away, so
+    # both can be switched off without a rebuild if one starts doing that.
     block-disposable-domains: ${BLOCK_DISPOSABLE_EMAIL:true}
     require-deliverable-domain: ${REQUIRE_DELIVERABLE_EMAIL:true}
     # A DNS lookup on the sign-up path. Past this the address is allowed through unchecked:
