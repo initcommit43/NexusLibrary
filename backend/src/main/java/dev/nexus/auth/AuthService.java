@@ -14,17 +14,23 @@ public class AuthService {
 
     private final AppUserRepository users;
     private final PasswordEncoder passwordEncoder;
+    private final EmailPolicy emailPolicy;
     private final String decoyHash;
 
-    public AuthService(AppUserRepository users, PasswordEncoder passwordEncoder) {
+    public AuthService(AppUserRepository users, PasswordEncoder passwordEncoder, EmailPolicy emailPolicy) {
         this.users = users;
         this.passwordEncoder = passwordEncoder;
+        this.emailPolicy = emailPolicy;
         this.decoyHash = passwordEncoder.encode(UUID.randomUUID().toString());
     }
 
     @Transactional
     public AppUser register(RegisterRequest request) {
         String email = normalizeEmail(request.email());
+
+        // Before the conflict check, so an address that could never work is told so rather
+        // than being told it is taken — which would also answer a question about who is here.
+        emailPolicy.check(email);
 
         if (users.existsByEmailIgnoreCase(email)) {
             throw new RegistrationConflictException("email", "That email is already registered.");

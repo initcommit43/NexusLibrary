@@ -3,6 +3,7 @@ package dev.nexus.core.web;
 import dev.nexus.auth.AuthenticationFailedException;
 import dev.nexus.auth.PasswordResetLinkExpiredException;
 import dev.nexus.auth.PasswordResetUnavailableException;
+import dev.nexus.auth.EmailNotAcceptableException;
 import dev.nexus.auth.RegistrationConflictException;
 import dev.nexus.core.account.AccountNotFoundException;
 import dev.nexus.core.account.PasswordMismatchException;
@@ -92,6 +93,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(RegistrationConflictException.class)
     public ResponseEntity<ApiError> handleConflict(RegistrationConflictException e) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(new ApiError(e.getMessage(), e.getFieldErrors()));
+    }
+
+    /**
+     * An address that will not do, rather than one already taken. The message is safe to show:
+     * it describes the address the caller just typed, and reveals nothing about who is
+     * registered here.
+     */
+    @ExceptionHandler(EmailNotAcceptableException.class)
+    public ResponseEntity<ApiError> handleEmailNotAcceptable(EmailNotAcceptableException e) {
+        return ResponseEntity.badRequest().body(new ApiError(e.getMessage(), e.getFieldErrors()));
     }
 
     /**

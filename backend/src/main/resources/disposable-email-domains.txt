@@ -1,0 +1,66 @@
+# Throwaway-inbox services, refused at sign-up.
+#
+# Registration domains only: the base domain is enough, because EmailPolicy also matches
+# subdomains of anything listed here. One per line, lowercase, # for comments.
+#
+# This list is short and deliberately so. It covers the services people actually reach for
+# when they want an address that stops existing, not every domain a blocklist project has
+# ever collected. A public list of tens of thousands is a maintenance burden and a source of
+# false rejections for real people, and the deliverability check already turns away invented
+# domains without needing to know their names.
+
+# The large, long-running ones
+mailinator.com
+guerrillamail.com
+guerrillamail.net
+guerrillamail.org
+guerrillamail.biz
+guerrillamailblock.com
+sharklasers.com
+grr.la
+10minutemail.com
+10minutemail.net
+tempmail.com
+temp-mail.org
+temp-mail.io
+tempmailo.com
+yopmail.com
+yopmail.net
+throwawaymail.com
+maildrop.cc
+mailnesia.com
+trashmail.com
+trashmail.de
+trash-mail.com
+dispostable.com
+getnada.com
+nada.email
+mohmal.com
+fakeinbox.com
+mytemp.email
+emailondeck.com
+tempinbox.com
+spamgourmet.com
+mailcatch.com
+inboxkitten.com
+tempr.email
+discard.email
+mail-temp.com
+moakt.com
+luxusmail.org
+cloud-mail.top
+byom.de
+
+# Aliasing services that expire or are trivially discarded
+mailsac.com
+harakirimail.com
+armyspy.com
+cuvox.de
+dayrep.com
+einrot.com
+fleckens.hu
+gustr.com
+jourrapide.com
+rhyta.com
+superrito.com
+teleworm.us
