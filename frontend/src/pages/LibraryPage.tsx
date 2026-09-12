@@ -92,25 +92,51 @@ export const LibraryPage = () => {
         </p>
       )}
 
-      {entries === null && !error && <p className="muted">Loading your library…</p>}
-
       <div className="list-layout">
         <ListSidebar type={active} entries={mine} filters={filters} onChange={setFilters} />
 
         <div className="list-main">
+          {/*
+           * The shelf holds its shape while it loads. A line of text here let the sidebar sit
+           * alone against an empty column and then shoved it down when the covers arrived; the
+           * placeholders are the grid the real one replaces, so nothing moves on the swap.
+           */}
+          {entries === null && !error && (
+            <section className="status-section" aria-hidden="true">
+              <h2 className="shelf-heading-pending" />
+              <div className="cover-grid">
+                {Array.from({ length: 12 }, (_, i) => (
+                  <div key={i} className="cover-pending" />
+                ))}
+              </div>
+            </section>
+          )}
+
           {entries !== null && shown.length === 0 && (
-            <p className="muted">
+            <div className="shelf-empty">
               {mine.length === 0 ? (
                 <>
-                  {module.emptyHint}{' '}
-                  <Link to={`/search?module=${module.slug}&type=${active.slug}`}>
+                  <p className="shelf-empty-line">{module.emptyHint}</p>
+                  <Link
+                    className="shelf-empty-action"
+                    to={`/search?module=${module.slug}&type=${active.slug}`}
+                  >
                     {active.searchPlaceholder}
                   </Link>
                 </>
               ) : (
-                'Nothing matches those filters.'
+                <>
+                  <p className="shelf-empty-line">Nothing matches those filters.</p>
+                  <button
+                    type="button"
+                    className="shelf-empty-action"
+                    onClick={() => setFilters(EMPTY_FILTERS)}
+                  >
+                    Clear filters
+                  </button>
+                </>
               )}
-            </p>
+            </div>
           )}
 
           {sections.map((status) => {

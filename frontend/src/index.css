@@ -4147,6 +4147,9 @@ button.ghost.danger:hover:not(:disabled) {
 }
 
 .status-section h2 {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
   padding-bottom: var(--space-2);
   border-bottom: 1px solid var(--card-border);
   color: var(--text-muted);
@@ -4157,10 +4160,120 @@ button.ghost.danger:hover:not(:disabled) {
   letter-spacing: var(--tracking-wide);
 }
 
-.status-section h2 {
+/*
+ * A shelf between shelves needs more air above its heading than below it, or the count under
+ * one status reads as belonging to the grid above it rather than the one it names.
+ *
+ * Scoped to the stacked column on purpose: a status section is not always stacked. The profile
+ * lays two of them side by side as lanes, where a top margin on the second is not breathing
+ * room, it is one lane hanging lower than the other.
+ */
+.list-main .status-section + .status-section {
+  margin-top: var(--space-5);
+}
+
+/* --- the shelf before its contents arrive --- */
+
+/*
+ * The placeholders carry the real card's geometry — border, radius, 3/4 art, caption strip —
+ * so the grid that replaces them lands in the same place. The pulse is one slow breath across
+ * the whole shelf rather than per-card staggering, which reads as loading rather than as
+ * twelve things each doing something.
+ */
+.cover-pending {
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.cover-pending::before {
+  content: '';
+  display: block;
+  aspect-ratio: 3 / 4;
+  background: var(--surface-raised);
+  border-bottom: 1px solid var(--card-border);
+}
+
+.cover-pending::after {
+  content: '';
+  display: block;
+  height: var(--space-3);
+  margin: var(--space-2) var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+}
+
+.shelf-heading-pending {
+  height: var(--space-3);
+  width: 7rem;
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  border-bottom: 1px solid var(--card-border);
+}
+
+.cover-pending,
+.shelf-heading-pending {
+  animation: shelf-pending 1.6s ease-in-out infinite;
+}
+
+@keyframes shelf-pending {
+  50% {
+    opacity: 0.62;
+  }
+}
+
+/* Holding still is the alternative, not a faster pulse. */
+@media (prefers-reduced-motion: reduce) {
+  .cover-pending,
+  .shelf-heading-pending {
+    animation: none;
+  }
+}
+
+/* --- nothing on the shelf --- */
+
+/*
+ * Not a card: an empty shelf is the absence of things, and drawing a box around the sentence
+ * that says so puts a container where the missing covers should be.
+ */
+.shelf-empty {
   display: flex;
-  align-items: baseline;
-  gap: var(--space-2);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-6) 0;
+  max-width: 48ch;
+}
+
+.shelf-empty-line {
+  margin: 0;
+  color: var(--text-body);
+}
+
+/*
+ * One control, whether it navigates or clears — the recovery from an empty shelf is a single
+ * act, so the link and the button are the same object wearing different verbs.
+ */
+.shelf-empty-action {
+  align-self: flex-start;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--accent);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color var(--duration-base) var(--ease),
+    background var(--duration-base) var(--ease);
+}
+
+.shelf-empty-action:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  text-decoration: none;
 }
 
 .module-grid {
