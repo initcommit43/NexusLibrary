@@ -437,10 +437,47 @@ const request = async <T>(path: string, init: RequestInit = {}): Promise<T> => {
 /**
  * A background job that failed against a dead upstream feeds the same banner as a failed
  * request: the import is where an outage is most likely to be met first.
+ *
+ * <p>A run that finished is also the one way the library changes without this client asking
+ * for it: an import writes entries server-side long after the call that started it returned.
+ * Noticing that here is what stops a held copy outliving the titles it is missing.
  */
 const trackJobOutage = <T extends SyncJob | null>(job: T): T => {
   if (job?.state === 'FAILED' && job.unavailableService) reportOutage(job.unavailableService)
+  if (job?.state === 'COMPLETE' && job.changed > 0) entries = null
   return job
+}
+
+/*
+ * What has already been fetched, so arriving somewhere a second time is instant.
+ *
+ * Every page keeps its data in its own state and React Router throws that away on the way
+ * out, so home and the library — which ask for the same entries — were each refetching the
+ * whole library on every visit, and a there-and-back paid for it three times.
+ *
+ * The promise is cached rather than the value: two pages mounting at once then share one
+ * request instead of racing. A rejected one is dropped so a failure is retried rather than
+ * remembered, and anything that changes what the answer would be clears it below.
+ */
+let entries: Promise<TrackedItem[]> | null = null
+const shelves = new Map<MediaType, Promise<BrowseShelf[]>>()
+
+/**
+ * Everything remembered about who is signed in.
+ *
+ * <p>Called on every entry into and out of a session. These responses are scoped to one
+ * account, so carrying them across a sign-out would show the next reader the last one's
+ * library — the one thing this app is not allowed to do.
+ */
+const forgetSession = () => {
+  entries = null
+  shelves.clear()
+}
+
+/** Their library changed, so the copy of it is no longer the answer. */
+const forgetEntries = <T>(value: T): T => {
+  entries = null
+  return value
 }
 
 export type ExportedCsv = { filename: string; blob: Blob }
@@ -482,15 +519,26 @@ export const api = {
     request<AuthResponse>('/auth/register', {
       method: 'POST',
       body: JSON.stringify({ ...payload, client: WEB_CLIENT }),
+    }).then((auth) => {
+      forgetSession()
+      return auth
     }),
 
   login: (payload: { email: string; password: string }) =>
     request<AuthResponse>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ ...payload, client: WEB_CLIENT }),
+    }).then((auth) => {
+      forgetSession()
+      return auth
     }),
 
-  logout: () => request<void>('/auth/logout', { method: 'POST' }),
+  /*
+   * Cleared whether or not the server answers. A sign-out that failed on the network still
+   * ends the session in this tab, and the held library must not outlive it.
+   */
+  logout: () =>
+    request<void>('/auth/logout', { method: 'POST' }).finally(forgetSession),
 
   /**
    * Asks for a reset link. Answers the same whether or not the address has an account, so
@@ -530,11 +578,12 @@ export const api = {
       body: JSON.stringify({ currentPassword, newPassword, client: WEB_CLIENT }),
     }),
 
+  // The account is gone; nothing fetched under it may survive in this tab.
   deleteAccount: (password: string) =>
     request<void>('/settings/account', {
       method: 'DELETE',
       body: JSON.stringify({ password }),
-    }),
+    }).finally(forgetSession),
 
   /** The media types this reader switched off. Everything absent from it is on. */
   disabledModules: () =>
@@ -546,8 +595,25 @@ export const api = {
       body: JSON.stringify({ disabled }),
     }).then((body) => body.disabled),
 
-  browseShelves: (mediaType: MediaType) =>
-    request<BrowseShelf[]>(`/catalog/shelves?mediaType=${mediaType}`),
+  /*
+   * Held per media type: home asks for one set per type in the module, so the anime module
+   * alone was two requests every time it was opened. A shelf is the same list for everyone
+   * and the server already caches it globally — this stops the browser asking again for an
+   * answer it is holding.
+   */
+  browseShelves: (mediaType: MediaType) => {
+    const held = shelves.get(mediaType)
+    if (held) return held
+
+    const pending = request<BrowseShelf[]>(`/catalog/shelves?mediaType=${mediaType}`).catch(
+      (err) => {
+        shelves.delete(mediaType)
+        throw err
+      },
+    )
+    shelves.set(mediaType, pending)
+    return pending
+  },
 
   browse: (mediaType: MediaType, shelf: string, page = 1) =>
     request<BrowseResults>(
@@ -578,24 +644,34 @@ export const api = {
       `/catalog/media/${source}/${encodeURIComponent(externalId)}/achievements`,
     ),
 
-  listEntries: () => request<TrackedItem[]>('/entries'),
+  listEntries: () =>
+    (entries ??= request<TrackedItem[]>('/entries').catch((err) => {
+      entries = null
+      throw err
+    })),
 
   getEntry: (id: number) => request<TrackedItem>(`/entries/${id}`),
 
   createEntry: (payload: TrackPayload) =>
-    request<TrackedItem>('/entries', { method: 'POST', body: JSON.stringify(payload) }),
+    request<TrackedItem>('/entries', { method: 'POST', body: JSON.stringify(payload) }).then(
+      forgetEntries,
+    ),
 
   updateEntry: (id: number, payload: UpdateEntryPayload) =>
-    request<TrackedItem>(`/entries/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+    request<TrackedItem>(`/entries/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }).then(forgetEntries),
 
-  deleteEntry: (id: number) => request<void>(`/entries/${id}`, { method: 'DELETE' }),
+  deleteEntry: (id: number) =>
+    request<void>(`/entries/${id}`, { method: 'DELETE' }).then(forgetEntries),
 
   /** The whole arrangement, first to last, rather than one card's new position. */
   reorderFavourites: (entryIds: number[]) =>
     request<TrackedItem[]>('/entries/favourites/order', {
       method: 'PUT',
       body: JSON.stringify({ entryIds }),
-    }),
+    }).then(forgetEntries),
 
   favouriteRowOrder: () => request<RowArrangement>('/settings/favourite-rows'),
 
