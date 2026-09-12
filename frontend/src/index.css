@@ -76,6 +76,7 @@
   gap: var(--space-3);
 }
 
+
 .field {
   display: flex;
   flex-direction: column;
@@ -1267,7 +1268,14 @@ input.filter-control::-webkit-search-cancel-button {
 }
 
 
-.banner-button:hover {
+/*
+ * The :not(:disabled) is what makes this stick, not a flourish. The bare button:hover rule
+ * carries that guard, which out-specifies a plain .banner-button:hover — so a text button
+ * that clears its background only at rest gets the filled accent back the moment a pointer
+ * touches it, painted tight around the words because the padding is zero.
+ */
+.banner-button:hover:not(:disabled) {
+  background: none;
   color: var(--accent-hover);
   text-decoration: underline;
 }
@@ -1315,6 +1323,16 @@ input.filter-control::-webkit-search-cancel-button {
   object-fit: cover;
   border-radius: var(--radius-sm);
   border: 1px solid var(--card-border);
+}
+
+/*
+ * The same trap as .banner-button, and worse here: these tiles are cover art, so the filled
+ * accent lands behind every picture in the picker at once. Approach is answered by the
+ * cover's own border below, never by the tile becoming a control.
+ */
+.banner-option:hover:not(:disabled),
+.character-option:hover:not(:disabled) {
+  background: none;
 }
 
 .banner-option:hover img,
