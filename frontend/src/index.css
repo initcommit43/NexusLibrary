@@ -82,6 +82,35 @@
  * to the form rather than a field of it, so it sits on the card's axis and holds its two lines
  * apart — a route out of this page, not a label for the thing above it.
  */
+/*
+ * A control that reads as a link, for an action inside a sentence that is not a navigation —
+ * sending another mail. Guarded with :not(:disabled) at rest AND on hover, because the bare
+ * button rules paint a filled accent control and out-specify a plain :hover; clearing the
+ * background only at rest brings the fill back the moment a pointer touches it.
+ */
+.link-button,
+.link-button:hover:not(:disabled) {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+  cursor: pointer;
+}
+
+.link-button:hover:not(:disabled) {
+  color: var(--accent-hover);
+}
+
+.link-button:disabled {
+  color: var(--text-muted);
+  text-decoration: none;
+  cursor: default;
+  opacity: 1;
+}
+
 .auth-aside {
   text-align: center;
   text-wrap: balance;

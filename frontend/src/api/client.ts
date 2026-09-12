@@ -516,13 +516,24 @@ export const api = {
     acceptedTerms: boolean
     turnstileToken: string
   }) =>
-    request<AuthResponse>('/auth/register', {
+    request<AuthResponse | null>('/auth/register', {
       method: 'POST',
       body: JSON.stringify({ ...payload, client: WEB_CLIENT }),
     }).then((auth) => {
       forgetSession()
       return auth
     }),
+
+  /** Follows a confirmation link. The token travels in the body, not the address bar. */
+  verifyEmail: (token: string) =>
+    request<void>('/auth/verify-email', { method: 'POST', body: JSON.stringify({ token }) }),
+
+  /**
+   * Asks for another confirmation link. Answers the same whether or not the address has an
+   * account, so there is nothing here to show the reader either way.
+   */
+  resendVerification: (email: string) =>
+    request<void>('/auth/verify-email/resend', { method: 'POST', body: JSON.stringify({ email }) }),
 
   login: (payload: { email: string; password: string }) =>
     request<AuthResponse>('/auth/login', {

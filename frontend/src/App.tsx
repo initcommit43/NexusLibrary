@@ -12,6 +12,7 @@ import { StatsPage } from './pages/StatsPage'
 import { LoginPage } from './pages/LoginPage'
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage'
 import { ResetPasswordPage } from './pages/ResetPasswordPage'
+import { VerifyEmailPage } from './pages/VerifyEmailPage'
 import { SearchPage } from './pages/SearchPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { StudioPage } from './pages/StudioPage'
@@ -45,6 +46,9 @@ export const App = () => (
     {/* Where the mailed link lands, so it stays outside ProtectedRoute: whoever opens it
         cannot sign in, which is the whole reason they were sent one. */}
     <Route path="/reset-password" element={<ResetPasswordPage />} />
+    {/* Outside ProtectedRoute for the same reason: with the gate closed, nobody holding this
+        link can be signed in yet. */}
+    <Route path="/verify-email" element={<VerifyEmailPage />} />
     {/* Outside ProtectedRoute, and it has to be: the register form asks a reader to accept
         two of these before they have an account to read them with. */}
     <Route path="/credits" element={<CreditsPage />} />

@@ -1,10 +1,27 @@
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { AuthForm } from '../components/AuthForm'
+import { AuthNotice } from '../components/AuthNotice'
 import { useAuth } from '../auth/useAuth'
 
 export const RegisterPage = () => {
   const { register } = useAuth()
   const navigate = useNavigate()
+  const [awaiting, setAwaiting] = useState<string | null>(null)
+
+  /*
+   * The account exists but cannot be opened yet. Said plainly, with where the mail went, because
+   * the reader's next move is in another app entirely and they need to know which inbox to open.
+   */
+  if (awaiting) {
+    return (
+      <AuthNotice title="Check your email">
+        We sent a confirmation link to <strong>{awaiting}</strong>. Follow it, then sign in. It can
+        take a minute to arrive, and it is worth checking your spam folder.{' '}
+        <Link to="/login">Go to sign in</Link>
+      </AuthNotice>
+    )
+  }
 
   return (
     <AuthForm
@@ -36,7 +53,17 @@ export const RegisterPage = () => {
         // True by construction: the button is disabled until the box is ticked. Sent
         // anyway, and checked again on the server, because a client is not where a
         // requirement like this can be allowed to live.
-        await register(v.email ?? '', v.username ?? '', v.password ?? '', true, v.turnstileToken ?? '')
+        const outcome = await register(
+          v.email ?? '',
+          v.username ?? '',
+          v.password ?? '',
+          true,
+          v.turnstileToken ?? '',
+        )
+        if (outcome === 'confirm-email') {
+          setAwaiting(v.email ?? '')
+          return
+        }
         navigate('/', { replace: true })
       }}
       footer={<>Already registered? <Link to="/login">Sign in</Link></>}
