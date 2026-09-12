@@ -101,8 +101,7 @@ class AchievementSyncIntegrationTest extends PostgresIntegrationTest {
         assertThat(syncer.syncOne(strangerId, entryId, STEAM_ID)).isFalse();
 
         verify(steamAchievements, never()).fetch(anyString(), anyString());
-        assertThat(entries.findById(entryId).orElseThrow().getProgressExtra())
-                .doesNotContainKey("achievements");
+        assertThat(entries.findById(entryId).orElseThrow().getProgressExtra()).isNull();
     }
 
     @Test
