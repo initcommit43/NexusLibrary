@@ -54,7 +54,8 @@ export const LoginPage = () => {
       title="Sign in"
       submitLabel="Sign in"
       fields={[
-        { name: 'email', label: 'Email', type: 'email', autoComplete: 'email' },
+        // 'username' rather than 'email': it names the field a saved sign-in is filled into.
+        { name: 'email', label: 'Email', type: 'email', autoComplete: 'username' },
         { name: 'password', label: 'Password', type: 'password', autoComplete: 'current-password' },
       ]}
       onSubmit={async (v) => {

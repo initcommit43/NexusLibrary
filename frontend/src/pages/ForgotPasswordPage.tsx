@@ -23,7 +23,7 @@ export const ForgotPasswordPage = () => {
       title="Reset password"
       submitLabel="Send reset link"
       botCheck
-      fields={[{ name: 'email', label: 'Email', type: 'email', autoComplete: 'email' }]}
+      fields={[{ name: 'email', label: 'Email', type: 'email', autoComplete: 'username' }]}
       onSubmit={async (v) => {
         await api.requestPasswordReset(v.email ?? '', v.turnstileToken ?? '')
         setSent(true)
