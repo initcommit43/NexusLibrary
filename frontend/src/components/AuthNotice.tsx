@@ -7,7 +7,7 @@ import type { ReactNode } from 'react'
  */
 export const AuthNotice = ({ title, children }: { title: string; children: ReactNode }) => (
   <div className="page-centered">
-    <div className="card auth-form">
+    <div className="card auth-form auth-notice">
       <h1>{title}</h1>
       <p className="muted auth-aside">{children}</p>
     </div>

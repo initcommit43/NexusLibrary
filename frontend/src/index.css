@@ -117,6 +117,15 @@
   line-height: var(--leading-normal);
 }
 
+/*
+ * A notice is only a heading and a sentence, so the two share one axis. Centring the sentence
+ * alone left the heading hanging off the left edge above it — the one mismatch on a card with
+ * nothing else on it to disguise it.
+ */
+.auth-notice {
+  text-align: center;
+}
+
 .field {
   display: flex;
   flex-direction: column;
