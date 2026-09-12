@@ -619,6 +619,29 @@ a.list-link:hover {
   max-width: 26rem;
 }
 
+/*
+ * A real fieldset, because these four boxes are one question rather than four settings — and
+ * a screen reader reaching the last one should still know what it is about to empty. The
+ * browser's own border and padding go; the legend carries the grouping on its own.
+ */
+.clear-modules {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.clear-modules legend {
+  padding: 0;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-body);
+}
+
+/* The rows sit closer together here than a lone checkbox does: they are read as a list. */
+.clear-modules .checkbox {
+  margin: var(--space-2) 0 0;
+}
+
 /* Said in the colour of the thing it is warning about, before the control that does it. */
 .danger-note {
   padding: var(--space-3);

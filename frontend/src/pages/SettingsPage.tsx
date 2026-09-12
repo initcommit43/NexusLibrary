@@ -12,8 +12,10 @@ import { AppShell } from '../components/AppShell'
 import { saveFile } from '../components/download'
 import {
   MODULES,
+  mediaTypesOf,
   type MediaTypeDefinition,
   type ModuleProvider,
+  type ModuleSlug,
 } from '../modules/registry'
 import { useModules } from '../modules/useModules'
 import { useAuth } from '../auth/useAuth'
@@ -98,9 +100,15 @@ export const SettingsPage = () => {
   }))
   const [passwords, setPasswords] = useState({ current: '', next: '' })
   const [confirmation, setConfirmation] = useState('')
-  const [accountBusy, setAccountBusy] = useState<'profile' | 'password' | 'data' | 'delete' | null>(
-    null,
-  )
+  const [accountBusy, setAccountBusy] = useState<
+    'profile' | 'password' | 'data' | 'delete' | 'clear' | null
+  >(null)
+  /**
+   * Which modules a clear would empty. Everything is ticked to begin with, because that is
+   * what someone reaching for this came to do — but it is ticked rather than assumed, so the
+   * one destructive act nobody confirms with a password still has to be read before it runs.
+   */
+  const [clearing, setClearing] = useState<ModuleSlug[]>(() => MODULES.map((m) => m.slug))
   const [accountNote, setAccountNote] = useState<string | null>(null)
   const [reading, setReading] = useState('general')
   const [accounts, setAccounts] = useState<ConnectedAccount[] | null>(null)
@@ -784,16 +792,17 @@ export const SettingsPage = () => {
   )
 
   const runAccountTask = async (
-    task: 'profile' | 'password' | 'data' | 'delete',
+    task: 'profile' | 'password' | 'data' | 'delete' | 'clear',
     done: string,
-    work: () => Promise<void>,
+    work: () => Promise<string | void>,
   ) => {
     setAccountBusy(task)
     setError(null)
     setAccountNote(null)
     try {
-      await work()
-      setAccountNote(done)
+      // A task that counted something says so itself; the rest keep the message they were given.
+      const counted = await work()
+      setAccountNote(counted ?? done)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'That did not work. Please try again.')
     } finally {
@@ -972,6 +981,72 @@ export const SettingsPage = () => {
                 }
               >
                 {accountBusy === 'delete' ? 'Deleting…' : 'Delete my account'}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/*
+          * Beside deleting the account rather than among the module settings: both are the
+          * same kind of act, and someone who has just turned down the larger one should find
+          * the narrower alternative directly under it.
+          */}
+        <div className="settings-group">
+          <h3>Clear your library</h3>
+
+          <p className="danger-note">
+            <strong>This permanently deletes the entries on the shelves you choose.</strong> Their
+            ratings, progress, notes, reviews and the activity recorded against them go with them.
+            Your account, your connected services and your settings are untouched. Nothing is
+            archived and nothing can be recovered.
+          </p>
+
+          <div className="field-stack">
+            <fieldset className="clear-modules">
+              <legend>Which shelves</legend>
+              {MODULES.map((module) => (
+                <label key={module.slug} className="checkbox">
+                  <input
+                    type="checkbox"
+                    checked={clearing.includes(module.slug)}
+                    onChange={(e) =>
+                      setClearing((current) =>
+                        e.target.checked
+                          ? [...current, module.slug]
+                          : current.filter((slug) => slug !== module.slug),
+                      )
+                    }
+                  />
+                  <span>{module.label}</span>
+                </label>
+              ))}
+            </fieldset>
+
+            <div className="integration-actions">
+              <button
+                type="button"
+                className="ghost danger"
+                disabled={accountBusy !== null || clearing.length === 0}
+                onClick={() => {
+                  const chosen = MODULES.filter((module) => clearing.includes(module.slug))
+                  const names = chosen.map((module) => module.label).join(', ')
+                  if (
+                    !window.confirm(
+                      `Permanently delete everything on these shelves?\n\n${names}\n\nThis cannot be undone.`,
+                    )
+                  ) {
+                    return
+                  }
+
+                  void runAccountTask('clear', 'Library cleared.', async () => {
+                    const removed = await api.clearLibrary(chosen.flatMap(mediaTypesOf))
+                    return removed.entries === 0
+                      ? 'Nothing to clear on those shelves.'
+                      : `Cleared ${removed.entries} ${removed.entries === 1 ? 'entry' : 'entries'}.`
+                  })
+                }}
+              >
+                {accountBusy === 'clear' ? 'Clearing…' : 'Clear these shelves'}
               </button>
             </div>
           </div>

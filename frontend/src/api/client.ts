@@ -666,6 +666,16 @@ export const api = {
   deleteEntry: (id: number) =>
     request<void>(`/entries/${id}`, { method: 'DELETE' }).then(forgetEntries),
 
+  /**
+   * Empties whole shelves. The mediums are always named — the server refuses an empty list
+   * rather than reading it as "all", so nothing here may quietly default to everything.
+   */
+  clearLibrary: (mediaTypes: MediaType[]) =>
+    request<{ entries: number; activity: number }>('/entries/clear', {
+      method: 'POST',
+      body: JSON.stringify({ mediaTypes }),
+    }).then(forgetEntries),
+
   /** The whole arrangement, first to last, rather than one card's new position. */
   reorderFavourites: (entryIds: number[]) =>
     request<TrackedItem[]>('/entries/favourites/order', {
