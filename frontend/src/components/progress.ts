@@ -39,7 +39,7 @@ export const progressSummary = (entry: TrackedItem): string | null => {
 }
 
 /**
- * How many aired episodes are waiting, or null where nothing is airing.
+ * How many aired episodes are waiting, or null where the mark does not belong.
  *
  * <p>The stored field is the *next* episode, so the last one out is the one before it. Against
  * your own progress that answers the question a dot cannot: not "is this airing" — the
@@ -49,6 +49,16 @@ export const progressSummary = (entry: TrackedItem): string | null => {
  * on is worth marking, just not with a number.
  */
 export const episodesWaiting = (entry: TrackedItem): number | null => {
+  /*
+   * Airing is only half the condition. "Something to watch tonight" is a question about what
+   * you are in the middle of, so a series you have not started, have parked, or have finished
+   * carries no mark — a planned show mid-season would otherwise wear the entire count of
+   * episodes aired so far, which reads as a backlog you fell behind on rather than one you
+   * never began. The home page's airing shelf filtered for this itself; every other caller
+   * had no gate at all, so the rule lives here now and holds for all of them.
+   */
+  if (entry.status !== 'IN_PROGRESS') return null
+
   const next = entry.metadata.nextEpisode
   if (typeof next !== 'object' || next === null) return null
 
