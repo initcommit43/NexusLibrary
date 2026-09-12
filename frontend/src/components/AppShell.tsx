@@ -69,17 +69,18 @@ export const AppShell = ({
         {children}
       </main>
 
-      {/* Below the page rather than inside it: what it links to is true of the whole app. */}
-      <Footer />
-
       {/*
-        * Pinned to the corner of the viewport rather than carried in the header, which
-        * slides away as you read down. Light or dark is a choice you make about the page
-        * in front of you, so it has to be reachable from wherever that page has got to.
+        * Between the page and the footer rather than after it, and sticky rather than fixed.
+        * It still rides the bottom of the window while you read, because light or dark is a choice
+        * about the page in front of you and has to be reachable from wherever that page has got
+        * to. But where the page ends it stops above the footer's rule instead of landing on it.
         */}
       <div className="theme-dock">
         <ThemeToggle />
       </div>
+
+      {/* Below the page rather than inside it: what it links to is true of the whole app. */}
+      <Footer />
 
       {/* Sits outside the page, since a run outlives whichever page started it. */}
     </div>

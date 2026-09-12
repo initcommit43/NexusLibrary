@@ -112,31 +112,39 @@ export const LibraryPage = () => {
             </section>
           )}
 
+          {/*
+           * Built as a shelf, not a loose paragraph. A full library opens with a shelf heading and
+           * its rule on the same line as the sidebar's own; an empty one has to do the same, or the
+           * sentence floats level with nothing. The message then sits where the covers would.
+           */}
           {entries !== null && shown.length === 0 && (
-            <div className="shelf-empty">
-              {mine.length === 0 ? (
-                <>
-                  <p className="shelf-empty-line">{module.emptyHint}</p>
-                  <Link
-                    className="shelf-empty-action"
-                    to={`/search?module=${module.slug}&type=${active.slug}`}
-                  >
-                    {active.searchPlaceholder}
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <p className="shelf-empty-line">Nothing matches those filters.</p>
-                  <button
-                    type="button"
-                    className="shelf-empty-action"
-                    onClick={() => setFilters(EMPTY_FILTERS)}
-                  >
-                    Clear filters
-                  </button>
-                </>
-              )}
-            </div>
+            <section className="status-section">
+              <h2>{mine.length === 0 ? 'Get started' : 'No matches'}</h2>
+              <div className="shelf-empty">
+                {mine.length === 0 ? (
+                  <>
+                    <p className="shelf-empty-line">{module.emptyHint}</p>
+                    <Link
+                      className="shelf-empty-action"
+                      to={`/search?module=${module.slug}&type=${active.slug}`}
+                    >
+                      {active.searchPlaceholder}
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <p className="shelf-empty-line">Nothing matches those filters.</p>
+                    <button
+                      type="button"
+                      className="shelf-empty-action"
+                      onClick={() => setFilters(EMPTY_FILTERS)}
+                    >
+                      Clear filters
+                    </button>
+                  </>
+                )}
+                </div>
+            </section>
           )}
 
           {sections.map((status) => {

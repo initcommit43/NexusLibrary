@@ -497,11 +497,23 @@ button.small {
   --content-edge: max(var(--space-4), calc((100vw - var(--shell-max)) / 2 + var(--space-4)));
   --corner: calc(var(--space-3) + 5px);
 
-  position: fixed;
-  /* Out at the window's own corner rather than tucked back towards the content's edge. */
-  right: var(--corner);
+  /*
+   * Sticky inside the page's column rather than fixed to the window, so it rides the bottom of
+   * the window while there is page left to read and comes to rest above the footer's rule when
+   * there is not. Fixed, it had no idea where the footer was and landed across the rule.
+   *
+   * No height of its own: the button hangs upward from this line, so the dock takes no room in
+   * the page. The negative top margin cancels the bottom one for the same reason — the gap it
+   * keeps above the rule is visual, not a space added to every page.
+   */
+  position: sticky;
   bottom: var(--space-3);
   z-index: 30;
+  align-self: flex-end;
+  height: 0;
+  display: flex;
+  align-items: flex-end;
+  margin: calc(-1 * var(--space-3)) var(--corner) var(--space-3) 0;
 }
 
 /* Out here it has no header behind it, so it brings its own surface. */
@@ -4332,7 +4344,7 @@ button.ghost.danger:hover:not(:disabled) {
   flex-direction: column;
   align-items: flex-start;
   gap: var(--space-3);
-  padding: var(--space-6) 0;
+  /* No space above: the shelf heading already holds the top line, level with the sidebar's. */
   max-width: 48ch;
 }
 
@@ -5172,11 +5184,16 @@ a.icon-button.active {
  * Quiet by design. What it links to is read once, if ever, and a legal floor that competes
  * with the shelves above it is a footer that has misunderstood its job.
  */
+/*
+ * The rule runs the full width of the window; only what sits on it keeps to the column. The
+ * border belonged to a box capped at the column's width, so on a wide window the line stopped
+ * short of both edges and read as a stray underline rather than the foot of the page. The side
+ * padding now does the capping instead, which leaves the box — and its border — full width.
+ */
 .site-footer {
   width: 100%;
-  max-width: var(--shell-max);
-  margin-inline: auto;
-  padding: var(--space-4);
+  padding-block: var(--space-4);
+  padding-inline: max(var(--space-4), calc((100% - var(--shell-max)) / 2 + var(--space-4)));
   border-top: 1px solid var(--border);
   display: flex;
   flex-wrap: wrap;
@@ -5204,19 +5221,6 @@ a.icon-button.active {
 
 .site-footer-note {
   color: var(--text-muted);
-}
-
-/*
- * A gutter for the theme dock, which is fixed to the window's bottom-right corner and so
- * lands on top of this the moment the page is scrolled to the end. Asymmetric on purpose:
- * the dock is only ever on one side, and padding the other edge to match would push the
- * links off centre to fix a collision that never happens there.
- *
- * Scoped to the shell because that is the only layout the dock appears in — the legal pages
- * carry the same footer with nothing floating over it.
- */
-.shell .site-footer {
-  padding-right: calc(var(--space-4) + 3.5rem);
 }
 
 /*
