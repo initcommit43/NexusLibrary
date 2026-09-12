@@ -447,7 +447,13 @@ export const HomePage = () => {
     </button>
   )
 
-  const shelfStack = (
+  /*
+   * Drawn only when there is a shelf to put in it. Empty, the stack still took a place in the
+   * column, and the column's gap was spent before the first real row — so on a library with
+   * nothing in progress, the catalogue rows beside the feed sat a whole gap lower than it. The
+   * fold control goes with it, since there is nothing for it to move.
+   */
+  const shelfStack = shelves.length > 0 && (
     <div className="shelf-stack">
       {foldControl}
       {shelves.map(drawShelf)}

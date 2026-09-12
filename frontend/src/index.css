@@ -5028,6 +5028,27 @@ a.icon-button.active {
   min-width: 0;
 }
 
+/*
+ * The two columns start level, so their first headings have to be the same height or the rule
+ * under each lands at a different line and everything below reads as misaligned. They are not
+ * the same height on their own: a shelf heading holds text and a link, but the feed heading
+ * holds controls, and one of them — "Read all", shown only while something is unread — is a
+ * padded button about ten pixels taller than a line of text. So it came and went with the
+ * contents of the inbox.
+ *
+ * One fixed height for every heading on the page, set to fit that tallest control, so what is
+ * inside a heading can never move the line beneath it. Centred rather than baseline-aligned
+ * because a button and a word sharing a baseline is what let the button push the box open.
+ */
+.home-layout .status-section h2 {
+  /* Content-box so the height is the line itself, before the padding and rule beneath it. */
+  box-sizing: content-box;
+  /* A floor rather than a fixed height: a long shelf title that wraps grows the box instead of
+     being clipped. At the widths where the two columns sit side by side, none do. */
+  min-height: 1.6rem;
+  align-items: center;
+}
+
 /* Below the width where a 20rem column still leaves the feed room to be a feed. */
 @media (max-width: 64rem) {
   .home-layout {
