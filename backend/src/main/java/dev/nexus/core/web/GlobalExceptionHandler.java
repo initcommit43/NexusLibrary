@@ -4,11 +4,16 @@ import dev.nexus.auth.AuthenticationFailedException;
 import dev.nexus.auth.PasswordResetLinkExpiredException;
 import dev.nexus.auth.PasswordResetUnavailableException;
 import dev.nexus.auth.EmailNotAcceptableException;
+import dev.nexus.auth.EmailNotVerifiedException;
+import dev.nexus.auth.TooManyVerificationLinksException;
+import dev.nexus.auth.VerificationLinkExpiredException;
+import dev.nexus.auth.VerificationUnavailableException;
 import dev.nexus.auth.RegistrationConflictException;
 import dev.nexus.core.account.AccountNotFoundException;
 import dev.nexus.core.account.PasswordMismatchException;
 import dev.nexus.core.adapter.MetadataAdapterNotAvailableException;
 import dev.nexus.core.cache.ItemNotFoundException;
+import dev.nexus.core.mail.MailNotSentException;
 import dev.nexus.core.importing.ExternalAccountNotConnectedException;
 import dev.nexus.core.importing.CsvFormatException;
 import dev.nexus.core.importing.ImportNotSupportedException;
@@ -100,6 +105,48 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
      * it describes the address the caller just typed, and reveals nothing about who is
      * registered here.
      */
+    /**
+     * The password was right and the address is unconfirmed. A 403 rather than a 401: the
+     * credentials were accepted, so a client that treats 401 as "refresh or sign out" must not
+     * read this as a dead session. The code lets the page offer another link instead.
+     */
+    @ExceptionHandler(EmailNotVerifiedException.class)
+    public ResponseEntity<ApiError> handleUnverified(EmailNotVerifiedException e) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(new ApiError(e.getMessage(), Map.of("email", "unverified")));
+    }
+
+    /**
+     * The mail could not be handed over. A 503: the request was fine and the account was made,
+     * but the part that reaches the reader's inbox is not working. The reader can ask for the
+     * link again from the sign-in page once it is, so the message says to try later rather than
+     * that anything they did was wrong.
+     */
+    @ExceptionHandler(MailNotSentException.class)
+    public ResponseEntity<ApiError> handleMailNotSent(MailNotSentException e) {
+        log.error("A mail could not be sent", e);
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(new ApiError("We could not send your confirmation email. Please try again in a few minutes."));
+    }
+
+    /** A dead confirmation link. Not a 401: nobody is signed in on that page. */
+    @ExceptionHandler(VerificationLinkExpiredException.class)
+    public ResponseEntity<ApiError> handleDeadVerificationLink(VerificationLinkExpiredException e) {
+        return ResponseEntity.status(HttpStatus.GONE).body(new ApiError(e.getMessage()));
+    }
+
+    @ExceptionHandler(TooManyVerificationLinksException.class)
+    public ResponseEntity<ApiError> handleTooManyLinks(TooManyVerificationLinksException e) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(new ApiError(e.getMessage()));
+    }
+
+    /** No mailer configured. A fact about this deployment, not about the caller. */
+    @ExceptionHandler(VerificationUnavailableException.class)
+    public ResponseEntity<ApiError> handleVerificationUnavailable(VerificationUnavailableException e) {
+        log.error("A verification link was requested but this deployment has no mailer");
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body(new ApiError(e.getMessage()));
+    }
+
     @ExceptionHandler(EmailNotAcceptableException.class)
     public ResponseEntity<ApiError> handleEmailNotAcceptable(EmailNotAcceptableException e) {
         return ResponseEntity.badRequest().body(new ApiError(e.getMessage(), e.getFieldErrors()));
