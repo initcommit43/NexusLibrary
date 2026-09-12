@@ -76,6 +76,17 @@
   gap: var(--space-3);
 }
 
+/*
+ * The card is centred on the page and the fields fill its width, so the one loose run of text
+ * under them was the only thing in the composition hanging off the left edge. It is an aside
+ * to the form rather than a field of it, so it sits on the card's axis and holds its two lines
+ * apart — a route out of this page, not a label for the thing above it.
+ */
+.auth-aside {
+  text-align: center;
+  text-wrap: balance;
+  line-height: var(--leading-normal);
+}
 
 .field {
   display: flex;

@@ -141,7 +141,7 @@ export const AuthForm = ({
           {busy ? 'Working…' : submitLabel}
         </button>
 
-        <p className="muted">{footer}</p>
+        <p className="muted auth-aside">{footer}</p>
       </form>
 
       {/* Reachable before there is an account, which is the point of putting it here. */}

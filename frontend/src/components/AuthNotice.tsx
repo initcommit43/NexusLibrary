@@ -9,7 +9,7 @@ export const AuthNotice = ({ title, children }: { title: string; children: React
   <div className="page-centered">
     <div className="card auth-form">
       <h1>{title}</h1>
-      <p className="muted">{children}</p>
+      <p className="muted auth-aside">{children}</p>
     </div>
   </div>
 )
