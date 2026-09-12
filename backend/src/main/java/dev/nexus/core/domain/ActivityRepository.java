@@ -1,9 +1,11 @@
 package dev.nexus.core.domain;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import org.springframework.data.domain.Limit;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -14,6 +16,15 @@ public interface ActivityRepository extends JpaRepository<Activity, Long> {
 
     /** Scoped to the owner in the query itself, so an id alone can never reach another's row. */
     long deleteByIdAndUserId(Long id, Long userId);
+
+    /**
+     * A reader's history for the named mediums.
+     *
+     * <p>Activity references the catalogue item rather than the entry, so emptying a shelf
+     * leaves its history standing — a feed of things that happened to titles the reader no
+     * longer tracks. Clearing is the one operation that has to reach both.
+     */
+    long deleteByUserIdAndItemMediaTypeIn(Long userId, java.util.Collection<MediaType> mediaTypes);
 
     /**
      * The last time each of a reader's titles was touched here.
@@ -33,4 +44,18 @@ public interface ActivityRepository extends JpaRepository<Activity, Long> {
 
         Instant getAt();
     }
+
+    /**
+     * A reader's import and sync events for the named providers.
+     *
+     * <p>These belong to a run rather than a title — "142 arrived from AniList" — so they carry no
+     * item and the medium-scoped delete above never reaches them. The provider is the only thing
+     * that says which shelves a run was about, and it lives in the payload.
+     */
+    @Modifying
+    @Query(
+            value = "DELETE FROM activity WHERE user_id = :userId AND trackable_item_id IS NULL"
+                    + " AND payload ->> 'provider' IN (:providers)",
+            nativeQuery = true)
+    int deleteRunsFor(@Param("userId") Long userId, @Param("providers") Collection<String> providers);
 }

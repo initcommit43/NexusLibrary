@@ -1,6 +1,7 @@
 package dev.nexus.core.tracking;
 
 import dev.nexus.auth.CurrentUser;
+import dev.nexus.core.tracking.dto.ClearLibraryRequest;
 import dev.nexus.core.tracking.dto.ReorderFavouritesRequest;
 import dev.nexus.core.tracking.dto.TrackRequest;
 import dev.nexus.core.tracking.dto.TrackedItemResponse;
@@ -74,5 +75,21 @@ public class TrackingController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@AuthenticationPrincipal CurrentUser user, @PathVariable Long id) {
         tracking.delete(user.id(), id);
+    }
+
+    /**
+     * Empties whole shelves at once.
+     *
+     * <p>A POST rather than a DELETE on the collection: the mediums to empty travel in the
+     * body, and a DELETE carrying one is the request most likely to be stripped in transit by
+     * something between the reader and here. A clear that silently became "clear nothing" is
+     * survivable; one that silently became "clear everything" is not.
+     *
+     * <p>Answers with what it removed so the page can say so rather than guess.
+     */
+    @PostMapping("/clear")
+    public TrackingService.Cleared clear(
+            @AuthenticationPrincipal CurrentUser user, @Valid @RequestBody ClearLibraryRequest request) {
+        return tracking.clear(user.id(), request.mediaTypes());
     }
 }

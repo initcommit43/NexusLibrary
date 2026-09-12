@@ -93,4 +93,15 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
             @Param("userId") Long userId,
             @Param("itemId") Long itemId,
             @Param("type") NotificationType type);
+
+    /**
+     * A reader's notifications about titles on the named shelves. An "episode aired" for a series
+     * that was just wiped from the library is news about something the reader no longer keeps.
+     */
+    @Modifying
+    @Query(
+            value = "DELETE FROM notification n USING trackable_item i"
+                    + " WHERE n.trackable_item_id = i.id AND n.user_id = :userId AND i.media_type IN (:mediaTypes)",
+            nativeQuery = true)
+    int deleteForMediaTypes(@Param("userId") Long userId, @Param("mediaTypes") Collection<String> mediaTypes);
 }

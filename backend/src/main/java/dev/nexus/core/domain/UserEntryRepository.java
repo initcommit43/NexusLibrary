@@ -26,6 +26,19 @@ public interface UserEntryRepository extends JpaRepository<UserEntry, Long> {
 
     long deleteByIdAndUserId(Long id, Long userId);
 
+    /**
+     * Empties the named shelves for one reader.
+     *
+     * <p>Scoped by {@code userId} in the query itself, like everything else here — a bulk
+     * delete is the one place where a missing scope does not throw or return the wrong row
+     * but quietly takes somebody else's library with it.
+     *
+     * <p>Reviews follow on their own: {@code review.user_entry_id} carries an
+     * {@code ON DELETE CASCADE}. Activity does not — it hangs off the reader and the
+     * catalogue item, never the entry — so it is cleared separately and deliberately.
+     */
+    long deleteByUserIdAndItemMediaTypeIn(Long userId, Collection<MediaType> mediaTypes);
+
     /** A day a reader did something, and how much of it. */
     interface DayTally {
         LocalDate getDay();

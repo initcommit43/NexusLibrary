@@ -5,6 +5,9 @@ import dev.nexus.core.activity.ActivityRecorder.EntrySnapshot;
 import dev.nexus.core.cache.ItemCacheService;
 import dev.nexus.core.cache.ItemRefreshService;
 import dev.nexus.core.domain.ActivityRepository;
+import dev.nexus.core.domain.MediaType;
+import dev.nexus.core.domain.NotificationRepository;
+import dev.nexus.core.domain.Provider;
 import dev.nexus.core.domain.ProviderActivityRepository;
 import dev.nexus.core.domain.TrackableItem;
 import dev.nexus.core.domain.TrackingStatus;
@@ -15,10 +18,12 @@ import dev.nexus.core.tracking.dto.UpdateEntryRequest;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +43,7 @@ public class TrackingService {
     private final ItemRefreshService refresh;
     private final ProviderActivityRepository imported;
     private final ActivityRepository activities;
+    private final NotificationRepository notifications;
 
     public TrackingService(
             UserEntryRepository entries,
@@ -45,13 +51,15 @@ public class TrackingService {
             ActivityRecorder activity,
             ItemRefreshService refresh,
             ProviderActivityRepository imported,
-            ActivityRepository activities) {
+            ActivityRepository activities,
+            NotificationRepository notifications) {
         this.entries = entries;
         this.itemCache = itemCache;
         this.activity = activity;
         this.refresh = refresh;
         this.imported = imported;
         this.activities = activities;
+        this.notifications = notifications;
     }
 
     /**
@@ -233,6 +241,66 @@ public class TrackingService {
         if (entries.deleteByIdAndUserId(entryId, userId) == 0) {
             throw new EntryNotFoundException();
         }
+    }
+
+    /** What emptying the named shelves actually removed. */
+    public record Cleared(long entries, long activity) {}
+
+    /**
+     * Empties the named shelves and the history that belongs to them.
+     *
+     * <p>One transaction, so a reader never lands between the two deletes holding a feed of
+     * things that happened to titles they no longer track.
+     *
+     * <p>Catalogue items survive on purpose. They are the shared cache — one row per distinct
+     * title for every reader — so clearing a library must not touch them; the next reader to
+     * track that title, or this one changing their mind, still reads it locally rather than
+     * spending a provider call to fetch what was already known.
+     */
+    @Transactional
+    public Cleared clear(Long userId, Collection<MediaType> mediaTypes) {
+        List<String> named = mediaTypes.stream().map(MediaType::name).toList();
+
+        // Everything the activity page and the activity map read for these shelves. The entries
+        // alone were not it: imported history and a run's own events hang off the reader and the
+        // catalogue, never the entry, so a wipe that stopped at the entries left the page and the
+        // map describing a library that no longer existed.
+        long removedActivity = activities.deleteByUserIdAndItemMediaTypeIn(userId, mediaTypes)
+                + imported.deleteForMediaTypes(userId, named);
+
+        List<String> runsCleared = providersFullyCovered(mediaTypes);
+        if (!runsCleared.isEmpty()) {
+            removedActivity += activities.deleteRunsFor(userId, runsCleared);
+        }
+
+        notifications.deleteForMediaTypes(userId, named);
+
+        long removedEntries = entries.deleteByUserIdAndItemMediaTypeIn(userId, mediaTypes);
+        return new Cleared(removedEntries, removedActivity);
+    }
+
+    /**
+     * The mediums each provider imports into. A run is recorded against its provider rather than a
+     * title, so this is the only way to say which shelves it was about.
+     */
+    private static final Map<Provider, Set<MediaType>> SHELVES_OF = Map.of(
+            Provider.STEAM, Set.of(MediaType.GAME),
+            Provider.ANILIST, Set.of(MediaType.ANIME, MediaType.MANGA),
+            Provider.MAL, Set.of(MediaType.ANIME, MediaType.MANGA),
+            Provider.SIMKL, Set.of(MediaType.MOVIE, MediaType.SHOW),
+            Provider.GOODREADS, Set.of(MediaType.BOOK));
+
+    /**
+     * Providers whose every shelf is being cleared.
+     *
+     * <p>Every shelf, not any. One AniList run brought in anime and manga together, so clearing
+     * only the anime shelf must leave that run on record: it still describes the manga that stays.
+     */
+    private static List<String> providersFullyCovered(Collection<MediaType> cleared) {
+        return SHELVES_OF.entrySet().stream()
+                .filter(provider -> cleared.containsAll(provider.getValue()))
+                .map(provider -> provider.getKey().name())
+                .toList();
     }
 
     private <T> void applyIfPresent(T value, java.util.function.Consumer<T> setter) {

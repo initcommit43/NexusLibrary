@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.List;
 import org.springframework.data.domain.Limit;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -45,4 +46,18 @@ public interface ProviderActivityRepository extends JpaRepository<ProviderActivi
 
         LocalDate getDay();
     }
+
+    /**
+     * A reader's imported history for the named mediums.
+     *
+     * <p>This is the third source of the activity map beside an entry's start and finish dates,
+     * and it outlives the entries: it is keyed to the catalogue item, not to the entry, so
+     * emptying a shelf left every imported day standing on the map. Scoped by owner here.
+     */
+    @Modifying
+    @Query(
+            value = "DELETE FROM provider_activity a USING trackable_item i"
+                    + " WHERE a.trackable_item_id = i.id AND a.user_id = :userId AND i.media_type IN (:mediaTypes)",
+            nativeQuery = true)
+    int deleteForMediaTypes(@Param("userId") Long userId, @Param("mediaTypes") Collection<String> mediaTypes);
 }
