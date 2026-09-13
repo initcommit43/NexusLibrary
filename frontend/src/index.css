@@ -229,6 +229,39 @@ button.small {
   font-size: var(--text-xs);
 }
 
+/*
+ * A phone's buttons are the native app's pills, at a thumb's height. Held to the bare element's
+ * weight by :where() and placed straight after it, so any class or context that dresses a button
+ * its own way still wins. Small and icon buttons take only the shape, and menu items none of the
+ * height: they are rows that happen to be buttons, and a button's height would double each list.
+ */
+@media (max-width: 52rem) {
+  button:where(:not([class]), .ghost, .small, .danger):where(:not(.icon-button)),
+  button:where(:not([class]), .ghost, .small, .danger):where(:not(.icon-button)):focus-visible {
+    border-radius: var(--m-radius-control);
+  }
+
+  button:where(:not([class]), .ghost, .danger):where(
+      :not(.small, .icon-button, .status-options *, .search-card *, .feed-options *, .filter-options *)
+    ) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    min-height: var(--m-control-height);
+    padding-inline: var(--space-4);
+    font-size: var(--text-lg);
+    font-weight: 600;
+  }
+
+  /* Filled, for the one act a confirmation exists to guard; the ghost danger stays an outline. */
+  button.danger:not(.ghost),
+  button.danger:not(.ghost):hover:not(:disabled) {
+    background: var(--danger);
+    color: var(--danger-contrast);
+  }
+}
+
 .alert {
   margin: 0;
   padding: var(--space-3);
@@ -1504,15 +1537,17 @@ input.filter-control::-webkit-search-cancel-button {
 
 @media (max-width: 52rem) {
   .profile-settings {
-    display: block;
-    padding: var(--space-2) var(--space-3);
-    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: var(--m-control-height);
+    padding-inline: var(--space-4);
+    border-radius: var(--m-radius-control);
     background: var(--accent);
     color: var(--accent-contrast);
-    font-size: var(--text-sm);
-    font-weight: 500;
+    font-size: var(--text-lg);
+    font-weight: 600;
     line-height: 1.4;
-    text-align: center;
     transition: background var(--duration-fast) var(--ease);
   }
 
@@ -2656,28 +2691,69 @@ input.filter-control::-webkit-search-cancel-button {
   gap: var(--space-2);
 }
 
-/* Two buttons reading as one control, the way a segmented switch does. */
-.type-switch {
+/* Buttons reading as one control, the way a segmented switch does. See SegmentedControl. */
+.segmented {
   display: inline-flex;
   border: 1px solid var(--card-border);
   border-radius: var(--radius-sm);
   overflow: hidden;
 }
 
-.type-switch button {
+.segmented button {
   border: 0;
   border-radius: 0;
   padding: var(--space-2) var(--space-3);
 }
 
-.type-switch button + button {
+.segmented button + button {
   border-left: 1px solid var(--card-border);
 }
 
 /*
+ * The native app's control: a grey track the width of the column, with the choice raised out of
+ * it in white. Equal segments, so a short label is as easy to hit as a long one.
+ */
+@media (max-width: 52rem) {
+  .segmented {
+    width: 100%;
+    height: var(--m-segmented-height);
+    padding: var(--m-segmented-inset);
+    border: 0;
+    border-radius: var(--m-radius-control);
+    background: var(--border);
+  }
+
+  .segmented button,
+  .segmented button + button,
+  .segmented button:hover:not(:disabled) {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 0;
+    padding: 0 var(--space-2);
+    border: 0;
+    border-radius: var(--m-radius-control);
+    background: transparent;
+    color: var(--text);
+    font-size: var(--m-text-footnote);
+    font-weight: 600;
+  }
+
+  .segmented button[aria-pressed='true'],
+  .segmented button[aria-pressed='true']:hover:not(:disabled) {
+    background: var(--surface);
+    box-shadow: var(--shadow-1);
+  }
+
+  /* Inside the segment, where the track's curve would clip it. */
+  .segmented button:focus-visible {
+    outline-offset: -2px;
+    border-radius: var(--m-radius-control);
+  }
+}
+
+/*
  * Wide, the header's shelves already switch the library's type, so the page's own switch is
- * only for a phone. Held to its content width there, as beside the browse heading, rather
- * than stretched by the page column into a different-sized copy of the same control.
+ * only for a phone, where it spans the column as every segmented control there does.
  */
 .library-type-switch {
   display: none;

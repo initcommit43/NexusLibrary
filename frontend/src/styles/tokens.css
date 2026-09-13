@@ -167,6 +167,42 @@
   --glass-shadow: 0 1px 2px rgba(11, 18, 32, 0.06), 0 8px 24px rgba(11, 18, 32, 0.12);
   --glass-blur: blur(20px) saturate(180%);
 
+  /*
+   * --- phone ---
+   * The native app's shapes, which the web takes on at 52rem and below and nowhere else: its
+   * owner already knows them as the way a phone looks. Measured off the Figma, so the web's own
+   * 4/6/8 scale above still holds everywhere wider. Colours reuse the roles above wherever the
+   * design's matched one; these are only what it has that the web did not.
+   */
+  --m-radius-control: 999px; /* pill: buttons, chips, segmented controls, search fields */
+  --m-radius-group: 16px; /* grouped lists and field groups */
+  --m-radius-dialog: 20px;
+  --m-radius-thumb: 10px; /* a cover in a grouped row */
+  --m-control-height: 3.125rem; /* 50 — buttons */
+  --m-segmented-height: 2rem; /* 32 */
+  --m-segmented-inset: 2px; /* between the track and its raised segment */
+  --m-chip-height: 1.875rem; /* 30 */
+  --m-chip-padding: 0.75rem; /* 12 */
+  --m-chip-gap: 0.375rem; /* 6 — a chip's label to its count */
+  --m-search-height: 2.25rem; /* 36 */
+  --m-row-height: 3.25rem; /* 52 — one line of a grouped row, and a field in a field group */
+  --m-row-height-2: 4rem; /* 64 — a title over a subtitle */
+  --m-row-padding: var(--space-3); /* 16, also where a separator starts */
+  --m-thumb-width: 2.75rem; /* 44 */
+  --m-thumb-height: 3.75rem; /* 60 */
+  --m-gap: 0.75rem; /* 12 — a thumb to its text, and between a dialog's parts */
+  --m-dialog-padding: 1.25rem; /* 20 */
+  --m-dialog-width: 20rem; /* 320 */
+  --m-switch-width: 4rem; /* 64 */
+  --m-switch-height: 1.75rem; /* 28 */
+  --m-switch-knob-width: 2.375rem; /* 38 */
+  --m-text-title: 2.125rem; /* 34 — a page's large title */
+  --m-text-footnote: 0.8125rem; /* 13 — section labels, subtitles, chips, segments */
+  --m-switch-on: #34c759;
+  /* Outside the theme split: the knob is white on either track, as the native switch draws it. */
+  --m-switch-knob: #ffffff;
+  --m-scrim: rgb(0 0 0 / 40%);
+
   /* --- motion --- */
   --duration-fast: 120ms;
   --duration-base: 200ms;
@@ -227,6 +263,8 @@
     --glass-border: rgba(255, 255, 255, 0.12);
     --glass-highlight: rgba(255, 255, 255, 0.1);
     --glass-shadow: 0 1px 2px rgba(0, 0, 0, 0.2), 0 8px 24px rgba(0, 0, 0, 0.45);
+
+    --m-switch-on: #30d158;
   }
 }
 
@@ -272,4 +310,6 @@
   --glass-border: rgba(255, 255, 255, 0.12);
   --glass-highlight: rgba(255, 255, 255, 0.1);
   --glass-shadow: 0 1px 2px rgba(0, 0, 0, 0.2), 0 8px 24px rgba(0, 0, 0, 0.45);
+
+  --m-switch-on: #30d158;
 }

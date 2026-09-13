@@ -1,4 +1,5 @@
 import type { MediaTypeDefinition, ModuleDefinition } from '../modules/registry'
+import { SegmentedControl } from './SegmentedControl'
 
 /**
  * A module's types as one segmented control, shared so every page that switches type shows
@@ -20,22 +21,15 @@ export const TypeSwitch = ({
   if (module.types.length < 2) return null
 
   return (
-    <div
-      className={className ? `type-switch ${className}` : 'type-switch'}
-      role="group"
-      aria-label={`${module.label} type`}
-    >
-      {module.types.map((type) => (
-        <button
-          key={type.mediaType}
-          type="button"
-          className={type.mediaType === active.mediaType ? 'active' : 'ghost'}
-          aria-pressed={type.mediaType === active.mediaType}
-          onClick={() => onSwitch(type)}
-        >
-          {type.label}
-        </button>
-      ))}
-    </div>
+    <SegmentedControl
+      label={`${module.label} type`}
+      options={module.types.map((type) => ({ value: type.mediaType, label: type.label }))}
+      value={active.mediaType}
+      onChange={(mediaType) => {
+        const type = module.types.find((candidate) => candidate.mediaType === mediaType)
+        if (type) onSwitch(type)
+      }}
+      className={className}
+    />
   )
 }
