@@ -458,6 +458,21 @@ button.small {
 }
 
 /*
+ * Every control in the bar stands at one height, so the switcher, search and account sit
+ * level and read as one set. Named here rather than on .icon-button, which dialogs and the
+ * outage banner also use at their own size.
+ */
+.header-right > .icon-button,
+.account > .icon-button {
+  width: var(--icon-control);
+  height: var(--icon-control);
+}
+
+.shell-header .module-trigger {
+  height: var(--icon-control);
+}
+
+/*
  * The width of the content column, shared so things outside it can line up against it.
  *
  * Sized so a browse row holds six covers at about the width they have always been. Wider
@@ -525,8 +540,8 @@ button.small {
 
 /* Out here it has no header behind it, so it brings its own surface. */
 .theme-dock .icon-button {
-  width: 2.5rem;
-  height: 2.5rem;
+  width: var(--icon-control);
+  height: var(--icon-control);
   background: var(--surface);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-full);
