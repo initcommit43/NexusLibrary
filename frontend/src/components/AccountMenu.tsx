@@ -31,7 +31,7 @@ const UserIcon = () => (
  */
 export const AccountMenu = () => {
   const { logout } = useAuth()
-  const { open, setOpen, container } = useMenuDismiss<HTMLDivElement>()
+  const { open, setOpen, container, trigger } = useMenuDismiss<HTMLDivElement, HTMLAnchorElement>()
   const narrow = useNarrowScreen()
 
   return (
@@ -47,6 +47,7 @@ export const AccountMenu = () => {
       }}
     >
       <Link
+        ref={trigger}
         className="icon-button"
         to="/profile"
         aria-haspopup="menu"
@@ -88,7 +89,10 @@ export const AccountMenu = () => {
                 type="button"
                 role="menuitem"
                 className="danger"
-                onClick={() => void logout()}
+                onClick={() => {
+                  setOpen(false)
+                  void logout()
+                }}
               >
                 Sign out
               </button>

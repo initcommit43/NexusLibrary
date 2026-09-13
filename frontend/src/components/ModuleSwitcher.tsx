@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { rememberModule } from '../modules/useCurrentModule'
 import { useModules } from '../modules/useModules'
 import { defaultTypeOf, type ModuleDefinition } from '../modules/registry'
+import { useMenuDismiss } from './useMenuDismiss'
 
 /**
  * The same page, in the module being switched to.
@@ -46,28 +46,9 @@ const sameKindOfPage = (path: string, search: string, module: ModuleDefinition):
  */
 export const ModuleSwitcher = ({ current }: { current: ModuleDefinition }) => {
   const { modules, isBuilt, isEnabled } = useModules()
-  const [open, setOpen] = useState(false)
-  const container = useRef<HTMLDivElement>(null)
+  const { open, setOpen, container, trigger } = useMenuDismiss<HTMLDivElement, HTMLButtonElement>()
   const navigate = useNavigate()
   const location = useLocation()
-
-  useEffect(() => {
-    if (!open) return
-
-    const onPointerDown = (event: PointerEvent) => {
-      if (!container.current?.contains(event.target as Node)) setOpen(false)
-    }
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false)
-    }
-
-    document.addEventListener('pointerdown', onPointerDown)
-    document.addEventListener('keydown', onKeyDown)
-    return () => {
-      document.removeEventListener('pointerdown', onPointerDown)
-      document.removeEventListener('keydown', onKeyDown)
-    }
-  }, [open])
 
   const choose = (module: ModuleDefinition) => {
     setOpen(false)
@@ -91,6 +72,7 @@ export const ModuleSwitcher = ({ current }: { current: ModuleDefinition }) => {
   return (
     <div className="module-switcher" ref={container}>
       <button
+        ref={trigger}
         type="button"
         className="module-trigger"
         aria-haspopup="menu"
