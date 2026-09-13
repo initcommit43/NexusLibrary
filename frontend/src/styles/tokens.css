@@ -135,12 +135,17 @@
   /* The square an icon-only control takes standing on its own: the header, the theme dock. */
   --icon-control: 2.5rem; /* 40 */
 
-  /* --- radius --- */
-  --radius-sm: 8px; /* controls, small tiles */
-  --radius-md: 10px; /* list rows */
-  --radius-lg: 14px; /* cards */
-  --radius-panel: 12px; /* inset panels */
-  --radius-full: 999px;
+  /*
+   * --- radius ---
+   * Kept small on purpose: a corner is a hint, not a shape. Nothing rectangular is a pill —
+   * a control with text in it takes --radius-sm however short it is.
+   */
+  --radius-bar: 2px; /* progress and meter bars, chart marks */
+  --radius-sm: 4px; /* controls: buttons, inputs, chips, badges, menus and their items, small thumbnails */
+  --radius-md: 6px; /* rows and tiles: list rows, cover art, cards in a list, callouts */
+  --radius-lg: 8px; /* cards, popovers, dialogs */
+  --radius-panel: var(--radius-lg); /* inset panels and docks, which are cards */
+  --radius-full: 999px; /* true circles only: avatars, dots, round icon buttons */
 
   /* --- elevation --- */
   --shadow-1: 0 1px 2px rgba(11, 18, 32, 0.04);
