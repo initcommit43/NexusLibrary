@@ -3,6 +3,7 @@ import type { TrackedItem } from '../api/client'
 import { detailPathFor } from '../modules/registry'
 import { ChevronRight } from './GroupedList'
 import { progressLine, progressShare } from './progress'
+import { EntryCoverMenu } from './CoverStatusMenu'
 import { StatusMenu } from './StatusMenu'
 
 /**
@@ -28,8 +29,10 @@ export const EntryRow = ({
 }) => {
   const progress = progressLine(entry)
   const share = progressShare(entry)
-  const menu = (
-    <StatusMenu entry={entry} onChanged={onChanged} onOpenEditor={onEdit} compact={compact} />
+  const menu = compact ? (
+    <EntryCoverMenu entry={entry} onChanged={onChanged} onOpenEditor={onEdit} />
+  ) : (
+    <StatusMenu entry={entry} onChanged={onChanged} onOpenEditor={onEdit} />
   )
 
   return (

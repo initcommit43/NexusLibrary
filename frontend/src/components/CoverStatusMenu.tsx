@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { ApiError, type MediaType, type TrackingStatus } from '../api/client'
+import { ApiError, api, type MediaType, type TrackedItem, type TrackingStatus } from '../api/client'
 import { statusLabelsFor, typeDefinitionFor } from '../modules/registry'
 import { STATUS_ORDER } from './trackingStatus'
 import { useMenuDismiss } from './useMenuDismiss'
@@ -31,18 +31,23 @@ const OFFSET = 4
  * scrolls sideways, and a scrolling box clips whatever reaches out of it on either axis, so a
  * menu inside it would open as a sliver with a scrollbar. Pinned, it cannot follow the row, so
  * any scroll closes it rather than leaving it floating over a different cover.
+ *
+ * <p>The one "…" a phone has, on a shelf row, a library card and a library row alike.
  */
 export const CoverStatusMenu = ({
   title,
   mediaType,
   current,
   onChoose,
+  onOpenEditor,
 }: {
   title: string
   mediaType: MediaType
   /** The shelf it is on, or null for a title not in the library yet. */
   current: TrackingStatus | null
   onChoose: (status: TrackingStatus) => Promise<void>
+  /** Everything a status cannot say, for a title already in the library. */
+  onOpenEditor?: () => void
 }) => {
   const { open, setOpen, dismiss, container, trigger } = useMenuDismiss<
     HTMLDivElement,
@@ -155,6 +160,26 @@ export const CoverStatusMenu = ({
             </li>
           ))}
 
+          {onOpenEditor && (
+            <li role="none">
+              <button
+                type="button"
+                role="menuitem"
+                className="group-row"
+                onClick={() => {
+                  setOpen(false)
+                  onOpenEditor()
+                }}
+              >
+                <span className="group-row-body">
+                  <span className="group-row-text">
+                    <span className="group-row-title">Open editor</span>
+                  </span>
+                </span>
+              </button>
+            </li>
+          )}
+
           {error && (
             <li className="cover-menu-error" role="alert">
               {error}
@@ -165,3 +190,22 @@ export const CoverStatusMenu = ({
     </div>
   )
 }
+
+/** The cover menu for an entry already on a shelf: a choice moves it there. */
+export const EntryCoverMenu = ({
+  entry,
+  onChanged,
+  onOpenEditor,
+}: {
+  entry: TrackedItem
+  onChanged: (updated: TrackedItem) => void
+  onOpenEditor: () => void
+}) => (
+  <CoverStatusMenu
+    title={entry.title}
+    mediaType={entry.mediaType}
+    current={entry.status}
+    onChoose={async (status) => onChanged(await api.updateEntry(entry.id, { status }))}
+    onOpenEditor={onOpenEditor}
+  />
+)

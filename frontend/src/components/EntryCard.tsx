@@ -3,7 +3,7 @@ import type { TrackedItem } from '../api/client'
 import { detailPathFor } from '../modules/registry'
 import { toDisplayScore } from './rating'
 import { episodesWaiting, progressLine, progressSummary } from './progress'
-import { StatusMenu } from './StatusMenu'
+import { EntryCoverMenu } from './CoverStatusMenu'
 
 /**
  * Cover, title, and the two numbers worth seeing on a shelf. Everything editable lives
@@ -109,7 +109,7 @@ export const EntryCard = ({
 
       {/* Beside the card rather than in it: the card clips, and the menu has to drop past it. */}
       {onChanged && onEdit && (
-        <StatusMenu entry={entry} onChanged={onChanged} onOpenEditor={onEdit} compact />
+        <EntryCoverMenu entry={entry} onChanged={onChanged} onOpenEditor={onEdit} />
       )}
     </div>
   )

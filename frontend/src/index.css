@@ -4492,57 +4492,9 @@ input.filter-control::-webkit-search-cancel-button {
   }
 }
 
-/*
- * The status menu as a round "…", for a cover's corner. An open menu lifts its whole control
- * above the next card's or row's, which would otherwise paint over the options.
- */
-/*
- * Above a hovered card, which lifts itself to 3 wherever carousels lend it room: the "…" sits
- * beside the card rather than in it, and under that lift a mouse lost it the moment it arrived.
- */
-.status-menu.is-compact {
-  position: absolute;
-  top: var(--space-2);
-  right: var(--space-2);
-  z-index: 4;
-}
-
-.status-menu.is-compact:has(> [aria-expanded='true']),
+/* An open menu lifts its row above the next one, which would otherwise paint over the options. */
 .entry-row > .status-menu:has(> [aria-expanded='true']) {
   z-index: 5;
-}
-
-.status-more,
-.status-more:hover:not(:disabled) {
-  width: var(--m-chip-height);
-  height: var(--m-chip-height);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-full);
-  background: var(--glass-bg);
-  box-shadow: var(--shadow-1);
-  color: var(--text);
-  -webkit-backdrop-filter: var(--glass-blur);
-  backdrop-filter: var(--glass-blur);
-}
-
-.status-menu.is-compact .status-options {
-  left: auto;
-  width: max-content;
-  min-width: 11rem;
-}
-
-/* A row's cover sits at the left edge, so its menu opens rightwards rather than off the screen. */
-.entry-row .status-menu.is-compact .status-options {
-  left: 0;
-  right: auto;
-}
-
-.status-menu.is-compact .alert {
-  position: absolute;
-  top: calc(100% + var(--space-1));
-  right: 0;
-  width: max-content;
-  max-width: 12rem;
 }
 
 @media (max-width: 52rem) {
@@ -7321,12 +7273,6 @@ a.icon-button.active {
     font-family: inherit;
   }
 
-  /* The first column's menu opens rightwards; right-aligned, it would leave the screen. */
-  .library-grid > :nth-child(3n + 1) .status-menu.is-compact .status-options {
-    left: 0;
-    right: auto;
-  }
-
   .library-search-row {
     display: flex;
     gap: var(--space-2);
@@ -7518,11 +7464,23 @@ a.icon-button.active {
 
 /* The "…" in a cover's corner and the shelves behind it. See CoverStatusMenu. */
 @media (max-width: 52rem) {
+  /*
+   * Above a hovered card, which lifts itself to 3 wherever carousels lend it room: on a library
+   * card the "…" sits beside the card rather than in it, and under that lift a mouse lost it.
+   */
   .cover-menu {
     position: absolute;
     top: var(--space-1);
     right: var(--space-1);
-    z-index: 2;
+    z-index: 4;
+  }
+
+  /*
+   * An open one rises over every other corner button and the tab bar. Its options are pinned to
+   * the window but still paint inside this corner's layer, so the next cover's "…" drew on them.
+   */
+  .cover-menu:has(> [aria-expanded='true']) {
+    z-index: 30;
   }
 
   .cover-menu-button,
