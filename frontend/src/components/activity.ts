@@ -7,6 +7,7 @@
  */
 import type { ActivityEntry, TrackingStatus } from '../api/client'
 import { MODULES, statusLabelsFor, type ModuleDefinition } from '../modules/registry'
+import type { TipContent } from './charts/useTooltip'
 import { toDisplayScore } from './rating'
 
 const MINUTES_PER_HOUR = 60
@@ -89,6 +90,24 @@ export const runTitle = (activity: ActivityEntry): string =>
   activity.type === 'IMPORTED'
     ? `Imported from ${providerLabel(activity)}`
     : `${providerLabel(activity)} sync`
+
+/** How many of a run's titles the hover card names before it starts counting instead. */
+const NAMED_IN_HOVER = 8
+
+/** What a run's hover card says: the run, then the titles it moved. */
+export const runTip = (activity: ActivityEntry): TipContent => {
+  const titles = activity.payload.titles ?? []
+  const named = titles.slice(0, NAMED_IN_HOVER).map((change) => {
+    const moved = change.from === null ? change.to : `${change.from} → ${change.to}`
+    return `${change.title} · ${moved}`
+  })
+  const rest = titles.length - named.length
+
+  return {
+    title: runTitle(activity),
+    lines: [...named, ...(rest > 0 ? [`and ${rest} more`] : [])],
+  }
+}
 
 export const relative = (iso: string) => {
   const minutes = Math.round((Date.now() - new Date(iso).getTime()) / 60000)

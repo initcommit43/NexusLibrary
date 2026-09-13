@@ -3,10 +3,7 @@ import type { ActivityEntry } from '../api/client'
 import { mediaPathFor } from '../modules/registry'
 import { Tooltip } from './charts/Tooltip'
 import { useTooltip } from './charts/useTooltip'
-import { describe, isRun, relative, runTitle } from './activity'
-
-/** How many of a run's titles the hover card names before it starts counting instead. */
-const NAMED_IN_HOVER = 8
+import { describe, isRun, relative, runTip, runTitle } from './activity'
 
 /**
  * What happened, newest first.
@@ -41,17 +38,7 @@ export const ActivityFeed = ({
 
           const show = (event: { clientX: number; clientY: number }) => {
             if (titles.length === 0) return
-
-            const named = titles.slice(0, NAMED_IN_HOVER).map((change) => {
-              const moved = change.from === null ? change.to : `${change.from} → ${change.to}`
-              return `${change.title} · ${moved}`
-            })
-            const rest = titles.length - named.length
-
-            tip.show(event, {
-              title: runTitle(activity),
-              lines: [...named, ...(rest > 0 ? [`and ${rest} more`] : [])],
-            })
+            tip.show(event, runTip(activity))
           }
 
           return (
