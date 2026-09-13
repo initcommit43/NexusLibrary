@@ -3,6 +3,7 @@ import { ModuleSwitcher } from './ModuleSwitcher'
 import { AccountMenu } from './AccountMenu'
 import { Footer } from './Footer'
 import { HeaderSearch } from './HeaderSearch'
+import { JobDock } from './JobDock'
 import { OutageBanner } from './OutageBanner'
 import { ThemeToggle } from './ThemeToggle'
 import { useCurrentModule } from '../modules/useCurrentModule'
@@ -81,10 +82,14 @@ export const AppShell = ({
         <ThemeToggle />
       </div>
 
+      {/*
+        * Sits outside the page, since a run outlives whichever page started it. Beside the theme
+        * dock rather than after the footer, so it comes to rest above the same rule.
+        */}
+      <JobDock />
+
       {/* Below the page rather than inside it: what it links to is true of the whole app. */}
       <Footer />
-
-      {/* Sits outside the page, since a run outlives whichever page started it. */}
     </div>
   )
 }
