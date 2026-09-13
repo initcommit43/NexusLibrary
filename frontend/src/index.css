@@ -845,6 +845,75 @@ a.list-link:hover {
   .settings-subview .integration-head h3 {
     display: none;
   }
+
+  /* Stacked to the card's width, so every button on the screen is one size. */
+  .settings-subview .integration-head,
+  .settings-subview .integration-actions,
+  .settings-subview .integration-csv,
+  .settings-subview .export-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .settings-subview .export-row {
+    margin-top: 0;
+  }
+
+  .settings-subview .csv-hint {
+    flex: none;
+  }
+
+  /* No dark strip on a screen that is only this service: the pill under the blurb is the call. */
+  .settings-subview .integration-head.banner {
+    padding: 0;
+    background: none;
+  }
+
+  .settings-subview .integration-head.banner .muted {
+    color: var(--text-muted);
+    font-size: inherit;
+  }
+
+  .settings-subview .integration-head.banner button {
+    background: var(--accent);
+    color: var(--accent-contrast);
+  }
+
+  .settings-subview .integration-head.banner button:hover:not(:disabled) {
+    background: var(--accent-hover);
+  }
+
+  .settings-subview .field-stack {
+    max-width: none;
+  }
+
+  /* A row's height, and text large enough that a phone does not zoom in on focus. */
+  .settings-subview .field input {
+    min-height: var(--m-row-height);
+    padding-inline: var(--m-row-padding);
+    border-color: var(--border);
+    border-radius: var(--m-radius-group);
+    background: var(--bg);
+    font-size: var(--text-lg);
+  }
+
+  /* The shelves to clear read as the rows of a list, each a row's height to tap. */
+  .settings-subview .clear-modules .checkbox {
+    min-height: var(--m-row-height);
+    margin: 0;
+    color: var(--text);
+    font-size: var(--text-lg);
+  }
+
+  .settings-subview .clear-modules .checkbox + .checkbox {
+    border-top: 1px solid var(--border);
+  }
+
+  .settings-subview .clear-modules .checkbox input {
+    flex: none;
+    width: var(--space-4);
+    height: var(--space-4);
+  }
 }
 
 /*
