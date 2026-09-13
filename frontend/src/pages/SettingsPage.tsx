@@ -937,6 +937,75 @@ export const SettingsPage = () => {
     </div>
   )
 
+  const clearGroup = () => (
+    <div className="settings-group">
+      <h3>Clear your library</h3>
+
+      <p className="danger-note">
+        <strong>This permanently deletes the entries on the shelves you choose.</strong> Their
+        ratings, progress, notes, reviews and the activity recorded against them go with them.
+        Your account, your connected services and your settings are untouched. Nothing is
+        archived and nothing can be recovered.
+      </p>
+
+      <div className="field-stack">
+        <fieldset className="clear-modules">
+          <legend>Which shelves</legend>
+          {MODULES.map((module) => (
+            <label key={module.slug} className="checkbox">
+              <input
+                type="checkbox"
+                checked={clearing.includes(module.slug)}
+                onChange={(e) =>
+                  setClearing((current) =>
+                    e.target.checked
+                      ? [...current, module.slug]
+                      : current.filter((slug) => slug !== module.slug),
+                  )
+                }
+              />
+              <span>{module.label}</span>
+            </label>
+          ))}
+        </fieldset>
+
+        <div className="integration-actions">
+          <button
+            type="button"
+            className="ghost danger"
+            disabled={accountBusy !== null || clearing.length === 0}
+            onClick={() => {
+              const chosen = MODULES.filter((module) => clearing.includes(module.slug))
+              const names = chosen.map((module) => module.label).join(', ')
+              if (
+                !window.confirm(
+                  `Permanently delete everything on these shelves?\n\n${names}\n\nThis cannot be undone.`,
+                )
+              ) {
+                return
+              }
+
+              void runAccountTask('clear', 'Library cleared.', async () => {
+                const removed = await api.clearLibrary(chosen.flatMap(mediaTypesOf))
+                return removed.entries === 0
+                  ? 'Nothing to clear on those shelves.'
+                  : `Cleared ${removed.entries} ${removed.entries === 1 ? 'entry' : 'entries'}.`
+              })
+            }}
+          >
+            {accountBusy === 'clear' ? 'Clearing…' : 'Clear these shelves'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+
+  const deleteAccount = () =>
+    runAccountTask('delete', 'Account deleted.', async () => {
+      await api.deleteAccount(confirmation)
+      await logout()
+    })
+
   /**
    * Who the reader is, how they sign in, and the two rights data protection law gives them.
    * One card: these are four things you do to one account, not four settings that happen to
@@ -979,12 +1048,7 @@ export const SettingsPage = () => {
                 type="button"
                 className="ghost danger"
                 disabled={accountBusy !== null || !confirmation}
-                onClick={() =>
-                  void runAccountTask('delete', 'Account deleted.', async () => {
-                    await api.deleteAccount(confirmation)
-                    await logout()
-                  })
-                }
+                onClick={() => void deleteAccount()}
               >
                 {accountBusy === 'delete' ? 'Deleting…' : 'Delete my account'}
               </button>
@@ -997,69 +1061,23 @@ export const SettingsPage = () => {
           * same kind of act, and someone who has just turned down the larger one should find
           * the narrower alternative directly under it.
           */}
-        <div className="settings-group">
-          <h3>Clear your library</h3>
-
-          <p className="danger-note">
-            <strong>This permanently deletes the entries on the shelves you choose.</strong> Their
-            ratings, progress, notes, reviews and the activity recorded against them go with them.
-            Your account, your connected services and your settings are untouched. Nothing is
-            archived and nothing can be recovered.
-          </p>
-
-          <div className="field-stack">
-            <fieldset className="clear-modules">
-              <legend>Which shelves</legend>
-              {MODULES.map((module) => (
-                <label key={module.slug} className="checkbox">
-                  <input
-                    type="checkbox"
-                    checked={clearing.includes(module.slug)}
-                    onChange={(e) =>
-                      setClearing((current) =>
-                        e.target.checked
-                          ? [...current, module.slug]
-                          : current.filter((slug) => slug !== module.slug),
-                      )
-                    }
-                  />
-                  <span>{module.label}</span>
-                </label>
-              ))}
-            </fieldset>
-
-            <div className="integration-actions">
-              <button
-                type="button"
-                className="ghost danger"
-                disabled={accountBusy !== null || clearing.length === 0}
-                onClick={() => {
-                  const chosen = MODULES.filter((module) => clearing.includes(module.slug))
-                  const names = chosen.map((module) => module.label).join(', ')
-                  if (
-                    !window.confirm(
-                      `Permanently delete everything on these shelves?\n\n${names}\n\nThis cannot be undone.`,
-                    )
-                  ) {
-                    return
-                  }
-
-                  void runAccountTask('clear', 'Library cleared.', async () => {
-                    const removed = await api.clearLibrary(chosen.flatMap(mediaTypesOf))
-                    return removed.entries === 0
-                      ? 'Nothing to clear on those shelves.'
-                      : `Cleared ${removed.entries} ${removed.entries === 1 ? 'entry' : 'entries'}.`
-                  })
-                }}
-              >
-                {accountBusy === 'clear' ? 'Clearing…' : 'Clear these shelves'}
-              </button>
-            </div>
-          </div>
-        </div>
+        {clearGroup()}
       </article>
     </section>
   )
+
+  const connectable = MODULES.filter((module) => isEnabled(module.slug)).flatMap(
+    (module) => module.providers,
+  )
+
+  const providerCard = (provider: ModuleProvider) => {
+    if (provider.provider === 'STEAM') return steamCard(provider)
+    if (provider.provider === 'ANILIST') return anilistCard(provider)
+    if (provider.provider === 'MAL') return malCard(provider)
+    if (provider.provider === 'SIMKL') return simklCard(provider)
+    if (provider.provider === 'GOODREADS') return goodreadsCard(provider)
+    return pendingCard(provider)
+  }
 
   /**
    * Every service that can be connected, in one card. Which module a service belongs to is
@@ -1071,16 +1089,7 @@ export const SettingsPage = () => {
       <h2>Connections</h2>
 
       <article className="card">
-        {MODULES.filter((module) => isEnabled(module.slug)).flatMap((module) =>
-          module.providers.map((provider) => {
-            if (provider.provider === 'STEAM') return steamCard(provider)
-            if (provider.provider === 'ANILIST') return anilistCard(provider)
-            if (provider.provider === 'MAL') return malCard(provider)
-            if (provider.provider === 'SIMKL') return simklCard(provider)
-            if (provider.provider === 'GOODREADS') return goodreadsCard(provider)
-            return pendingCard(provider)
-          }),
-        )}
+        {connectable.map(providerCard)}
       </article>
     </section>
   )
@@ -1089,9 +1098,8 @@ export const SettingsPage = () => {
    * Every shelf that can leave as a file, in one place rather than one button per module
    * section: taking your lists with you is a thing you do to the whole library at once.
    */
-  const exportSection = () => (
-    <section className="settings-section">
-      <h2>Export</h2>
+  const shelfExports = () => (
+    <>
       <p className="muted">
         One file per shelf, with everything this app knows about each entry — status, rating,
         progress, dates and notes. Opens in any spreadsheet.
@@ -1112,6 +1120,13 @@ export const SettingsPage = () => {
             </button>
           ))}
       </div>
+    </>
+  )
+
+  const exportSection = () => (
+    <section className="settings-section">
+      <h2>Export</h2>
+      {shelfExports()}
     </section>
   )
 
