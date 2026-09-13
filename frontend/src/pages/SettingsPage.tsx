@@ -802,6 +802,141 @@ export const SettingsPage = () => {
     }
   }
 
+  /*
+   * Groups of the account card that can also be opened on a screen of their own, where there
+   * is no room for the card.
+   */
+  const profileGroup = () => (
+    <div className="settings-group">
+      <h3>Profile</h3>
+      <p className="muted">Change either and save.</p>
+
+      <div className="field-stack">
+        {/*
+          * autoComplete off on both: a browser reads a text field beside a password field
+          * as a sign-in form and fills it with the saved address, which quietly replaced
+          * the username with an email.
+          */}
+        <label className="field">
+          <span>Username</span>
+          <input
+            type="text"
+            autoComplete="off"
+            value={profile.username}
+            onChange={(e) => setProfile({ ...profile, username: e.target.value })}
+          />
+        </label>
+
+        <label className="field">
+          <span>Email</span>
+          <input
+            type="email"
+            autoComplete="off"
+            value={profile.email}
+            onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+          />
+        </label>
+
+        <div className="integration-actions">
+          <button
+            type="button"
+            disabled={
+              accountBusy !== null ||
+              (profile.username === (user?.username ?? '') && profile.email === (user?.email ?? ''))
+            }
+            onClick={() =>
+              void runAccountTask('profile', 'Saved.', async () => {
+                await api.updateProfile({
+                  ...(profile.username === user?.username ? {} : { username: profile.username }),
+                  ...(profile.email === user?.email ? {} : { email: profile.email }),
+                })
+                // The header still shows the old name until something reads it again.
+                await refresh()
+              })
+            }
+          >
+            {accountBusy === 'profile' ? 'Saving…' : 'Save'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+
+  const passwordGroup = () => (
+    <div className="settings-group">
+      <h3>Password</h3>
+      <p className="muted">
+        Your current password is needed as well. Being signed in on this browser is not
+        proof it is you.
+      </p>
+
+      <div className="field-stack">
+        <label className="field">
+          <span>Current password</span>
+          <input
+            type="password"
+            autoComplete="new-password"
+            value={passwords.current}
+            onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
+          />
+        </label>
+
+        <label className="field">
+          <span>New password</span>
+          <input
+            type="password"
+            autoComplete="new-password"
+            value={passwords.next}
+            onChange={(e) => setPasswords({ ...passwords, next: e.target.value })}
+          />
+        </label>
+
+        <div className="integration-actions">
+          <button
+            type="button"
+            disabled={accountBusy !== null || !passwords.current || passwords.next.length < 12}
+            onClick={() =>
+              void runAccountTask('password', 'Password changed.', async () => {
+                await api.changePassword(passwords.current, passwords.next)
+                setPasswords({ current: '', next: '' })
+              })
+            }
+          >
+            {accountBusy === 'password' ? 'Changing…' : 'Change password'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+
+  const dataGroup = () => (
+    <div className="settings-group">
+      <h3>Your data</h3>
+      <p className="muted">
+        One file with everything this app holds about you: your account, every entry with
+        its status, rating, progress, dates and notes, the services you have connected, and
+        your activity. Connected services are listed by name only, never with their access
+        tokens.
+      </p>
+
+      <div className="integration-actions">
+        <button
+          type="button"
+          className="ghost"
+          disabled={accountBusy !== null}
+          onClick={() =>
+            void runAccountTask('data', 'Downloaded.', async () => {
+              const file = await api.exportAccount()
+              saveFile(file.blob, file.filename)
+            })
+          }
+        >
+          {accountBusy === 'data' ? 'Preparing…' : 'Download my data'}
+        </button>
+      </div>
+    </div>
+  )
+
   /**
    * Who the reader is, how they sign in, and the two rights data protection law gives them.
    * One card: these are four things you do to one account, not four settings that happen to
@@ -814,130 +949,9 @@ export const SettingsPage = () => {
       {accountNote && <p className="muted note">{accountNote}</p>}
 
       <article className="card">
-        <div className="settings-group">
-          <h3>Profile</h3>
-          <p className="muted">Change either and save.</p>
-
-          <div className="field-stack">
-            {/*
-              * autoComplete off on both: a browser reads a text field beside a password field
-              * as a sign-in form and fills it with the saved address, which quietly replaced
-              * the username with an email.
-              */}
-            <label className="field">
-              <span>Username</span>
-              <input
-                type="text"
-                autoComplete="off"
-                value={profile.username}
-                onChange={(e) => setProfile({ ...profile, username: e.target.value })}
-              />
-            </label>
-
-            <label className="field">
-              <span>Email</span>
-              <input
-                type="email"
-                autoComplete="off"
-                value={profile.email}
-                onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-              />
-            </label>
-
-            <div className="integration-actions">
-              <button
-                type="button"
-                disabled={
-                  accountBusy !== null ||
-                  (profile.username === (user?.username ?? '') && profile.email === (user?.email ?? ''))
-                }
-                onClick={() =>
-                  void runAccountTask('profile', 'Saved.', async () => {
-                    await api.updateProfile({
-                      ...(profile.username === user?.username ? {} : { username: profile.username }),
-                      ...(profile.email === user?.email ? {} : { email: profile.email }),
-                    })
-                    // The header still shows the old name until something reads it again.
-                    await refresh()
-                  })
-                }
-              >
-                {accountBusy === 'profile' ? 'Saving…' : 'Save'}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="settings-group">
-          <h3>Password</h3>
-          <p className="muted">
-            Your current password is needed as well. Being signed in on this browser is not
-            proof it is you.
-          </p>
-
-          <div className="field-stack">
-            <label className="field">
-              <span>Current password</span>
-              <input
-                type="password"
-                autoComplete="new-password"
-                value={passwords.current}
-                onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
-              />
-            </label>
-
-            <label className="field">
-              <span>New password</span>
-              <input
-                type="password"
-                autoComplete="new-password"
-                value={passwords.next}
-                onChange={(e) => setPasswords({ ...passwords, next: e.target.value })}
-              />
-            </label>
-
-            <div className="integration-actions">
-              <button
-                type="button"
-                disabled={accountBusy !== null || !passwords.current || passwords.next.length < 12}
-                onClick={() =>
-                  void runAccountTask('password', 'Password changed.', async () => {
-                    await api.changePassword(passwords.current, passwords.next)
-                    setPasswords({ current: '', next: '' })
-                  })
-                }
-              >
-                {accountBusy === 'password' ? 'Changing…' : 'Change password'}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="settings-group">
-          <h3>Your data</h3>
-          <p className="muted">
-            One file with everything this app holds about you: your account, every entry with
-            its status, rating, progress, dates and notes, the services you have connected, and
-            your activity. Connected services are listed by name only, never with their access
-            tokens.
-          </p>
-
-          <div className="integration-actions">
-            <button
-              type="button"
-              className="ghost"
-              disabled={accountBusy !== null}
-              onClick={() =>
-                void runAccountTask('data', 'Downloaded.', async () => {
-                  const file = await api.exportAccount()
-                  saveFile(file.blob, file.filename)
-                })
-              }
-            >
-              {accountBusy === 'data' ? 'Preparing…' : 'Download my data'}
-            </button>
-          </div>
-        </div>
+        {profileGroup()}
+        {passwordGroup()}
+        {dataGroup()}
 
         <div className="settings-group">
           <h3>Delete account</h3>
