@@ -3901,6 +3901,61 @@ input.filter-control::-webkit-search-cancel-button {
   min-width: 0;
 }
 
+/* --- library views --- */
+
+/*
+ * The status menu as a round "…", for a cover's corner. An open menu lifts its whole control
+ * above the next card's or row's, which would otherwise paint over the options.
+ */
+/*
+ * Above a hovered card, which lifts itself to 3 wherever carousels lend it room: the "…" sits
+ * beside the card rather than in it, and under that lift a mouse lost it the moment it arrived.
+ */
+.status-menu.is-compact {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  z-index: 4;
+}
+
+.status-menu.is-compact:has(> [aria-expanded='true']),
+.entry-row > .status-menu:has(> [aria-expanded='true']) {
+  z-index: 5;
+}
+
+.status-more,
+.status-more:hover:not(:disabled) {
+  width: var(--m-chip-height);
+  height: var(--m-chip-height);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-full);
+  background: var(--glass-bg);
+  box-shadow: var(--shadow-1);
+  color: var(--text);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+}
+
+.status-menu.is-compact .status-options {
+  left: auto;
+  width: max-content;
+  min-width: 11rem;
+}
+
+/* A row's cover sits at the left edge, so its menu opens rightwards rather than off the screen. */
+.entry-row .status-menu.is-compact .status-options {
+  left: 0;
+  right: auto;
+}
+
+.status-menu.is-compact .alert {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  right: 0;
+  width: max-content;
+  max-width: 12rem;
+}
+
 /* --- running work --- */
 
 /*
@@ -6391,4 +6446,56 @@ a.icon-button.active {
   .chip-row {
     --chip-row-bleed: var(--space-3);
   }
+}
+
+/* --- phone: the library's lists, search and filters --- */
+
+@media (max-width: 52rem) {
+  /* Three covers across, as the native app lays out a shelf, whatever the phone's width. */
+  .library-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-3) var(--m-gap);
+  }
+
+  /* No card around a phone's cover: the artwork is the tile, with the words under it. */
+  .cover-frame.is-compact > .cover-card,
+  .cover-frame.is-compact > .cover-card:hover {
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    transform: none;
+  }
+
+  .cover-frame.is-compact .cover-art {
+    overflow: hidden;
+    border-radius: var(--m-radius-thumb);
+  }
+
+  .cover-frame.is-compact .cover-card img,
+  .cover-frame.is-compact .cover-placeholder {
+    aspect-ratio: 5 / 7;
+    border: 0;
+  }
+
+  .cover-frame.is-compact .cover-heading {
+    padding: var(--space-2) 0 0;
+  }
+
+  .cover-frame.is-compact .cover-heading h3 {
+    min-height: calc(2 * var(--leading-tight) * var(--text-md));
+    font-size: var(--text-md);
+    font-weight: 400;
+  }
+
+  .cover-frame.is-compact .cover-stats {
+    color: var(--text-muted);
+    font-family: inherit;
+  }
+
+  /* The first column's menu opens rightwards; right-aligned, it would leave the screen. */
+  .library-grid > :nth-child(3n + 1) .status-menu.is-compact .status-options {
+    left: 0;
+    right: auto;
 }

@@ -2,7 +2,8 @@ import { Link } from 'react-router-dom'
 import type { TrackedItem } from '../api/client'
 import { detailPathFor } from '../modules/registry'
 import { toDisplayScore } from './rating'
-import { episodesWaiting, progressSummary } from './progress'
+import { episodesWaiting, progressLine, progressSummary } from './progress'
+import { StatusMenu } from './StatusMenu'
 
 /**
  * Cover, title, and the two numbers worth seeing on a shelf. Everything editable lives
@@ -11,14 +12,20 @@ import { episodesWaiting, progressSummary } from './progress'
  *
  * <p>A card without {@code onEdit} carries no button at all, for the places where the cards
  * themselves are the thing being handled and a control on each is in the way.
+ *
+ * <p>With {@code onChanged}, the card is the library's phone card instead: the status menu's
+ * round "…" in place of the pencil, since a phone has no hover to reveal a control with, and
+ * progress as a line of words without the score.
  */
 export const EntryCard = ({
   entry,
   onEdit,
   artOnly = false,
+  onChanged,
 }: {
   entry: TrackedItem
   onEdit?: () => void
+  onChanged?: (updated: TrackedItem) => void
   /**
    * The cover and nothing else. A shelf of favourites is a display rather than a list: the
    * titles are already known to the one person the page belongs to, and a name under each
@@ -26,9 +33,10 @@ export const EntryCard = ({
    */
   artOnly?: boolean
 }) => {
-  const progress = progressSummary(entry)
+  const compact = onChanged !== undefined
+  const progress = compact ? progressLine(entry) : progressSummary(entry)
   const waiting = episodesWaiting(entry)
-  const score = toDisplayScore(entry.rating)
+  const score = compact ? null : toDisplayScore(entry.rating)
   const to = detailPathFor(entry)
 
   return (
@@ -37,7 +45,7 @@ export const EntryCard = ({
      * — that is what keeps the artwork inside its rounded border — so anything meant to cross
      * that edge has to hang outside it rather than in it.
      */
-    <div className="cover-frame">
+    <div className={compact ? 'cover-frame is-compact' : 'cover-frame'}>
       {/*
         * Top left, where a corner mark is looked for. Every airing title carries one and they
         * are all the same size: the number of episodes waiting where there are any, and the
@@ -63,7 +71,7 @@ export const EntryCard = ({
           )}
         </Link>
 
-        {onEdit && (
+        {onEdit && !compact && (
           <div className="card-actions corner-top">
             <button
               type="button"
@@ -98,6 +106,11 @@ export const EntryCard = ({
         </div>
       )}
       </article>
+
+      {/* Beside the card rather than in it: the card clips, and the menu has to drop past it. */}
+      {onChanged && onEdit && (
+        <StatusMenu entry={entry} onChanged={onChanged} onOpenEditor={onEdit} compact />
+      )}
     </div>
   )
 }

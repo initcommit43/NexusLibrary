@@ -10,21 +10,34 @@ const ChevronIcon = () => (
   </svg>
 )
 
+const MoreIcon = () => (
+  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden>
+    <circle cx="5.5" cy="12" r="1.8" />
+    <circle cx="12" cy="12" r="1.8" />
+    <circle cx="18.5" cy="12" r="1.8" />
+  </svg>
+)
+
 /**
  * The status an entry is on, and a menu to move it somewhere else.
  *
  * <p>Moving something between lists is the commonest thing anyone does here, so it is one
  * click rather than a trip through the editor — which stays at the bottom of the menu for
  * everything a status cannot express.
+ *
+ * <p>{@code compact} trades the labelled button for a round "…" that can sit on a cover's
+ * corner, where a status name has no room. The menu behind it is the same.
  */
 export const StatusMenu = ({
   entry,
   onChanged,
   onOpenEditor,
+  compact = false,
 }: {
   entry: TrackedItem
-  onChanged: () => void
+  onChanged: (updated: TrackedItem) => void
   onOpenEditor: () => void
+  compact?: boolean
 }) => {
   const { open, setOpen, container } = useMenuDismiss<HTMLDivElement>()
   const [busy, setBusy] = useState(false)
@@ -37,9 +50,9 @@ export const StatusMenu = ({
     setBusy(true)
     setError(null)
     try {
-      await api.updateEntry(entry.id, { status })
+      const updated = await api.updateEntry(entry.id, { status })
       setOpen(false)
-      onChanged()
+      onChanged(updated)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not change that.')
     } finally {
@@ -48,18 +61,32 @@ export const StatusMenu = ({
   }
 
   return (
-    <div className="status-menu" ref={container}>
-      <button
-        type="button"
-        className="status-action"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        disabled={busy}
-        onClick={() => setOpen((wasOpen) => !wasOpen)}
-      >
-        <span>{busy ? 'Saving…' : labels[entry.status]}</span>
-        <ChevronIcon />
-      </button>
+    <div className={compact ? 'status-menu is-compact' : 'status-menu'} ref={container}>
+      {compact ? (
+        <button
+          type="button"
+          className="icon-button status-more"
+          aria-haspopup="menu"
+          aria-expanded={open}
+          aria-label={`${labels[entry.status]}: change the status of ${entry.title}`}
+          disabled={busy}
+          onClick={() => setOpen((wasOpen) => !wasOpen)}
+        >
+          <MoreIcon />
+        </button>
+      ) : (
+        <button
+          type="button"
+          className="status-action"
+          aria-haspopup="menu"
+          aria-expanded={open}
+          disabled={busy}
+          onClick={() => setOpen((wasOpen) => !wasOpen)}
+        >
+          <span>{busy ? 'Saving…' : labels[entry.status]}</span>
+          <ChevronIcon />
+        </button>
+      )}
 
       {open && (
         <ul className="status-options" role="menu">

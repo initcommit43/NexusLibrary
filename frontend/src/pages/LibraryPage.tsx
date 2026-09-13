@@ -83,8 +83,21 @@ export const LibraryPage = () => {
     return <Navigate to="/" replace />
   }
 
-  const sections =
+  /*
+   * A phone follows the native app: one flat shelf under All, in the chosen sort, with the chips
+   * naming the list in place of section headings. Wide keeps a section per status.
+   */
+  const statuses =
     filters.status === 'ALL' ? active.statusOrder : [filters.status as TrackingStatus]
+  const sections: { status: TrackingStatus | null; group: TrackedItem[] }[] = narrow
+    ? [{ status: null, group: shown.filter((entry) => statuses.includes(entry.status)) }]
+    : statuses.map((status) => ({
+        status,
+        group: shown.filter((entry) => entry.status === status),
+      }))
+
+  const replace = (updated: TrackedItem) =>
+    setEntries((current) => current?.map((e) => (e.id === updated.id ? updated : e)) ?? null)
 
   return (
     <AppShell module={module}>
@@ -117,8 +130,8 @@ export const LibraryPage = () => {
            */}
           {entries === null && !error && (
             <section className="status-section" aria-hidden="true">
-              <h2 className="shelf-heading-pending" />
-              <div className="cover-grid">
+              {!narrow && <h2 className="shelf-heading-pending" />}
+              <div className="cover-grid library-grid">
                 {Array.from({ length: 12 }, (_, i) => (
                   <div key={i} className="cover-pending" />
                 ))}
@@ -164,19 +177,25 @@ export const LibraryPage = () => {
             </section>
           )}
 
-          {sections.map((status) => {
-            const group = shown.filter((entry) => entry.status === status)
+          {sections.map(({ status, group }) => {
             if (group.length === 0) return null
 
             return (
-              <section key={status} className="status-section">
-                <h2>
-                  {active.statusLabels[status]} <span className="muted">({group.length})</span>
-                </h2>
+              <section key={status ?? 'ALL'} className="status-section">
+                {status && (
+                  <h2>
+                    {active.statusLabels[status]} <span className="muted">({group.length})</span>
+                  </h2>
+                )}
 
-                <div className="cover-grid">
+                <div className="cover-grid library-grid">
                   {group.map((entry) => (
-                    <EntryCard key={entry.id} entry={entry} onEdit={() => setEditing(entry)} />
+                    <EntryCard
+                      key={entry.id}
+                      entry={entry}
+                      onEdit={() => setEditing(entry)}
+                      onChanged={narrow ? replace : undefined}
+                    />
                   ))}
                 </div>
               </section>
@@ -189,9 +208,7 @@ export const LibraryPage = () => {
         <EntryEditDialog
           entry={editing}
           onClose={() => setEditing(null)}
-          onSaved={(updated) =>
-            setEntries((current) => current?.map((e) => (e.id === updated.id ? updated : e)) ?? null)
-          }
+          onSaved={replace}
           onDeleted={(id) =>
             setEntries((current) => current?.filter((e) => e.id !== id) ?? null)
           }

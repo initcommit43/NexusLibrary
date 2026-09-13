@@ -74,3 +74,33 @@ export const progressLabel = (entry: TrackedItem) =>
   entry.progressUnit === 'MINUTES' || entry.progressUnit === null
     ? 'Playtime (hours)'
     : `Progress (${entry.progressUnit.toLowerCase()})`
+
+/** The short word a count is read with on a library row, as the native app writes it. */
+const UNIT_WORDS: Record<string, string> = {
+  EPISODES: 'Ep',
+  CHAPTERS: 'Ch',
+  PAGES: 'p.',
+}
+
+/**
+ * Where a title stands, as a line of words: "Ep 12 of 28", "Ch 41", "191 h".
+ *
+ * <p>For the library's list rows and phone cards, which give progress a line of its own where
+ * a desktop card squeezes it beside the score. A unit with no word here falls back to
+ * {@link progressSummary}, so a new unit reads as a bare count rather than as nothing.
+ */
+export const progressLine = (entry: TrackedItem): string | null => {
+  const word = entry.progressUnit ? UNIT_WORDS[entry.progressUnit] : undefined
+  if (entry.progressCurrent === null || !word) return progressSummary(entry)
+  return entry.progressMax
+    ? `${word} ${entry.progressCurrent} of ${entry.progressMax}`
+    : `${word} ${entry.progressCurrent}`
+}
+
+/** How far through a title is, from 0 to 1, or null where there is no total to measure by. */
+export const progressShare = (entry: TrackedItem): number | null => {
+  if (entry.progressCurrent === null || !entry.progressMax || entry.progressUnit === 'MINUTES') {
+    return null
+  }
+  return Math.min(entry.progressCurrent / entry.progressMax, 1)
+}
