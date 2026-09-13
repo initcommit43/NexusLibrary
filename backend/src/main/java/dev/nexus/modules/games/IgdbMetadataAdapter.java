@@ -5,6 +5,7 @@ import dev.nexus.core.adapter.BrowseShelf;
 import dev.nexus.core.adapter.DiscoverFilters;
 import dev.nexus.core.adapter.FilterField;
 import dev.nexus.core.adapter.FilterField.FilterOption;
+import dev.nexus.core.adapter.HeldOptions;
 import dev.nexus.core.adapter.ItemSearchResult;
 import dev.nexus.core.adapter.MetadataAdapter;
 import dev.nexus.core.adapter.TrackableItemData;
@@ -23,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,10 +76,10 @@ public class IgdbMetadataAdapter implements MetadataAdapter {
 
     private final IgdbClient client;
 
-    /** Lookup lists for the filter bar, each fetched at most once per run. */
-    private final AtomicReference<List<FilterOption>> genres = new AtomicReference<>();
+    /** Lookup lists for the filter bar, each kept for the run once IGDB has answered. */
+    private final HeldOptions<FilterOption> genres = new HeldOptions<>();
 
-    private final AtomicReference<List<FilterOption>> platforms = new AtomicReference<>();
+    private final HeldOptions<FilterOption> platforms = new HeldOptions<>();
 
     public IgdbMetadataAdapter(IgdbClient client) {
         this.client = client;
@@ -312,29 +312,17 @@ public class IgdbMetadataAdapter implements MetadataAdapter {
      * change about never, so asking IGDB again on every visit spends a request from a budget
      * of four a second to be told the same two dozen names.
      *
-     * <p>A failure leaves the list empty and uncached, which drops that one control from the
-     * bar rather than showing an empty one; the next visit tries again.
+     * <p>A failure leaves the list empty, which drops that one control from the bar rather than
+     * showing an empty one, until it is worth asking again.
      */
-    private List<FilterOption> named(AtomicReference<List<FilterOption>> held, Supplier<List<Map<String, Object>>> fetch) {
-        List<FilterOption> known = held.get();
-        if (known != null) {
-            return known;
-        }
-
-        try {
-            List<FilterOption> options = fetch.get().stream()
-                    .map(row -> new FilterOption(string(row.get("id")), string(row.get("name"))))
-                    .filter(option -> option.value() != null && option.label() != null)
-                    .toList();
-
-            if (!options.isEmpty()) {
-                held.set(options);
-            }
-            return options;
-        } catch (RuntimeException e) {
-            log.warn("Could not fetch an IGDB filter list, leaving that filter out: {}", e.toString());
-            return List.of();
-        }
+    private List<FilterOption> named(HeldOptions<FilterOption> held, Supplier<List<Map<String, Object>>> fetch) {
+        return held.get(
+                () -> fetch.get().stream()
+                        .map(row -> new FilterOption(string(row.get("id")), string(row.get("name"))))
+                        .filter(option -> option.value() != null && option.label() != null)
+                        .toList(),
+                List.of(),
+                e -> log.warn("Could not fetch an IGDB filter list, leaving that filter out: {}", e.toString()));
     }
 
     @Override

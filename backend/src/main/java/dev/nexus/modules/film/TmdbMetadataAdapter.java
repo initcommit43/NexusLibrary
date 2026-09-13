@@ -5,6 +5,7 @@ import dev.nexus.core.adapter.BrowseShelf;
 import dev.nexus.core.adapter.DiscoverFilters;
 import dev.nexus.core.adapter.FilterField;
 import dev.nexus.core.adapter.FilterField.FilterOption;
+import dev.nexus.core.adapter.HeldOptions;
 import dev.nexus.core.adapter.ItemSearchResult;
 import dev.nexus.core.adapter.MetadataAdapter;
 import dev.nexus.core.adapter.TrackableItemData;
@@ -80,8 +81,9 @@ public class TmdbMetadataAdapter implements MetadataAdapter {
 
     private final TmdbClient client;
 
-    /** Genre lists for the filter bar, one per kind, each fetched at most once per run. */
-    private final Map<TmdbKind, List<FilterOption>> genres = new java.util.concurrent.ConcurrentHashMap<>();
+    /** Genre lists for the filter bar, one per kind, each kept for the run once TMDB has answered. */
+    private final Map<TmdbKind, HeldOptions<FilterOption>> genres =
+            Map.of(TmdbKind.MOVIE, new HeldOptions<>(), TmdbKind.SHOW, new HeldOptions<>());
     private final TmdbProperties properties;
 
     public TmdbMetadataAdapter(TmdbClient client, TmdbProperties properties) {
@@ -342,29 +344,17 @@ public class TmdbMetadataAdapter implements MetadataAdapter {
      * The genre list for one kind, fetched once and kept. Movies and shows have different
      * lists and neither has changed in years, so a copy each is enough for the run.
      *
-     * <p>A failure leaves the list empty and uncached, which drops the control from the bar
-     * rather than showing an empty one; the next visit tries again.
+     * <p>A failure leaves the list empty, which drops the control from the bar rather than
+     * showing an empty one, until it is worth asking again.
      */
     private List<FilterOption> genresFor(TmdbKind kind) {
-        List<FilterOption> known = genres.get(kind);
-        if (known != null) {
-            return known;
-        }
-
-        try {
-            List<FilterOption> options = client.genres(kind).stream()
-                    .map(row -> new FilterOption(String.valueOf(row.get("id")), String.valueOf(row.get("name"))))
-                    .filter(option -> !option.value().equals("null") && !option.label().equals("null"))
-                    .toList();
-
-            if (!options.isEmpty()) {
-                genres.put(kind, options);
-            }
-            return options;
-        } catch (RuntimeException e) {
-            log.warn("Could not fetch the TMDB genre list, leaving that filter out: {}", e.toString());
-            return List.of();
-        }
+        return genres.get(kind).get(
+                () -> client.genres(kind).stream()
+                        .map(row -> new FilterOption(String.valueOf(row.get("id")), String.valueOf(row.get("name"))))
+                        .filter(option -> !option.value().equals("null") && !option.label().equals("null"))
+                        .toList(),
+                List.of(),
+                e -> log.warn("Could not fetch the TMDB genre list, leaving that filter out: {}", e.toString()));
     }
 
     /** Listing rows as the shared shape, shared by the shelves, the search and the grid. */

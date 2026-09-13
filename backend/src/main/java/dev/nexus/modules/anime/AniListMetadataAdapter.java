@@ -6,6 +6,7 @@ import dev.nexus.core.adapter.CharacterPortrait;
 import dev.nexus.core.adapter.DiscoverFilters;
 import dev.nexus.core.adapter.FilterField;
 import dev.nexus.core.adapter.FetchProgress;
+import dev.nexus.core.adapter.HeldOptions;
 import dev.nexus.core.adapter.ItemSearchResult;
 import dev.nexus.core.adapter.StudioBrowse;
 import dev.nexus.core.adapter.MetadataAdapter;
@@ -38,8 +39,8 @@ public class AniListMetadataAdapter implements MetadataAdapter, StudioBrowse {
      * about never, so asking AniList for it on every visit to a browse page would spend a
      * request to be told the same eighteen words.
      */
-    private volatile List<String> genres;
-    private volatile List<String> tags;
+    private final HeldOptions<String> genres = new HeldOptions<>();
+    private final HeldOptions<String> tags = new HeldOptions<>();
 
     public AniListMetadataAdapter(AniListClient client) {
         this.client = client;
@@ -180,25 +181,11 @@ public class AniListMetadataAdapter implements MetadataAdapter, StudioBrowse {
 
     /**
      * A missing genre list must not cost the reader the whole filter bar, so a failure falls
-     * back to the known list rather than propagating. It is not cached, so the next visit
-     * tries again.
+     * back to the known list rather than propagating, until it is worth asking again.
      */
     private List<String> genres() {
-        List<String> known = genres;
-        if (known != null) {
-            return known;
-        }
-
-        try {
-            List<String> fetched = client.genres();
-            if (!fetched.isEmpty()) {
-                genres = fetched;
-                return fetched;
-            }
-        } catch (RuntimeException e) {
-            log.warn("Could not fetch the AniList genre list, using the known one: {}", e.toString());
-        }
-        return AniListFilters.FALLBACK_GENRES;
+        return genres.get(client::genres, AniListFilters.FALLBACK_GENRES, e ->
+                log.warn("Could not fetch the AniList genre list, using the known one: {}", e.toString()));
     }
 
     /**
@@ -209,21 +196,8 @@ public class AniListMetadataAdapter implements MetadataAdapter, StudioBrowse {
      * a tag on a detail page still gets their answer, since the filter is sent by name.
      */
     private List<String> tags() {
-        List<String> known = tags;
-        if (known != null) {
-            return known;
-        }
-
-        try {
-            List<String> fetched = client.tags();
-            if (!fetched.isEmpty()) {
-                tags = fetched;
-                return fetched;
-            }
-        } catch (RuntimeException e) {
-            log.warn("Could not fetch the AniList tag list, leaving the filter empty: {}", e.toString());
-        }
-        return List.of();
+        return tags.get(client::tags, List.of(), e ->
+                log.warn("Could not fetch the AniList tag list, leaving the filter empty: {}", e.toString()));
     }
 
     /**
