@@ -4314,9 +4314,17 @@ input.filter-control::-webkit-search-cancel-button {
     grid-template-columns: 1fr;
   }
 
+  /*
+   * One column, so the status and the heart lead and the title follows straight under the
+   * artwork rather than under the controls. With the controls first the cover no longer rides
+   * the banner's edge: whatever sat at the top of the column would land on the banner instead.
+   */
+  .media-actions {
+    order: -1;
+  }
+
   .has-banner .media-cover-column {
     width: 10rem;
-    margin-top: -4rem;
   }
 }
 
