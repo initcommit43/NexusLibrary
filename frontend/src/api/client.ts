@@ -461,6 +461,7 @@ const trackJobOutage = <T extends SyncJob | null>(job: T): T => {
  */
 let entries: Promise<TrackedItem[]> | null = null
 const shelves = new Map<MediaType, Promise<BrowseShelf[]>>()
+const filterBars = new Map<MediaType, Promise<FilterField[]>>()
 
 /**
  * Everything remembered about who is signed in.
@@ -472,6 +473,7 @@ const shelves = new Map<MediaType, Promise<BrowseShelf[]>>()
 const forgetSession = () => {
   entries = null
   shelves.clear()
+  filterBars.clear()
 }
 
 /** Their library changed, so the copy of it is no longer the answer. */
@@ -631,8 +633,21 @@ export const api = {
       `/catalog/browse?mediaType=${mediaType}&shelf=${encodeURIComponent(shelf)}&page=${page}`,
     ),
 
-  browseFilters: (mediaType: MediaType) =>
-    request<FilterField[]>(`/catalog/filters?mediaType=${mediaType}`),
+  // Held per media type for the same reason as the shelves: switching type or module and back
+  // asked again for option lists that are the same for everyone and do not change in a session.
+  browseFilters: (mediaType: MediaType) => {
+    const held = filterBars.get(mediaType)
+    if (held) return held
+
+    const pending = request<FilterField[]>(`/catalog/filters?mediaType=${mediaType}`).catch(
+      (err) => {
+        filterBars.delete(mediaType)
+        throw err
+      },
+    )
+    filterBars.set(mediaType, pending)
+    return pending
+  },
 
   discover: (mediaType: MediaType, values: FilterValues, page = 1) => {
     const params = new URLSearchParams({ mediaType, page: String(page) })
