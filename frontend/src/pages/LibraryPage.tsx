@@ -4,11 +4,28 @@ import { ApiError, api, type TrackedItem, type TrackingStatus } from '../api/cli
 import { AppShell } from '../components/AppShell'
 import { EntryCard } from '../components/EntryCard'
 import { EntryEditDialog } from '../components/EntryEditDialog'
+import { EntryRow } from '../components/EntryRow'
 import { ListSidebar } from '../components/ListSidebar'
 import { EMPTY_FILTERS, firstGenre, type ListFilters } from '../components/listFilters'
 import { TypeSwitch } from '../components/TypeSwitch'
+import { useLibraryView } from '../components/useLibraryView'
 import { useNarrowScreen } from '../components/useNarrowScreen'
 import { defaultTypeOf, moduleBySlug, typeBySlug } from '../modules/registry'
+
+const ListIcon = () => (
+  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" aria-hidden>
+    <path d="M5 7h14M5 12h14M5 17h14" strokeWidth="2" strokeLinecap="round" />
+  </svg>
+)
+
+const GridIcon = () => (
+  <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden>
+    <rect x="4.5" y="4.5" width="6" height="6" rx="1.5" />
+    <rect x="13.5" y="4.5" width="6" height="6" rx="1.5" />
+    <rect x="4.5" y="13.5" width="6" height="6" rx="1.5" />
+    <rect x="13.5" y="13.5" width="6" height="6" rx="1.5" />
+  </svg>
+)
 
 const asList = (value: unknown): string[] =>
   Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []
@@ -23,6 +40,7 @@ export const LibraryPage = () => {
   const [error, setError] = useState<string | null>(null)
   const [filters, setFilters] = useState<ListFilters>(EMPTY_FILTERS)
   const [editing, setEditing] = useState<TrackedItem | null>(null)
+  const [view, setView] = useLibraryView()
 
   useEffect(() => {
     api
@@ -96,6 +114,24 @@ export const LibraryPage = () => {
         group: shown.filter((entry) => entry.status === status),
       }))
 
+  /*
+   * It shows the view it switches to, as the native app's toggle does, and is named so. A phone
+   * keeps it beside the page's title; wide, it rides the first shelf's heading, so it lines up
+   * with the covers it rearranges rather than with a title a sidebar's width away from them.
+   */
+  const viewToggle = (
+    <button
+      type="button"
+      className={narrow ? 'ghost icon-button' : 'ghost icon-button library-view-toggle'}
+      aria-label={view === 'grid' ? 'Show as list' : 'Show as grid'}
+      title={view === 'grid' ? 'Show as list' : 'Show as grid'}
+      onClick={() => setView(view === 'grid' ? 'list' : 'grid')}
+    >
+      {view === 'grid' ? <ListIcon /> : <GridIcon />}
+    </button>
+  )
+  const firstShelf = sections.findIndex(({ group }) => group.length > 0)
+
   const replace = (updated: TrackedItem) =>
     setEntries((current) => current?.map((e) => (e.id === updated.id ? updated : e)) ?? null)
 
@@ -105,7 +141,10 @@ export const LibraryPage = () => {
        * A phone has no header shelves, and its tab bar opens one library whatever the type, so
        * the page is named for that and the switch under it does the shelves' job.
        */}
-      <h1 className="page-title">{narrow ? 'Library' : active.label}</h1>
+      <div className="library-head">
+        <h1 className="page-title">{narrow ? 'Library' : active.label}</h1>
+        {narrow && viewToggle}
+      </div>
       <TypeSwitch
         className="library-type-switch"
         module={module}
@@ -131,11 +170,21 @@ export const LibraryPage = () => {
           {entries === null && !error && (
             <section className="status-section" aria-hidden="true">
               {!narrow && <h2 className="shelf-heading-pending" />}
-              <div className="cover-grid library-grid">
-                {Array.from({ length: 12 }, (_, i) => (
-                  <div key={i} className="cover-pending" />
-                ))}
-              </div>
+              {view === 'grid' ? (
+                <div className="cover-grid library-grid">
+                  {Array.from({ length: 12 }, (_, i) => (
+                    <div key={i} className="cover-pending" />
+                  ))}
+                </div>
+              ) : (
+                <ul className="entry-list">
+                  {Array.from({ length: 6 }, (_, i) => (
+                    <li key={i} className="entry-row is-pending">
+                      <div className="entry-row-cover" />
+                    </li>
+                  ))}
+                </ul>
+              )}
             </section>
           )}
 
@@ -146,7 +195,10 @@ export const LibraryPage = () => {
            */}
           {entries !== null && shown.length === 0 && (
             <section className="status-section">
-              <h2>{mine.length === 0 ? 'Get started' : 'No matches'}</h2>
+              <h2>
+                {mine.length === 0 ? 'Get started' : 'No matches'}
+                {!narrow && viewToggle}
+              </h2>
               <div className="shelf-empty">
                 {mine.length === 0 ? (
                   <>
@@ -177,7 +229,7 @@ export const LibraryPage = () => {
             </section>
           )}
 
-          {sections.map(({ status, group }) => {
+          {sections.map(({ status, group }, index) => {
             if (group.length === 0) return null
 
             return (
@@ -185,19 +237,34 @@ export const LibraryPage = () => {
                 {status && (
                   <h2>
                     {active.statusLabels[status]} <span className="muted">({group.length})</span>
+                    {!narrow && index === firstShelf && viewToggle}
                   </h2>
                 )}
 
-                <div className="cover-grid library-grid">
-                  {group.map((entry) => (
-                    <EntryCard
-                      key={entry.id}
-                      entry={entry}
-                      onEdit={() => setEditing(entry)}
-                      onChanged={narrow ? replace : undefined}
-                    />
-                  ))}
-                </div>
+                {view === 'grid' ? (
+                  <div className="cover-grid library-grid">
+                    {group.map((entry) => (
+                      <EntryCard
+                        key={entry.id}
+                        entry={entry}
+                        onEdit={() => setEditing(entry)}
+                        onChanged={narrow ? replace : undefined}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <ul className="entry-list">
+                    {group.map((entry) => (
+                      <EntryRow
+                        key={entry.id}
+                        entry={entry}
+                        onChanged={replace}
+                        onEdit={() => setEditing(entry)}
+                        compact={narrow}
+                      />
+                    ))}
+                  </ul>
+                )}
               </section>
             )
           })}

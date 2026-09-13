@@ -3903,6 +3903,29 @@ input.filter-control::-webkit-search-cancel-button {
 
 /* --- library views --- */
 
+/* The title with the grid/list toggle at the far end of its line. */
+.library-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.library-head > .page-title {
+  min-width: 0;
+}
+
+/*
+ * At the far end of the first shelf's heading, standing on the heading's baseline. The margin
+ * takes back the height the button has over a line of title, so this one heading is no taller
+ * than the rest and its rule stays level with the others.
+ */
+.status-section h2 > .library-view-toggle {
+  flex: none;
+  margin-top: calc(var(--text-xl) * var(--leading-tight) - 2rem);
+  margin-left: auto;
+}
+
 /*
  * The list view: a row per title, ruled off from the text rather than from the cover, so the
  * covers read as a column of their own.
@@ -4106,6 +4129,20 @@ input.filter-control::-webkit-search-cancel-button {
 }
 
 @media (max-width: 52rem) {
+  .library-head > .icon-button,
+  .library-head > .icon-button:hover:not(:disabled) {
+    flex: none;
+    width: var(--icon-control);
+    height: var(--icon-control);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-full);
+    background: var(--glass-bg);
+    box-shadow: var(--glass-shadow);
+    color: var(--text);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+  }
+
   /* The native app's list: a tall cover, the title over its progress, and an accent chevron. */
   .entry-list {
     --entry-cover: 5rem;
