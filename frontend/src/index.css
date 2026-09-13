@@ -2164,6 +2164,154 @@ input.filter-control::-webkit-search-cancel-button {
     font-size: var(--m-text-footnote);
     font-weight: 600;
   }
+
+  /* Its two sections join the page's column, so the figures can follow the favourites. */
+  .profile-overview {
+    display: contents;
+  }
+
+  .profile-overview > .status-section:last-child,
+  .profile-overview ~ .status-section:last-child {
+    order: 1;
+  }
+
+  .profile-overview .status-section,
+  .profile-overview ~ .status-section {
+    gap: var(--m-gap);
+  }
+
+  .profile-overview .status-section h2,
+  .profile-overview ~ .status-section h2 {
+    align-items: center;
+    padding-bottom: 0;
+    border-bottom: 0;
+    font-size: var(--text-lg);
+    font-weight: 700;
+  }
+
+  .profile-overview .status-section h2 :is(.section-action, .scope-picker),
+  .profile-overview ~ .status-section h2 .section-action {
+    font-size: var(--m-text-footnote);
+    font-weight: 600;
+  }
+
+  /* Edit reads as the text link it is in the native app, with a thumb's reach above and below. */
+  .profile-overview + .status-section h2 > button.section-action,
+  .profile-overview + .status-section h2 > button.section-action:hover:not(:disabled) {
+    min-height: 0;
+    margin-block: calc(-1 * var(--space-2));
+    padding: var(--space-2) 0;
+    border: 0;
+    background: none;
+    color: var(--accent);
+  }
+
+  /*
+   * The title where every other section on the page keeps it, and its two controls together at
+   * the far end, the scope first and the way to the stats against the edge the map ends at.
+   */
+  .profile-overview > .status-section:first-child h2 > .scope-picker {
+    min-width: 0;
+  }
+
+  .profile-overview .scope-picker .module-trigger {
+    max-width: 100%;
+    color: var(--text-muted);
+  }
+
+  .profile-overview > .status-section:first-child h2 > .profile-stats-link {
+    flex: none;
+    margin-left: var(--space-3);
+  }
+
+  /* Bare squares on the page, as the native map is drawn. */
+  .profile-overview .heatmap {
+    --heat-gap: 0.1875rem;
+    align-self: stretch;
+    padding: 0;
+    border: 0;
+    background: none;
+  }
+
+  /*
+   * Every week an equal share of the column, so the map runs edge to edge under the heading and
+   * its squares grow or shrink with the phone. Scrolling instead would open the map on its oldest
+   * week and hide this one.
+   */
+  .profile-overview .heatmap-grid {
+    padding-bottom: 0;
+  }
+
+  .profile-overview .heatmap-week {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .profile-overview .heatmap-week .heatmap-day {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1;
+  }
+
+  .profile-overview .is-panelled .figure {
+    padding: var(--m-gap);
+    border: 0;
+    border-radius: var(--m-radius-group);
+  }
+
+  /* Each shelf a two-line row of one grouped card: its name, and its counts under it. */
+  .profile-overview ~ .status-section .stat-table,
+  .profile-overview ~ .status-section .stat-table tbody {
+    display: block;
+  }
+
+  .profile-overview ~ .status-section .stat-table {
+    overflow: hidden;
+    border-radius: var(--m-radius-group);
+    background: var(--surface);
+  }
+
+  .profile-overview ~ .status-section .stat-table tr {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-content: center;
+    column-gap: var(--space-1);
+    min-height: var(--m-row-height-2);
+    padding: var(--space-2) var(--m-row-padding);
+    border-bottom: 0;
+  }
+
+  .profile-overview ~ .status-section .stat-table tr + tr::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    inset-inline: var(--m-row-padding) 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .profile-overview ~ .status-section .stat-table th {
+    flex-basis: 100%;
+    padding: 0;
+    font-family: var(--font-sans);
+    font-size: var(--text-lg);
+    font-weight: 400;
+  }
+
+  .profile-overview ~ .status-section .stat-table td {
+    padding: 0;
+    color: var(--text-muted);
+    font-size: var(--m-text-footnote);
+    text-align: left;
+  }
+
+  .profile-overview ~ .status-section .stat-table td:empty {
+    display: none;
+  }
+
+  .profile-overview ~ .status-section .stat-table td:not(:first-of-type)::before {
+    content: '· ';
+  }
 }
 
 @media (max-width: 40rem) {
@@ -3629,6 +3777,22 @@ input.filter-control::-webkit-search-cancel-button {
 
   .favourite-band[data-rows='2'] {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* A phone shows a row as the native app does: a little over three covers, the next one peeking. */
+@media (max-width: 52rem) {
+  .favourite-bands {
+    --browse-gap: var(--m-gap);
+  }
+
+  .favourite-bands .favourite-carousel .browse-row,
+  .favourite-bands .favourite-band[data-rows='2'] .favourite-carousel .browse-row {
+    --browse-across: 3.4;
+  }
+
+  .favourite-carousel .cover-card {
+    border-radius: var(--m-radius-thumb);
   }
 }
 

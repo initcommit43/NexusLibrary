@@ -435,7 +435,7 @@ export const ProfilePage = () => {
 
           <section className="status-section">
             <h2>
-              Favourites <span className="muted">({favouriteCount})</span>
+              Favourites {!narrow && <span className="muted">({favouriteCount})</span>}
               {favourites.length > 0 && (
                 <button
                   type="button"
@@ -445,6 +445,8 @@ export const ProfilePage = () => {
                 >
                   {arranging ? (
                     'Done'
+                  ) : narrow ? (
+                    'Edit'
                   ) : (
                     <>
                       <Grip />
