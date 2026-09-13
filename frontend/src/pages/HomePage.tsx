@@ -13,6 +13,7 @@ import { NotificationList } from '../components/NotificationList'
 import { useNotifications } from '../components/useNotifications'
 import { AppShell } from '../components/AppShell'
 import { PosterGallery, type Poster } from '../components/PosterGallery'
+import { ModuleSwitcher } from '../components/ModuleSwitcher'
 import { ShelfGallery } from '../components/ShelfGallery'
 import { countdown } from '../components/mediaDetail'
 import { episodesWaiting, progressSummary } from '../components/progress'
@@ -124,7 +125,18 @@ const FoldIcon = ({ out }: { out: boolean }) => (
   </svg>
 )
 
-const posterOf = (entry: TrackedItem, ...caption: (string | null)[]): Poster => ({
+const BellIcon = () => (
+  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" aria-hidden>
+    <path
+      d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15Z"
+      strokeWidth="1.8"
+      strokeLinejoin="round"
+    />
+    <path d="M10 20.5a2 2 0 0 0 4 0" strokeWidth="1.8" strokeLinecap="round" />
+  </svg>
+)
+
+const posterOf =(entry: TrackedItem, ...caption: (string | null)[]): Poster => ({
   key: String(entry.id),
   title: entry.title,
   coverUrl: entry.coverUrl,
@@ -138,7 +150,7 @@ const posterOf = (entry: TrackedItem, ...caption: (string | null)[]): Poster => 
 /**
  * Home, scoped to the module you are in.
  *
- * <p>Both halves follow the switcher in the header rather than a control of their own: set it
+ * <p>Both halves follow the module switcher rather than a control of their own: set it
  * to anime and home stays anime, whatever you watched last night.
  *
  * <p>Your own shelves sit beside the feed, or fold out across the page with the feed beneath
@@ -506,7 +518,26 @@ export const HomePage = () => {
 
   return (
     <AppShell>
-      <h1 className="page-title">{module.label}</h1>
+      {narrow ? (
+        // A phone has no header, so the title takes over its module menu and the bell its way
+        // to what has arrived.
+        <div className="home-head">
+          <ModuleSwitcher current={module} variant="title" />
+          <Link
+            className="icon-button"
+            to="/notifications"
+            aria-label={
+              waiting.unread > 0 ? `Notifications, ${waiting.unread} unread` : 'Notifications'
+            }
+            title="Notifications"
+          >
+            <BellIcon />
+            {waiting.unread > 0 && <span className="home-bell-dot" aria-hidden />}
+          </Link>
+        </div>
+      ) : (
+        <h1 className="page-title">{module.label}</h1>
+      )}
 
       {error && (
         <p className="alert" role="alert">

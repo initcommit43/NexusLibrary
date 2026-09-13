@@ -523,6 +523,53 @@ button.small {
 }
 
 /*
+ * The phone's copy, which is Home's title: the name and its arrow at the title's own size, so
+ * it reads as the heading it is and only the arrow says it opens.
+ */
+.title-switcher {
+  min-width: 0;
+}
+
+.title-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: 100%;
+  padding: 0;
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: left;
+}
+
+.title-trigger:hover:not(:disabled) {
+  background: none;
+}
+
+.title-trigger > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.title-trigger svg {
+  flex-shrink: 0;
+  width: 0.5em;
+  height: 0.5em;
+  color: var(--text-muted);
+}
+
+/* Hung from the title's left edge and as wide as its longest name, not the title's width. */
+.title-switcher .module-menu {
+  width: max-content;
+  min-width: 0;
+  max-width: calc(100vw - 2 * var(--space-3));
+}
+
+/*
  * The width of the content column, shared so things outside it can line up against it.
  *
  * Sized so a browse row holds six covers at about the width they have always been. Wider
@@ -3926,12 +3973,14 @@ input.filter-control::-webkit-search-cancel-button {
   }
 
   /*
-   * Glass, as the native app draws its floating controls. Hover is named too, since a ghost
-   * button brings a hover surface of its own.
+   * Glass, as the native app draws its floating controls, and Home's bell with them. Hover is
+   * named too, since a ghost button and a linked icon each bring a hover surface of their own.
    */
   .tab-bar-tabs,
   .tab-bar > .icon-button,
-  .tab-bar > .icon-button:hover:not(:disabled) {
+  .tab-bar > .icon-button:hover:not(:disabled),
+  .home-head > .icon-button,
+  .home-head > .icon-button:hover {
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
     box-shadow: var(--glass-shadow);
@@ -3943,7 +3992,9 @@ input.filter-control::-webkit-search-cancel-button {
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
     .tab-bar-tabs,
     .tab-bar > .icon-button,
-    .tab-bar > .icon-button:hover:not(:disabled) {
+    .tab-bar > .icon-button:hover:not(:disabled),
+    .home-head > .icon-button,
+    .home-head > .icon-button:hover {
       background: var(--surface);
       border-color: var(--border);
     }
@@ -5313,6 +5364,38 @@ a.icon-button.active {
 }
 
 /* --- home --- */
+
+/* Home's title on a phone, with the bell level with it at the far end. */
+.home-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.home-head > .page-title {
+  min-width: 0;
+}
+
+.home-head > .icon-button {
+  position: relative;
+  flex: none;
+  width: var(--icon-control);
+  height: var(--icon-control);
+  border-radius: var(--radius-full);
+  color: var(--text);
+}
+
+/* That something is waiting, not how much: Home's section below already gives the count. */
+.home-bell-dot {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--accent);
+}
 
 /*
  * What airs next, as a list rather than a grid of covers: the title and the wait are the

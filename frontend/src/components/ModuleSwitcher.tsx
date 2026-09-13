@@ -47,6 +47,12 @@ const Mark = ({ name }: { name: string }) => (
   </>
 )
 
+const Chevron = () => (
+  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" aria-hidden>
+    <path d="m6 9 6 6 6-6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+)
+
 /**
  * The logo and the module you are in, which open the menu of modules. A menu rather than a
  * list of links: with four modules the header would otherwise spend most of its width on
@@ -55,8 +61,18 @@ const Mark = ({ name }: { name: string }) => (
  * <p>Bare beside the logo rather than a pill of its own. The pill was the widest thing in the
  * bar and crowded the shelves out of it on a phone; joined to the logo, the name still says
  * what is selected and the arrow says how to change it.
+ *
+ * <p>A phone has no header, so there the same menu hangs from Home's title instead: the
+ * {@code title} variant is that page's h1, with the name inside it as the trigger. The menu
+ * sits beside the heading rather than in it, so its options are never read as the page's name.
  */
-export const ModuleSwitcher = ({ current }: { current: ModuleDefinition }) => {
+export const ModuleSwitcher = ({
+  current,
+  variant = 'brand',
+}: {
+  current: ModuleDefinition
+  variant?: 'brand' | 'title'
+}) => {
   const { modules, isBuilt, isEnabled } = useModules()
   const { open, setOpen, container, trigger } = useMenuDismiss<HTMLDivElement, HTMLButtonElement>()
   const navigate = useNavigate()
@@ -77,32 +93,54 @@ export const ModuleSwitcher = ({ current }: { current: ModuleDefinition }) => {
    */
   const listed = modules.filter((module) => isEnabled(module.slug))
 
+  const title = variant === 'title'
+
   // With one module there is nothing to switch between, so the logo is only the app's.
   if (listed.length <= 1) {
-    return (
+    return title ? (
+      <h1 className="page-title">{current.label}</h1>
+    ) : (
       <div className="brand">
         <Mark name="Nexus" />
       </div>
     )
   }
 
+  const toggle = () => setOpen((wasOpen) => !wasOpen)
+
   return (
-    <div className="module-switcher" ref={container}>
-      <button
-        ref={trigger}
-        type="button"
-        className="brand brand-trigger"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-label={`${current.label}, switch module`}
-        title="Switch module"
-        onClick={() => setOpen((wasOpen) => !wasOpen)}
-      >
-        <Mark name={current.label} />
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" aria-hidden>
-          <path d="m6 9 6 6 6-6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </button>
+    <div className={title ? 'module-switcher title-switcher' : 'module-switcher'} ref={container}>
+      {title ? (
+        // Named by the module alone, so the heading it sits in reads as the page's name.
+        <h1 className="page-title">
+          <button
+            ref={trigger}
+            type="button"
+            className="title-trigger"
+            aria-haspopup="menu"
+            aria-expanded={open}
+            title="Switch module"
+            onClick={toggle}
+          >
+            <span>{current.label}</span>
+            <Chevron />
+          </button>
+        </h1>
+      ) : (
+        <button
+          ref={trigger}
+          type="button"
+          className="brand brand-trigger"
+          aria-haspopup="menu"
+          aria-expanded={open}
+          aria-label={`${current.label}, switch module`}
+          title="Switch module"
+          onClick={toggle}
+        >
+          <Mark name={current.label} />
+          <Chevron />
+        </button>
+      )}
 
       {open && (
         <ul className="module-menu" role="menu">
