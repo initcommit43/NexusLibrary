@@ -77,14 +77,18 @@ export const MediaRelations = ({
   const belongs = (relation: RelatedTitle) =>
     !relation.type || relation.type === ownSide || CROSSING_RELATIONS.has(relation.relation)
 
-  const shown = showAll ? ranked : ranked.filter(belongs)
-  const hidden = ranked.length - ranked.filter(belongs).length
+  const kept = ranked.filter(belongs)
+  const hidden = ranked.length - kept.length
+  // The button takes about the room of one more card, so folding away a single one saves
+  // nothing and costs a click.
+  const collapsible = hidden > 1
+  const shown = showAll || !collapsible ? ranked : kept
 
   return (
     <section className="status-section">
       <h2>
         Relations
-        {hidden > 0 && (
+        {collapsible && (
           <button type="button" className="ghost small section-action" onClick={() => setShowAll((v) => !v)}>
             {showAll ? 'Show fewer' : `Show ${hidden} more`}
           </button>
