@@ -6240,7 +6240,7 @@ a.icon-button.active {
   color: var(--text);
 }
 
-/* That something is waiting, not how much: Home's section below already gives the count. */
+/* That something is waiting, not how much: the list behind the bell says what. */
 .home-bell-dot {
   position: absolute;
   top: var(--space-2);

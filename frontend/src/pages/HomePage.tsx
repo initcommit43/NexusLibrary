@@ -6,6 +6,7 @@ import {
   type BrowseShelf,
   type MediaType,
   type TrackedItem,
+  type TrackingStatus,
 } from '../api/client'
 import { ActivityFeed } from '../components/ActivityFeed'
 import { FeedPicker, type FeedKind } from '../components/FeedPicker'
@@ -15,10 +16,12 @@ import { AppShell } from '../components/AppShell'
 import { PosterGallery, type Poster } from '../components/PosterGallery'
 import { ModuleSwitcher } from '../components/ModuleSwitcher'
 import { ShelfGallery } from '../components/ShelfGallery'
+import { CatalogueShelfRow, ShelfRow, type Shelvable } from '../components/ShelfRow'
 import { countdown } from '../components/mediaDetail'
 import { episodesWaiting, progressSummary } from '../components/progress'
 import { useActivityFeed } from '../components/useActivityFeed'
 import { useNarrowScreen } from '../components/useNarrowScreen'
+import { keyOf } from '../components/useTrackable'
 import {
   detailPathFor,
   mediaTypesOf,
@@ -48,14 +51,6 @@ const MIN_FEED_ROWS = 6
 
 /** A home feed is the last while, not the whole history; the activity page holds the rest. */
 const FEED_ROWS = 12
-
-/**
- * Rows either list starts with on a narrow screen, and rows each "Load more" adds there.
- *
- * <p>The shelves sit under the section rather than beside it, so there is no column to match,
- * and a long inbox would stand between the reader and their own shelves.
- */
-const NARROW_ROWS = 5
 
 /**
  * How often the home page looks for what has arrived since it was opened.
@@ -94,11 +89,26 @@ const writeFolded = (moduleSlug: string, out: boolean) => {
   }
 }
 
+/**
+ * One title on one of your own shelves: a cover's caption lines on a wide screen, and the one
+ * line a phone's card carries under its title instead.
+ */
+interface ShelfItem {
+  entry: TrackedItem
+  caption: (string | null)[]
+  subtitle: string | null
+}
+
+const progressItem = (entry: TrackedItem): ShelfItem => {
+  const progress = progressSummary(entry)
+  return { entry, caption: [progress], subtitle: progress }
+}
+
 /** One of your own shelves, wherever it ends up sitting. */
 interface Shelf {
   key: string
   title: string
-  posters: Poster[]
+  items: ShelfItem[]
   /** Where the whole of it lives, when the shelf here is only part of one. */
   to?: string
   count?: number
@@ -185,12 +195,8 @@ export const HomePage = () => {
   const [main, setMain] = useState<HTMLElement | null>(null)
   const [feedRows, setFeedRows] = useState(FEED_ROWS)
   const narrow = useNarrowScreen()
-  const feed = useActivityFeed(
-    module.slug,
-    narrow ? NARROW_ROWS : feedRows,
-    narrow ? NARROW_ROWS : undefined,
-  )
-  const [narrowNotifications, setNarrowNotifications] = useState(NARROW_ROWS)
+  // A phone's Home is shelves alone; its feed and inbox live behind the bell.
+  const feed = useActivityFeed(module.slug, feedRows, undefined, !narrow)
 
   /*
    * Which of the two lists the section is showing. Not remembered between visits: the page is
@@ -200,15 +206,13 @@ export const HomePage = () => {
   // Scoped to the module the page is showing, as the feed beside it is: the picker swaps two
   // lists under one heading, and one of them answering about every medium would make the
   // count beside it mean something different from the rows under it.
-  // One more than is shown on a narrow screen, so whether there is more to load is known
-  // rather than guessed from a list that happened to come back exactly full.
+  // A phone only needs the unread count for its bell, which does not depend on the rows.
   const { waiting, read, readAll } = useNotifications(
     mediaTypesOf(module),
-    narrow ? narrowNotifications + 1 : feedRows,
+    narrow ? 1 : feedRows,
     REFRESH_EVERY_MS,
   )
-  const notifications = narrow ? waiting.items.slice(0, narrowNotifications) : waiting.items
-  const moreNotifications = narrow && waiting.items.length > narrowNotifications
+  const notifications = waiting.items
 
   /*
    * How many rows the section is showing, and whether the measurement still has a say.
@@ -366,14 +370,19 @@ export const HomePage = () => {
       .map(next)
       .flatMap((found) => (found === null ? [] : [found]))
       .sort((a, b) => a.airingAt - b.airingAt)
-      .map(({ entry, episode, airingAt }) =>
-        posterOf(entry, `Ep ${episode}`, countdown(airingAt) ?? OUT_NOW),
-      )
+      .map(({ entry, episode, airingAt }): ShelfItem => {
+        const wait = countdown(airingAt)
+        return {
+          entry,
+          caption: [`Ep ${episode}`, wait ?? OUT_NOW],
+          subtitle: wait ? `Ep ${episode} in ${wait}` : `Ep ${episode} ${OUT_NOW}`,
+        }
+      })
   }, [mine])
 
   // Anything counting down above is not repeated below it: the countdown is simply the more
   // useful way to show that half of what you are watching.
-  const counting = useMemo(() => new Set(airing.map((poster) => poster.key)), [airing])
+  const counting = useMemo(() => new Set(airing.map((item) => String(item.entry.id))), [airing])
 
   const onHold = useMemo(
     () => mine.filter((entry) => entry.status === 'PAUSED').sort(byLastTouched),
@@ -404,7 +413,7 @@ export const HomePage = () => {
           {
             key: 'airing',
             title: 'Airing',
-            posters: airing,
+            items: airing,
             to: shelfFor(airingEntries),
             count: airing.length,
           },
@@ -420,7 +429,7 @@ export const HomePage = () => {
         {
           key: `progress-${type.mediaType}`,
           title: inProgressTitle(type, module.types.length),
-          posters: reading.map((entry) => posterOf(entry, progressSummary(entry))),
+          items: reading.map(progressItem),
           to: `/library/${module.slug}/${type.slug}`,
           count: reading.length,
         },
@@ -431,7 +440,7 @@ export const HomePage = () => {
           {
             key: 'on-hold',
             title: 'On hold',
-            posters: onHold.map((entry) => posterOf(entry, progressSummary(entry))),
+            items: onHold.map(progressItem),
             to: shelfFor(onHold),
             count: onHold.length,
           },
@@ -439,7 +448,24 @@ export const HomePage = () => {
       : []),
   ]
 
-  const loaded = entries !== null && !feed.loading
+  const loaded = entries !== null && (narrow || !feed.loading)
+
+  const tracked = useMemo(
+    () => new Map((entries ?? []).map((entry) => [keyOf(entry), entry])),
+    [entries],
+  )
+
+  /*
+   * A shelf chosen from a phone card's menu. The answer takes the entry's place in the library
+   * held here, so the card moves to the row it now belongs in without reading it all again.
+   */
+  const shelve = async (item: Shelvable, status: TrackingStatus) => {
+    const held = tracked.get(keyOf(item))
+    const saved = held
+      ? await api.updateEntry(held.id, { status })
+      : await api.createEntry({ source: item.source, externalId: item.externalId, status })
+    setEntries((list) => [saved, ...(list ?? []).filter((entry) => entry.id !== saved.id)])
+  }
 
   const drawShelf = (shelf: Shelf) => (
     <section key={shelf.key} className="status-section">
@@ -456,7 +482,9 @@ export const HomePage = () => {
             <span className="section-action muted">{shelf.count}</span>
           ))}
       </h2>
-      <PosterGallery posters={shelf.posters} />
+      <PosterGallery
+        posters={shelf.items.map(({ entry, caption }) => posterOf(entry, ...caption))}
+      />
     </section>
   )
 
@@ -497,23 +525,70 @@ export const HomePage = () => {
    * shelves under other names — games under popular and coming soon, films under this week's
    * list — had a home page of empty headings.
    */
+  const featuredShelves = module.types.flatMap((type) =>
+    (featured[type.mediaType] ?? []).map((shelf) => ({
+      key: `${shelf.id}-${type.mediaType}`,
+      type,
+      shelf,
+      // The module named the row; the medium is added only where the module holds more
+      // than one, since "Popular now" twice over says nothing about which is which.
+      title: module.types.length > 1 ? `${shelf.label} · ${type.label}` : shelf.label,
+    })),
+  )
+
   const catalogue = (
     <>
-      {module.types.flatMap((type) =>
-        (featured[type.mediaType] ?? []).map((shelf) => (
-          <ShelfGallery
-            key={`${shelf.id}-${type.mediaType}`}
-            // The module named the row; the medium is added only where the module holds more
-            // than one, since "Popular now" twice over says nothing about which is which.
-            title={module.types.length > 1 ? `${shelf.label} · ${type.label}` : shelf.label}
-            mediaType={type.mediaType}
-            shelf={shelf.id}
-            moduleSlug={module.slug}
-            typeSlug={type.slug}
-          />
-        )),
-      )}
+      {featuredShelves.map(({ key, type, shelf, title }) => (
+        <ShelfGallery
+          key={key}
+          title={title}
+          mediaType={type.mediaType}
+          shelf={shelf.id}
+          moduleSlug={module.slug}
+          typeSlug={type.slug}
+        />
+      ))}
     </>
+  )
+
+  /*
+   * A phone's Home: every shelf the wide page shows, in the same order, as rows that scroll
+   * sideways. There is no column to sit beside, so there is nothing to fold out either.
+   */
+  const phoneShelves = (
+    <div className="shelf-rows">
+      {shelves.map((shelf) => (
+        <ShelfRow
+          key={shelf.key}
+          title={shelf.title}
+          to={shelf.to}
+          onStatus={shelve}
+          cards={shelf.items.map(({ entry, subtitle }) => ({
+            key: String(entry.id),
+            source: entry.source,
+            externalId: entry.externalId,
+            mediaType: entry.mediaType,
+            title: entry.title,
+            coverUrl: entry.coverUrl,
+            to: detailPathFor(entry),
+            subtitle,
+            status: entry.status,
+            waiting: episodesWaiting(entry),
+          }))}
+        />
+      ))}
+      {featuredShelves.map(({ key, type, shelf, title }) => (
+        <CatalogueShelfRow
+          key={key}
+          title={title}
+          mediaType={type.mediaType}
+          shelf={shelf.id}
+          to={`/browse/${module.slug}/${type.slug}/${shelf.id}`}
+          statusOf={(item) => tracked.get(keyOf(item))?.status ?? null}
+          onStatus={shelve}
+        />
+      ))}
+    </div>
   )
 
   return (
@@ -547,10 +622,12 @@ export const HomePage = () => {
 
       {!loaded && !error && <p className="muted">Reading your library…</p>}
 
-      {/* Folded out, the shelves run the width of the page and the feed reads beneath them. */}
-      {loaded && foldedOut && shelfStack}
+      {loaded && narrow && phoneShelves}
 
-      {loaded && (
+      {/* Folded out, the shelves run the width of the page and the feed reads beneath them. */}
+      {loaded && !narrow && foldedOut && shelfStack}
+
+      {loaded && !narrow && (
         <div className="home-layout">
           <div className="home-main" ref={setMain}>
             <section className="status-section">
@@ -580,18 +657,7 @@ export const HomePage = () => {
 
               {showing === 'notifications' ? (
                 notifications.length > 0 ? (
-                  <>
-                    <NotificationList notifications={notifications} onRead={(id) => void read(id)} />
-                    {moreNotifications && (
-                      <button
-                        type="button"
-                        className="ghost feed-more"
-                        onClick={() => setNarrowNotifications((held) => held + NARROW_ROWS)}
-                      >
-                        Load more
-                      </button>
-                    )}
-                  </>
+                  <NotificationList notifications={notifications} onRead={(id) => void read(id)} />
                 ) : (
                   <p className="muted">
                     Nothing yet. An episode airing, or a season appearing, turns up here.
