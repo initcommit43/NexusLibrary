@@ -45,3 +45,8 @@ export const distinct = (entries: TrackedItem[], read: (entry: TrackedItem) => u
   }
   return [...found].sort()
 }
+
+/** How many entries a list holds, as the sidebar's lists and the phone's chips both show it. */
+export const countIn = (entries: TrackedItem[], status: TrackingStatus | 'ALL'): number =>
+  status === 'ALL' ? entries.length : entries.filter((entry) => entry.status === status).length
+

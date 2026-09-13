@@ -1,28 +1,95 @@
-import type { TrackedItem, TrackingStatus } from '../api/client'
-import { SORT_LABELS, SORT_ORDER, distinct, type ListFilters, type SortKey } from './listFilters'
+import type { TrackedItem } from '../api/client'
+import {
+  SORT_LABELS,
+  SORT_ORDER,
+  countIn,
+  distinct,
+  type ListFilters,
+  type SortKey,
+} from './listFilters'
 import type { MediaTypeDefinition } from '../modules/registry'
 
-export const ListSidebar = ({
-  type,
-  entries,
-  filters,
-  onChange,
-}: {
+interface FilterProps {
   type: MediaTypeDefinition
   entries: TrackedItem[]
   filters: ListFilters
   onChange: (next: ListFilters) => void
-}) => {
+}
+
+/**
+ * The shelf's narrowing and ordering controls, without the lists or the title search. Shared by
+ * the sidebar and the library's phone filter sheet, so the two cannot offer different options.
+ */
+export const ListFilterFields = ({ type, entries, filters, onChange }: FilterProps) => {
   const set = <K extends keyof ListFilters>(key: K, value: ListFilters[K]) =>
     onChange({ ...filters, [key]: value })
-
-  const countIn = (status: TrackingStatus | 'ALL') =>
-    status === 'ALL' ? entries.length : entries.filter((entry) => entry.status === status).length
 
   const formats = distinct(entries, (entry) => entry.metadata.format)
   const genres = distinct(entries, (entry) => entry.metadata.genres)
   // Only games carry these, so the control appears for games and nowhere else.
   const platforms = distinct(entries, (entry) => entry.metadata.platforms)
+
+  return (
+    <>
+      {formats.length > 0 && (
+        <label className="field">
+          <span>Format</span>
+          <select value={filters.format} onChange={(e) => set('format', e.target.value)}>
+            <option value="">Any</option>
+            {formats.map((format) => (
+              <option key={format} value={format}>
+                {format}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+
+      {genres.length > 0 && (
+        <label className="field">
+          <span>Genre</span>
+          <select value={filters.genre} onChange={(e) => set('genre', e.target.value)}>
+            <option value="">Any</option>
+            {genres.map((genre) => (
+              <option key={genre} value={genre}>
+                {genre}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+
+      {platforms.length > 0 && (
+        <label className="field">
+          <span>Platform</span>
+          <select value={filters.platform} onChange={(e) => set('platform', e.target.value)}>
+            <option value="">Any</option>
+            {platforms.map((platform) => (
+              <option key={platform} value={platform}>
+                {platform}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+
+      <label className="field">
+        <span>Sort</span>
+        <select value={filters.sort} onChange={(e) => set('sort', e.target.value as SortKey)}>
+          {SORT_ORDER.map((key) => (
+            <option key={key} value={key}>
+              {key === 'PROGRESS' ? type.progressLabel : SORT_LABELS[key]}
+            </option>
+          ))}
+        </select>
+      </label>
+    </>
+  )
+}
+
+export const ListSidebar = ({ type, entries, filters, onChange }: FilterProps) => {
+  const set = <K extends keyof ListFilters>(key: K, value: ListFilters[K]) =>
+    onChange({ ...filters, [key]: value })
 
   return (
     <aside className="list-sidebar">
@@ -45,7 +112,7 @@ export const ListSidebar = ({
                 onClick={() => set('status', status)}
               >
                 <span>{status === 'ALL' ? 'All' : type.statusLabels[status]}</span>
-                <span className="muted">{countIn(status)}</span>
+                <span className="muted">{countIn(entries, status)}</span>
               </button>
             </li>
           ))}
@@ -55,58 +122,7 @@ export const ListSidebar = ({
       <section>
         <h2>Filters</h2>
 
-        {formats.length > 0 && (
-          <label className="field">
-            <span>Format</span>
-            <select value={filters.format} onChange={(e) => set('format', e.target.value)}>
-              <option value="">Any</option>
-              {formats.map((format) => (
-                <option key={format} value={format}>
-                  {format}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
-
-        {genres.length > 0 && (
-          <label className="field">
-            <span>Genre</span>
-            <select value={filters.genre} onChange={(e) => set('genre', e.target.value)}>
-              <option value="">Any</option>
-              {genres.map((genre) => (
-                <option key={genre} value={genre}>
-                  {genre}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
-
-        {platforms.length > 0 && (
-          <label className="field">
-            <span>Platform</span>
-            <select value={filters.platform} onChange={(e) => set('platform', e.target.value)}>
-              <option value="">Any</option>
-              {platforms.map((platform) => (
-                <option key={platform} value={platform}>
-                  {platform}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
-
-        <label className="field">
-          <span>Sort</span>
-          <select value={filters.sort} onChange={(e) => set('sort', e.target.value as SortKey)}>
-            {SORT_ORDER.map((key) => (
-              <option key={key} value={key}>
-                {key === 'PROGRESS' ? type.progressLabel : SORT_LABELS[key]}
-              </option>
-            ))}
-          </select>
-        </label>
+        <ListFilterFields type={type} entries={entries} filters={filters} onChange={onChange} />
       </section>
     </aside>
   )
