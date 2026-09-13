@@ -3980,7 +3980,9 @@ input.filter-control::-webkit-search-cancel-button {
   .tab-bar > .icon-button,
   .tab-bar > .icon-button:hover:not(:disabled),
   .home-head > .icon-button,
-  .home-head > .icon-button:hover {
+  .home-head > .icon-button:hover,
+  .back-button,
+  .back-button:hover:not(:disabled) {
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
     box-shadow: var(--glass-shadow);
@@ -3994,7 +3996,9 @@ input.filter-control::-webkit-search-cancel-button {
     .tab-bar > .icon-button,
     .tab-bar > .icon-button:hover:not(:disabled),
     .home-head > .icon-button,
-    .home-head > .icon-button:hover {
+    .home-head > .icon-button:hover,
+    .back-button,
+    .back-button:hover:not(:disabled) {
       background: var(--surface);
       border-color: var(--border);
     }
@@ -5375,6 +5379,14 @@ a.icon-button.active {
 
 .home-head > .page-title {
   min-width: 0;
+}
+
+/* The same round control as Home's bell, standing on its own line above the title. */
+.back-button {
+  width: var(--icon-control);
+  height: var(--icon-control);
+  border-radius: var(--radius-full);
+  color: var(--text);
 }
 
 .home-head > .icon-button {

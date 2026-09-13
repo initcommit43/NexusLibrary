@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
+import { BackButton } from '../components/BackButton'
 import { NotificationList } from '../components/NotificationList'
 import { useNotifications } from '../components/useNotifications'
+import { useNarrowScreen } from '../components/useNarrowScreen'
 import { mediaTypesOf } from '../modules/registry'
 import { useCurrentModule } from '../modules/useCurrentModule'
 
@@ -16,11 +18,16 @@ const ALL_OF_IT = 200
 export const NotificationsPage = () => {
   const module = useCurrentModule()
   const { waiting, loading, read, readAll } = useNotifications(mediaTypesOf(module), ALL_OF_IT)
+  const narrow = useNarrowScreen()
 
   return (
     <AppShell>
+      {narrow && <BackButton />}
+
+      {/* A phone has no module switcher on this page, so naming the module there only competes
+          with the title. */}
       <h1 className="page-title">
-        {module.label} notifications
+        {narrow ? 'Notifications' : `${module.label} notifications`}
         {waiting.unread > 0 && (
           <button
             type="button"
