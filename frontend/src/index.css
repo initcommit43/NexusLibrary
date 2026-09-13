@@ -468,8 +468,52 @@ button.small {
   height: var(--icon-control);
 }
 
-.shell-header .module-trigger {
+/*
+ * The logo and the module's name open the module menu, so they take the bar's one control
+ * height too. Pulled back by its own padding so the logo stays where it stood before it was a
+ * button. A long name gives way to an ellipsis before it pushes the shelves out.
+ */
+.header-left > .module-switcher {
+  min-width: 0;
+}
+
+.brand-trigger {
+  min-width: 0;
   height: var(--icon-control);
+  padding: 0 var(--space-2);
+  margin-left: calc(-1 * var(--space-2));
+  background: none;
+  border: none;
+  white-space: nowrap;
+}
+
+.brand-trigger:hover:not(:disabled),
+.brand-trigger[aria-expanded='true'] {
+  background: var(--surface-raised);
+}
+
+.brand-trigger > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.brand-trigger img,
+.brand-trigger svg {
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+/*
+ * Hung from the trigger's own edges rather than the switcher's: the trigger reaches a gutter
+ * past it on the left. As wide as its longest name and no wider, so no row trails off into
+ * empty menu. Dropped below the header's rule, which sits
+ * half the header's spare height under the trigger (3.5rem is .shell-header's height).
+ */
+.header-left .module-menu {
+  top: calc(100% + (3.5rem - var(--icon-control)) / 2 + var(--space-2));
+  left: calc(-1 * var(--space-2));
+  width: max-content;
+  min-width: 0;
 }
 
 /*

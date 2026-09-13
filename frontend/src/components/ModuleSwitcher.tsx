@@ -39,10 +39,22 @@ const sameKindOfPage = (path: string, search: string, module: ModuleDefinition):
   return null
 }
 
+/** The logo beside a name: the module you are in, or the app's own when there is no other. */
+const Mark = ({ name }: { name: string }) => (
+  <>
+    <img src="/pwa-192x192.png" alt="" width={28} height={28} />
+    <span>{name}</span>
+  </>
+)
+
 /**
- * Names the module you are in, and switches to another. A menu rather than a list of links:
- * with four modules the rail would otherwise spend most of its height on navigation you use
- * once a session.
+ * The logo and the module you are in, which open the menu of modules. A menu rather than a
+ * list of links: with four modules the header would otherwise spend most of its width on
+ * navigation you use once a session.
+ *
+ * <p>Bare beside the logo rather than a pill of its own. The pill was the widest thing in the
+ * bar and crowded the shelves out of it on a phone; joined to the logo, the name still says
+ * what is selected and the arrow says how to change it.
  */
 export const ModuleSwitcher = ({ current }: { current: ModuleDefinition }) => {
   const { modules, isBuilt, isEnabled } = useModules()
@@ -65,21 +77,28 @@ export const ModuleSwitcher = ({ current }: { current: ModuleDefinition }) => {
    */
   const listed = modules.filter((module) => isEnabled(module.slug))
 
-  // With one module there is nothing to switch between, and a control that only ever names
-  // what you are already looking at is furniture. The shelves in the nav say which it is.
-  if (listed.length <= 1) return null
+  // With one module there is nothing to switch between, so the logo is only the app's.
+  if (listed.length <= 1) {
+    return (
+      <div className="brand">
+        <Mark name="Nexus" />
+      </div>
+    )
+  }
 
   return (
     <div className="module-switcher" ref={container}>
       <button
         ref={trigger}
         type="button"
-        className="module-trigger"
+        className="brand brand-trigger"
         aria-haspopup="menu"
         aria-expanded={open}
+        aria-label={`${current.label}, switch module`}
+        title="Switch module"
         onClick={() => setOpen((wasOpen) => !wasOpen)}
       >
-        <span>{current.label}</span>
+        <Mark name={current.label} />
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" aria-hidden>
           <path d="m6 9 6 6 6-6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>

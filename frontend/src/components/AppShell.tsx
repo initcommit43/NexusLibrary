@@ -12,7 +12,7 @@ import { useHideOnScroll } from './useHideOnScroll'
 import type { ModuleDefinition } from '../modules/registry'
 
 /**
- * The switcher names the module you are in and stays put on every page: settings and
+ * The module you are in stays put on every page, behind the mark that switches it: settings and
  * activity span modules, but you are still somewhere, and remembering the last module you
  * picked is what keeps the right shelves in the header while you are there.
  */
@@ -34,11 +34,6 @@ export const AppShell = ({
     <div className="shell">
       <header className={hidden ? 'shell-header hidden' : 'shell-header'}>
         <div className="header-left">
-          <div className="brand">
-            <img src="/pwa-192x192.png" alt="" width={28} height={28} />
-            <span>Nexus</span>
-          </div>
-
           <ModuleSwitcher current={current} />
         </div>
 
