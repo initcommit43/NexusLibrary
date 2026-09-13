@@ -603,6 +603,43 @@ button.small {
 }
 
 /*
+ * On a phone, the native picker's rows: a grouped card, a row per module with a thumb's height.
+ * Still hung from the title's left edge and as wide as its longest row, so the name and its
+ * arrow sit together instead of at either end of the screen.
+ */
+@media (max-width: 52rem) {
+  .title-switcher .module-menu {
+    top: calc(100% + var(--space-3));
+    padding: 0;
+    border: 0;
+    border-radius: var(--m-radius-group);
+  }
+
+  .title-switcher .module-option {
+    flex-direction: row;
+    gap: 0;
+    padding: 0 0 0 var(--m-row-padding);
+  }
+
+  /* The arrows line up down the card's right side, a clear step from the longest name. */
+  .title-switcher .group-row-body {
+    gap: var(--space-4);
+  }
+
+  .title-switcher .group-row-title {
+    font-weight: 600;
+  }
+
+  .title-switcher .module-option[aria-current='true'] :is(.group-row-title, .group-row-subtitle) {
+    color: var(--accent);
+  }
+
+  .title-switcher .module-option:disabled .group-row-title {
+    color: var(--text-muted);
+  }
+}
+
+/*
  * The width of the content column, shared so things outside it can line up against it.
  *
  * Sized so a browse row holds six covers at about the width they have always been. Wider
@@ -4765,6 +4802,58 @@ button.ghost.danger {
 button.ghost.danger:hover:not(:disabled) {
   background: var(--danger-soft);
   color: var(--danger);
+}
+
+/* On a phone, the native alert: a centred card, its act a full-width pill, the way out text. */
+@media (max-width: 52rem) {
+  .dialog-backdrop {
+    padding: var(--space-3);
+    background: var(--m-scrim);
+  }
+
+  .dialog {
+    gap: var(--m-gap);
+    padding: var(--m-dialog-padding);
+    border: 0;
+    border-radius: var(--m-radius-dialog);
+  }
+
+  /* Only as wide as the native alert, for a dialog that asks one question. */
+  .dialog.dialog-confirm {
+    width: min(100%, var(--m-dialog-width));
+  }
+
+  .dialog-head h2 {
+    font-size: var(--text-xl);
+  }
+
+  .dialog-head h2,
+  .dialog > p {
+    text-align: center;
+  }
+
+  .dialog > p:not([class]) {
+    color: var(--text-muted);
+    font-size: var(--text-md);
+  }
+
+  /* Reversed, so the confirming act the web puts last is the pill on top. */
+  .dialog-foot {
+    flex-direction: column-reverse;
+    gap: var(--m-gap);
+  }
+
+  .dialog-foot button.ghost,
+  .dialog-foot button.ghost:hover:not(:disabled) {
+    border: 0;
+    background: none;
+    color: var(--accent);
+  }
+
+  .dialog-foot button.ghost.danger,
+  .dialog-foot button.ghost.danger:hover:not(:disabled) {
+    color: var(--danger);
+  }
 }
 
 .favorite.on {

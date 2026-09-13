@@ -1,8 +1,16 @@
+import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { api, type MediaType } from '../api/client'
 import { rememberModule } from '../modules/useCurrentModule'
 import { useModules } from '../modules/useModules'
-import { defaultTypeOf, type ModuleDefinition } from '../modules/registry'
+import { defaultTypeOf, mediaTypesOf, type ModuleDefinition } from '../modules/registry'
+import { ChevronRight } from './GroupedList'
 import { useMenuDismiss } from './useMenuDismiss'
+
+const trackedIn = (tracked: MediaType[], module: ModuleDefinition) => {
+  const types = mediaTypesOf(module)
+  return tracked.filter((mediaType) => types.includes(mediaType)).length
+}
 
 /**
  * The same page, in the module being switched to.
@@ -95,6 +103,23 @@ export const ModuleSwitcher = ({
 
   const title = variant === 'title'
 
+  // The same memoized read Home makes, so the counts cost no request of their own.
+  const [tracked, setTracked] = useState<MediaType[] | null>(null)
+  useEffect(() => {
+    if (!title) return
+    let live = true
+    api
+      .listEntries()
+      .then((entries) => {
+        if (live) setTracked(entries.map((entry) => entry.mediaType))
+      })
+      // No count is the answer to a failed read; the menu still switches.
+      .catch(() => {})
+    return () => {
+      live = false
+    }
+  }, [title])
+
   // With one module there is nothing to switch between, so the logo is only the app's.
   if (listed.length <= 1) {
     return title ? (
@@ -143,21 +168,44 @@ export const ModuleSwitcher = ({
       )}
 
       {open && (
-        <ul className="module-menu" role="menu">
+        <ul className={title ? 'module-menu group' : 'module-menu'} role="menu">
           {listed.map((module) => {
             const available = isBuilt(module.slug)
+            const count = tracked ? trackedIn(tracked, module) : null
+            // Blank rather than 0 while the count loads, and kept as a line so no row jumps.
+            const subtitle =
+              module.slug === current.slug
+                ? 'Current'
+                : !available
+                  ? 'Not built yet'
+                  : count === null
+                    ? ' '
+                    : `${count.toLocaleString()} tracked`
             return (
               <li key={module.slug} role="none">
                 <button
                   type="button"
                   role="menuitem"
-                  className="module-option"
+                  className={title ? 'module-option group-row is-two-line' : 'module-option'}
                   disabled={!available}
                   aria-current={module.slug === current.slug}
                   onClick={() => choose(module)}
                 >
-                  <span>{module.label}</span>
-                  {!available && <span className="muted">Not built yet</span>}
+                  {title ? (
+                    // The phone's picker, a grouped row saying how much of each module is yours.
+                    <span className="group-row-body">
+                      <span className="group-row-text">
+                        <span className="group-row-title">{module.label}</span>
+                        <span className="group-row-subtitle">{subtitle}</span>
+                      </span>
+                      <ChevronRight />
+                    </span>
+                  ) : (
+                    <>
+                      <span>{module.label}</span>
+                      {!available && <span className="muted">Not built yet</span>}
+                    </>
+                  )}
                 </button>
               </li>
             )
