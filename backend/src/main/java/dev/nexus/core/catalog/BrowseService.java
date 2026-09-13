@@ -200,7 +200,7 @@ public class BrowseService {
     }
 
     /**
-     * Fills the shelves a module leads with, once, at startup.
+     * Fills the filter lists and the shelves a module leads with, once, at startup.
      *
      * <p>An empty cache is the only time anyone waits for a source, and it is empty exactly
      * when the app has just started — so it is filled before a reader arrives rather than by
@@ -213,6 +213,10 @@ public class BrowseService {
         for (MediaType mediaType : MediaType.values()) {
             refresher.execute(() -> {
                 try {
+                    // The filter lists first. The bar waits on them and nothing else, and once
+                    // readers arrive their shelf requests fill the source's queue ahead of them.
+                    filters(mediaType);
+
                     for (BrowseShelf shelf : shelves(mediaType)) {
                         if (shelf.onHome()) {
                             // The page the reader lands on, at the size it asks for: a shelf
