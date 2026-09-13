@@ -6102,3 +6102,204 @@ a.icon-button.active {
     color: var(--text-muted);
   }
 }
+
+/* --- phone: chips, switches and fields --- */
+
+/* The native app's smaller controls, drawn at a phone's width only. */
+@media (max-width: 52rem) {
+  /* Status filters in a line that scrolls, bled to the window edge so the last chip clears it. */
+  .chip-row {
+    --chip-row-bleed: var(--space-4); /* .shell-main's side padding */
+    display: flex;
+    gap: var(--space-2);
+    margin-inline: calc(-1 * var(--chip-row-bleed));
+    padding-inline: var(--chip-row-bleed);
+    scroll-padding-inline: var(--chip-row-bleed);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .chip-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  .chip,
+  .chip:hover:not(:disabled) {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--m-chip-gap);
+    height: var(--m-chip-height);
+    padding: 0 var(--m-chip-padding);
+    border: 1px solid var(--border);
+    border-radius: var(--m-radius-control);
+    background: var(--surface);
+    color: var(--text);
+    font-size: var(--m-text-footnote);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .chip-count {
+    color: var(--text-muted);
+    font-weight: 400;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .chip[aria-pressed='true'],
+  .chip[aria-pressed='true']:hover:not(:disabled) {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--accent-contrast);
+  }
+
+  .chip[aria-pressed='true'] .chip-count {
+    color: inherit;
+    opacity: 0.75;
+  }
+
+  /* The native switch. The checkbox lies over the track, so it takes the tap and the focus. */
+  .toggle {
+    position: relative;
+    flex: none;
+    display: inline-flex;
+    width: var(--m-switch-width);
+    height: var(--m-switch-height);
+  }
+
+  .toggle input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .toggle-track {
+    width: 100%;
+    border-radius: var(--m-radius-control);
+    background: var(--border-strong);
+    transition: background var(--duration-base) var(--ease);
+  }
+
+  .toggle-track::before {
+    content: '';
+    display: block;
+    width: var(--m-switch-knob-width);
+    height: calc(100% - 2 * var(--m-segmented-inset));
+    margin: var(--m-segmented-inset);
+    border-radius: var(--m-radius-control);
+    background: var(--m-switch-knob);
+    box-shadow: var(--shadow-1);
+    transition: transform var(--duration-base) var(--ease);
+  }
+
+  .toggle input:checked + .toggle-track {
+    background: var(--m-switch-on);
+  }
+
+  .toggle input:checked + .toggle-track::before {
+    transform: translateX(
+      calc(var(--m-switch-width) - var(--m-switch-knob-width) - 2 * var(--m-segmented-inset))
+    );
+  }
+
+  .toggle input:focus-visible + .toggle-track {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .toggle input:disabled {
+    cursor: not-allowed;
+  }
+
+  .toggle input:disabled + .toggle-track {
+    opacity: 0.5;
+  }
+
+  /* Fields sharing one card, as the native sign-in draws them; each child is a field's row. */
+  .field-group {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: var(--m-radius-group);
+    background: var(--surface);
+  }
+
+  .field-group > * {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-height: var(--m-row-height);
+  }
+
+  .field-group > * + *::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    inset-inline: var(--m-row-padding);
+    border-top: 1px solid var(--border);
+  }
+
+  .field-group input,
+  .field-group input:hover:not(:disabled) {
+    flex: 1;
+    min-width: 0;
+    align-self: stretch;
+    padding: 0 var(--m-row-padding);
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    font-size: var(--text-lg);
+  }
+
+  .field-group input:focus-visible {
+    outline-offset: -2px;
+  }
+
+  .field-group input[aria-invalid='true'] {
+    color: var(--danger);
+  }
+
+  /* A rounded search box with its magnifier inside. See SearchField. */
+  .search-field {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    height: var(--m-search-height);
+    padding-left: var(--m-gap);
+    border: 1px solid var(--border);
+    border-radius: var(--m-radius-control);
+    background: var(--surface);
+    color: var(--text-muted);
+  }
+
+  .search-field:focus-within {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .search-field svg {
+    flex: none;
+  }
+
+  .search-field input,
+  .search-field input:hover:not(:disabled) {
+    flex: 1;
+    min-width: 0;
+    align-self: stretch;
+    padding: 0 var(--m-gap) 0 0;
+    border: 0;
+    background: transparent;
+    font-size: var(--text-lg);
+    outline: none;
+  }
+}
+
+@media (max-width: 40rem) {
+  .chip-row {
+    --chip-row-bleed: var(--space-3);
+  }
+}
