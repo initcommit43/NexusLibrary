@@ -5,6 +5,7 @@ import { AppShell } from '../components/AppShell'
 import { EntryCard } from '../components/EntryCard'
 import { EntryEditDialog } from '../components/EntryEditDialog'
 import { EntryRow } from '../components/EntryRow'
+import { LibraryPhoneFilters } from '../components/LibraryPhoneFilters'
 import { ListSidebar } from '../components/ListSidebar'
 import { EMPTY_FILTERS, firstGenre, type ListFilters } from '../components/listFilters'
 import { TypeSwitch } from '../components/TypeSwitch'
@@ -152,6 +153,10 @@ export const LibraryPage = () => {
         onSwitch={(type) => navigate(`/library/${module.slug}/${type.slug}`)}
       />
 
+      {narrow && (
+        <LibraryPhoneFilters type={active} entries={mine} filters={filters} onChange={setFilters} />
+      )}
+
       {error && (
         <p className="alert" role="alert">
           {error}
@@ -159,7 +164,9 @@ export const LibraryPage = () => {
       )}
 
       <div className="list-layout">
-        <ListSidebar type={active} entries={mine} filters={filters} onChange={setFilters} />
+        {!narrow && (
+          <ListSidebar type={active} entries={mine} filters={filters} onChange={setFilters} />
+        )}
 
         <div className="list-main">
           {/*

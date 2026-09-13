@@ -50,3 +50,11 @@ export const distinct = (entries: TrackedItem[], read: (entry: TrackedItem) => u
 export const countIn = (entries: TrackedItem[], status: TrackingStatus | 'ALL'): number =>
   status === 'ALL' ? entries.length : entries.filter((entry) => entry.status === status).length
 
+/**
+ * How many of the filter sheet's controls are off their default, sort included: the count on
+ * the button that opens it says the shelf is not in its plain order as much as that it is cut.
+ */
+export const activeFilterCount = (filters: ListFilters): number =>
+  (['format', 'genre', 'platform', 'sort'] as const).filter(
+    (key) => filters[key] !== EMPTY_FILTERS[key],
+  ).length

@@ -6733,4 +6733,63 @@ a.icon-button.active {
   .library-grid > :nth-child(3n + 1) .status-menu.is-compact .status-options {
     left: 0;
     right: auto;
+  }
+
+  .library-search-row {
+    display: flex;
+    gap: var(--space-2);
+  }
+
+  .library-search-row > .search-field {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* The search field's height and shape, so the two read as one line of controls. */
+  .library-filter-button,
+  .library-filter-button:hover:not(:disabled) {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--m-chip-gap);
+    height: var(--m-search-height);
+    padding: 0 var(--m-gap);
+    border: 1px solid var(--border);
+    border-radius: var(--m-radius-control);
+    background: var(--surface);
+    color: var(--text);
+    font-size: var(--m-text-footnote);
+    font-weight: 600;
+  }
+
+  .library-filter-count {
+    display: grid;
+    place-items: center;
+    min-width: calc(var(--m-search-height) - 2 * var(--space-2));
+    height: calc(var(--m-search-height) - 2 * var(--space-2));
+    padding: 0 var(--space-1);
+    border-radius: var(--radius-full);
+    background: var(--accent);
+    color: var(--accent-contrast);
+    font-size: var(--text-xs);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .library-filter-sheet:focus {
+    outline: none;
+  }
+
+  .library-filter-sheet .field span {
+    font-size: var(--m-text-footnote);
+  }
+
+  .library-filter-sheet select {
+    width: 100%;
+    height: var(--m-search-height);
+    padding-block: 0;
+    padding-inline: var(--m-gap);
+    border-color: var(--border);
+    border-radius: var(--m-radius-control);
+    font-size: var(--text-lg);
+  }
 }
