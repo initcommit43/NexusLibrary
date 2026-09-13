@@ -5086,21 +5086,6 @@ a.icon-button.active {
 }
 
 /*
- * Where the page turns from what you have to what there is. A rule rather than a bigger
- * heading: the two halves are equals, not a section and its subsection.
- */
-.home-turn {
-  margin-top: var(--space-6);
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--border);
-  font-size: var(--text-sm);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-wide);
-  color: var(--text-muted);
-}
-
-/*
  * A run has no cover, so it wears the initial of the provider it ran against — the same
  * round mark a person's avatar uses, which is what tells it apart from the rows that do.
  */
