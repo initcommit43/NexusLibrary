@@ -3904,6 +3904,155 @@ input.filter-control::-webkit-search-cancel-button {
 /* --- library views --- */
 
 /*
+ * The list view: a row per title, ruled off from the text rather than from the cover, so the
+ * covers read as a column of their own.
+ */
+.entry-list {
+  --entry-cover: 3rem;
+  --entry-row-padding: var(--space-2);
+  --entry-row-gap: var(--space-3);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.entry-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--entry-row-gap);
+  padding: var(--entry-row-padding);
+  border-radius: var(--radius-md);
+  transition: background var(--duration-fast) var(--ease);
+}
+
+.entry-row + .entry-row::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: calc(var(--entry-row-padding) + var(--entry-cover) + var(--entry-row-gap));
+  right: var(--entry-row-padding);
+  border-top: 1px solid var(--border);
+}
+
+.entry-row:hover {
+  background: var(--surface-raised);
+}
+
+/* Unclipped, so the phone's status menu can drop out of it; the artwork takes the corner. */
+.entry-row-cover {
+  position: relative;
+  flex: none;
+  width: var(--entry-cover);
+  aspect-ratio: 3 / 4;
+  border-radius: var(--radius-sm);
+}
+
+.entry-row-cover > img,
+.entry-row-cover > .cover-placeholder {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border: 0;
+  border-radius: inherit;
+}
+
+.entry-row-link {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  color: inherit;
+}
+
+/* Stretched over the row, so the whole row opens the title and only the menu stands above it. */
+.entry-row-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.entry-row-link:hover {
+  text-decoration: none;
+}
+
+.entry-row-link:focus-visible {
+  outline: none;
+}
+
+.entry-row-link:focus-visible::after {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.entry-row-title {
+  overflow: hidden;
+  color: var(--text);
+  font-size: var(--text-md);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.entry-row-progress {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.entry-row-bar {
+  display: block;
+  max-width: 16rem;
+  height: 4px;
+  overflow: hidden;
+  border-radius: var(--radius-bar);
+  background: var(--border);
+}
+
+.entry-row-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-bar);
+  background: var(--accent);
+}
+
+.entry-row > .status-menu {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  width: 10rem;
+}
+
+/* Quiet, since every row carries one: a filled accent button forty times over is a wall. */
+.entry-row .status-action,
+.entry-row .status-action:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: var(--surface);
+  color: var(--text-body);
+}
+
+.entry-row > .chevron-right {
+  flex: none;
+  color: var(--text-muted);
+}
+
+.entry-row.is-pending .entry-row-cover {
+  background: var(--surface-raised);
+  animation: shelf-pending 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .entry-row.is-pending .entry-row-cover {
+    animation: none;
+  }
+}
+
+/*
  * The status menu as a round "…", for a cover's corner. An open menu lifts its whole control
  * above the next card's or row's, which would otherwise paint over the options.
  */
@@ -3954,6 +4103,55 @@ input.filter-control::-webkit-search-cancel-button {
   right: 0;
   width: max-content;
   max-width: 12rem;
+}
+
+@media (max-width: 52rem) {
+  /* The native app's list: a tall cover, the title over its progress, and an accent chevron. */
+  .entry-list {
+    --entry-cover: 5rem;
+    --entry-row-padding: 0;
+    --entry-row-gap: var(--m-gap);
+  }
+
+  .entry-row {
+    padding-block: var(--space-3);
+    border-radius: 0;
+  }
+
+  .entry-row:hover {
+    background: none;
+  }
+
+  .entry-row-cover {
+    aspect-ratio: 2 / 3;
+    border-radius: var(--m-radius-thumb);
+  }
+
+  .entry-row-link {
+    gap: var(--space-2);
+  }
+
+  .entry-row-title {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    font-size: var(--text-lg);
+    font-weight: 400;
+    white-space: normal;
+  }
+
+  .entry-row-progress {
+    font-size: var(--m-text-footnote);
+  }
+
+  .entry-row-bar {
+    max-width: none;
+    height: 3px;
+  }
+
+  .entry-row > .chevron-right {
+    color: var(--accent);
+  }
 }
 
 /* --- running work --- */
