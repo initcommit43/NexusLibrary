@@ -437,15 +437,12 @@ button.small {
 }
 
 /*
- * Squeezed between the switcher and the account, the shelves scrolled sideways and cut Home
- * off, so at this width they move to the tab bar and the header keeps its two ends.
+ * No header on a phone. The tab bar at the bottom carries the way round and search, Home's
+ * title the module menu, and the account's pages hang off Profile; a bar across the top on
+ * top of that was only a strip of the screen spent twice.
  */
 @media (max-width: 52rem) {
   .shell-header {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-
-  .shell-nav {
     display: none;
   }
 }
@@ -3885,75 +3882,149 @@ input.filter-control::-webkit-search-cancel-button {
 /* --- tab bar --- */
 
 /*
- * The header's shelves on a phone, at the bottom where a thumb reaches them. After both docks
- * because it lifts them.
+ * The phone's way round, at the bottom where a thumb reaches it: a floating capsule of tabs,
+ * and search in a round button of its own beside it. Only ever drawn at this width. After both
+ * docks because it lifts them.
  */
-.tab-bar {
-  display: none;
-}
-
 @media (max-width: 52rem) {
   /*
-   * The shell keeps the bar's height clear under the footer, so the end of every page stops
-   * above the bar instead of behind it. The inset is an installed app's home indicator.
+   * The shell keeps the bar and the gap above it clear under the footer, so the end of every
+   * page stops above the bar instead of behind it. Bottom, the bar floats a gutter up or clear
+   * of an installed app's home indicator, whichever is further; top, nothing sits over the
+   * status bar now the header is gone.
    */
   .shell {
-    --tab-bar-height: calc(var(--icon-control) + 2 * var(--space-2));
-    --tab-bar-space: calc(var(--tab-bar-height) + env(safe-area-inset-bottom, 0px));
+    --tab-bar-height: calc(var(--tab-bar-tab) + 2 * var(--space-1));
+    --tab-bar-bottom: max(var(--space-3), env(safe-area-inset-bottom, 0px));
+    --tab-bar-space: calc(var(--tab-bar-height) + var(--tab-bar-bottom) + var(--space-3));
+    padding-top: env(safe-area-inset-top, 0px);
     padding-bottom: var(--tab-bar-space);
   }
 
   /*
-   * Fixed rather than hiding with the header: it is how you leave a page, which is wanted
-   * mid-scroll as much as at the top. One under the header's layer, so a menu the header
-   * drops hangs over the bar rather than behind it.
+   * Fixed rather than scrolling with the page: it is how you leave a page, which is wanted
+   * mid-scroll as much as at the top. Low in the stack, so a menu the page drops hangs over it.
+   *
+   * The strip itself is window-wide and invisible, so taps pass through it to the page and only
+   * what stands in it takes them. It carries no blur of its own either: a backdrop filter
+   * makes an element the frame of every fixed thing inside it, and search's overlay, which
+   * opens from in here, has to cover the window rather than the strip.
    */
   .tab-bar {
     position: fixed;
-    inset: auto 0 0;
+    inset: auto 0 var(--tab-bar-bottom);
     z-index: 9;
+    display: flex;
+    justify-content: center;
+    gap: var(--space-2);
+    padding-inline: var(--space-3);
+    pointer-events: none;
+  }
+
+  .tab-bar > * {
+    pointer-events: auto;
+  }
+
+  /*
+   * Glass, as the native app draws its floating controls. Hover is named too, since a ghost
+   * button brings a hover surface of its own.
+   */
+  .tab-bar-tabs,
+  .tab-bar > .icon-button,
+  .tab-bar > .icon-button:hover:not(:disabled) {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+  }
+
+  /* Without the blur, a see-through surface is only page text running under the tabs. */
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .tab-bar-tabs,
+    .tab-bar > .icon-button,
+    .tab-bar > .icon-button:hover:not(:disabled) {
+      background: var(--surface);
+      border-color: var(--border);
+    }
+  }
+
+  /*
+   * A capsule, and round buttons, though the rest of the app has dropped its pills: this bar
+   * follows the native app's, whose shape a phone's owner already knows as the way round.
+   *
+   * Equal columns at the tab's full height, so every tab is the same size to hit. The capsule
+   * stops growing at a tablet's width, where a bar edge to edge would be mostly empty.
+   */
+  .tab-bar-tabs {
+    flex: 1 1 auto;
+    max-width: var(--tab-bar-max);
     display: grid;
     grid-auto-flow: column;
     grid-auto-columns: minmax(0, 1fr);
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-    background: var(--surface);
-    border-top: 1px solid var(--border);
-    font-size: var(--text-base);
+    padding: var(--space-1);
+    border-radius: var(--radius-full);
   }
 
-  /* Equal columns, each the bar's full height, so every tab is the same size to hit. */
-  .tab-bar a {
+  .tab-bar-tabs a {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 2px;
     min-width: 0;
-    height: var(--tab-bar-height);
+    height: var(--tab-bar-tab);
     padding: 0 var(--space-1);
-    color: var(--text-muted);
-    font-weight: 500;
+    border-radius: var(--radius-full);
+    color: var(--text);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    line-height: var(--leading-none);
     white-space: nowrap;
-    overflow: hidden;
   }
 
-  /* Drawn inside the tab, where the edge of the window would clip it. */
-  .tab-bar a:focus-visible {
+  .tab-bar-tabs a > span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .tab-bar-tabs svg {
+    flex-shrink: 0;
+  }
+
+  /* Drawn inside the tab, where the capsule's curve would clip it. */
+  .tab-bar-tabs a:focus-visible {
     outline-offset: -2px;
   }
 
-  .tab-bar a:hover {
+  .tab-bar-tabs a:hover {
     color: var(--text);
     text-decoration: none;
   }
 
-  /* The header's underline, turned to the edge the bar shares with the page. */
-  .tab-bar a.active {
+  .tab-bar-tabs a.active {
+    background: var(--glass-highlight);
     color: var(--accent);
-    box-shadow: inset 0 2px 0 var(--accent);
+  }
+
+  /* As tall as the capsule beside it, so the two read as one row. */
+  .tab-bar > .icon-button {
+    flex: none;
+    width: var(--tab-bar-height);
+    height: var(--tab-bar-height);
+    border-radius: var(--radius-full);
+    color: var(--text);
+  }
+
+  .tab-bar > .icon-button svg {
+    width: 1.375rem;
+    height: 1.375rem;
   }
 
   .theme-dock,
   .job-dock {
-    bottom: calc(var(--tab-bar-space) + var(--space-3));
+    bottom: var(--tab-bar-space);
   }
 }
 
@@ -5145,11 +5216,6 @@ button.ghost.danger:hover:not(:disabled) {
 }
 
 @media (max-width: 40rem) {
-  .shell-header {
-    gap: var(--space-3);
-    padding: 0 var(--space-3);
-  }
-
   .shell-main {
     padding: var(--space-4) var(--space-3) var(--space-6);
   }

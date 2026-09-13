@@ -1,34 +1,17 @@
-import { NavLink, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { ModuleSwitcher } from './ModuleSwitcher'
 import { AccountMenu } from './AccountMenu'
 import { Footer } from './Footer'
 import { HeaderSearch } from './HeaderSearch'
 import { JobDock } from './JobDock'
+import { HeaderLinks, TabLinks } from './MainNav'
 import { OutageBanner } from './OutageBanner'
 import { ThemeToggle } from './ThemeToggle'
 import { useCurrentModule } from '../modules/useCurrentModule'
 import { defaultTypeOf, typeBySlug } from '../modules/registry'
 import { useHideOnScroll } from './useHideOnScroll'
+import { useNarrowScreen } from './useNarrowScreen'
 import type { ModuleDefinition } from '../modules/registry'
-
-/**
- * The links the header's nav and the phone's tab bar share. A module contributes its own
- * shelves; the rest is the same everywhere.
- */
-const ShelfLinks = ({ module }: { module: ModuleDefinition }) => (
-  <>
-    {/* Home is the module's own page, so it takes the end prop its shelves do not. */}
-    <NavLink to="/" end>
-      Home
-    </NavLink>
-    {module.types.map((type) => (
-      <NavLink key={type.slug} to={`/library/${module.slug}/${type.slug}`}>
-        {type.label}
-      </NavLink>
-    ))}
-    <NavLink to="/browse">Browse</NavLink>
-  </>
-)
 
 /**
  * The module you are in stays put on every page, behind the mark that switches it: settings and
@@ -44,6 +27,7 @@ export const AppShell = ({
 }) => {
   const current = useCurrentModule(module)
   const hidden = useHideOnScroll()
+  const narrow = useNarrowScreen()
 
   // Which shelf search will cover. Pages that span modules carry no type, so they get the
   // module's first — the same shelf its bare path opens.
@@ -57,25 +41,33 @@ export const AppShell = ({
         </div>
 
         <nav className="shell-nav" aria-label="Main">
-          <ShelfLinks module={current} />
-          {/* Not on the tab bar: at its width the account menu opens on a tap and leads with this. */}
-          <NavLink to="/profile">Profile</NavLink>
+          <HeaderLinks module={current} />
         </nav>
 
         <div className="header-right">
-          <HeaderSearch module={current} type={searchable} />
+          {/*
+            * Mounted here or on the tab bar, never both, so there is one trigger to reach and
+            * one overlay that can be open.
+            */}
+          {!narrow && <HeaderSearch module={current} type={searchable} />}
           <AccountMenu />
         </div>
       </header>
 
       {/*
-        * The header's nav again for a phone; the stylesheet only ever displays one of the two, so
-        * a screen reader meets a single Main. Outside the header because the transform that
-        * slides it away would pin a fixed bar to the header instead of the window.
+        * The way round on a phone, where the stylesheet hides the header and its Main with it.
+        * Outside the header because the transform that slides it away would pin a fixed bar to
+        * the header instead of the window. Search sits beside the tabs rather than among them:
+        * it opens over the page you are on instead of leading to another.
         */}
-      <nav className="tab-bar" aria-label="Main">
-        <ShelfLinks module={current} />
-      </nav>
+      {narrow && (
+        <div className="tab-bar">
+          <nav className="tab-bar-tabs" aria-label="Main">
+            <TabLinks module={current} />
+          </nav>
+          <HeaderSearch module={current} type={searchable} />
+        </div>
+      )}
 
       {/* Above the page, not inside it: an outage is app-wide news, not one page's. */}
       <OutageBanner />

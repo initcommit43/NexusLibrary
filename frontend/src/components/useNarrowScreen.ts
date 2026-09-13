@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react'
 
-/** The width the header folds at; index.css switches its narrow layout at the same one. */
+/** The phone's width; index.css swaps the header for the tab bar at the same one. */
 const NARROW_SCREEN = '(max-width: 52rem)'
 
 const subscribe = (onChange: () => void) => {
@@ -12,9 +12,9 @@ const subscribe = (onChange: () => void) => {
 const isNarrow = () => window.matchMedia(NARROW_SCREEN).matches
 
 /**
- * Whether the screen is at the header's narrow width, following the window as it resizes.
+ * Whether the screen is at the phone's width, following the window as it resizes.
  *
- * <p>For behaviour a stylesheet cannot switch: what a tap on a control does, rather than how
- * the control looks.
+ * <p>For what a stylesheet cannot switch: how much a list loads, or which of two places a
+ * control is mounted in, rather than how the control looks.
  */
 export const useNarrowScreen = (): boolean => useSyncExternalStore(subscribe, isNarrow)
