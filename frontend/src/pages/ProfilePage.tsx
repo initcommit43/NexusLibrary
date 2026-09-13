@@ -349,6 +349,11 @@ export const ProfilePage = () => {
         </div>
       </section>
 
+      {/* A phone has no account menu, so settings are reached from the profile they belong to. */}
+      <Link className="profile-settings" to="/settings">
+        Settings
+      </Link>
+
       {picking && entries !== null && (
         <BannerPicker
           entries={entries}
@@ -394,6 +399,10 @@ export const ProfilePage = () => {
               <h2>
                 Activity
                 <ScopePicker modules={mapped} current={scope} onChoose={setScope} />
+                {/* The phone's way to the stats, which the account menu carries when wide. */}
+                <Link className="section-action profile-stats-link" to="/stats">
+                  Stats →
+                </Link>
               </h2>
               <ActivityHeatmap days={history} weeks={HISTORY_WEEKS} />
             </section>

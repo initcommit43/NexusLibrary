@@ -696,6 +696,18 @@ a.list-link:hover {
   text-decoration: none;
 }
 
+/* A phone signs out at the foot of its settings; wide, the account menu does it. */
+.settings-sign-out {
+  display: none;
+}
+
+@media (max-width: 52rem) {
+  .settings-sign-out {
+    display: block;
+    width: 100%;
+  }
+}
+
 /*
  * One card per section, with its parts ruled off inside it. A card each turned four things
  * you do to one account into four things sitting near each other.
@@ -1434,6 +1446,43 @@ input.filter-control::-webkit-search-cancel-button {
 .profile-picture-credit {
   margin: 0;
   font-size: var(--text-xs);
+}
+
+/*
+ * A phone's ways out of the account menu it no longer has: settings under the head, stats on
+ * the activity heading. Wide, the menu carries both, so neither is drawn there. The settings
+ * link wears the filled button's own dress rather than a look of its own.
+ */
+.profile-settings,
+.section-action.profile-stats-link {
+  display: none;
+}
+
+@media (max-width: 52rem) {
+  .profile-settings {
+    display: block;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-sm);
+    background: var(--accent);
+    color: var(--accent-contrast);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    line-height: 1.4;
+    text-align: center;
+    transition: background var(--duration-fast) var(--ease);
+  }
+
+  .profile-settings:hover {
+    background: var(--accent-hover);
+    color: var(--accent-contrast);
+    text-decoration: none;
+  }
+
+  /* The scope picker before it already takes the heading's slack; a second auto margin would split it. */
+  .section-action.profile-stats-link {
+    display: inline-flex;
+    margin-left: 0;
+  }
 }
 
 /* The picker: covers, because what is being chosen is a picture. */

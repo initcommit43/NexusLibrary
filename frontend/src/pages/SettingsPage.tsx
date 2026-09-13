@@ -1184,6 +1184,11 @@ export const SettingsPage = () => {
           ))}
         </div>
       </div>
+
+      {/* Where a phone signs out, having no account menu to do it from. */}
+      <button type="button" className="ghost settings-sign-out" onClick={() => void logout()}>
+        Sign out
+      </button>
     </AppShell>
   )
 }
