@@ -5972,3 +5972,133 @@ a.icon-button.active {
   accent-color: var(--accent);
   cursor: pointer;
 }
+
+/* --- phone: grouped lists --- */
+
+/*
+ * Inset grouped, as the native app's settings and feeds: a quiet label, then rows in one
+ * rounded card. Drawn at a phone's width only; see GroupedList.
+ */
+@media (max-width: 52rem) {
+  .group-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .group-label {
+    color: var(--text-muted);
+    font-family: var(--font-sans);
+    font-size: var(--m-text-footnote);
+    font-weight: 400;
+    letter-spacing: normal;
+    text-transform: none;
+  }
+
+  .group {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    overflow: hidden;
+    border-radius: var(--m-radius-group);
+    background: var(--surface);
+  }
+
+  .group-row {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+    min-height: var(--m-row-height);
+    padding: 0 0 0 var(--m-row-padding);
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    text-align: left;
+    text-decoration: none;
+  }
+
+  .group-row.is-two-line {
+    min-height: var(--m-row-height-2);
+  }
+
+  button.group-row:hover:not(:disabled),
+  a.group-row:hover {
+    background: var(--surface-raised);
+    color: var(--text);
+    text-decoration: none;
+  }
+
+  .group-row:focus-visible {
+    outline-offset: -2px;
+  }
+
+  .group-row-thumb {
+    flex: none;
+    align-self: center;
+    width: var(--m-thumb-width);
+    height: var(--m-thumb-height);
+    margin-block: var(--space-2);
+    margin-right: var(--m-gap);
+    object-fit: cover;
+    border: 1px solid var(--border);
+    border-radius: var(--m-radius-thumb);
+    background: var(--bg);
+  }
+
+  /* Carries the separator, so it starts at the text and runs out to the card's edge. */
+  .group-row-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--m-row-padding) var(--space-2) 0;
+  }
+
+  .group > * + * .group-row-body {
+    border-top: 1px solid var(--border);
+  }
+
+  .group-row-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .group-row-title {
+    overflow: hidden;
+    color: var(--text);
+    font-size: var(--text-lg);
+    line-height: var(--leading-tight);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .group-row.danger .group-row-title {
+    color: var(--danger);
+  }
+
+  .group-row-subtitle {
+    color: var(--text-muted);
+    font-size: var(--m-text-footnote);
+    line-height: var(--leading-tight);
+  }
+
+  .group-row-trailing {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+  }
+
+  .chevron-right {
+    flex: none;
+    color: var(--text-muted);
+  }
+}
