@@ -3756,13 +3756,16 @@ input.filter-control::-webkit-search-cancel-button {
 }
 
 /*
- * Only while arranging: the grab cursor would otherwise promise a gesture the card no longer
- * answers to, and taking the touch gesture away from the browser outside the mode would stop
- * a finger scrolling the page over a grid of covers.
+ * Only while arranging, where the grab cursor promises a gesture the card answers to. The
+ * browser keeps its pan: a cover lifts on a held press, so a swipe still scrolls the row. The
+ * callout and selection a held press would otherwise open on a phone are what that press means
+ * here instead.
  */
 .favourite-carousel.is-arranging .sortable-card {
-  touch-action: none;
+  touch-action: manipulation;
   cursor: grab;
+  -webkit-touch-callout: none;
+  user-select: none;
 }
 
 /*
@@ -3851,7 +3854,9 @@ input.filter-control::-webkit-search-cancel-button {
 }
 
 /* The row's handle, and the only part of a row that carries its drag. */
+/* A handle and nothing else, so a finger on it drags at once rather than scrolling the page. */
 .row-handle {
+  touch-action: none;
   display: inline-grid;
   place-items: center;
   width: 1.6rem;

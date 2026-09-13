@@ -3,7 +3,8 @@ import {
   DndContext,
   DragOverlay,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   closestCenter,
   useSensor,
   useSensors,
@@ -31,6 +32,15 @@ import { Grip } from './Grip'
  * not shuffle the row.
  */
 const DRAG_THRESHOLD_PX = 6
+
+/**
+ * How long a finger rests on a cover before it lifts.
+ *
+ * <p>A touch that moves at once is a swipe along the row, and the row has to scroll for it:
+ * lifting on movement alone turned every swipe into a reorder and left the covers past the
+ * edge out of reach. A held press is the gesture a phone already means by "pick this up".
+ */
+const TOUCH_HOLD_MS = 250
 
 /** Signage, not a control: the whole card is the handle, this only says so. */
 const CardGrip = () => (
@@ -95,7 +105,10 @@ export const FavouriteGrid = ({
   const [carried, setCarried] = useState<TrackedItem | null>(null)
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: DRAG_THRESHOLD_PX } }),
+    useSensor(MouseSensor, { activationConstraint: { distance: DRAG_THRESHOLD_PX } }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: TOUCH_HOLD_MS, tolerance: DRAG_THRESHOLD_PX },
+    }),
     // Space lifts a card, the arrows move it, space puts it down.
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
