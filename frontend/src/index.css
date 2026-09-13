@@ -644,22 +644,6 @@ a.list-link:hover {
 }
 
 /*
- * Titled the way the shelf rail titles its own groups — small, spaced capitals over a rule.
- * A settings page is the same shape of thing: a few named groups read down rather than a
- * page of prose, and naming them the same way says so without a word.
- */
-.settings-section h2 {
-  padding-bottom: var(--space-2);
-  border-bottom: 1px solid var(--card-border);
-  color: var(--text-muted);
-  font-family: var(--font-sans);
-  font-size: var(--text-sm);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-wide);
-}
-
-/*
  * One card per section, with its parts ruled off inside it. A card each turned four things
  * you do to one account into four things sitting near each other.
  */
@@ -1555,16 +1539,11 @@ input.filter-control::-webkit-search-cancel-button {
   --browse-across: 4;
 }
 
+/* A label: its type is set with the other labels, beside .status-section h2. */
 .profile-favourites h3 {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  font-family: var(--font-sans);
-  font-size: var(--text-sm);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-wide);
-  color: var(--text-muted);
 }
 
 /*
@@ -3587,15 +3566,6 @@ input.filter-control::-webkit-search-cancel-button {
   gap: var(--space-2);
 }
 
-.list-sidebar h2 {
-  font-family: var(--font-sans);
-  font-size: var(--text-sm);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-wide);
-  color: var(--text-muted);
-}
-
 .list-links {
   list-style: none;
   margin: 0;
@@ -4266,15 +4236,6 @@ input.filter-control::-webkit-search-cancel-button {
   border-radius: var(--radius-lg);
 }
 
-.tag-list h2 {
-  font-family: var(--font-sans);
-  font-size: var(--text-sm);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-wide);
-  color: var(--text-muted);
-}
-
 .tag-row {
   display: flex;
   justify-content: space-between;
@@ -4412,12 +4373,59 @@ button.ghost.danger:hover:not(:disabled) {
   gap: var(--space-3);
 }
 
+/*
+ * Two kinds of heading, kept apart. A title names a section of a page — a shelf, a panel, a
+ * settings group — and every one is the same size wherever it appears, so one page's shelf
+ * reads as the same kind of thing as another's. A label names a small group inside a section
+ * or a rail, in small spaced capitals, and stays quiet under the titles. When every heading
+ * was a label, titles and labels could not be told apart.
+ */
+.status-section h2,
+.settings-section h2,
+.browse-shelf-head h2 {
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 600;
+  letter-spacing: var(--tracking-tight);
+}
+
+.status-section h2,
+.settings-section h2 {
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--card-border);
+}
+
 .status-section h2 {
   display: flex;
   align-items: baseline;
   gap: var(--space-2);
-  padding-bottom: var(--space-2);
-  border-bottom: 1px solid var(--card-border);
+}
+
+/*
+ * What a title carries keeps a control's size rather than inheriting the title's. Zero
+ * specificity on the heading, so a small button's own size still wins.
+ */
+:where(.status-section h2) .section-action,
+:where(.status-section h2) .scope-picker {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  letter-spacing: normal;
+}
+
+/*
+ * A padded button sharing the title's baseline pushes the row taller than its words, and two
+ * panels abreast then rule off at different heights. Centred, it fits inside the title's line.
+ */
+.status-section h2 > button,
+.status-section h2 > .metric-toggle {
+  align-self: center;
+}
+
+.list-sidebar h2,
+.tag-list h2,
+.profile-favourites h3,
+.stats-heading {
   color: var(--text-muted);
   font-family: var(--font-sans);
   font-size: var(--text-sm);
@@ -4470,11 +4478,14 @@ button.ghost.danger:hover:not(:disabled) {
   background: var(--surface-raised);
 }
 
+/* One line of a title tall, so the heading that replaces it leaves its rule where it was. */
 .shelf-heading-pending {
-  height: var(--space-3);
+  box-sizing: content-box;
+  height: calc(var(--text-xl) * var(--leading-tight));
   width: 7rem;
   border-radius: var(--radius-sm);
   background: var(--surface-raised);
+  background-clip: content-box;
   border-bottom: 1px solid var(--card-border);
 }
 
@@ -5008,16 +5019,11 @@ a.icon-button.active {
 }
 
 /*
- * Names the section the rail points at. Smaller than the page's own title and larger than
- * the panels', so the three levels read as three levels.
+ * Names the section the rail points at, as a label over the panels' own titles rather than a
+ * title of its own: two titles stacked one above the other read as one heading repeated.
  */
 .stats-heading {
   margin-bottom: var(--space-4);
-  font-size: var(--text-sm);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-wide);
-  color: var(--text-muted);
 }
 
 /* --- home --- */
@@ -5218,19 +5224,20 @@ a.icon-button.active {
  * under each lands at a different line and everything below reads as misaligned. They are not
  * the same height on their own: a shelf heading holds text and a link, but the feed heading
  * holds controls, and one of them — "Read all", shown only while something is unread — is a
- * padded button about ten pixels taller than a line of text. So it came and went with the
- * contents of the inbox.
+ * padded button, taller than a line of the small label text these headings used to be. So it
+ * came and went with the contents of the inbox.
  *
- * One fixed height for every heading on the page, set to fit that tallest control, so what is
- * inside a heading can never move the line beneath it. Centred rather than baseline-aligned
- * because a button and a word sharing a baseline is what let the button push the box open.
+ * One height for every heading on the page, a line of title, which that tallest control fits
+ * inside, so what is inside a heading can never move the line beneath it. Centred rather than
+ * baseline-aligned because a button and a word sharing a baseline is what let the button push
+ * the box open.
  */
 .home-layout .status-section h2 {
   /* Content-box so the height is the line itself, before the padding and rule beneath it. */
   box-sizing: content-box;
   /* A floor rather than a fixed height: a long shelf title that wraps grows the box instead of
      being clipped. At the widths where the two columns sit side by side, none do. */
-  min-height: 1.6rem;
+  min-height: calc(var(--text-xl) * var(--leading-tight));
   align-items: center;
 }
 
