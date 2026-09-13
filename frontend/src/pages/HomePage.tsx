@@ -17,6 +17,7 @@ import { ShelfGallery } from '../components/ShelfGallery'
 import { countdown } from '../components/mediaDetail'
 import { episodesWaiting, progressSummary } from '../components/progress'
 import { useActivityFeed } from '../components/useActivityFeed'
+import { useNarrowScreen } from '../components/useNarrowScreen'
 import {
   detailPathFor,
   mediaTypesOf,
@@ -46,6 +47,14 @@ const MIN_FEED_ROWS = 6
 
 /** A home feed is the last while, not the whole history; the activity page holds the rest. */
 const FEED_ROWS = 12
+
+/**
+ * Rows either list starts with on a narrow screen, and rows each "Load more" adds there.
+ *
+ * <p>The shelves sit under the section rather than beside it, so there is no column to match,
+ * and a long inbox would stand between the reader and their own shelves.
+ */
+const NARROW_ROWS = 5
 
 /**
  * How often the home page looks for what has arrived since it was opened.
@@ -163,7 +172,13 @@ export const HomePage = () => {
   const [side, setSide] = useState<HTMLElement | null>(null)
   const [main, setMain] = useState<HTMLElement | null>(null)
   const [feedRows, setFeedRows] = useState(FEED_ROWS)
-  const feed = useActivityFeed(module.slug, feedRows)
+  const narrow = useNarrowScreen()
+  const feed = useActivityFeed(
+    module.slug,
+    narrow ? NARROW_ROWS : feedRows,
+    narrow ? NARROW_ROWS : undefined,
+  )
+  const [narrowNotifications, setNarrowNotifications] = useState(NARROW_ROWS)
 
   /*
    * Which of the two lists the section is showing. Not remembered between visits: the page is
@@ -173,11 +188,15 @@ export const HomePage = () => {
   // Scoped to the module the page is showing, as the feed beside it is: the picker swaps two
   // lists under one heading, and one of them answering about every medium would make the
   // count beside it mean something different from the rows under it.
+  // One more than is shown on a narrow screen, so whether there is more to load is known
+  // rather than guessed from a list that happened to come back exactly full.
   const { waiting, read, readAll } = useNotifications(
     mediaTypesOf(module),
-    feedRows,
+    narrow ? narrowNotifications + 1 : feedRows,
     REFRESH_EVERY_MS,
   )
+  const notifications = narrow ? waiting.items.slice(0, narrowNotifications) : waiting.items
+  const moreNotifications = narrow && waiting.items.length > narrowNotifications
 
   /*
    * How many rows the section is showing, and whether the measurement still has a say.
@@ -185,11 +204,11 @@ export const HomePage = () => {
    * <p>Once "Load more" has been pressed the reader has said how long they want the list,
    * which is not the measurement's to take back.
    */
-  const rowsShown = showing === 'notifications' ? waiting.items.length : feed.rows.length
+  const rowsShown = showing === 'notifications' ? notifications.length : feed.rows.length
 
   useEffect(() => {
     const column = side
-    if (!column || !main || feed.expanded) return
+    if (narrow || !column || !main || feed.expanded) return
 
     /*
      * How many rows fit between the top of the list and the bottom of the column beside it,
@@ -224,7 +243,7 @@ export const HomePage = () => {
     watcher.observe(main)
     return () => watcher.disconnect()
     // Re-measured as rows arrive; the observer keeps up with the column beside them.
-  }, [side, main, module.slug, showing, feed.expanded, rowsShown, feed.loading])
+  }, [side, main, narrow, module.slug, showing, feed.expanded, rowsShown, feed.loading])
 
   /*
    * Which rows this module leads with, asked once per medium. Cheap and cached server-side:
@@ -529,8 +548,19 @@ export const HomePage = () => {
               </h2>
 
               {showing === 'notifications' ? (
-                waiting.items.length > 0 ? (
-                  <NotificationList notifications={waiting.items} onRead={(id) => void read(id)} />
+                notifications.length > 0 ? (
+                  <>
+                    <NotificationList notifications={notifications} onRead={(id) => void read(id)} />
+                    {moreNotifications && (
+                      <button
+                        type="button"
+                        className="ghost feed-more"
+                        onClick={() => setNarrowNotifications((held) => held + NARROW_ROWS)}
+                      >
+                        Load more
+                      </button>
+                    )}
+                  </>
                 ) : (
                   <p className="muted">
                     Nothing yet. An episode airing, or a season appearing, turns up here.

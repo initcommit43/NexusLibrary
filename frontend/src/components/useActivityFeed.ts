@@ -37,7 +37,11 @@ const LOAD_MORE_ROWS = 12
  * page and is asked to go on. What has been asked for is not remembered: coming back to the
  * page starts at the top again, which is where someone opening it wants to be.
  */
-export const useActivityFeed = (moduleSlug: string, pageRows: number) => {
+export const useActivityFeed = (
+  moduleSlug: string,
+  pageRows: number,
+  loadMoreRows = LOAD_MORE_ROWS,
+) => {
   const [all, setAll] = useState<ActivityEntry[] | null>(null)
   /*
    * Rows added by pressing "Load more", on top of however many the page measured itself to
@@ -98,12 +102,12 @@ export const useActivityFeed = (moduleSlug: string, pageRows: number) => {
 
 
   const more = () => {
-    const next = shown + LOAD_MORE_ROWS
-    setAdded((held) => held + LOAD_MORE_ROWS)
+    const next = shown + loadMoreRows
+    setAdded((held) => held + loadMoreRows)
     // Reach for more from the server only when this module's share of what is held would not
     // fill the next page anyway.
     if (mine.length < next && !complete) {
-      setFetching((held) => held + LOAD_MORE_ROWS * FETCHED_PER_PAGE)
+      setFetching((held) => held + loadMoreRows * FETCHED_PER_PAGE)
     }
   }
 
