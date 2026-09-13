@@ -12,9 +12,28 @@ import { useHideOnScroll } from './useHideOnScroll'
 import type { ModuleDefinition } from '../modules/registry'
 
 /**
+ * The links the header's nav and the phone's tab bar share. A module contributes its own
+ * shelves; the rest is the same everywhere.
+ */
+const ShelfLinks = ({ module }: { module: ModuleDefinition }) => (
+  <>
+    {/* Home is the module's own page, so it takes the end prop its shelves do not. */}
+    <NavLink to="/" end>
+      Home
+    </NavLink>
+    {module.types.map((type) => (
+      <NavLink key={type.slug} to={`/library/${module.slug}/${type.slug}`}>
+        {type.label}
+      </NavLink>
+    ))}
+    <NavLink to="/browse">Browse</NavLink>
+  </>
+)
+
+/**
  * The module you are in stays put on every page, behind the mark that switches it: settings and
  * activity span modules, but you are still somewhere, and remembering the last module you
- * picked is what keeps the right shelves in the header while you are there.
+ * picked is what keeps the right shelves in the nav while you are there.
  */
 export const AppShell = ({
   children,
@@ -37,21 +56,10 @@ export const AppShell = ({
           <ModuleSwitcher current={current} />
         </div>
 
-        {/* A module contributes its own shelves; the rest of the header is the same everywhere. */}
-        <nav className="shell-nav">
-          {/* Home is the module's own page, so it takes the end prop its shelves do not. */}
-          <NavLink to="/" end>
-            Home
-          </NavLink>
-          {current.types.map((type) => (
-            <NavLink key={type.slug} to={`/library/${current.slug}/${type.slug}`}>
-              {type.label}
-            </NavLink>
-          ))}
-          <NavLink to="/browse">Browse</NavLink>
-          <NavLink className="nav-profile" to="/profile">
-            Profile
-          </NavLink>
+        <nav className="shell-nav" aria-label="Main">
+          <ShelfLinks module={current} />
+          {/* Not on the tab bar: at its width the account menu opens on a tap and leads with this. */}
+          <NavLink to="/profile">Profile</NavLink>
         </nav>
 
         <div className="header-right">
@@ -59,6 +67,15 @@ export const AppShell = ({
           <AccountMenu />
         </div>
       </header>
+
+      {/*
+        * The header's nav again for a phone; the stylesheet only ever displays one of the two, so
+        * a screen reader meets a single Main. Outside the header because the transform that
+        * slides it away would pin a fixed bar to the header instead of the window.
+        */}
+      <nav className="tab-bar" aria-label="Main">
+        <ShelfLinks module={current} />
+      </nav>
 
       {/* Above the page, not inside it: an outage is app-wide news, not one page's. */}
       <OutageBanner />

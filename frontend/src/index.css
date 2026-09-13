@@ -436,9 +436,16 @@ button.small {
   border-bottom-color: var(--accent);
 }
 
-/* The account menu opens on a tap at this width and leads with the profile, so the nav need not. */
+/*
+ * Squeezed between the switcher and the account, the shelves scrolled sideways and cut Home
+ * off, so at this width they move to the tab bar and the header keeps its two ends.
+ */
 @media (max-width: 52rem) {
-  .shell-nav .nav-profile {
+  .shell-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .shell-nav {
     display: none;
   }
 }
@@ -3787,6 +3794,81 @@ input.filter-control::-webkit-search-cancel-button {
   }
 }
 
+/* --- tab bar --- */
+
+/*
+ * The header's shelves on a phone, at the bottom where a thumb reaches them. After both docks
+ * because it lifts them.
+ */
+.tab-bar {
+  display: none;
+}
+
+@media (max-width: 52rem) {
+  /*
+   * The shell keeps the bar's height clear under the footer, so the end of every page stops
+   * above the bar instead of behind it. The inset is an installed app's home indicator.
+   */
+  .shell {
+    --tab-bar-height: calc(var(--icon-control) + 2 * var(--space-2));
+    --tab-bar-space: calc(var(--tab-bar-height) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: var(--tab-bar-space);
+  }
+
+  /*
+   * Fixed rather than hiding with the header: it is how you leave a page, which is wanted
+   * mid-scroll as much as at the top. One under the header's layer, so a menu the header
+   * drops hangs over the bar rather than behind it.
+   */
+  .tab-bar {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 9;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    font-size: var(--text-base);
+  }
+
+  /* Equal columns, each the bar's full height, so every tab is the same size to hit. */
+  .tab-bar a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    height: var(--tab-bar-height);
+    padding: 0 var(--space-1);
+    color: var(--text-muted);
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  /* Drawn inside the tab, where the edge of the window would clip it. */
+  .tab-bar a:focus-visible {
+    outline-offset: -2px;
+  }
+
+  .tab-bar a:hover {
+    color: var(--text);
+    text-decoration: none;
+  }
+
+  /* The header's underline, turned to the edge the bar shares with the page. */
+  .tab-bar a.active {
+    color: var(--accent);
+    box-shadow: inset 0 2px 0 var(--accent);
+  }
+
+  .theme-dock,
+  .job-dock {
+    bottom: calc(var(--tab-bar-space) + var(--space-3));
+  }
+}
+
 /* --- media page --- */
 
 /*
@@ -4976,15 +5058,8 @@ button.ghost.danger:hover:not(:disabled) {
 
 @media (max-width: 40rem) {
   .shell-header {
-    display: flex;
     gap: var(--space-3);
     padding: 0 var(--space-3);
-  }
-
-  .shell-nav {
-    gap: var(--space-3);
-    overflow-x: auto;
-    margin-right: auto;
   }
 
   .shell-main {
