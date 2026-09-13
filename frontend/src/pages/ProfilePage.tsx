@@ -21,6 +21,7 @@ import { FavouriteBands } from '../components/FavouriteBands'
 import { FavouriteGrid } from '../components/FavouriteGrid'
 import { Grip } from '../components/Grip'
 import { ScopePicker } from '../components/ScopePicker'
+import { useNarrowScreen } from '../components/useNarrowScreen'
 import { useAuth } from '../auth/useAuth'
 import { MODULES, mediaPathFor, type ModuleDefinition } from '../modules/registry'
 import { useCurrentModule } from '../modules/useCurrentModule'
@@ -61,6 +62,7 @@ const byPlacement = (order: MediaType[]) => (a: MediaType, b: MediaType) => {
 export const ProfilePage = () => {
   const { user } = useAuth()
   const module = useCurrentModule()
+  const narrow = useNarrowScreen()
   const [entries, setEntries] = useState<TrackedItem[] | null>(null)
   const [rowOrder, setRowOrder] = useState<MediaType[]>([])
   /** The rows that share a band with the row before them. */
@@ -281,7 +283,8 @@ export const ProfilePage = () => {
 
   return (
     <AppShell>
-      <h1 className="page-title">Profile</h1>
+      {/* A phone leads with the banner, so the reader's own name is the page's title there. */}
+      {!narrow && <h1 className="page-title">Profile</h1>}
 
       {/*
         * Banner and identity are one block, as on a title's page: the avatar rides the
@@ -312,7 +315,7 @@ export const ProfilePage = () => {
             onClose={() => setAdjustingPicture(false)}
           />
           <div className="profile-name">
-            <h2>{user?.username}</h2>
+            {narrow ? <h1>{user?.username}</h1> : <h2>{user?.username}</h2>}
             <p className="muted">{user?.email}</p>
           </div>
 
