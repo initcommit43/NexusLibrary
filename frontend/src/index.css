@@ -5028,6 +5028,11 @@ a.icon-button.active {
 
 /* --- home --- */
 
+/* The module's name is the page's one hero line, so it takes the one hero size. */
+.home-title {
+  font-size: var(--text-3xl);
+}
+
 /*
  * What airs next, as a list rather than a grid of covers: the title and the wait are the
  * whole of it, and a cover apiece would make eight rows of artwork saying nothing extra.
