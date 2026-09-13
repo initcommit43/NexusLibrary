@@ -8,6 +8,7 @@ import {
   type MediaType,
   type SyncJob,
 } from '../api/client'
+import { forgetFinishedJob, useWatchedJob, watchJob as followJob } from '../api/jobs'
 import { AppShell } from '../components/AppShell'
 import { saveFile } from '../components/download'
 import {
@@ -117,7 +118,7 @@ export const SettingsPage = () => {
    * Which provider the run on screen belongs to. Progress and results are page state, but
    * they describe one connection — shown under any other, they say that one is importing.
    */
-  const [runningFor, setRunningFor] = useState<ModuleProvider['provider'] | null>(null)
+  const [startedFor, setStartedFor] = useState<ModuleProvider['provider'] | null>(null)
   const [error, setError] = useState<string | null>(null)
   /**
    * Which provider is working, and at what. One flag for the whole page made every card
@@ -130,7 +131,10 @@ export const SettingsPage = () => {
 
   const working = (provider: ModuleProvider['provider'], action?: string) =>
     busy?.provider === provider && (action === undefined || busy.action === action)
-  const [job, setJob] = useState<SyncJob | null>(null)
+  const { job } = useWatchedJob()
+  // A run still going when the page opened — started before a reload, or before leaving for
+  // another page — belongs under its own card as well as in the dock.
+  const runningFor = startedFor ?? (job?.state === 'RUNNING' ? job.provider : null)
 
   const connected = (provider: ModuleProvider['provider']) =>
     accounts?.find((account) => account.provider === provider) ?? null
@@ -168,8 +172,8 @@ export const SettingsPage = () => {
     setBusy({ provider, action: 'import' })
     setError(null)
     setReport(null)
-    setJob(null)
-    setRunningFor(provider)
+    forgetFinishedJob()
+    setStartedFor(provider)
     try {
       const started = await api.importLibrary(provider)
       const finished = await watchJob(started.id)
@@ -199,8 +203,8 @@ export const SettingsPage = () => {
     setBusy({ provider: 'ANILIST', action: 'activity' })
     setError(null)
     setReport(null)
-    setJob(null)
-    setRunningFor('ANILIST')
+    forgetFinishedJob()
+    setStartedFor('ANILIST')
     try {
       const started = await api.importAniListActivity()
       const finished = await watchJob(started.id)
@@ -220,29 +224,17 @@ export const SettingsPage = () => {
    *
    * <p>Imports and achievement syncs are minutes of work against someone else's rate limit,
    * so both answer immediately with a job and report progress through it. Without a count
-   * on screen there is no way to tell slow from stuck.
+   * on screen there is no way to tell slow from stuck. The watching itself is shared with the
+   * dock, so a run called off there stops counting here as well.
    *
    * @return the finished job, so a caller can pick up whatever it started
    */
   const watchJob = async (jobId: string): Promise<SyncJob | null> => {
-    try {
-      let current = await api.syncJob(jobId)
-      setJob(current)
-
-      while (current.state === 'RUNNING') {
-        await new Promise((resolve) => setTimeout(resolve, 1000))
-        current = await api.syncJob(jobId)
-        setJob(current)
-      }
-
-      if (current.state === 'FAILED') {
-        setError(current.message ?? 'That sync could not be completed.')
-      }
-      return current
-    } catch {
-      // The work carries on server-side; losing sight of it is not worth an alarm.
-      return null
+    const finished = await followJob(jobId)
+    if (finished?.state === 'FAILED') {
+      setError(finished.message ?? 'That sync could not be completed.')
     }
+    return finished
   }
 
   const connectAniList = async () => {
@@ -284,8 +276,8 @@ export const SettingsPage = () => {
     setBusy({ provider, action: 'import' })
     setError(null)
     setReport(null)
-    setJob(null)
-    setRunningFor(provider)
+    forgetFinishedJob()
+    setStartedFor(provider)
     try {
       const started = await api.importCsv(provider, file)
       const finished = await watchJob(started.id)
