@@ -13,7 +13,7 @@ export const ActivityPage = () => {
 
   return (
     <AppShell>
-      <h1>{module.label} activity</h1>
+      <h1 className="page-title">{module.label} activity</h1>
 
       {error && (
         <p className="alert" role="alert">

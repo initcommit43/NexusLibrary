@@ -487,7 +487,7 @@ export const HomePage = () => {
 
   return (
     <AppShell>
-      <h1 className="home-title">{module.label}</h1>
+      <h1 className="page-title">{module.label}</h1>
 
       {error && (
         <p className="alert" role="alert">

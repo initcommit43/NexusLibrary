@@ -110,7 +110,7 @@ export const ShelfPage = () => {
           ← Browse {active.label}
         </Link>
       </p>
-      <h1>{label ?? active.label}</h1>
+      <h1 className="page-title">{label ?? active.label}</h1>
 
       {(error || tracking.error) && (
         <p className="alert" role="alert">

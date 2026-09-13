@@ -84,7 +84,7 @@ export const LibraryPage = () => {
 
   return (
     <AppShell module={module}>
-      <h1>{active.label}</h1>
+      <h1 className="page-title">{active.label}</h1>
 
       {error && (
         <p className="alert" role="alert">

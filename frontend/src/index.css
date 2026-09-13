@@ -4373,6 +4373,11 @@ button.ghost.danger:hover:not(:disabled) {
   gap: var(--space-3);
 }
 
+/* Every page in the app leads with one size of title, whichever page it is. */
+.page-title {
+  font-size: var(--text-3xl);
+}
+
 /*
  * Two kinds of heading, kept apart. A title names a section of a page — a shelf, a panel, a
  * settings group — and every one is the same size wherever it appears, so one page's shelf
@@ -5027,11 +5032,6 @@ a.icon-button.active {
 }
 
 /* --- home --- */
-
-/* The module's name is the page's one hero line, so it takes the one hero size. */
-.home-title {
-  font-size: var(--text-3xl);
-}
 
 /*
  * What airs next, as a list rather than a grid of covers: the title and the wait are the

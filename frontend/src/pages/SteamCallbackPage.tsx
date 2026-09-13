@@ -39,7 +39,7 @@ export const SteamCallbackPage = () => {
 
   return (
     <AppShell>
-      <h1>Connecting Steam</h1>
+      <h1 className="page-title">Connecting Steam</h1>
       {error ? (
         <>
           <p className="alert" role="alert">

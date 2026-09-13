@@ -559,7 +559,7 @@ export const StatsPage = () => {
 
   return (
     <AppShell>
-      <h1>Stats</h1>
+      <h1 className="page-title">Stats</h1>
 
       {error && (
         <p className="alert" role="alert">

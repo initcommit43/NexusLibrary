@@ -281,7 +281,7 @@ export const ProfilePage = () => {
 
   return (
     <AppShell>
-      <h1>Profile</h1>
+      <h1 className="page-title">Profile</h1>
 
       {/*
         * Banner and identity are one block, as on a title's page: the avatar rides the

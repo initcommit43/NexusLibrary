@@ -19,7 +19,7 @@ export const NotificationsPage = () => {
 
   return (
     <AppShell>
-      <h1>
+      <h1 className="page-title">
         {module.label} notifications
         {waiting.unread > 0 && (
           <button

@@ -245,7 +245,7 @@ export const BrowsePage = () => {
   return (
     <AppShell module={module}>
       <div className="browse-head">
-        <h1>Browse {active.label}</h1>
+        <h1 className="page-title">Browse {active.label}</h1>
 
         {/*
          * Only worth showing where a module owns more than one type. Anime and manga are

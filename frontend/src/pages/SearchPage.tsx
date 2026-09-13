@@ -68,7 +68,7 @@ export const SearchPage = () => {
 
   return (
     <AppShell module={module}>
-      <h1>Search {active.label}</h1>
+      <h1 className="page-title">Search {active.label}</h1>
 
       <form className="search-bar" key={query} onSubmit={submit}>
         <input

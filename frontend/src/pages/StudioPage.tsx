@@ -83,7 +83,7 @@ export const StudioPage = () => {
       <div className="studio-head">
         {/* Named once the source says what it is called. Calling it a studio in the meantime
             is a guess that is wrong half the time — the same page holds producers. */}
-        <h1>{name ?? ' '}</h1>
+        <h1 className="page-title">{name ?? ' '}</h1>
 
         <div className="studio-controls">
           <label className="check">

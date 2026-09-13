@@ -43,7 +43,7 @@ export const MalCallbackPage = () => {
 
   return (
     <AppShell>
-      <h1>Connecting MyAnimeList</h1>
+      <h1 className="page-title">Connecting MyAnimeList</h1>
       {error ? (
         <>
           <p className="alert" role="alert">

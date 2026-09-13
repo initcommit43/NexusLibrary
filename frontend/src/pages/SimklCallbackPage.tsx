@@ -41,7 +41,7 @@ export const SimklCallbackPage = () => {
 
   return (
     <AppShell>
-      <h1>Connecting Simkl</h1>
+      <h1 className="page-title">Connecting Simkl</h1>
       {error ? (
         <>
           <p className="alert" role="alert">
