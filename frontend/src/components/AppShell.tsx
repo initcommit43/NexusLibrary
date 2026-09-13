@@ -81,10 +81,13 @@ export const AppShell = ({
         * It still rides the bottom of the window while you read, because light or dark is a choice
         * about the page in front of you and has to be reachable from wherever that page has got
         * to. But where the page ends it stops above the footer's rule instead of landing on it.
+        * A phone keeps it in the footer instead, where it covers nothing.
         */}
-      <div className="theme-dock">
-        <ThemeToggle />
-      </div>
+      {!narrow && (
+        <div className="theme-dock">
+          <ThemeToggle />
+        </div>
+      )}
 
       {/*
         * Sits outside the page, since a run outlives whichever page started it. Beside the theme
@@ -93,7 +96,7 @@ export const AppShell = ({
       <JobDock />
 
       {/* Below the page rather than inside it: what it links to is true of the whole app. */}
-      <Footer />
+      <Footer aside={narrow && <ThemeToggle />} />
     </div>
   )
 }

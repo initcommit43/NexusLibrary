@@ -4900,28 +4900,6 @@ input.filter-control::-webkit-search-cancel-button {
   .job-dock {
     bottom: var(--tab-bar-space);
   }
-
-  /*
-   * At the end of the page rather than riding the window: over a phone's covers and beside the
-   * tab bar it sat on what was being read. Down here it covers nothing, so it rests at full
-   * strength, level with the content's right edge.
-   */
-  .theme-dock {
-    position: static;
-    height: auto;
-    margin: 0 var(--space-4) var(--space-3) 0;
-  }
-
-  .theme-dock .icon-button {
-    opacity: 1;
-  }
-}
-
-@media (max-width: 40rem) {
-  /* .shell-main's narrower side padding at this width. */
-  .theme-dock {
-    margin-right: var(--space-3);
-  }
 }
 
 /* --- media page --- */
@@ -6652,6 +6630,28 @@ a.icon-button.active {
 
 .site-footer-note {
   color: var(--text-muted);
+}
+
+/*
+ * A phone's footer line carries the theme toggle at its far end: floating, it sat over covers and
+ * beside the tab bar, and the footer's links leave that end of the line empty anyway.
+ */
+.site-footer-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.site-footer-row > .icon-button {
+  flex: none;
+  width: var(--icon-control);
+  height: var(--icon-control);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  color: var(--text);
 }
 
 /*
