@@ -198,6 +198,7 @@
   --m-switch-knob-width: 2.375rem; /* 38 */
   --m-text-title: 2.125rem; /* 34 — a page's large title */
   --m-text-footnote: 0.8125rem; /* 13 — section labels, subtitles, chips, segments */
+  --m-cover-menu-size: 1.75rem; /* 28 — the "…" on a cover */
   --m-switch-on: #34c759;
   /* Outside the theme split: the knob is white on either track, as the native switch draws it. */
   --m-switch-knob: #ffffff;

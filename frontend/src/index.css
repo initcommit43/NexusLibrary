@@ -7353,4 +7353,49 @@ a.icon-button.active {
     border-radius: var(--m-radius-control);
     font-size: var(--text-lg);
   }
+
+/* --- phone: a cover's status menu --- */
+
+/* The "…" in a cover's corner and the shelves behind it. See CoverStatusMenu. */
+@media (max-width: 52rem) {
+  .cover-menu {
+    position: absolute;
+    top: var(--space-1);
+    right: var(--space-1);
+    z-index: 2;
+  }
+
+  .cover-menu-button,
+  .cover-menu-button:hover:not(:disabled) {
+    display: grid;
+    place-items: center;
+    width: var(--m-cover-menu-size);
+    height: var(--m-cover-menu-size);
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-full);
+    background: var(--bg);
+    box-shadow: var(--shadow-1);
+    color: var(--text);
+  }
+
+  /* Placed against the window by the component, as a grouped card like the module menu. */
+  .cover-menu-options {
+    position: fixed;
+    z-index: 30;
+    width: max-content;
+    min-width: 12rem;
+    box-shadow: var(--shadow-2);
+  }
+
+  .cover-menu-options .group-row-trailing {
+    color: var(--accent);
+  }
+
+  .cover-menu-error {
+    padding: var(--space-2) var(--m-row-padding);
+    border-top: 1px solid var(--border);
+    color: var(--danger);
+    font-size: var(--m-text-footnote);
+  }
 }
