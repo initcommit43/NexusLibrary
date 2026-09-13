@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ApiError, api, type SearchResult } from '../api/client'
 import { keyOf } from './useTrackable'
+import { useMenuDismiss } from './useMenuDismiss'
 import { mediaPathFor } from '../modules/registry'
 import type { MediaTypeDefinition, ModuleDefinition } from '../modules/registry'
 
@@ -53,11 +54,13 @@ export const HeaderSearch = ({
   module: ModuleDefinition
   type: MediaTypeDefinition
 }) => {
-  const [open, setOpen] = useState(false)
+  const { open, setOpen, dismiss, container, trigger } = useMenuDismiss<
+    HTMLDivElement,
+    HTMLButtonElement
+  >()
   const [draft, setDraft] = useState('')
   const [term, setTerm] = useState('')
   const input = useRef<HTMLInputElement>(null)
-  const trigger = useRef<HTMLButtonElement>(null)
   const navigate = useNavigate()
 
   // Answers are filed under the question they answer, so a stale or emptied term shows
@@ -78,20 +81,9 @@ export const HeaderSearch = ({
   const found = cards.filter((card) => card.results && card.results.length > 0)
   const error = cards.find((card) => card.error)?.error ?? null
 
+  // Opening it is the whole gesture; nobody wants a second click to reach the field.
   useEffect(() => {
-    if (!open) return
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false)
-    }
-    document.addEventListener('keydown', onKeyDown)
-    return () => document.removeEventListener('keydown', onKeyDown)
-  }, [open])
-
-  useEffect(() => {
-    // Opening it is the whole gesture; nobody wants a second click to reach the field.
     if (open) input.current?.focus()
-    else trigger.current?.focus({ preventScroll: true })
   }, [open])
 
   // The page behind is not what the wheel is for while this is up: scrolling it moves the
@@ -136,10 +128,12 @@ export const HeaderSearch = ({
     }
   }, [module, ready, term])
 
-  const close = () => {
-    setOpen(false)
+  // Emptied on the way in rather than the way out, since Escape and the scrim close it
+  // without asking this component first.
+  const start = () => {
     setDraft('')
     setTerm('')
+    setOpen(true)
   }
 
   const resultsPath = (shelf: MediaTypeDefinition) =>
@@ -147,7 +141,7 @@ export const HeaderSearch = ({
 
   const goTo = (shelf: MediaTypeDefinition) => {
     if (!ready) return
-    close()
+    setOpen(false)
     navigate(resultsPath(shelf))
   }
 
@@ -158,7 +152,7 @@ export const HeaderSearch = ({
   }
 
   const openResult = (result: SearchResult) => {
-    close()
+    setOpen(false)
     navigate(mediaPathFor(result))
   }
 
@@ -171,7 +165,7 @@ export const HeaderSearch = ({
         aria-label={`Search ${module.label}`}
         title={`Search ${module.label}`}
         aria-expanded={open}
-        onClick={() => setOpen(true)}
+        onClick={start}
       >
         <SearchIcon />
       </button>
@@ -182,89 +176,89 @@ export const HeaderSearch = ({
           role="dialog"
           aria-modal="true"
           aria-label={`Search ${module.label}`}
-          onPointerDown={(event) => {
-            if (event.target === event.currentTarget) close()
-          }}
         >
-          <form className="search-overlay-panel" onSubmit={submit}>
-            <span className="search-overlay-icon">
-              <SearchIcon />
-            </span>
-            <input
-              ref={input}
-              type="search"
-              value={draft}
-              placeholder={type.searchPlaceholder}
-              aria-label={`Search ${module.label}`}
-              onChange={(event) => setDraft(event.target.value)}
-            />
-            {/* Clears the term, or leaves outright once there is nothing left to clear. */}
-            <button
-              type="button"
-              className="icon-button search-clear"
-              aria-label={draft ? 'Clear search' : 'Close search'}
-              onClick={() => {
-                if (!draft) return close()
-                setDraft('')
-                input.current?.focus()
-              }}
-            >
-              <ClearIcon />
-            </button>
-          </form>
+          {/* The panel and its answers are the menu; the scrim around them is outside it. */}
+          <div className="search-overlay-body" ref={container}>
+            <form className="search-overlay-panel" onSubmit={submit}>
+              <span className="search-overlay-icon">
+                <SearchIcon />
+              </span>
+              <input
+                ref={input}
+                type="search"
+                value={draft}
+                placeholder={type.searchPlaceholder}
+                aria-label={`Search ${module.label}`}
+                onChange={(event) => setDraft(event.target.value)}
+              />
+              {/* Clears the term, or leaves outright once there is nothing left to clear. */}
+              <button
+                type="button"
+                className="icon-button search-clear"
+                aria-label={draft ? 'Clear search' : 'Close search'}
+                onClick={() => {
+                  if (!draft) return dismiss()
+                  setDraft('')
+                  input.current?.focus()
+                }}
+              >
+                <ClearIcon />
+              </button>
+            </form>
 
-          {ready && (
-            <div className="search-results">
-              {error && (
-                <p className="alert" role="alert">
-                  {error}
-                </p>
-              )}
+            {ready && (
+              <div className="search-results">
+                {error && (
+                  <p className="alert" role="alert">
+                    {error}
+                  </p>
+                )}
 
-              {searching && found.length === 0 && (
-                <p className="search-results-note">Searching…</p>
-              )}
+                {searching && found.length === 0 && (
+                  <p className="search-results-note">Searching…</p>
+                )}
 
-              {!searching && !error && found.length === 0 && (
-                <p className="search-results-note">Nothing found for “{term}”.</p>
-              )}
+                {!searching && !error && found.length === 0 && (
+                  <p className="search-results-note">Nothing found for “{term}”.</p>
+                )}
 
-              {found.map(({ shelf, results }) => (
-                <section className="search-card" key={shelf.slug}>
-                  <h2>{shelf.label}</h2>
+                {found.map(({ shelf, results }) => (
+                  <section className="search-card" key={shelf.slug}>
+                    <h2>{shelf.label}</h2>
 
-                  <ul>
-                    {results?.slice(0, SHOWN).map((result) => (
-                      <li key={keyOf(result)}>
-                        <button type="button" onClick={() => openResult(result)}>
-                          {result.coverUrl ? (
-                            <img src={result.coverUrl} alt="" loading="lazy" />
-                          ) : (
-                            <span className="search-result-blank" aria-hidden />
-                          )}
-                          <span className="search-result-text">
-                            <strong>{result.title}</strong>
-                            <span className="muted">
-                              {[yearOf(result), formatOf(result)].filter(Boolean).join(' ') ||
-                                shelf.label}
+                    <ul>
+                      {results?.slice(0, SHOWN).map((result) => (
+                        <li key={keyOf(result)}>
+                          <button type="button" onClick={() => openResult(result)}>
+                            {result.coverUrl ? (
+                              <img src={result.coverUrl} alt="" loading="lazy" />
+                            ) : (
+                              <span className="search-result-blank" aria-hidden />
+                            )}
+                            <span className="search-result-text">
+                              <strong>{result.title}</strong>
+                              <span className="muted">
+                                {[yearOf(result), formatOf(result)].filter(Boolean).join(' ') ||
+                                  shelf.label}
+                              </span>
                             </span>
-                          </span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
 
-                  <button
-                    type="button"
-                    className="search-results-all"
-                    onClick={() => goTo(shelf)}
-                  >
-                    View all {shelf.label.toLowerCase()} results
-                  </button>
-                </section>
-              ))}
-            </div>
-          )}
+                    <button
+                      type="button"
+                      className="search-results-all"
+                      onClick={() => goTo(shelf)}
+                    >
+                      View all {shelf.label.toLowerCase()} results
+                    </button>
+                  </section>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </>

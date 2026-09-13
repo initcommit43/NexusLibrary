@@ -2298,6 +2298,11 @@ input.filter-control::-webkit-search-cancel-button {
   background: var(--scrim);
 }
 
+/* There only to tell a press on the scrim from one on what it holds, so it lays nothing out. */
+.search-overlay-body {
+  display: contents;
+}
+
 .search-overlay-panel {
   width: min(100%, 34rem);
 }
