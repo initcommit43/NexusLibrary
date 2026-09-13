@@ -123,7 +123,10 @@ export const LibraryPage = () => {
               <div className="shelf-empty">
                 {mine.length === 0 ? (
                   <>
-                    <p className="shelf-empty-line">{module.emptyHint}</p>
+                    <p className="shelf-empty-line">
+                      {module.emptyHint.lead} <Link to="/settings">settings</Link>
+                      {module.emptyHint.tail}
+                    </p>
                     <Link
                       className="shelf-empty-action"
                       to={`/search?module=${module.slug}&type=${active.slug}`}

@@ -40,7 +40,11 @@ export interface ModuleDefinition {
   types: MediaTypeDefinition[]
   /** What the library and search open on when the module owns several types. */
   defaultMediaType: MediaType
-  emptyHint: string
+  /**
+   * What an empty library says, split around the word "settings", which the page makes a
+   * link: the way in has to be one tap away, not a place the reader is told to go and find.
+   */
+  emptyHint: { lead: string; tail: string }
   /** Where this module's connect and import controls live in settings. */
   providers: ModuleProvider[]
   /**
@@ -89,7 +93,7 @@ export const MODULES: ModuleDefinition[] = [
         statusLabels: playing,
       },
     ],
-    emptyHint: 'Nothing tracked yet. Connect Steam in settings, or search for a game.',
+    emptyHint: { lead: 'Nothing tracked yet. Connect Steam in', tail: ', or search for a game.' },
     exportsCsv: false,
     providers: [{
         provider: 'STEAM',
@@ -123,7 +127,7 @@ export const MODULES: ModuleDefinition[] = [
         statusLabels: reading,
       },
     ],
-    emptyHint: 'Nothing tracked yet. Connect AniList or MyAnimeList in settings.',
+    emptyHint: { lead: 'Nothing tracked yet. Connect AniList or MyAnimeList in', tail: '.' },
     exportsCsv: true,
     providers: [
       {
@@ -166,7 +170,7 @@ export const MODULES: ModuleDefinition[] = [
         statusLabels: watching,
       },
     ],
-    emptyHint: 'Nothing tracked yet. Connect Simkl in settings, or search for a movie.',
+    emptyHint: { lead: 'Nothing tracked yet. Connect Simkl in', tail: ', or search for a movie.' },
     exportsCsv: true,
     providers: [
       {
@@ -193,7 +197,7 @@ export const MODULES: ModuleDefinition[] = [
         statusLabels: reading,
       },
     ],
-    emptyHint: 'Nothing tracked yet. Upload a Goodreads export in settings.',
+    emptyHint: { lead: 'Nothing tracked yet. Upload a Goodreads export in', tail: '.' },
     exportsCsv: true,
     providers: [
       {
