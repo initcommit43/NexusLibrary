@@ -6479,7 +6479,8 @@ a.icon-button.active {
  * Inside the artwork here rather than standing on its corner: a home gallery packs its covers
  * close together, and a mark hanging into that gap crowds the cover beside it.
  */
-.poster-slot .airing-mark {
+.poster-slot .airing-mark,
+.shelf-card-cover .airing-mark {
   top: 4px;
   left: 4px;
   transform: none;
@@ -7353,6 +7354,135 @@ a.icon-button.active {
     border-radius: var(--m-radius-control);
     font-size: var(--text-lg);
   }
+
+/* --- phone: Home's shelf rows --- */
+
+/*
+ * Home as the native app draws it: each shelf a heading with its way through, then covers in a
+ * line that scrolls sideways and snaps to a card. The line takes .chip-row's bleed, so the last
+ * cover clears the window's edge the way the last chip does. See ShelfRow.
+ */
+@media (max-width: 52rem) {
+  .shelf-rows {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+
+  .shelf-row-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--m-gap);
+  }
+
+  .shelf-row-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+  }
+
+  .shelf-row-head h2 {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--text);
+    font-family: var(--font-display);
+    font-size: var(--text-lg);
+    font-weight: 600;
+    line-height: var(--leading-tight);
+    letter-spacing: normal;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .shelf-row-more {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    color: var(--accent);
+    font-size: var(--m-text-footnote);
+    font-weight: 700;
+  }
+
+  .shelf-row-more:hover {
+    text-decoration: none;
+  }
+
+  .shelf-row-more .chevron-right {
+    color: inherit;
+  }
+
+  .shelf-row {
+    gap: var(--m-gap);
+    margin-block: 0;
+    padding-block: 0;
+    list-style: none;
+    scroll-snap-type: x mandatory;
+  }
+
+  /* One width for every card, whatever its title, so a row reads as one set. */
+  .shelf-card {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    width: var(--m-shelf-card-width);
+    scroll-snap-align: start;
+  }
+
+  .shelf-card-cover {
+    position: relative;
+    height: var(--m-shelf-cover-height);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+  }
+
+  .shelf-card-cover > a,
+  .shelf-card-cover img,
+  .shelf-card-cover .cover-placeholder {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .shelf-card-cover img {
+    object-fit: cover;
+  }
+
+  .shelf-card-cover .cover-placeholder {
+    aspect-ratio: auto;
+    border: 0;
+  }
+
+  /* Always two lines tall, so every subtitle in a row sits on the same line. */
+  .shelf-card-title,
+  .shelf-card-title:hover {
+    display: -webkit-box;
+    height: calc(2 * var(--leading-tight) * var(--text-md));
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    color: var(--text);
+    font-size: var(--text-md);
+    line-height: var(--leading-tight);
+    text-decoration: none;
+  }
+
+  .shelf-card-subtitle {
+    overflow: hidden;
+    color: var(--text-muted);
+    font-size: var(--text-xs);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    line-height: var(--leading-tight);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
 
 /* --- phone: a cover's status menu --- */
 
