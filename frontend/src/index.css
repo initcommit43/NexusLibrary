@@ -2581,6 +2581,22 @@ input.filter-control::-webkit-search-cancel-button {
   border-left: 1px solid var(--card-border);
 }
 
+/*
+ * Wide, the header's shelves already switch the library's type, so the page's own switch is
+ * only for a phone. Held to its content width there, as beside the browse heading, rather
+ * than stretched by the page column into a different-sized copy of the same control.
+ */
+.library-type-switch {
+  display: none;
+  align-self: flex-start;
+}
+
+@media (max-width: 52rem) {
+  .library-type-switch {
+    display: inline-flex;
+  }
+}
+
 /* Plus the page column's own gap between children, which is where the rest of it comes from. */
 .browse-shelf {
   margin-top: var(--space-3);

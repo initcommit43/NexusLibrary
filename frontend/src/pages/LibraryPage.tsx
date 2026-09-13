@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, Navigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { ApiError, api, type TrackedItem, type TrackingStatus } from '../api/client'
 import { AppShell } from '../components/AppShell'
 import { EntryCard } from '../components/EntryCard'
 import { EntryEditDialog } from '../components/EntryEditDialog'
 import { ListSidebar } from '../components/ListSidebar'
 import { EMPTY_FILTERS, firstGenre, type ListFilters } from '../components/listFilters'
+import { TypeSwitch } from '../components/TypeSwitch'
+import { useNarrowScreen } from '../components/useNarrowScreen'
 import { defaultTypeOf, moduleBySlug, typeBySlug } from '../modules/registry'
 
 const asList = (value: unknown): string[] =>
@@ -14,6 +16,8 @@ const asList = (value: unknown): string[] =>
 export const LibraryPage = () => {
   const { module: slug, type: typeSlug } = useParams()
   const module = moduleBySlug(slug)
+  const navigate = useNavigate()
+  const narrow = useNarrowScreen()
 
   const [entries, setEntries] = useState<TrackedItem[] | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -84,7 +88,17 @@ export const LibraryPage = () => {
 
   return (
     <AppShell module={module}>
-      <h1 className="page-title">{active.label}</h1>
+      {/*
+       * A phone has no header shelves, and its tab bar opens one library whatever the type, so
+       * the page is named for that and the switch under it does the shelves' job.
+       */}
+      <h1 className="page-title">{narrow ? 'Library' : active.label}</h1>
+      <TypeSwitch
+        className="library-type-switch"
+        module={module}
+        active={active}
+        onSwitch={(type) => navigate(`/library/${module.slug}/${type.slug}`)}
+      />
 
       {error && (
         <p className="alert" role="alert">

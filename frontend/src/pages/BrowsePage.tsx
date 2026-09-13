@@ -15,6 +15,8 @@ import { BrowseFilters } from '../components/BrowseFilters'
 import { Carousel } from '../components/Carousel'
 import { CatalogCard } from '../components/CatalogCard'
 import { RankedRow } from '../components/RankedRow'
+import { TypeSwitch } from '../components/TypeSwitch'
+import { useNarrowScreen } from '../components/useNarrowScreen'
 import { keyOf, useTrackable } from '../components/useTrackable'
 import { defaultTypeOf, moduleBySlug, typeBySlug } from '../modules/registry'
 import { useCurrentModule } from '../modules/useCurrentModule'
@@ -76,6 +78,7 @@ export const BrowsePage = () => {
 
   const [loaded, setLoaded] = useState<Loaded | null>(null)
   const tracking = useTrackable()
+  const narrow = useNarrowScreen()
 
   const mediaType = active.mediaType
   const current = loaded?.mediaType === mediaType ? loaded : null
@@ -245,27 +248,10 @@ export const BrowsePage = () => {
   return (
     <AppShell module={module}>
       <div className="browse-head">
-        <h1 className="page-title">Browse {active.label}</h1>
+        {/* A phone names the page alone: the switch beside it already says which type. */}
+        <h1 className="page-title">{narrow ? 'Browse' : `Browse ${active.label}`}</h1>
 
-        {/*
-         * Only worth showing where a module owns more than one type. Anime and manga are
-         * the case it exists for; games would render a switch with one side.
-         */}
-        {module.types.length > 1 && (
-          <div className="type-switch" role="group" aria-label={`${module.label} type`}>
-            {module.types.map((type) => (
-              <button
-                key={type.mediaType}
-                type="button"
-                className={type.mediaType === active.mediaType ? 'active' : 'ghost'}
-                aria-pressed={type.mediaType === active.mediaType}
-                onClick={() => switchTo(type.slug)}
-              >
-                {type.label}
-              </button>
-            ))}
-          </div>
-        )}
+        <TypeSwitch module={module} active={active} onSwitch={(type) => switchTo(type.slug)} />
       </div>
 
       {fields && fields.length > 0 && (
