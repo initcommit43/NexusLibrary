@@ -1257,9 +1257,84 @@ export const SettingsPage = () => {
               trailing={<ChevronRight />}
             />
           ))}
+          {/* Signed out here, having no account menu on a phone to do it from. */}
+          <GroupRow title="Sign out" onClick={() => void logout()} />
+          <GroupRow title="Delete account" danger onClick={openDelete} />
         </Group>
       </div>
     </>
+  )
+
+  /*
+   * The same deletion as the desktop card, password and all, asked as the native alert: the
+   * list has no room for the warning and the field standing open under every other row.
+   */
+  const [deleting, setDeleting] = useState(false)
+
+  const openDelete = () => {
+    setError(null)
+    setConfirmation('')
+    setDeleting(true)
+  }
+
+  useEffect(() => {
+    if (!deleting) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setDeleting(false)
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [deleting])
+
+  const deleteDialog = () => (
+    // The scrim closes it, as the app's other dialogs do; a tap inside the card must not.
+    <div className="dialog-backdrop" role="presentation" onClick={() => setDeleting(false)}>
+      <form
+        className="dialog dialog-confirm"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="delete-account-title"
+        onClick={(event) => event.stopPropagation()}
+        onSubmit={(event) => {
+          event.preventDefault()
+          if (confirmation && accountBusy === null) void deleteAccount()
+        }}
+      >
+        <header className="dialog-head">
+          <h2 id="delete-account-title">Delete your account?</h2>
+        </header>
+
+        <p>
+          This permanently deletes your account and everything in it. Nothing is archived and
+          nothing can be recovered.
+        </p>
+
+        {errorAlert}
+
+        <div className="field-group settings-delete-field">
+          <label>
+            <input
+              type="password"
+              autoComplete="new-password"
+              aria-label="Confirm with your password"
+              placeholder="Password"
+              autoFocus
+              value={confirmation}
+              onChange={(e) => setConfirmation(e.target.value)}
+            />
+          </label>
+        </div>
+
+        <div className="dialog-foot">
+          <button type="button" className="ghost" onClick={() => setDeleting(false)}>
+            Cancel
+          </button>
+          <button type="submit" className="danger" disabled={accountBusy !== null || !confirmation}>
+            {accountBusy === 'delete' ? 'Deleting…' : 'Delete everything'}
+          </button>
+        </div>
+      </form>
+    </div>
   )
 
   // A message belongs to the screen it was earned on, not to whichever is opened next.
@@ -1331,7 +1406,8 @@ export const SettingsPage = () => {
         <BackButton />
         <h1 className="page-title">{view ? view.title : 'Settings'}</h1>
         {csvPicker}
-        {errorAlert}
+        {/* Said in the dialog while it is open, not behind its scrim as well. */}
+        {!deleting && errorAlert}
 
         {view ? (
           <>
@@ -1341,6 +1417,8 @@ export const SettingsPage = () => {
         ) : (
           phoneList()
         )}
+
+        {deleting && deleteDialog()}
       </AppShell>
     )
   }
@@ -1379,10 +1457,6 @@ export const SettingsPage = () => {
         </div>
       </div>
 
-      {/* Where a phone signs out, having no account menu to do it from. */}
-      <button type="button" className="ghost settings-sign-out" onClick={() => void logout()}>
-        Sign out
-      </button>
     </AppShell>
   )
 }

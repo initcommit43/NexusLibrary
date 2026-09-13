@@ -810,18 +810,6 @@ a.list-link:hover {
   text-decoration: none;
 }
 
-/* A phone signs out at the foot of its settings; wide, the account menu does it. */
-.settings-sign-out {
-  display: none;
-}
-
-@media (max-width: 52rem) {
-  .settings-sign-out {
-    display: block;
-    width: 100%;
-  }
-}
-
 /* A phone's settings: grouped rows, and each part they open on a screen of its own as one card. */
 @media (max-width: 52rem) {
   .group-footnote {
@@ -913,6 +901,13 @@ a.list-link:hover {
     flex: none;
     width: var(--space-4);
     height: var(--space-4);
+  }
+
+  /* On the dialog's own surface, so drawn on the page's ground to be seen, round as the pill. */
+  .settings-delete-field {
+    border: 1px solid var(--border);
+    border-radius: var(--m-radius-control);
+    background: var(--bg);
   }
 }
 
