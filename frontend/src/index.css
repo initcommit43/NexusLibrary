@@ -6770,6 +6770,11 @@ a.icon-button.active {
     box-shadow: none;
   }
 
+  /* A notice has no footer, so its last part takes the other half of the centring. */
+  .auth-notice > :last-child {
+    margin-bottom: auto;
+  }
+
   .auth-brand {
     display: flex;
     flex-direction: column;
@@ -6865,6 +6870,46 @@ a.icon-button.active {
 
   .auth-footer a {
     font-size: var(--m-text-footnote);
+  }
+
+  /* A notice's sentence sits in the same grouped card the fields do. */
+  .auth-notice-body {
+    padding: var(--m-row-padding);
+    border-radius: var(--m-radius-group);
+    background: var(--surface);
+    color: var(--text-body);
+    font-size: var(--text-md);
+    line-height: var(--leading-normal);
+  }
+
+  .auth-action {
+    display: flex;
+    flex-direction: column;
+    color: var(--text-muted);
+    font-size: var(--text-md);
+    text-align: center;
+  }
+
+  /* A link doing a button's job wears the pill, at the same size as the send button. */
+  .auth-action > a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: var(--m-control-height);
+    padding-inline: var(--space-4);
+    border-radius: var(--m-radius-control);
+    background: var(--accent);
+    color: var(--accent-contrast);
+    font-size: var(--text-lg);
+    font-weight: 600;
+    line-height: 1.4;
+    transition: background var(--duration-fast) var(--ease);
+  }
+
+  .auth-action > a:hover {
+    background: var(--accent-hover);
+    color: var(--accent-contrast);
+    text-decoration: none;
   }
 }
 

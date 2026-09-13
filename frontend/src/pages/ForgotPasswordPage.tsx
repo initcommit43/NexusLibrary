@@ -11,9 +11,8 @@ export const ForgotPasswordPage = () => {
   // an address with no account, and a page that said otherwise would give away what it hides.
   if (sent) {
     return (
-      <AuthNotice title="Check your email">
-        If that address has an account, a reset link is on its way. It works for 30 minutes.{' '}
-        <Link to="/login">Back to sign in</Link>
+      <AuthNotice title="Check your email" action={<Link to="/login">Back to sign in</Link>}>
+        If that address has an account, a reset link is on its way. It works for 30 minutes.
       </AuthNotice>
     )
   }

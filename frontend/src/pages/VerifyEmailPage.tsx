@@ -36,25 +36,24 @@ export const VerifyEmailPage = () => {
 
   if (state === 'confirmed') {
     return (
-      <AuthNotice title="Email confirmed">
-        Your account is ready. <Link to="/login">Sign in</Link>
+      <AuthNotice title="Email confirmed" action={<Link to="/login">Sign in</Link>}>
+        Your account is ready.
       </AuthNotice>
     )
   }
 
   if (state === 'expired') {
     return (
-      <AuthNotice title="That link has expired">
+      <AuthNotice title="That link has expired" action={<Link to="/login">Go to sign in</Link>}>
         Confirmation links work once and expire after two days. Sign in with your email and
-        password and you can ask for a new one. <Link to="/login">Go to sign in</Link>
+        password and you can ask for a new one.
       </AuthNotice>
     )
   }
 
   return (
-    <AuthNotice title="Something went wrong">
-      We could not confirm your email just now. Try the link again in a moment.{' '}
-      <Link to="/login">Go to sign in</Link>
+    <AuthNotice title="Something went wrong" action={<Link to="/login">Go to sign in</Link>}>
+      We could not confirm your email just now. Try the link again in a moment.
     </AuthNotice>
   )
 }

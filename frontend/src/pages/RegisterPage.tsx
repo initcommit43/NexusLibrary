@@ -2,11 +2,14 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { AuthForm } from '../components/AuthForm'
 import { AuthNotice } from '../components/AuthNotice'
+import { useNarrowScreen } from '../components/useNarrowScreen'
+import { ApiError } from '../api/client'
 import { useAuth } from '../auth/useAuth'
 
 export const RegisterPage = () => {
   const { register } = useAuth()
   const navigate = useNavigate()
+  const narrow = useNarrowScreen()
   const [awaiting, setAwaiting] = useState<string | null>(null)
 
   /*
@@ -15,10 +18,9 @@ export const RegisterPage = () => {
    */
   if (awaiting) {
     return (
-      <AuthNotice title="Check your email">
+      <AuthNotice title="Check your email" action={<Link to="/login">Go to sign in</Link>}>
         We sent a confirmation link to <strong>{awaiting}</strong>. Follow it, then sign in. It can
-        take a minute to arrive, and it is worth checking your spam folder.{' '}
-        <Link to="/login">Go to sign in</Link>
+        take a minute to arrive, and it is worth checking your spam folder.
       </AuthNotice>
     )
   }
@@ -35,6 +37,17 @@ export const RegisterPage = () => {
         { name: 'email', label: 'Email', type: 'email', autoComplete: 'username' },
         { name: 'username', label: 'Username', type: 'text', autoComplete: 'nickname' },
         { name: 'password', label: 'Password', type: 'password', autoComplete: 'new-password' },
+        // The native screen asks twice, as a phone's keyboard makes a typo easy to miss.
+        ...(narrow
+          ? [
+              {
+                name: 'repeat',
+                label: 'Confirm password',
+                type: 'password',
+                autoComplete: 'new-password',
+              },
+            ]
+          : []),
       ]}
       consent={
         // New tab, both of them. Following either in place unmounts this form and takes the
@@ -53,6 +66,12 @@ export const RegisterPage = () => {
         </>
       }
       onSubmit={async (v) => {
+        if (narrow && v.password !== v.repeat) {
+          throw new ApiError(400, 'Those passwords do not match.', {
+            repeat: 'Those passwords do not match.',
+          })
+        }
+
         // True by construction: the button is disabled until the box is ticked. Sent
         // anyway, and checked again on the server, because a client is not where a
         // requirement like this can be allowed to live.
@@ -69,7 +88,15 @@ export const RegisterPage = () => {
         }
         navigate('/', { replace: true })
       }}
-      footer={<>Already registered? <Link to="/login">Sign in</Link></>}
+      footer={
+        narrow ? (
+          <>
+            Already have an account? <Link to="/login">Sign in</Link>
+          </>
+        ) : (
+          <>Already registered? <Link to="/login">Sign in</Link></>
+        )
+      }
     />
   )
 }
