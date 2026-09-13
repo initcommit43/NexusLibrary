@@ -490,6 +490,8 @@ button.small {
   min-height: 100vh;
 
   --shell-max: 86rem;
+  /* How far the docks sit in from the window's corners; one value, so the two mirror. */
+  --dock-corner: calc(var(--space-3) + 5px);
 
   /* A browse row is read across, a shelf is read down; they are not the same card. */
   --browse-gap: calc(var(--space-5) + var(--space-2));
@@ -517,7 +519,7 @@ button.small {
  */
 .theme-dock {
   --content-edge: max(var(--space-4), calc((100vw - var(--shell-max)) / 2 + var(--space-4)));
-  --corner: calc(var(--space-3) + 5px);
+  --corner: var(--dock-corner);
 
   /*
    * Sticky inside the page's column rather than fixed to the window, so it rides the bottom of
@@ -3635,7 +3637,142 @@ input.filter-control::-webkit-search-cancel-button {
 
 /* --- running work --- */
 
-/* Bottom left, out of the way of everything and readable from anywhere. */
+/*
+ * Bottom left, out of the way of everything and readable from anywhere: the theme dock's
+ * geometry turned round, so the two frame the page rather than crowd one corner. Sticky in the
+ * column and of no height for the reasons that one is, so it too comes to rest above the rule.
+ *
+ * Its width stops short of the theme dock's button and a gap, which is what lets the two sit
+ * side by side on a phone instead of one landing on the other.
+ */
+.job-dock {
+  position: sticky;
+  bottom: var(--space-3);
+  z-index: 30;
+  align-self: flex-start;
+  height: 0;
+  width: min(22rem, calc(100% - 2 * var(--dock-corner) - var(--icon-control) - var(--space-2)));
+  display: flex;
+  align-items: flex-end;
+  margin: calc(-1 * var(--space-3)) 0 var(--space-3) var(--dock-corner);
+}
+
+/* Said to a screen reader only; the panel already shows the same thing to everyone else. */
+.job-dock-announce {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.job-dock-panel {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-2);
+}
+
+.job-dock-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.job-dock-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.job-dock-title,
+.job-dock-detail {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.job-dock-title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Figures that tick every second stay one width, so the line does not shuffle as they do. */
+.job-dock-detail {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.job-dock-head button {
+  flex-shrink: 0;
+}
+
+.job-dock-head button[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: progress;
+}
+
+/* Cyan rather than the module's accent: a run is a sync, which is what the cyan is kept for. */
+.job-dock-bar {
+  height: var(--space-1);
+  border-radius: var(--radius-full);
+  background: var(--border);
+  overflow: hidden;
+}
+
+/* Scaled rather than resized, so each tick moves on the compositor instead of reflowing. */
+.job-dock-fill {
+  height: 100%;
+  background: var(--accent-alt);
+  transform: scaleX(var(--progress, 0));
+  transform-origin: left center;
+  transition: transform var(--duration-base) var(--ease);
+}
+
+.job-dock-fill.is-running {
+  width: 35%;
+  transform: none;
+  animation: job-travel 1.4s var(--ease) infinite;
+}
+
+@keyframes job-travel {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(290%);
+  }
+}
+
+@media (max-width: 40rem) {
+  /* A tap target the size of the theme dock's button beside it. */
+  .job-dock-head button {
+    min-height: var(--icon-control);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .job-dock-fill {
+    transition: none;
+  }
+
+  .job-dock-fill.is-running {
+    animation: none;
+    width: 100%;
+    opacity: 0.4;
+  }
+}
+
 /* --- media page --- */
 
 /*
