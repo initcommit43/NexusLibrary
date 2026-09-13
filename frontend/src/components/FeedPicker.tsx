@@ -1,17 +1,39 @@
+import { FEED_LABELS, type FeedKind } from './feedKind'
 import { useMenuDismiss } from './useMenuDismiss'
 
-/** Which of the two lists the section is showing. */
-export type FeedKind = 'activity' | 'notifications'
-
-const LABELS: Record<FeedKind, string> = {
-  activity: 'Activity',
-  notifications: 'Notifications',
-}
+export type { FeedKind } from './feedKind'
 
 const ChevronIcon = () => (
   <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" aria-hidden>
     <path d="m6 9 6 6 6-6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
+)
+
+/** The two lists, the one showing marked, and how much is waiting beside Notifications. */
+const FeedOptions = ({
+  current,
+  unread,
+  onChoose,
+}: {
+  current: FeedKind
+  unread: number
+  onChoose: (kind: FeedKind) => void
+}) => (
+  <ul className="feed-options" role="menu">
+    {(Object.keys(FEED_LABELS) as FeedKind[]).map((kind) => (
+      <li key={kind} role="none">
+        <button
+          type="button"
+          role="menuitem"
+          className={kind === current ? 'chosen' : undefined}
+          onClick={() => onChoose(kind)}
+        >
+          {FEED_LABELS[kind]}
+          {kind === 'notifications' && unread > 0 && <span className="feed-unread">{unread}</span>}
+        </button>
+      </li>
+    ))}
+  </ul>
 )
 
 /**
@@ -43,33 +65,67 @@ export const FeedPicker = ({
         aria-expanded={open}
         onClick={() => setOpen((wasOpen) => !wasOpen)}
       >
-        {LABELS[current]}
+        {FEED_LABELS[current]}
         {current === 'activity' && unread > 0 && <span className="feed-unread">{unread}</span>}
         <ChevronIcon />
       </button>
 
       {open && (
-        <ul className="feed-options" role="menu">
-          {(Object.keys(LABELS) as FeedKind[]).map((kind) => (
-            <li key={kind} role="none">
-              <button
-                type="button"
-                role="menuitem"
-                className={kind === current ? 'chosen' : undefined}
-                onClick={() => {
-                  onChoose(kind)
-                  setOpen(false)
-                }}
-              >
-                {LABELS[kind]}
-                {kind === 'notifications' && unread > 0 && (
-                  <span className="feed-unread">{unread}</span>
-                )}
-              </button>
-            </li>
-          ))}
-        </ul>
+        <FeedOptions
+          current={current}
+          unread={unread}
+          onChoose={(kind) => {
+            onChoose(kind)
+            setOpen(false)
+          }}
+        />
       )}
     </span>
+  )
+}
+
+/**
+ * The same two lists as a page's title, the way Home's title opens the modules on a phone: the
+ * h1 holds only the name, and the menu sits beside it so its options are never read as the
+ * page's name.
+ */
+export const FeedTitle = ({
+  current,
+  unread = 0,
+  onChoose,
+}: {
+  current: FeedKind
+  unread?: number
+  onChoose: (kind: FeedKind) => void
+}) => {
+  const { open, setOpen, container, trigger } = useMenuDismiss<HTMLDivElement, HTMLButtonElement>()
+
+  return (
+    <div className="feed-picker feed-title" ref={container}>
+      <h1 className="page-title">
+        <button
+          ref={trigger}
+          type="button"
+          className="title-trigger"
+          aria-haspopup="menu"
+          aria-expanded={open}
+          onClick={() => setOpen((wasOpen) => !wasOpen)}
+        >
+          <span>{FEED_LABELS[current]}</span>
+          <ChevronIcon />
+        </button>
+      </h1>
+
+      {open && (
+        <FeedOptions
+          current={current}
+          unread={unread}
+          onChoose={(kind) => {
+            setOpen(false)
+            onChoose(kind)
+          }}
+        />
+      )}
+    </div>
   )
 }

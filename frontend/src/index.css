@@ -3455,6 +3455,11 @@ input.filter-control::-webkit-search-cancel-button {
   color: var(--text);
 }
 
+/* The menu hangs from the title's left edge, a gap below it, as wide as its longest item. */
+.feed-title {
+  position: relative;
+}
+
 .feed-options {
   position: absolute;
   z-index: 20;
