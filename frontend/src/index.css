@@ -7529,3 +7529,67 @@ a.icon-button.active {
     font-size: var(--m-text-footnote);
   }
 }
+
+/* --- phone: notifications and activity by day --- */
+
+/* Grouped cards under each day, with a delete behind a sideways swipe. See FeedGroups. */
+@media (max-width: 52rem) {
+  .feed-days {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+
+  .feed-unread-dot {
+    flex: none;
+    width: var(--space-2);
+    height: var(--space-2);
+    border-radius: var(--radius-full);
+    background: var(--accent);
+  }
+
+  /* A run belongs to no title, so its thumb carries the provider's initial instead of a cover. */
+  .feed-run-thumb {
+    display: grid;
+    place-items: center;
+    color: var(--text-muted);
+    font-family: var(--font-display);
+    font-size: var(--text-lg);
+    font-weight: 700;
+  }
+
+  .swipe-row {
+    display: flex;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .swipe-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  .swipe-row > .group-row {
+    flex: none;
+    scroll-snap-align: start;
+  }
+
+  .swipe-delete,
+  .swipe-delete:hover:not(:disabled) {
+    flex: none;
+    width: var(--m-swipe-action-width);
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: var(--danger);
+    color: var(--danger-contrast);
+    font-size: var(--text-md);
+    font-weight: 600;
+    scroll-snap-align: end;
+  }
+
+  .swipe-delete:focus-visible {
+    outline-offset: -2px;
+  }
+}
