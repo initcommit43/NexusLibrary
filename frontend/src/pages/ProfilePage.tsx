@@ -401,13 +401,21 @@ export const ProfilePage = () => {
             <section className="status-section">
               <h2>
                 Activity
-                <ScopePicker modules={mapped} current={scope} onChoose={setScope} />
+                {!narrow && <ScopePicker modules={mapped} current={scope} onChoose={setScope} />}
                 {/* The phone's way to the stats, which the account menu carries when wide. */}
                 <Link className="section-action profile-stats-link" to="/stats">
                   Stats →
                 </Link>
               </h2>
-              <ActivityHeatmap days={history} weeks={HISTORY_WEEKS} />
+              {/* A phone keeps the heading to the title and the stats, and names the scope under
+                  the map it narrows, opposite the scale. */}
+              <ActivityHeatmap
+                days={history}
+                weeks={HISTORY_WEEKS}
+                aside={
+                  narrow && <ScopePicker modules={mapped} current={scope} onChoose={setScope} />
+                }
+              />
             </section>
 
             <section className="status-section">

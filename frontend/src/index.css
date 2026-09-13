@@ -2220,21 +2220,46 @@ input.filter-control::-webkit-search-cancel-button {
   }
 
   /*
-   * The title where every other section on the page keeps it, and its two controls together at
-   * the far end, the scope first and the way to the stats against the edge the map ends at.
+   * The title where every other section on the page keeps it, with the way to the stats against
+   * the edge the map ends at. The scope sits under the map instead, on the scale's line.
    */
-  .profile-overview > .status-section:first-child h2 > .scope-picker {
-    min-width: 0;
+  .profile-overview > .status-section:first-child h2 > .profile-stats-link {
+    flex: none;
+    margin-left: auto;
   }
 
-  .profile-overview .scope-picker .module-trigger {
+  .heatmap-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+  }
+
+  .heatmap-foot > .scope-picker {
+    min-width: 0;
+    margin-left: 0;
+    font-size: var(--m-text-footnote);
+    font-weight: 600;
+  }
+
+  .heatmap-foot .scope-picker .module-trigger {
     max-width: 100%;
     color: var(--text-muted);
   }
 
-  .profile-overview > .status-section:first-child h2 > .profile-stats-link {
-    flex: none;
-    margin-left: var(--space-3);
+  /* Hung from its left edge, since it starts the line rather than ending it. */
+  .heatmap-foot .scope-picker .module-menu {
+    left: 0;
+    right: auto;
+  }
+
+  /*
+   * Breathing room between the page's parts. The column's own gap suits a head and the button
+   * under it, but sections stacked at that gap ran together into one list.
+   */
+  .shell-main:has(> .profile-head) > .status-section,
+  .profile-overview > .status-section {
+    margin-top: var(--space-3);
   }
 
   /* Bare squares on the page, as the native map is drawn. */

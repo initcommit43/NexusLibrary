@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { type ReactNode, useMemo } from 'react'
 import type { ActivityDay } from '../api/client'
 import { Tooltip } from './charts/Tooltip'
 import { useTooltip } from './charts/useTooltip'
@@ -45,7 +45,16 @@ const startOfWeek = (day: Date) => {
  * undrawn while keeping their places — the map is the same size on the day a week opens as
  * on the day it closes, and when the week is out the whole table moves along by a column.
  */
-export const ActivityHeatmap = ({ days, weeks }: { days: ActivityDay[]; weeks: number }) => {
+export const ActivityHeatmap = ({
+  days,
+  weeks,
+  aside,
+}: {
+  days: ActivityDay[]
+  weeks: number
+  /** Drawn on the scale's line at the map's left edge, opposite the scale. */
+  aside?: ReactNode
+}) => {
   const { tip, show, hide } = useTooltip()
 
   const { columns, busiest } = useMemo(() => {
@@ -80,6 +89,17 @@ export const ActivityHeatmap = ({ days, weeks }: { days: ActivityDay[]; weeks: n
   const step = (amount: number) =>
     amount === 0 ? 0 : Math.max(1, Math.ceil((amount / busiest) * STEPS))
 
+  // Under the map and against its right edge, where the last column ends.
+  const scale = (
+    <p className="heatmap-key muted" aria-hidden>
+      Less
+      {[0, 1, 2, 3, 4].map((at) => (
+        <span key={at} className="heatmap-day" data-step={at} />
+      ))}
+      More
+    </p>
+  )
+
   return (
     <div className="heatmap">
       <div className="heatmap-grid" onPointerLeave={hide}>
@@ -105,14 +125,14 @@ export const ActivityHeatmap = ({ days, weeks }: { days: ActivityDay[]; weeks: n
         ))}
       </div>
 
-      {/* Under the map and against its right edge, where the last column ends. */}
-      <p className="heatmap-key muted" aria-hidden>
-        Less
-        {[0, 1, 2, 3, 4].map((at) => (
-          <span key={at} className="heatmap-day" data-step={at} />
-        ))}
-        More
-      </p>
+      {aside ? (
+        <div className="heatmap-foot">
+          {aside}
+          {scale}
+        </div>
+      ) : (
+        scale
+      )}
 
       <Tooltip tip={tip} />
     </div>
