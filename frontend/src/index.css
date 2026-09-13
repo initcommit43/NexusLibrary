@@ -6739,6 +6739,135 @@ a.icon-button.active {
   cursor: pointer;
 }
 
+/* --- phone: sign-in screens --- */
+
+/*
+ * The native app's sign-in: a centred wordmark over the fields in one grouped card, a pill to
+ * send, and the way to the other form pinned to the foot of the screen. Every auth screen,
+ * the notices after a form included, takes this one layout.
+ */
+@media (max-width: 52rem) {
+  /* A column rather than a centring grid; the legal footer after the screen is below the fold. */
+  .auth-page {
+    display: block;
+    padding: 0;
+  }
+
+  /*
+   * A screen tall, so the way to the other form can stand at its foot. The brand's and the
+   * footer's auto margins centre everything between in the space above it.
+   */
+  .auth-page > .auth-form {
+    gap: var(--space-4);
+    width: min(100%, 26rem);
+    min-height: 100dvh;
+    margin-inline: auto;
+    padding: max(var(--space-4), env(safe-area-inset-top, 0px)) var(--space-3)
+      max(var(--space-5), env(safe-area-inset-bottom, 0px));
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+
+  .auth-brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    margin-block: auto var(--space-2);
+    text-align: center;
+  }
+
+  .auth-wordmark {
+    color: var(--text);
+    font-family: var(--font-display);
+    font-size: var(--m-text-title);
+    font-weight: 700;
+    letter-spacing: var(--tracking-tight);
+    line-height: var(--leading-tight);
+  }
+
+  .auth-tagline {
+    color: var(--text-muted);
+    font-size: var(--text-lg);
+    line-height: var(--leading-tight);
+  }
+
+  .auth-form h1 {
+    text-align: center;
+  }
+
+  /* Out of sight and out of the column's gaps, but still the page's name to a screen reader. */
+  .auth-title-quiet {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .auth-form .alert {
+    border-radius: var(--m-radius-group);
+  }
+
+  /* A thumb's target inside the field's row, clear of the card's rounded edge. */
+  .auth-reveal,
+  .auth-reveal:hover:not(:disabled) {
+    flex: none;
+    width: calc(var(--m-row-height) - 2 * var(--space-1));
+    height: calc(var(--m-row-height) - 2 * var(--space-1));
+    margin-right: var(--space-1);
+    border: 0;
+    border-radius: var(--m-radius-control);
+    background: none;
+    color: var(--text-muted);
+  }
+
+  .auth-reveal:focus-visible {
+    outline-offset: -2px;
+  }
+
+  /* Close under the card or the box it belongs to, not a whole step away. */
+  .auth-form .field-error {
+    margin-top: calc(-1 * var(--space-3));
+    padding-inline: var(--m-row-padding);
+    font-size: var(--m-text-footnote);
+  }
+
+  .auth-form .consent {
+    color: var(--text-muted);
+    font-size: var(--m-text-footnote);
+  }
+
+  .auth-under {
+    margin-top: calc(-1 * var(--space-2));
+    color: var(--text-muted);
+    font-size: var(--m-text-footnote);
+    text-align: center;
+  }
+
+  .auth-under :is(a, .link-button),
+  .auth-footer a {
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  /* Its padding is what lifts the form above the middle, as the native screen sits high. */
+  .auth-footer {
+    margin-top: auto;
+    padding-top: var(--space-6);
+    color: var(--text-muted);
+    font-size: var(--text-md);
+    text-align: center;
+  }
+
+  .auth-footer a {
+    font-size: var(--m-text-footnote);
+  }
+}
+
 /* --- phone: grouped lists --- */
 
 /*

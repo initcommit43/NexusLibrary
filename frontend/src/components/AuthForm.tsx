@@ -1,7 +1,9 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useId, useState, type FormEvent } from 'react'
 import { ApiError, api } from '../api/client'
+import { AuthBrand } from './AuthBrand'
 import { Footer } from './Footer'
 import { Turnstile } from './Turnstile'
+import { useNarrowScreen } from './useNarrowScreen'
 
 export type AuthField = {
   name: string
@@ -28,6 +30,84 @@ type Props = {
    * reset link both already hold something only the right reader has.
    */
   botCheck?: boolean
+  /** What a phone sets under the send button, such as the way to a forgotten password. */
+  underSubmit?: React.ReactNode
+}
+
+const EyeIcon = ({ crossed }: { crossed: boolean }) => (
+  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" aria-hidden>
+    <path
+      d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"
+      strokeWidth="1.8"
+      strokeLinejoin="round"
+    />
+    <circle cx="12" cy="12" r="3" strokeWidth="1.8" />
+    {crossed && <path d="m4 4 16 16" strokeWidth="1.8" strokeLinecap="round" />}
+  </svg>
+)
+
+/**
+ * The fields as one grouped card, as the native sign-in draws them: each named by its
+ * placeholder, a password with an eye to show it, and any message under the card, since one
+ * inside a row would break the rows' single height.
+ */
+const FieldGroup = ({
+  fields,
+  values,
+  errors,
+  onChange,
+}: {
+  fields: AuthField[]
+  values: Record<string, string>
+  errors: Record<string, string>
+  onChange: (name: string, value: string) => void
+}) => {
+  const errorId = useId()
+  const [revealed, setRevealed] = useState<Record<string, boolean>>({})
+
+  return (
+    <>
+      <div className="field-group">
+        {fields.map((field) => {
+          const shown = revealed[field.name] ?? false
+          return (
+            <label key={field.name}>
+              <input
+                type={shown ? 'text' : field.type}
+                name={field.name}
+                autoComplete={field.autoComplete}
+                aria-label={field.label}
+                placeholder={field.label}
+                value={values[field.name] ?? ''}
+                aria-invalid={Boolean(errors[field.name])}
+                aria-describedby={errors[field.name] ? `${errorId}-${field.name}` : undefined}
+                onChange={(e) => onChange(field.name, e.target.value)}
+              />
+              {field.type === 'password' && (
+                <button
+                  type="button"
+                  className="icon-button auth-reveal"
+                  aria-label={`Show ${field.label.toLowerCase()}`}
+                  aria-pressed={shown}
+                  onClick={() => setRevealed((r) => ({ ...r, [field.name]: !shown }))}
+                >
+                  <EyeIcon crossed={shown} />
+                </button>
+              )}
+            </label>
+          )
+        })}
+      </div>
+
+      {fields
+        .filter((field) => errors[field.name])
+        .map((field) => (
+          <small key={field.name} id={`${errorId}-${field.name}`} className="field-error">
+            {errors[field.name]}
+          </small>
+        ))}
+    </>
+  )
 }
 
 export const AuthForm = ({
@@ -38,7 +118,9 @@ export const AuthForm = ({
   footer,
   consent,
   botCheck,
+  underSubmit,
 }: Props) => {
+  const narrow = useNarrowScreen()
   const [values, setValues] = useState<Record<string, string>>({})
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [formError, setFormError] = useState<string | null>(null)
@@ -87,7 +169,14 @@ export const AuthForm = ({
   return (
     <div className="page-centered auth-page">
       <form className="card auth-form" onSubmit={handleSubmit} noValidate>
-        <h1>{title}</h1>
+        {narrow && <AuthBrand />}
+        {/*
+          * Signing in and registering are named by the button under the fields, so a phone
+          * keeps their heading for a screen reader only, as the native screens have none.
+          */}
+        <h1 className={narrow && title === submitLabel ? 'auth-title-quiet' : undefined}>
+          {title}
+        </h1>
 
         {formError && (
           <p className="alert" role="alert">
@@ -95,7 +184,16 @@ export const AuthForm = ({
           </p>
         )}
 
-        {fields.map((field) => (
+        {narrow && (
+          <FieldGroup
+            fields={fields}
+            values={values}
+            errors={fieldErrors}
+            onChange={(name, value) => setValues((v) => ({ ...v, [name]: value }))}
+          />
+        )}
+
+        {!narrow && fields.map((field) => (
           <label key={field.name} className="field">
             <span>{field.label}</span>
             <input
@@ -141,7 +239,10 @@ export const AuthForm = ({
           {busy ? 'Working…' : submitLabel}
         </button>
 
-        <p className="muted auth-aside">{footer}</p>
+        {narrow && underSubmit && <p className="auth-under">{underSubmit}</p>}
+
+        {/* A phone pins it to the foot of the screen, as the native app does. */}
+        <p className={narrow ? 'auth-footer' : 'muted auth-aside'}>{footer}</p>
       </form>
 
       {/* Reachable before there is an account, which is the point of putting it here. */}
