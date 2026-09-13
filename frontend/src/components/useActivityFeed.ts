@@ -41,6 +41,8 @@ export const useActivityFeed = (
   moduleSlug: string,
   pageRows: number,
   loadMoreRows = LOAD_MORE_ROWS,
+  /** False where the page is not showing the feed at all, so it is not fetched for nothing. */
+  enabled = true,
 ) => {
   const [all, setAll] = useState<ActivityEntry[] | null>(null)
   /*
@@ -64,6 +66,7 @@ export const useActivityFeed = (
   }, [added, pageRows])
 
   useEffect(() => {
+    if (!enabled) return
     let current = true
 
     api
@@ -94,7 +97,7 @@ export const useActivityFeed = (
     return () => {
       current = false
     }
-  }, [fetching, moduleSlug, pageRows])
+  }, [fetching, moduleSlug, pageRows, enabled])
 
   const shown = pageRows + added
   const mine = (all ?? []).filter((event) => moduleOf(event)?.slug === moduleSlug)
