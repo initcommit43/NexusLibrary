@@ -49,7 +49,7 @@ export const AppShell = ({
           </NavLink>
           {current.types.map((type) => (
             <NavLink key={type.slug} to={`/library/${current.slug}/${type.slug}`}>
-              {type.listLabel}
+              {type.label}
             </NavLink>
           ))}
           <NavLink to="/browse">Browse</NavLink>

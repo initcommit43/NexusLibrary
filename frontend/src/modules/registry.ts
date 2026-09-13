@@ -18,7 +18,7 @@ export interface ModuleProvider {
 export interface MediaTypeDefinition {
   mediaType: MediaType
   label: string
-  /** What the header calls this type's shelf. */
+  /** What the library heading, home and profile call this shelf; the header nav uses `label`. */
   listLabel: string
   /** Lowercase media type, used in the URL. */
   slug: string
