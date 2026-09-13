@@ -236,13 +236,23 @@ button.small {
  * height: they are rows that happen to be buttons, and a button's height would double each list.
  */
 @media (max-width: 52rem) {
-  button:where(:not([class]), .ghost, .small, .danger):where(:not(.icon-button)),
-  button:where(:not([class]), .ghost, .small, .danger):where(:not(.icon-button)):focus-visible {
+  button:where(:not([class]), .ghost, .small, .danger):where(:not(.icon-button, .group-row)),
+  button:where(:not([class]), .ghost, .small, .danger):where(
+      :not(.icon-button, .group-row)
+    ):focus-visible {
     border-radius: var(--m-radius-control);
   }
 
   button:where(:not([class]), .ghost, .danger):where(
-      :not(.small, .icon-button, .status-options *, .search-card *, .feed-options *, .filter-options *)
+      :not(
+          .small,
+          .icon-button,
+          .group-row,
+          .status-options *,
+          .search-card *,
+          .feed-options *,
+          .filter-options *
+        )
     ) {
     display: inline-flex;
     align-items: center;
@@ -254,9 +264,12 @@ button.small {
     font-weight: 600;
   }
 
-  /* Filled, for the one act a confirmation exists to guard; the ghost danger stays an outline. */
-  button.danger:not(.ghost),
-  button.danger:not(.ghost):hover:not(:disabled) {
+  /*
+   * Filled, for the one act a confirmation exists to guard; the ghost danger stays an outline. A
+   * grouped row that deletes stays a row, with only its text in red.
+   */
+  button.danger:not(.ghost, .group-row),
+  button.danger:not(.ghost, .group-row):hover:not(:disabled) {
     background: var(--danger);
     color: var(--danger-contrast);
   }
