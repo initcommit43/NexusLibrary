@@ -436,6 +436,13 @@ button.small {
   border-bottom-color: var(--accent);
 }
 
+/* The account menu opens on a tap at this width and leads with the profile, so the nav need not. */
+@media (max-width: 52rem) {
+  .shell-nav .nav-profile {
+    display: none;
+  }
+}
+
 /*
  * Shrunk to its two icons rather than filling the track, so it can anchor the account menu:
  * the menu centres on this box, which means it centres under the pair. The extra margin is

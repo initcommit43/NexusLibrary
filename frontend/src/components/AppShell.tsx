@@ -53,7 +53,9 @@ export const AppShell = ({
             </NavLink>
           ))}
           <NavLink to="/browse">Browse</NavLink>
-          <NavLink to="/profile">Profile</NavLink>
+          <NavLink className="nav-profile" to="/profile">
+            Profile
+          </NavLink>
         </nav>
 
         <div className="header-right">
