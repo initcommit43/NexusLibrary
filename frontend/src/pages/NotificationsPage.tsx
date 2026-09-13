@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
-import { BackButton } from '../components/BackButton'
+import { FeedHead } from '../components/FeedHead'
+import { NotificationGroups } from '../components/FeedGroups'
 import { NotificationList } from '../components/NotificationList'
 import { useNotifications } from '../components/useNotifications'
 import { useNarrowScreen } from '../components/useNarrowScreen'
@@ -22,22 +23,7 @@ export const NotificationsPage = () => {
 
   return (
     <AppShell>
-      {narrow && <BackButton />}
-
-      {/* A phone has no module switcher on this page, so naming the module there only competes
-          with the title. */}
-      <h1 className="page-title">
-        {narrow ? 'Notifications' : `${module.label} notifications`}
-        {waiting.unread > 0 && (
-          <button
-            type="button"
-            className="section-action ghost small"
-            onClick={() => void readAll()}
-          >
-            Read all
-          </button>
-        )}
-      </h1>
+      <FeedHead current="notifications" unread={waiting.unread} onReadAll={() => void readAll()} />
 
       {loading && <p className="muted">Loading…</p>}
 
@@ -48,7 +34,11 @@ export const NotificationsPage = () => {
         </p>
       )}
 
-      <NotificationList notifications={waiting.items} onRead={(id) => void read(id)} />
+      {narrow ? (
+        <NotificationGroups notifications={waiting.items} onRead={(id) => void read(id)} />
+      ) : (
+        <NotificationList notifications={waiting.items} onRead={(id) => void read(id)} />
+      )}
     </AppShell>
   )
 }

@@ -3455,6 +3455,26 @@ input.filter-control::-webkit-search-cancel-button {
   color: var(--text);
 }
 
+/*
+ * The notifications and activity pages' title, with the list's action beside it rather than
+ * inside the h1: on the title's baseline, so a small control reads as part of the heading's
+ * line, and at the far end, where the rows below end. See FeedHead.
+ */
+.feed-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.feed-head > :first-child {
+  min-width: 0;
+}
+
+.feed-head > button {
+  flex: none;
+}
+
 /* The menu hangs from the title's left edge, a gap below it, as wide as its longest item. */
 .feed-title {
   position: relative;
@@ -7596,5 +7616,25 @@ a.icon-button.active {
 
   .swipe-delete:focus-visible {
     outline-offset: -2px;
+  }
+}
+
+/* --- phone: the notifications and activity head --- */
+
+@media (max-width: 52rem) {
+  /* A text link, as the native app's; greyed rather than gone once nothing is unread. */
+  .feed-read-all,
+  .feed-read-all:hover:not(:disabled) {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--accent);
+    font-size: var(--m-text-footnote);
+    font-weight: 700;
+  }
+
+  .feed-read-all:disabled {
+    color: var(--text-muted);
+    cursor: default;
   }
 }
