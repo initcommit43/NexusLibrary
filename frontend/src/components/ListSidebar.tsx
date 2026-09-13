@@ -29,8 +29,8 @@ export const ListSidebar = ({
       <input
         type="search"
         value={filters.query}
-        placeholder="Filter"
-        aria-label="Filter by title"
+        placeholder="Search"
+        aria-label="Search your library by title"
         onChange={(e) => set('query', e.target.value)}
       />
 
