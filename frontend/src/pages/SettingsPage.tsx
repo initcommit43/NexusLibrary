@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { ChangeEvent } from 'react'
+import type { ChangeEvent, ReactNode } from 'react'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   ApiError,
   api,
@@ -10,7 +11,11 @@ import {
 } from '../api/client'
 import { forgetFinishedJob, useWatchedJob, watchJob as followJob } from '../api/jobs'
 import { AppShell } from '../components/AppShell'
+import { BackButton } from '../components/BackButton'
 import { saveFile } from '../components/download'
+import { ChevronRight, Group, GroupRow } from '../components/GroupedList'
+import { Toggle } from '../components/Toggle'
+import { useNarrowScreen } from '../components/useNarrowScreen'
 import {
   MODULES,
   mediaTypesOf,
@@ -83,6 +88,14 @@ const jobLabel = (job: SyncJob): string => {
     return `Stopped after ${job.processed} ${noun}. Run it again to carry on from there.`
   }
   return isImport ? 'The import stopped early.' : 'Achievement sync failed.'
+}
+
+/** A running job in the few words a connection's row has room for. */
+const jobSummary = (job: SyncJob): string => {
+  if (isHistory(job)) return `Reading history · ${job.processed} ${HISTORY_NOUNS[job.kind]}`
+  if (job.kind !== 'IMPORT') return `Syncing achievements · ${job.processed} of ${job.total}`
+  const verb = PHASE_VERBS[job.phase ?? '']
+  return verb && job.total > 0 ? `${verb} · ${job.processed} of ${job.total}` : 'Fetching your list'
 }
 
 /**
@@ -1149,6 +1162,138 @@ export const SettingsPage = () => {
   const ids = panes.map((pane) => pane.id).join(',')
 
   /*
+   * A phone has no room for the rail and every card at once, so it lists what there is and
+   * opens each part on a screen of its own. The screen is in the address rather than in
+   * state: the back gesture, the back button and a shared link then all land where they say.
+   */
+  const narrow = useNarrowScreen()
+  const [params] = useSearchParams()
+  const section = params.get('section')
+  const navigate = useNavigate()
+  const { hash, key } = useLocation()
+
+  const subViews: Record<string, { title: string; render: () => ReactNode }> = {
+    profile: { title: 'Username and email', render: profileGroup },
+    password: { title: 'Password', render: passwordGroup },
+    export: {
+      title: 'Export your data',
+      render: () => (
+        <>
+          {dataGroup()}
+          <div className="settings-group">{shelfExports()}</div>
+        </>
+      ),
+    },
+    clear: { title: 'Clear your library', render: clearGroup },
+    ...Object.fromEntries(
+      connectable.map((provider) => [
+        provider.provider.toLowerCase(),
+        { title: provider.label, render: () => providerCard(provider) },
+      ]),
+    ),
+  }
+
+  // Own keys only, so an address naming something like "constructor" gets the list.
+  const view = section && Object.hasOwn(subViews, section) ? subViews[section] : undefined
+
+  /** What a connection's row says under its name: a run going on beats how it is linked. */
+  const connectionStatus = (provider: ModuleProvider) => {
+    if (job?.state === 'RUNNING' && (job.provider ?? runningFor) === provider.provider) {
+      return jobSummary(job)
+    }
+    const account = connected(provider.provider)
+    if (account) return `Connected as ${account.externalUserId}`
+    if (provider.provider === 'GOODREADS') return 'Import from CSV'
+    return accounts === null ? 'Loading…' : 'Not connected'
+  }
+
+  const phoneList = () => (
+    <>
+      {/* The desktop sections' ids, so a link to one still lands on its part of the list. */}
+      <div id="general" className="settings-anchor">
+        <Group label="Modules">
+          {MODULES.map((module) => (
+            <GroupRow
+              key={module.slug}
+              title={module.label}
+              trailing={
+                <Toggle
+                  label={module.label}
+                  checked={isEnabled(module.slug)}
+                  disabled={!isBuilt(module.slug)}
+                  onChange={(on) => void setEnabled(module.slug, on)}
+                />
+              }
+            />
+          ))}
+        </Group>
+        <p className="group-footnote">
+          Nothing you have already tracked is deleted, and turning a module back on brings it
+          all back.
+        </p>
+      </div>
+
+      <div id="connections" className="settings-anchor">
+        <Group label="Connections">
+          {connectable.map((provider) => (
+            <GroupRow
+              key={provider.provider}
+              title={provider.label}
+              subtitle={connectionStatus(provider)}
+              to={`/settings?section=${provider.provider.toLowerCase()}`}
+              trailing={<ChevronRight />}
+            />
+          ))}
+        </Group>
+      </div>
+
+      <div id="account" className="settings-anchor">
+        <Group label="Account">
+          {(['profile', 'password', 'export', 'clear'] as const).map((id) => (
+            <GroupRow
+              key={id}
+              title={subViews[id].title}
+              to={`/settings?section=${id}`}
+              trailing={<ChevronRight />}
+            />
+          ))}
+        </Group>
+      </div>
+    </>
+  )
+
+  // A message belongs to the screen it was earned on, not to whichever is opened next.
+  const [noteOn, setNoteOn] = useState(section)
+  if (noteOn !== section) {
+    setNoteOn(section)
+    setAccountNote(null)
+  }
+
+  useEffect(() => {
+    if (section) window.scrollTo({ top: 0 })
+  }, [section])
+
+  /*
+   * A screen opened straight from a link or a reload has nothing behind it, and the back
+   * button would leave settings altogether. The list is put behind it once, as if walked.
+   */
+  const stacked = useRef(false)
+  const opensScreen = view !== undefined
+  useEffect(() => {
+    if (!narrow || !opensScreen || key !== 'default' || stacked.current) return
+    stacked.current = true
+    navigate('/settings', { replace: true })
+    navigate(`/settings?section=${section}`)
+  }, [narrow, opensScreen, section, key, navigate])
+
+  // The desktop anchors: export is a screen of its own here, the rest are parts of the list.
+  useEffect(() => {
+    if (!narrow || section || !hash) return
+    if (hash === '#export') navigate('/settings?section=export', { replace: true })
+    else document.getElementById(hash.slice(1))?.scrollIntoView()
+  }, [narrow, section, hash, navigate])
+
+  /*
    * The rail marks where the page actually is, not the last thing clicked. The band is a
    * strip just under the header: whatever is crossing it is what is being read, which is
    * what stops the mark sticking to a short section long after it has gone by.
@@ -1168,25 +1313,45 @@ export const SettingsPage = () => {
     }
 
     return () => observer.disconnect()
-  }, [ids])
+  }, [ids, narrow])
+
+  const csvPicker = (
+    <input ref={csvInput} type="file" accept=".csv,text/csv" hidden onChange={onCsvPicked} />
+  )
+
+  const errorAlert = error && (
+    <p className="alert" role="alert">
+      {error}
+    </p>
+  )
+
+  if (narrow) {
+    return (
+      <AppShell>
+        <BackButton />
+        <h1 className="page-title">{view ? view.title : 'Settings'}</h1>
+        {csvPicker}
+        {errorAlert}
+
+        {view ? (
+          <>
+            {accountNote && <p className="muted note">{accountNote}</p>}
+            <div className="settings-subview">{view.render()}</div>
+          </>
+        ) : (
+          phoneList()
+        )}
+      </AppShell>
+    )
+  }
 
   return (
     <AppShell>
       <h1 className="page-title">Settings</h1>
 
-      <input
-        ref={csvInput}
-        type="file"
-        accept=".csv,text/csv"
-        hidden
-        onChange={onCsvPicked}
-      />
+      {csvPicker}
 
-      {error && (
-        <p className="alert" role="alert">
-          {error}
-        </p>
-      )}
+      {errorAlert}
 
       <div className="list-layout">
         <aside className="list-sidebar">

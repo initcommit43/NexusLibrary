@@ -822,6 +822,31 @@ a.list-link:hover {
   }
 }
 
+/* A phone's settings: grouped rows, and each part they open on a screen of its own as one card. */
+@media (max-width: 52rem) {
+  .group-footnote {
+    margin-top: var(--space-2);
+    padding-inline: var(--m-row-padding);
+    color: var(--text-muted);
+    font-size: var(--m-text-footnote);
+  }
+
+  .settings-subview {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    padding: var(--m-row-padding);
+    border-radius: var(--m-radius-group);
+    background: var(--surface);
+  }
+
+  /* The screen's title already names the group or the service. */
+  .settings-subview .settings-group > h3,
+  .settings-subview .integration-head h3 {
+    display: none;
+  }
+}
+
 /*
  * One card per section, with its parts ruled off inside it. A card each turned four things
  * you do to one account into four things sitting near each other.
