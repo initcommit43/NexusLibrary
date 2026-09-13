@@ -2988,6 +2988,17 @@ input.filter-control::-webkit-search-cancel-button {
   right: 0;
 }
 
+/*
+ * Gone on a screen with no pointer to hover. A swipe already moves the row there, and an
+ * arrow at opacity zero still takes taps: a thumb on the edge of the first or last cover
+ * stepped the row instead of opening the title.
+ */
+@media (hover: none) {
+  .carousel-arrow {
+    display: none;
+  }
+}
+
 .carousel-arrow[hidden] {
   display: none;
 }
