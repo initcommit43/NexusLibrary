@@ -2893,9 +2893,16 @@ input.filter-control::-webkit-search-cancel-button {
 }
 
 /* The section's own name, which opens onto the other list. */
+/*
+ * The menu hangs from the whole heading rather than from the picker, so it opens below the
+ * heading's rule instead of on it, and starts where the rule starts.
+ */
 .feed-picker {
-  position: relative;
   display: inline-flex;
+}
+
+.status-section h2:has(> .feed-picker) {
+  position: relative;
 }
 
 .feed-trigger {
@@ -2925,7 +2932,7 @@ input.filter-control::-webkit-search-cancel-button {
   z-index: 20;
   top: calc(100% + var(--space-2));
   left: 0;
-  min-width: 12rem;
+  width: max-content;
   margin: 0;
   padding: var(--space-1);
   list-style: none;
