@@ -4531,6 +4531,160 @@ input.filter-control::-webkit-search-cancel-button {
   z-index: 5;
 }
 
+/*
+ * The desktop list view: a table per status section, with the columns the media type names in
+ * the registry. A phone keeps .entry-list above.
+ */
+.entry-table {
+  --entry-table-thumb: 2.75rem;
+  --entry-table-value: 7rem;
+  --entry-table-inset: var(--space-4);
+  display: flex;
+  flex-direction: column;
+}
+
+.entry-table-head,
+.entry-table-row {
+  display: grid;
+  grid-template-columns:
+    var(--entry-table-thumb) minmax(0, 1fr)
+    repeat(var(--entry-table-columns), var(--entry-table-value));
+  align-items: center;
+  column-gap: var(--space-3);
+  padding-inline: var(--entry-table-inset) var(--space-3);
+}
+
+.entry-table-head {
+  padding-block: var(--space-2);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.entry-table-head > :nth-child(n + 3),
+.entry-table-value {
+  text-align: center;
+}
+
+.entry-table-row {
+  position: relative;
+  padding-block: var(--space-2);
+  border-radius: var(--radius-md);
+  transition: background var(--duration-fast) var(--ease);
+}
+
+/* A tint of the text colour rather than a surface token: light mode's raised surface is the page. */
+.entry-table-row:hover,
+.entry-table-row:focus-within {
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+}
+
+/* An open menu lifts its row over the rows after it, which would otherwise paint on top. */
+.entry-table-row:has([aria-expanded='true']) {
+  z-index: 5;
+}
+
+/* The same 3:4 as every other cover on a wide screen, just smaller. */
+.entry-table-thumb {
+  position: relative;
+  width: var(--entry-table-thumb);
+  aspect-ratio: 3 / 4;
+}
+
+.entry-table-thumb > img,
+.entry-table-thumb > .cover-placeholder {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+}
+
+.entry-table-thumb > .status-menu {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.entry-table .status-dots,
+.entry-table .status-dots:hover:not(:disabled) {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--scrim);
+  color: var(--scrim-text);
+}
+
+.entry-table .status-dots {
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease);
+}
+
+.entry-table-row:hover .status-dots,
+.entry-table-row:focus-within .status-dots,
+.entry-table .status-dots[aria-expanded='true'] {
+  opacity: 1;
+}
+
+.entry-table .status-options {
+  right: auto;
+  width: max-content;
+  min-width: 12rem;
+}
+
+.status-options-error {
+  padding: var(--space-2) var(--space-3);
+  border-top: 1px solid var(--border);
+  color: var(--danger);
+  font-size: var(--text-sm);
+}
+
+.entry-table-title {
+  min-width: 0;
+}
+
+.entry-table-link {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: var(--text);
+  font-size: var(--text-base);
+  font-weight: 500;
+}
+
+/* Stretched over the row, so the whole row opens the title and only its controls stand above. */
+.entry-table-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.entry-table-link:hover {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.entry-table-link:focus-visible {
+  outline: none;
+}
+
+.entry-table-link:focus-visible::after {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.entry-table-value {
+  color: var(--text-body);
+  font-size: var(--text-base);
+  font-variant-numeric: tabular-nums;
+}
+
 @media (max-width: 52rem) {
   .library-head > .icon-button,
   .library-head > .icon-button:hover:not(:disabled) {
