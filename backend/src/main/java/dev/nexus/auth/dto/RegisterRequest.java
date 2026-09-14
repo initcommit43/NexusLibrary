@@ -5,8 +5,10 @@ import jakarta.validation.constraints.Email;
 import dev.nexus.auth.AuthClient;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Past;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import java.time.LocalDate;
 
 public record RegisterRequest(
         @NotBlank @Email @Size(max = 320) String email,
@@ -19,6 +21,11 @@ public record RegisterRequest(
         // bcrypt silently ignores input past 72 bytes, so cap it rather than let a
         // longer password give a false sense of strength.
         @NotBlank @Size(min = 12, max = 72) String password,
+        /**
+         * Only its shape is checked here. Whether it clears {@link dev.nexus.auth.AgePolicy#MINIMUM}
+         * depends on what day it is, which is the service's call.
+         */
+        @NotNull @Past(message = "Please give the date you were born.") LocalDate dateOfBirth,
         /** Required; see {@link LoginRequest}. */
         @NotNull AuthClient client,
         /**

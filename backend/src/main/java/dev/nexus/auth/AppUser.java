@@ -7,6 +7,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "app_user")
@@ -34,6 +35,10 @@ public class AppUser {
 
     @Column(name = "terms_version", length = 32)
     private String termsVersion;
+
+    /** Null for an account made before V23 asked, which reads as an unknown age. */
+    @Column(name = "date_of_birth")
+    private LocalDate dateOfBirth;
 
     /**
      * When the address on this account was shown to reach its owner. Null until a verification
@@ -85,6 +90,25 @@ public class AppUser {
     public void acceptTerms(String version, Instant at) {
         this.termsVersion = version;
         this.termsAcceptedAt = at;
+    }
+
+    public LocalDate getDateOfBirth() {
+        return dateOfBirth;
+    }
+
+    /**
+     * Set once and never changed from a request. An editable birth date is no age check: the
+     * account that wants past the 18+ setting would simply edit it.
+     */
+    public void declareDateOfBirth(LocalDate dateOfBirth) {
+        if (this.dateOfBirth == null) {
+            this.dateOfBirth = dateOfBirth;
+        }
+    }
+
+    /** Unknown counts as no: an account that never gave a date cannot be shown to be old enough. */
+    public boolean hasTurned(int years, LocalDate on) {
+        return AgePolicy.hasTurned(dateOfBirth, years, on);
     }
 
     public boolean isEmailVerified() {

@@ -1,0 +1,15 @@
+-- The date of birth a reader gives, which two rules read.
+--
+-- NexusLibrary is 16+: DSGVO Art. 8 puts the age a reader can consent to a service's terms on
+-- their own at sixteen in Germany, so registration refuses anyone younger. And § 5 JMStV asks
+-- for a technical measure between minors and adult material, which here is a setting only an
+-- account that is 18 can switch on.
+--
+-- A date rather than an age, because an age is wrong by the next birthday. A declaration
+-- rather than a proof: DSA Art. 28(3) carries no duty to collect more personal data to protect
+-- minors, and asking every reader of a media tracker for ID would be the wrong trade.
+--
+-- Nullable, and it stays that way. Accounts made before this migration were never asked; NULL
+-- reads as an unknown age, never as an adult one. Such an account can give its date once from
+-- Settings, after which it is fixed like any other.
+ALTER TABLE app_user ADD COLUMN date_of_birth DATE;

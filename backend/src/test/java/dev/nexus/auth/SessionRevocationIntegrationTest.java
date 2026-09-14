@@ -224,7 +224,7 @@ class SessionRevocationIntegrationTest extends PostgresIntegrationTest {
     private Response register(String email, String username) {
         return http.postJson(
                 "/auth/register",
-                Map.of("email", email, "username", username, "password", PASSWORD, "client", "WEB", "acceptedTerms", true));
+                Map.of("email", email, "username", username, "password", PASSWORD, "client", "WEB", "dateOfBirth", "1990-01-01", "acceptedTerms", true));
     }
 
     private Response login(String email, AuthClient client) {

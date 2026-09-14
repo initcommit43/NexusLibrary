@@ -62,6 +62,7 @@ class AuthFlowIntegrationTest extends PostgresIntegrationTest {
                         "username", "player",
                         "password", PASSWORD,
                         "client", "WEB",
+                        "dateOfBirth", "1990-01-01",
                         "acceptedTerms", false));
 
         assertThat(response.status()).isEqualTo(400);
@@ -255,7 +256,7 @@ class AuthFlowIntegrationTest extends PostgresIntegrationTest {
     private Response register(String email, String username, String password) {
         return http.postJson(
                 "/auth/register",
-                Map.of("email", email, "username", username, "password", password, "client", "WEB", "acceptedTerms", true));
+                Map.of("email", email, "username", username, "password", password, "client", "WEB", "dateOfBirth", "1990-01-01", "acceptedTerms", true));
     }
 
     private Response login(String email, String password) {

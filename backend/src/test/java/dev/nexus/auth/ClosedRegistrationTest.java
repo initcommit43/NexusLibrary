@@ -38,7 +38,7 @@ class ClosedRegistrationTest extends PostgresIntegrationTest {
     void nobodyNewCanSignUp() {
         Response refused = http.postJson(
                 "/auth/register",
-                Map.of("email", "stranger@example.com", "username", "stranger", "password", PASSWORD, "client", "WEB", "acceptedTerms", true));
+                Map.of("email", "stranger@example.com", "username", "stranger", "password", PASSWORD, "client", "WEB", "dateOfBirth", "1990-01-01", "acceptedTerms", true));
 
         assertThat(refused.status()).isEqualTo(403);
         assertThat(String.valueOf(refused.body().get("message"))).contains("not taking new accounts");

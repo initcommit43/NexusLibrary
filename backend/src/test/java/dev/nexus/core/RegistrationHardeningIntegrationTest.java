@@ -83,6 +83,7 @@ class RegistrationHardeningIntegrationTest extends PostgresIntegrationTest {
                         "username", username,
                         "password", "a-long-enough-password",
                         "client", "WEB",
+                        "dateOfBirth", "1990-01-01",
                         "acceptedTerms", true));
     }
 }

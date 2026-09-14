@@ -35,6 +35,15 @@ public class AuthService {
     public AppUser register(RegisterRequest request) {
         String email = normalizeEmail(request.email());
 
+        // First of all, so a request about to be refused for age never learns whether its
+        // address is already registered.
+        if (!AgePolicy.isPlausible(request.dateOfBirth())) {
+            throw DateOfBirthRejectedException.implausible();
+        }
+        if (!AgePolicy.hasTurned(request.dateOfBirth(), AgePolicy.MINIMUM, AgePolicy.today())) {
+            throw DateOfBirthRejectedException.tooYoung();
+        }
+
         // Before the conflict check, so an address that could never work is told so rather
         // than being told it is taken — which would also answer a question about who is here.
         emailPolicy.check(email);
@@ -50,6 +59,7 @@ public class AuthService {
         // Recorded in the same transaction as the account. An account that exists without a
         // consent record beside it is one we could not answer an Art. 7(1) question about.
         user.acceptTerms(PolicyVersion.CURRENT, Instant.now());
+        user.declareDateOfBirth(request.dateOfBirth());
 
         return users.save(user);
     }

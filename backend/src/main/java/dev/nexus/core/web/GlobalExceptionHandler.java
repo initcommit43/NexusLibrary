@@ -1,6 +1,7 @@
 package dev.nexus.core.web;
 
 import dev.nexus.auth.AuthenticationFailedException;
+import dev.nexus.auth.DateOfBirthRejectedException;
 import dev.nexus.auth.PasswordResetLinkExpiredException;
 import dev.nexus.auth.PasswordResetUnavailableException;
 import dev.nexus.auth.EmailNotAcceptableException;
@@ -145,6 +146,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<ApiError> handleVerificationUnavailable(VerificationUnavailableException e) {
         log.error("A verification link was requested but this deployment has no mailer");
         return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body(new ApiError(e.getMessage()));
+    }
+
+    @ExceptionHandler(DateOfBirthRejectedException.class)
+    public ResponseEntity<ApiError> handleDateOfBirthRejected(DateOfBirthRejectedException e) {
+        return ResponseEntity.badRequest().body(new ApiError(e.getMessage(), e.getFieldErrors()));
     }
 
     @ExceptionHandler(EmailNotAcceptableException.class)
