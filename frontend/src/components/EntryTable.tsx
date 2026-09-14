@@ -1,8 +1,9 @@
-import type { CSSProperties } from 'react'
+import { useState, type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
-import type { TrackedItem } from '../api/client'
+import { api, type TrackedItem } from '../api/client'
 import { mediaPathFor, type ListColumn } from '../modules/registry'
-import { LIST_COLUMNS } from './listColumns'
+import { LIST_COLUMNS, STEPPED_UNITS } from './listColumns'
+import { episodesWaiting } from './progress'
 import { StatusMenu } from './StatusMenu'
 
 const Row = ({
@@ -16,15 +17,47 @@ const Row = ({
   onChanged: (updated: TrackedItem) => void
   onEdit: () => void
 }) => {
+  const [stepping, setStepping] = useState(false)
+  const [stepFailed, setStepFailed] = useState(false)
+
+  const waiting = episodesWaiting(entry)
+  const current = entry.progressCurrent ?? 0
+  const steppable =
+    entry.progressUnit !== null &&
+    STEPPED_UNITS.has(entry.progressUnit) &&
+    (entry.progressMax === null || current < entry.progressMax)
+
+  const step = async () => {
+    setStepping(true)
+    setStepFailed(false)
+    try {
+      onChanged(await api.updateEntry(entry.id, { progressCurrent: current + 1 }))
+    } catch {
+      setStepFailed(true)
+    } finally {
+      setStepping(false)
+    }
+  }
+
   return (
     <div role="row" className="entry-table-row">
       <div role="cell" className="entry-table-thumb">
+        {waiting !== null && (
+          <span
+            className="entry-table-airing"
+            title={waiting > 0 ? `${waiting} waiting to watch` : 'Airing, and you are caught up'}
+          />
+        )}
         {entry.coverUrl ? (
           <img src={entry.coverUrl} alt="" loading="lazy" />
         ) : (
           <div className="cover-placeholder" aria-hidden="true" />
         )}
         <StatusMenu entry={entry} onChanged={onChanged} onOpenEditor={onEdit} dots />
+        {/* The thumbnail is too small to recognise a title by; hovering shows it at size. */}
+        {entry.coverUrl && (
+          <img className="entry-table-preview" src={entry.coverUrl} alt="" aria-hidden="true" />
+        )}
       </div>
 
       <div role="cell" className="entry-table-title">
@@ -35,7 +68,21 @@ const Row = ({
 
       {columns.map((column) => (
         <div role="cell" key={column} className="entry-table-value">
-          {LIST_COLUMNS[column].read(entry)}
+          <span className="entry-table-count">
+            {LIST_COLUMNS[column].read(entry)}
+            {column === 'progress' && steppable && (
+              <button
+                type="button"
+                className={stepFailed ? 'entry-table-step is-failed' : 'entry-table-step'}
+                aria-label={`${stepFailed ? 'Could not save. ' : ''}Add one to ${entry.title}`}
+                title={stepFailed ? 'Could not save that. Try again.' : undefined}
+                disabled={stepping}
+                onClick={() => void step()}
+              >
+                +
+              </button>
+            )}
+          </span>
         </div>
       ))}
     </div>
@@ -46,9 +93,9 @@ const Row = ({
  * One status section of the library as a table, for a wide screen: a small cover, the title,
  * and the columns the media type asks for in the registry.
  *
- * <p>The row opens the title, so its link is stretched over the whole row, and the status menu
- * stands above that link. It stays out of sight until the row is hovered or focused, because
- * every row has one and a column of forty "…" buttons is a wall.
+ * <p>The row opens the title, so its link is stretched over the whole row, and the controls a
+ * row carries stand above that link. They stay out of sight until the row is hovered or
+ * focused, because every row has them and a column of forty "…" buttons is a wall.
  */
 export const EntryTable = ({
   entries,

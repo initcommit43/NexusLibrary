@@ -4591,13 +4591,25 @@ input.filter-control::-webkit-search-cancel-button {
   aspect-ratio: 3 / 4;
 }
 
-.entry-table-thumb > img,
+.entry-table-thumb > img:not(.entry-table-preview),
 .entry-table-thumb > .cover-placeholder {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
   border-radius: var(--radius-sm);
+}
+
+/* In the row's left inset, centred on the thumbnail, as AniList marks what is airing. */
+.entry-table-airing {
+  position: absolute;
+  top: 50%;
+  right: calc(100% + var(--space-2));
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: var(--radius-full);
+  background: var(--success);
+  transform: translateY(-50%);
 }
 
 .entry-table-thumb > .status-menu {
@@ -4643,6 +4655,29 @@ input.filter-control::-webkit-search-cancel-button {
   font-size: var(--text-sm);
 }
 
+/* Pointer-transparent, so moving across it lands on whatever row is beneath. */
+.entry-table-preview {
+  display: none;
+  position: absolute;
+  top: 50%;
+  right: calc(100% + var(--entry-table-inset) + var(--space-3));
+  z-index: 10;
+  width: 8.5rem;
+  max-width: none;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-2);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+@media (hover: hover) {
+  .entry-table-row:hover .entry-table-preview {
+    display: block;
+  }
+}
+
 .entry-table-title {
   min-width: 0;
 }
@@ -4683,6 +4718,44 @@ input.filter-control::-webkit-search-cancel-button {
   color: var(--text-body);
   font-size: var(--text-base);
   font-variant-numeric: tabular-nums;
+}
+
+.entry-table-count {
+  position: relative;
+}
+
+/* Hangs off the count's right edge, so the count stays centred under its heading. */
+.entry-table-step,
+.entry-table-step:hover:not(:disabled) {
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  margin-left: var(--space-1);
+  z-index: 1;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  line-height: 1;
+  transform: translateY(-50%);
+}
+
+.entry-table-step {
+  opacity: 0;
+}
+
+.entry-table-row:hover .entry-table-step,
+.entry-table-row:focus-within .entry-table-step {
+  opacity: 1;
+}
+
+.entry-table-step.is-failed {
+  color: var(--danger);
+  opacity: 1;
 }
 
 @media (max-width: 52rem) {
