@@ -5623,16 +5623,97 @@ input.filter-control::-webkit-search-cancel-button {
   }
 
   /*
-   * One column, so the status and the heart lead and the title follows straight under the
-   * artwork rather than under the controls. With the controls first the cover no longer rides
-   * the banner's edge: whatever sat at the top of the column would land on the banner instead.
+   * The cover beside its controls rather than above them, as AniList lays a title out on a
+   * phone: a small cover standing on the banner, and the status and heart in the strip under
+   * the banner, level with the cover's foot.
    */
-  .media-actions {
-    order: -1;
+  .media-cover-column {
+    display: grid;
+    grid-template-columns: 5rem minmax(0, 1fr);
+    align-items: end;
+    column-gap: var(--m-gap);
+  }
+
+  .has-banner .media-head {
+    padding-top: var(--space-3);
   }
 
   .has-banner .media-cover-column {
-    width: 10rem;
+    margin-top: 0;
+    box-shadow: none;
+  }
+
+  /*
+   * A margin far larger than the cover takes it out of the row's height, so the row is only as
+   * tall as the controls and the cover, held to the row's foot, rises over the banner.
+   */
+  .has-banner .media-cover {
+    position: relative;
+    margin-top: -20rem;
+    box-shadow: var(--shadow-2);
+  }
+
+  /* Sources paste bare URLs into summaries and biographies, and one is wider than a phone. */
+  .media-intro,
+  .media-layout {
+    overflow-wrap: anywhere;
+  }
+
+  /*
+   * A fact with several values runs them along the line: one per line suits a narrow column
+   * beside the page, and a full-width phone column turned a title's tags into a page of them.
+   */
+  .media-facts .fact {
+    flex-direction: row;
+    flex-wrap: wrap;
+    column-gap: var(--space-3);
+  }
+
+  .media-facts .fact-label {
+    flex-basis: 100%;
+  }
+
+  .tag-list {
+    flex-direction: row;
+    flex-wrap: wrap;
+    column-gap: var(--space-3);
+  }
+
+  .tag-list > h2,
+  .tag-list > button {
+    flex-basis: 100%;
+  }
+
+  .tag-row {
+    justify-content: flex-start;
+    gap: var(--space-1);
+  }
+
+  /* A row that scrolls sideways, like every other row of covers on a phone. */
+  .relation-grid,
+  .relation-grid.one-row {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: var(--m-shelf-card-width);
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .relation-card {
+    scroll-snap-align: start;
+  }
+
+  /* Bars share the width; a count wider than its bar must not push the chart off the page. */
+  .media-main .bar {
+    min-width: 0;
+  }
+
+  .media-main .bar-value,
+  .media-main .bar-label {
+    max-width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
   }
 }
 
