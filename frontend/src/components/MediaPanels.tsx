@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import type { Distribution, ExternalLink, MediaTag, Person } from './mediaDetail'
 import type { CharacterRole } from './mediaDetail'
 import type { Score } from './detailView'
@@ -204,9 +205,16 @@ export const MediaTrailer = ({ trailer }: { trailer: string | null }) => {
 
 /**
  * Tags carry how strongly the community thinks each applies, and some of them give the plot
- * away — those stay hidden until asked for, the way the source flags them.
+ * away — those stay hidden until asked for, the way the source flags them. Each leads to what
+ * else carries it, where the media type's browse filter can take it.
  */
-export const MediaTags = ({ tags }: { tags: MediaTag[] }) => {
+export const MediaTags = ({
+  tags,
+  linkTo,
+}: {
+  tags: MediaTag[]
+  linkTo?: (tag: string) => string | undefined
+}) => {
   const [showSpoilers, setShowSpoilers] = useState(false)
   if (tags.length === 0) return null
 
@@ -218,7 +226,13 @@ export const MediaTags = ({ tags }: { tags: MediaTag[] }) => {
       <h2>Tags</h2>
       {shown.map((tag) => (
         <div key={tag.name} className="tag-row">
-          <span>{tag.name}</span>
+          {linkTo?.(tag.name) ? (
+            <Link className="fact-link" to={linkTo(tag.name) as string}>
+              {tag.name}
+            </Link>
+          ) : (
+            <span>{tag.name}</span>
+          )}
           {tag.rank > 0 && <span className="muted">{tag.rank}%</span>}
         </div>
       ))}

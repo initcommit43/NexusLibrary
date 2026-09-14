@@ -28,7 +28,7 @@ import {
   MediaTrailer,
 } from '../components/MediaPanels'
 import { readDetail } from '../components/detailView'
-import { moduleForMediaType } from '../modules/registry'
+import { moduleForMediaType, tagPathFor } from '../modules/registry'
 import { coverBlurClass, useBlurAdult } from '../content/blur'
 
 /** AniList writes synopses in HTML, and pads them with blank lines it does not mean. */
@@ -193,7 +193,7 @@ export const MediaPage = () => {
         <div className="media-side">
           <MediaFacts media={media} />
           <MediaScores scores={view.scores} />
-          <MediaTags tags={view.tags} />
+          <MediaTags tags={view.tags} linkTo={(tag) => tagPathFor(media.mediaType, tag)} />
           <MediaLinks links={view.links} />
         </div>
 

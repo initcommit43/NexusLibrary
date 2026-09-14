@@ -289,3 +289,18 @@ export const statusLabelsFor = (mediaType: MediaType): Record<TrackingStatus, st
     PAUSED: 'Paused',
     DROPPED: 'Dropped',
   }
+
+/**
+ * Which media types have a browse filter whose values are the words shown here.
+ *
+ * <p>AniList files by name, so a genre on this page is the genre a filter takes. TMDB and
+ * IGDB file by id and show a name, so the same link would ask for a genre called "Action"
+ * where the filter wanted 28 — those stay as plain text until their filters take names.
+ */
+const FILTERS_BY_NAME: ReadonlySet<MediaType> = new Set(['ANIME', 'MANGA'])
+
+export const filtersTakeNames = (mediaType: MediaType) => FILTERS_BY_NAME.has(mediaType)
+
+/** Where a tag leads: the browse filter holding it, for a media type whose filter takes names. */
+export const tagPathFor = (mediaType: MediaType, tag: string): string | undefined =>
+  filtersTakeNames(mediaType) ? browsePathFor(mediaType, 'genres', 'tag:' + tag) : undefined

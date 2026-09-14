@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import type { MediaDetail } from '../api/client'
-import { browsePathFor } from '../modules/registry'
+import { browsePathFor, filtersTakeNames } from '../modules/registry'
 import { record } from './json'
 import { countdown, readNextEpisode, readRankings } from './mediaDetail'
 
@@ -71,33 +71,6 @@ const companies = (
 type Fact = { label: string; to?: string }
 
 /**
- * The tags AniList files a title under, its own order — most agreed-with first.
- *
- * <p>Spoiler tags are left out. They are how a tag list tells you the twist before you have
- * watched the thing, and a sidebar is read at a glance rather than opened deliberately.
- */
-const tagsOf = (detail: Record<string, unknown>): string[] => {
-  const tags = detail.tags
-  if (!Array.isArray(tags)) return []
-
-  return tags.flatMap((raw) => {
-    const tag = record(raw)
-    if (tag.isMediaSpoiler === true) return []
-    const name = text(tag.name)
-    return name ? [name] : []
-  })
-}
-
-/**
- * Which media types have a browse filter whose values are the words shown here.
- *
- * <p>AniList files by name, so a genre on this page is the genre a filter takes. TMDB and
- * IGDB file by id and show a name, so the same link would ask for a genre called "Action"
- * where the filter wanted 28 — those stay as plain text until their filters take names.
- */
-const FILTERS_BY_NAME = new Set(['ANIME', 'MANGA'])
-
-/**
  * The column of facts beside a title. Rows appear only when the source actually knows the
  * answer, so a manga is not padded out with empty episode counts.
  */
@@ -162,7 +135,7 @@ export const MediaFacts = ({ media }: { media: MediaDetail }) => {
   const studios = companies(detail, true, media.source)
   const producers = companies(detail, false, media.source)
   /** Which values lead into the browse filter, where the filter takes the words shown here. */
-  const narrows = FILTERS_BY_NAME.has(media.mediaType)
+  const narrows = filtersTakeNames(media.mediaType)
   const plain = (values: string[]): Fact[] => values.map((label) => ({ label }))
 
   /** Both lead into the one box that holds them, marked with the side they came from. */
@@ -179,7 +152,6 @@ export const MediaFacts = ({ media }: { media: MediaDetail }) => {
     ['Networks', plain(list(detail.networks))],
     ['Platforms', plain(list(meta.platforms))],
     ['Genres', narrowing(list(meta.genres), 'genre:')],
-    ['Tags', narrowing(tagsOf(detail), 'tag:')],
     ['Romaji', plain([text(titles.romaji) ?? ''].filter(Boolean))],
     ['English', plain([text(titles.english) ?? ''].filter(Boolean))],
     ['Native', plain([text(titles.native) ?? ''].filter(Boolean))],
