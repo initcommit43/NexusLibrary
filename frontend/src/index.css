@@ -3096,16 +3096,12 @@ input.filter-control::-webkit-search-cancel-button {
   flex: 1 1 16rem;
 }
 
-.status-picker,
+/* The spinner arrows are stripped: they invite stepping through hundreds of minutes one
+   click at a time, and they make the field look unlike the controls beside it. */
 .number-input {
   width: 100%;
   font-size: var(--text-sm);
   padding: var(--space-1) var(--space-2);
-}
-
-/* Strip the spinner arrows: they invite stepping through hundreds of minutes one click
-   at a time, and they make the field look unlike the controls beside it. */
-.number-input {
   appearance: textfield;
   -moz-appearance: textfield;
 }
@@ -5413,16 +5409,6 @@ input.filter-control::-webkit-search-cancel-button {
   text-align: center;
 }
 
-/* An entry page holds a reading width rather than stretching across the whole column. */
-.entry-top {
-  width: 100%;
-  max-width: 64rem;
-  margin-inline: auto;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-}
-
 @media (max-width: 52rem) {
   .media-head,
   .media-layout {
@@ -5777,17 +5763,6 @@ button.ghost.danger:hover:not(:disabled) {
   text-decoration: none;
 }
 
-.module-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
-  gap: var(--space-3);
-}
-
-.module-card {
-  padding: var(--space-3);
-  border-radius: var(--radius-md);
-}
-
 /* --- settings --- */
 
 .integration-head {
@@ -5855,43 +5830,7 @@ button.ghost.danger:hover:not(:disabled) {
   overflow-y: auto;
 }
 
-/* --- entry detail --- */
-
-.detail {
-  display: grid;
-  grid-template-columns: 12rem 1fr;
-  gap: var(--space-5);
-}
-
-.detail-cover img,
-.detail-cover .cover-placeholder {
-  width: 100%;
-  aspect-ratio: 3 / 4;
-  object-fit: cover;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow-2);
-}
-
-.detail-body {
-  max-width: 70ch;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.detail-body h1 {
-  font-size: var(--text-2xl);
-  margin-bottom: var(--space-1);
-}
-
-.detail-controls {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
-  gap: var(--space-3);
-  margin: var(--space-3) 0 var(--space-2);
-}
-
+/* The buttons under a review, which is what is left of the entry page. */
 .detail-actions {
   display: flex;
   gap: var(--space-2);
@@ -6145,15 +6084,6 @@ button.ghost.danger:hover:not(:disabled) {
   .shell-main {
     padding: var(--space-4) var(--space-3) var(--space-6);
   }
-
-  .detail {
-    grid-template-columns: 1fr;
-    gap: var(--space-4);
-  }
-
-  .detail-cover {
-    max-width: 11rem;
-  }
 }
 
 /*
@@ -6278,58 +6208,6 @@ a.icon-button.active {
   height: var(--space-2);
   border-radius: var(--radius-full);
   background: var(--accent);
-}
-
-/*
- * What airs next, as a list rather than a grid of covers: the title and the wait are the
- * whole of it, and a cover apiece would make eight rows of artwork saying nothing extra.
- */
-.airing-list {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  align-items: baseline;
-  gap: var(--space-2) var(--space-3);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  font-variant-numeric: tabular-nums;
-}
-
-.airing-list li {
-  display: grid;
-  grid-column: 1 / -1;
-  grid-template-columns: subgrid;
-  align-items: baseline;
-  padding-bottom: var(--space-2);
-  border-bottom: 1px solid var(--border);
-}
-
-.airing-list li:last-child {
-  padding-bottom: 0;
-  border-bottom: none;
-}
-
-.airing-title {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--text);
-  font-size: var(--text-sm);
-  font-weight: 600;
-}
-
-.airing-title:hover {
-  color: var(--accent);
-}
-
-/* The one figure in the row worth reading first, so it carries the accent. */
-.airing-when {
-  min-width: 6rem;
-  text-align: right;
-  font-family: var(--font-display);
-  font-size: var(--text-sm);
-  font-weight: 600;
-  color: var(--accent);
 }
 
 /*
