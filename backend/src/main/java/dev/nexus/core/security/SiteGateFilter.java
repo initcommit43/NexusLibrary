@@ -3,6 +3,7 @@ package dev.nexus.core.security;
 import dev.nexus.config.ApiPaths;
 import dev.nexus.config.NexusProperties;
 import dev.nexus.core.web.ClientIpResolver;
+import dev.nexus.core.web.RateLimitExceededException;
 import dev.nexus.core.web.RateLimiter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -12,7 +13,9 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseCookie;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
@@ -59,6 +62,15 @@ public class SiteGateFilter extends OncePerRequestFilter {
             return;
         }
 
+        if (UNLOCK_PATH.equals(path)) {
+            if ("POST".equals(request.getMethod())) {
+                unlock(request, response);
+            } else {
+                SiteGatePage.write(response, HttpServletResponse.SC_UNAUTHORIZED, safeNext(request.getParameter("next")), null);
+            }
+            return;
+        }
+
         if (gate.isValid(cookieValue(request), Instant.now())) {
             chain.doFilter(request, response);
             return;
@@ -75,6 +87,35 @@ public class SiteGateFilter extends OncePerRequestFilter {
         // Only a page load comes back to where it was going; a stray POST lands on the start.
         String next = "GET".equals(request.getMethod()) ? requestedPath(request) : "/";
         SiteGatePage.write(response, HttpServletResponse.SC_UNAUTHORIZED, next, null);
+    }
+
+    private void unlock(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        String next = safeNext(request.getParameter("next"));
+
+        try {
+            rateLimiter.check("site-gate:" + clientIp.resolve(request), attemptsPerMinute);
+        } catch (RateLimitExceededException e) {
+            SiteGatePage.write(response, 429, next, "Too many attempts, try again in a minute.");
+            return;
+        }
+
+        if (!gate.passwordMatches(request.getParameter("password"))) {
+            SiteGatePage.write(response, HttpServletResponse.SC_UNAUTHORIZED, next, "That password is not right.");
+            return;
+        }
+
+        ResponseCookie cookie = ResponseCookie.from(COOKIE, gate.mint(Instant.now()))
+                .httpOnly(true)
+                .secure(cookieSecure)
+                .path("/")
+                .maxAge(SiteGate.LIFETIME)
+                // Lax, not Strict: coming back from AniList, MAL, Simkl or Steam is a cross-site
+                // navigation, and a Strict cookie would be withheld and show this page instead.
+                .sameSite("Lax")
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+        response.setStatus(HttpServletResponse.SC_SEE_OTHER);
+        response.setHeader(HttpHeaders.LOCATION, next);
     }
 
     private static String cookieValue(HttpServletRequest request) {

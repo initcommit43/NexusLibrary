@@ -73,6 +73,20 @@ public class HttpTestClient {
         return send(builder.GET());
     }
 
+    /** A form post to a path outside the /api prefix, as a browser submits a plain HTML form. */
+    public Response postFormRoot(String path, Map<String, String> form, String... headers) {
+        String body = form.entrySet().stream()
+                .map(field -> java.net.URLEncoder.encode(field.getKey(), java.nio.charset.StandardCharsets.UTF_8)
+                        + "=" + java.net.URLEncoder.encode(field.getValue(), java.nio.charset.StandardCharsets.UTF_8))
+                .collect(java.util.stream.Collectors.joining("&"));
+        HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(rootUri + path))
+                .header("Content-Type", "application/x-www-form-urlencoded");
+        for (int i = 0; i + 1 < headers.length; i += 2) {
+            builder.header(headers[i], headers[i + 1]);
+        }
+        return send(builder.POST(HttpRequest.BodyPublishers.ofString(body)));
+    }
+
     public Response patchJson(String path, Map<String, ?> payload, String... headers) {
         return send(request(path, headers)
                 .header("Content-Type", "application/json")
