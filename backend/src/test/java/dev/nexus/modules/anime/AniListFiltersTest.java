@@ -2,6 +2,7 @@ package dev.nexus.modules.anime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -161,7 +162,8 @@ class AniListFiltersTest {
                         anyString(),
                         anyString(),
                         anyInt(),
-                        anyInt()))
+                        anyInt(),
+                        anyBoolean()))
                 .thenReturn(new AniListClient.MediaPage(List.of(media()), true));
 
         BrowseResults results = adapter.discover(
@@ -187,7 +189,8 @@ class AniListFiltersTest {
                         eq("TV"),
                         eq("FINISHED"),
                         eq(2),
-                        eq(40));
+                        eq(40),
+                        eq(false));
 
         assertThat(results.items()).singleElement().satisfies(item -> assertThat(item.externalId())
                 .isEqualTo("21"));
@@ -198,7 +201,7 @@ class AniListFiltersTest {
     @Test
     void anUnmarkedValueIsReadAsAGenre() {
         when(client.discoverMedia(
-                        any(MediaType.class), any(), any(), any(), any(), any(), any(), any(), anyInt(), anyInt()))
+                        any(MediaType.class), any(), any(), any(), any(), any(), any(), any(), anyInt(), anyInt(), anyBoolean()))
                 .thenReturn(new AniListClient.MediaPage(List.of(media()), false));
 
         adapter.discover(MediaType.ANIME, new DiscoverFilters(Map.of("genres", List.of("Fantasy"))), 1, 20);
@@ -214,7 +217,8 @@ class AniListFiltersTest {
                         any(),
                         any(),
                         eq(1),
-                        eq(20));
+                        eq(20),
+                        eq(false));
     }
 
     private static Map<String, Object> media() {

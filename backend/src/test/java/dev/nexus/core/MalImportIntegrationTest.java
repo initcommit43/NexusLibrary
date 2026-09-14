@@ -4,6 +4,7 @@ import static dev.nexus.support.AuthenticatedTest.registerAndGetToken;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 
@@ -74,7 +75,7 @@ class MalImportIntegrationTest extends PostgresIntegrationTest {
         when(malClient.fetchAnimeList(any())).thenReturn(List.of());
         when(malClient.fetchMangaList(any())).thenReturn(List.of());
         when(anilistClient.findMediaByMalIds(any(), anyCollection())).thenReturn(List.of());
-        when(anilistClient.searchMedia(any(), anyString(), anyInt())).thenReturn(List.of());
+        when(anilistClient.searchMedia(any(), anyString(), anyInt(), anyBoolean())).thenReturn(List.of());
         when(anilistClient.findMediaByIds(anyCollection())).thenReturn(List.of());
     }
 
@@ -130,7 +131,8 @@ class MalImportIntegrationTest extends PostgresIntegrationTest {
 
         // The join finds nothing; the search offers a candidate with no MAL id but an
         // agreeing title and episode count — which the matcher accepts.
-        when(anilistClient.searchMedia(MediaType.ANIME, "Fullmetal Alchemist Brotherhood", 10))
+        // Stubbed on true: resolving a MAL list has to search with adult titles included.
+        when(anilistClient.searchMedia(MediaType.ANIME, "Fullmetal Alchemist Brotherhood", 10, true))
                 .thenReturn(List.of(anilistMedia(5114, null, "ANIME", "Fullmetal Alchemist: Brotherhood")));
         when(anilistClient.findMediaByIds(anyCollection()))
                 .thenReturn(List.of(anilistMedia(5114, null, "ANIME", "Fullmetal Alchemist: Brotherhood")));

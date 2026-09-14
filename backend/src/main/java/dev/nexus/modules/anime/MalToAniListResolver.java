@@ -109,7 +109,10 @@ public class MalToAniListResolver implements ItemResolver {
     private Map<String, Object> searchByTitle(MediaType mediaType, ExternalItemRef ref) {
         TitleMatcher.Titles sourceTitles = sourceTitles(ref);
 
-        for (Map<String, Object> candidate : client.searchMedia(mediaType, ref.title(), SEARCH_LIMIT)) {
+        // Adult titles included whatever the reader's own setting: this resolves a list they
+        // already built, and leaving them out would report a title as unmatchable rather than
+        // hide it. The cached item carries the flag that decides whether it is ever shown.
+        for (Map<String, Object> candidate : client.searchMedia(mediaType, ref.title(), SEARCH_LIMIT, true)) {
             if (String.valueOf(ref.providerItemId()).equals(String.valueOf(candidate.get("idMal")))) {
                 return candidate;
             }

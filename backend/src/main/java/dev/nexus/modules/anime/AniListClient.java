@@ -57,15 +57,22 @@ public class AniListClient {
             nextAiringEpisode { episode airingAt }
             """;
 
+    /**
+     * Asked of AniList rather than filtered on the way back, so a search for ten titles answers
+     * with ten and never carries a hidden title's cover this far.
+     */
     private static final String SEARCH_QUERY =
             """
             query ($search: String, $type: MediaType, $perPage: Int) {
               Page(page: 1, perPage: $perPage) {
-                media(search: $search, type: $type, sort: SEARCH_MATCH) { %s }
+                media(search: $search, type: $type, sort: SEARCH_MATCH%s) { %s }
               }
             }
-            """
-                    .formatted(MEDIA_FIELDS);
+            """;
+
+    private static final String SEARCH_INCLUDING_ADULT = SEARCH_QUERY.formatted("", MEDIA_FIELDS);
+
+    private static final String SEARCH_EXCLUDING_ADULT = SEARCH_QUERY.formatted(", isAdult: false", MEDIA_FIELDS);
 
     private static final String BY_ID_QUERY =
             """
@@ -117,8 +124,8 @@ public class AniListClient {
      * as null as a filter for null — so a shelf that declared {@code season} and passed
      * nothing matched almost no titles at all instead of ignoring the season.
      *
-     * <p>{@code isAdult: false} is pinned rather than exposed: a browse page is what a reader
-     * sees before choosing anything, and it should not be the place that decision gets made.
+     * <p>{@code isAdult: false} stays pinned on the shelves. A shelf is handed to every reader
+     * unasked and cached once for all of them, so it holds no adult titles for anyone.
      */
     private static String browseQuery(List<String> declarations, List<String> arguments) {
         return """
@@ -298,9 +305,10 @@ public class AniListClient {
         this.rateLimiter = new OutboundRateLimiter(properties.requestsPerMinute() / 60.0);
     }
 
-    public List<Map<String, Object>> searchMedia(MediaType mediaType, String query, int limit) {
+    public List<Map<String, Object>> searchMedia(
+            MediaType mediaType, String query, int limit, boolean includeAdult) {
         Map<String, Object> data = post(
-                SEARCH_QUERY,
+                includeAdult ? SEARCH_INCLUDING_ADULT : SEARCH_EXCLUDING_ADULT,
                 Map.of("search", query, "type", anilistType(mediaType), "perPage", Math.min(limit, MAX_BATCH)));
         return pageMedia(data);
     }
@@ -354,13 +362,18 @@ public class AniListClient {
             String format,
             String status,
             int page,
-            int perPage) {
+            int perPage,
+            boolean includeAdult) {
 
         String term = blankToNull(search);
 
         List<String> declarations = new java.util.ArrayList<>(
                 List.of("$type: MediaType", "$sort: [MediaSort]", "$page: Int", "$perPage: Int"));
-        List<String> arguments = new java.util.ArrayList<>(List.of("type: $type", "sort: $sort", "isAdult: false"));
+        List<String> arguments = new java.util.ArrayList<>(List.of("type: $type", "sort: $sort"));
+        // Left out rather than passed as true: AniList reads isAdult: true as adult titles only.
+        if (!includeAdult) {
+            arguments.add("isAdult: false");
+        }
         Map<String, Object> variables = new java.util.HashMap<>();
         variables.put("type", anilistType(mediaType));
         variables.put("sort", List.of(term == null ? "POPULARITY_DESC" : "SEARCH_MATCH"));

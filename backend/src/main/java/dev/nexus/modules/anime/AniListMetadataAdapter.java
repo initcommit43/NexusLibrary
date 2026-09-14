@@ -67,7 +67,7 @@ public class AniListMetadataAdapter implements MetadataAdapter, StudioBrowse {
 
     @Override
     public List<ItemSearchResult> search(MediaType mediaType, String query, int limit) {
-        return client.searchMedia(mediaType, query, limit).stream()
+        return client.searchMedia(mediaType, query, limit, false).stream()
                 .map(media -> new ItemSearchResult(
                         mediaTypeOf(media),
                         Source.ANILIST,
@@ -147,7 +147,8 @@ public class AniListMetadataAdapter implements MetadataAdapter, StudioBrowse {
                 filters.one("format"),
                 filters.one("status"),
                 page,
-                size);
+                size,
+                false);
 
         return new BrowseResults(
                 found.media().stream().map(this::toSearchResult).toList(), found.hasNextPage());

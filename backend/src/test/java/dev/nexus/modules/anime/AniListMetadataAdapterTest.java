@@ -2,6 +2,7 @@ package dev.nexus.modules.anime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -125,7 +126,7 @@ class AniListMetadataAdapterTest {
 
     @Test
     void aSearchAsksForTheTypeTheCallerWants() {
-        when(client.searchMedia(any(), anyString(), anyInt())).thenReturn(List.of(media()));
+        when(client.searchMedia(any(), anyString(), anyInt(), anyBoolean())).thenReturn(List.of(media()));
 
         var results = adapter.search(MediaType.ANIME, "one piece", 10);
 

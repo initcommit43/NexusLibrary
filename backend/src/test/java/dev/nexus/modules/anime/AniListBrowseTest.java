@@ -2,6 +2,7 @@ package dev.nexus.modules.anime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -168,7 +169,7 @@ class AniListBrowseTest {
     /** A plain search hit needs none of that, and should not start carrying it. */
     @Test
     void leavesASearchHitWithoutFacets() {
-        when(client.searchMedia(any(), any(), anyInt()))
+        when(client.searchMedia(any(), any(), anyInt(), anyBoolean()))
                 .thenReturn(List.of(Map.of("id", 1, "type", "ANIME", "title", Map.of("romaji", "Frieren"))));
 
         assertThat(adapter.search(MediaType.ANIME, "frieren", 5).getFirst().facets())
