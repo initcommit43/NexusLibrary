@@ -10,6 +10,7 @@ import dev.nexus.core.domain.ExternalAccountRepository;
 import dev.nexus.core.domain.UserEntryRepository;
 import dev.nexus.core.tracking.dto.TrackedItemResponse;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.springframework.data.domain.Limit;
@@ -119,13 +120,17 @@ public class AccountService {
                         "createdAt", String.valueOf(row.getCreatedAt())))
                 .toList();
 
+        // Not Map.of: an account made before V23 has no date of birth, and the export says so
+        // with a null rather than leaving the field out.
+        Map<String, Object> account = new LinkedHashMap<>();
+        account.put("email", user.getEmail());
+        account.put("username", user.getUsername());
+        account.put("registeredAt", String.valueOf(user.getCreatedAt()));
+        account.put("dateOfBirth", user.getDateOfBirth() == null ? null : user.getDateOfBirth().toString());
+
         return Map.of(
                 "exportedAt", Instant.now().toString(),
-                "account",
-                        Map.of(
-                                "email", user.getEmail(),
-                                "username", user.getUsername(),
-                                "registeredAt", String.valueOf(user.getCreatedAt())),
+                "account", account,
                 "entries",
                         entries.findByUserIdOrderByUpdatedAtDesc(userId).stream()
                                 .map(TrackedItemResponse::from)

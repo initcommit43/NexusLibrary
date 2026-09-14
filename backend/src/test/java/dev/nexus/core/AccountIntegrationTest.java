@@ -125,6 +125,7 @@ class AccountIntegrationTest extends PostgresIntegrationTest {
         @SuppressWarnings("unchecked")
         Map<String, Object> account = (Map<String, Object>) response.body().get("account");
         assertThat(account).containsEntry("email", "reader@example.com");
+        assertThat(account).containsEntry("dateOfBirth", "1990-01-01");
         // A copy of someone's data is not a copy of their keys.
         assertThat(response.body().toString()).doesNotContain("accessToken");
     }
