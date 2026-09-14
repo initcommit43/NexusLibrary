@@ -1,5 +1,9 @@
 package dev.nexus.modules.film;
 
+import static dev.nexus.core.adapter.Payloads.firstUrl;
+import static dev.nexus.core.adapter.Payloads.names;
+import static dev.nexus.core.adapter.Payloads.putIfPresent;
+
 import dev.nexus.core.adapter.BrowseResults;
 import dev.nexus.core.adapter.BrowseShelf;
 import dev.nexus.core.adapter.DiscoverFilters;
@@ -474,40 +478,4 @@ public class TmdbMetadataAdapter implements MetadataAdapter {
         }
         return metadata;
     }
-
-    private List<String> names(Object raw) {
-        if (!(raw instanceof List<?> entries)) {
-            return List.of();
-        }
-        return entries.stream()
-                .filter(Map.class::isInstance)
-                .map(entry -> ((Map<?, ?>) entry).get("name"))
-                .filter(Objects::nonNull)
-                .map(Object::toString)
-                .toList();
-    }
-
-    private void putIfPresent(Map<String, Object> target, String key, Object value) {
-        if (value instanceof List<?> list && list.isEmpty()) {
-            return;
-        }
-        if (value instanceof String text && text.isBlank()) {
-            return;
-        }
-        if (value != null) {
-            target.put(key, value);
-        }
-    }
-    /** The first usable url in a list of them, which is where both wide-art keys arrive. */
-    private Optional<String> firstUrl(Object raw) {
-        if (!(raw instanceof List<?> urls)) {
-            return Optional.empty();
-        }
-        return urls.stream()
-                .filter(String.class::isInstance)
-                .map(String.class::cast)
-                .filter(url -> !url.isBlank())
-                .findFirst();
-    }
-
 }

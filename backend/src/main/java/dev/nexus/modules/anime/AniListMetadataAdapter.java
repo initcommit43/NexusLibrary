@@ -1,5 +1,8 @@
 package dev.nexus.modules.anime;
 
+import static dev.nexus.core.adapter.Payloads.putIfPresent;
+import static dev.nexus.core.adapter.Payloads.string;
+
 import dev.nexus.core.adapter.BrowseResults;
 import dev.nexus.core.adapter.BrowseShelf;
 import dev.nexus.core.adapter.CharacterPortrait;
@@ -423,27 +426,11 @@ public class AniListMetadataAdapter implements MetadataAdapter, StudioBrowse {
                 .toList();
     }
 
-    private void putIfPresent(Map<String, Object> target, String key, Object value) {
-        if (value instanceof List<?> list && list.isEmpty()) {
-            return;
-        }
-        if (value instanceof String text && text.isBlank()) {
-            return;
-        }
-        if (value != null) {
-            target.put(key, value);
-        }
-    }
-
     private Integer number(Object value) {
         return value instanceof Number n ? n.intValue() : null;
     }
 
     private Long epochSeconds(Object value) {
         return value instanceof Number n ? n.longValue() : null;
-    }
-
-    private String string(Object value) {
-        return value == null ? null : value.toString();
     }
 }

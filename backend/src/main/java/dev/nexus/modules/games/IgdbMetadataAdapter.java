@@ -1,5 +1,10 @@
 package dev.nexus.modules.games;
 
+import static dev.nexus.core.adapter.Payloads.firstUrl;
+import static dev.nexus.core.adapter.Payloads.names;
+import static dev.nexus.core.adapter.Payloads.putIfPresent;
+import static dev.nexus.core.adapter.Payloads.string;
+
 import dev.nexus.core.adapter.BrowseResults;
 import dev.nexus.core.adapter.BrowseShelf;
 import dev.nexus.core.adapter.DiscoverFilters;
@@ -56,12 +61,9 @@ public class IgdbMetadataAdapter implements MetadataAdapter {
     private static final int MAX_WEBSITES = 10;
 
     /**
-     * Vote floors for the two rating shelves. "Popular" is a low bar because the sort is the
-     * vote count itself; "top rated" is a high one because the sort is the score, and without
-     * it a single enthusiastic rating wins.
+     * The vote floor for the "top rated" shelf. A high bar, because the sort is the score:
+     * without it a single enthusiastic rating wins.
      */
-    private static final int POPULAR_VOTE_FLOOR = 20;
-
     private static final int TOP_RATED_VOTE_FLOOR = 200;
 
     /** How far back "recently released" reaches. A quarter is enough to stay populated. */
@@ -185,10 +187,10 @@ public class IgdbMetadataAdapter implements MetadataAdapter {
         }
         putIfAny(detail, "companies", companies);
 
-        putIfAny(detail, "engines", names(game.get("game_engines"), MAX_TAGS));
-        putIfAny(detail, "modes", names(game.get("game_modes"), MAX_TAGS));
-        putIfAny(detail, "perspectives", names(game.get("player_perspectives"), MAX_TAGS));
-        putIfAny(detail, "themes", names(game.get("themes"), MAX_TAGS));
+        putIfAny(detail, "engines", firstNames(game.get("game_engines"), MAX_TAGS));
+        putIfAny(detail, "modes", firstNames(game.get("game_modes"), MAX_TAGS));
+        putIfAny(detail, "perspectives", firstNames(game.get("player_perspectives"), MAX_TAGS));
+        putIfAny(detail, "themes", firstNames(game.get("themes"), MAX_TAGS));
 
         putIfAny(detail, "similar", related(game.get("similar_games"), "Similar", MAX_RELATED));
 
@@ -261,7 +263,8 @@ public class IgdbMetadataAdapter implements MetadataAdapter {
         return games;
     }
 
-    private List<String> names(Object raw, int limit) {
+    /** The first few names of a nested list, for the detail panels that cap what they show. */
+    private List<String> firstNames(Object raw, int limit) {
         return nested(raw, limit).stream()
                 .map(entry -> string(entry.get("name")))
                 .filter(java.util.Objects::nonNull)
@@ -484,41 +487,4 @@ public class IgdbMetadataAdapter implements MetadataAdapter {
         }
         return metadata;
     }
-
-    private List<String> names(Object raw) {
-        if (!(raw instanceof List<?> entries)) {
-            return List.of();
-        }
-        return entries.stream()
-                .filter(Map.class::isInstance)
-                .map(entry -> ((Map<?, ?>) entry).get("name"))
-                .filter(java.util.Objects::nonNull)
-                .map(Object::toString)
-                .toList();
-    }
-
-    private void putIfPresent(Map<String, Object> target, String key, Object value) {
-        if (value instanceof List<?> list && list.isEmpty()) {
-            return;
-        }
-        if (value != null) {
-            target.put(key, value);
-        }
-    }
-
-    private String string(Object value) {
-        return value == null ? null : value.toString();
-    }
-    /** The first usable url in a list of them, which is where both wide-art keys arrive. */
-    private Optional<String> firstUrl(Object raw) {
-        if (!(raw instanceof List<?> urls)) {
-            return Optional.empty();
-        }
-        return urls.stream()
-                .filter(String.class::isInstance)
-                .map(String.class::cast)
-                .filter(url -> !url.isBlank())
-                .findFirst();
-    }
-
 }

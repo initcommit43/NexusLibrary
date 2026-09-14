@@ -1,5 +1,7 @@
 package dev.nexus.modules.books;
 
+import static dev.nexus.core.adapter.Payloads.putIfPresent;
+
 import dev.nexus.core.adapter.BrowseResults;
 import dev.nexus.core.adapter.BrowseShelf;
 import dev.nexus.core.adapter.DiscoverFilters;
@@ -462,17 +464,5 @@ public class OpenLibraryMetadataAdapter implements MetadataAdapter {
             return List.of();
         }
         return entries.stream().filter(Objects::nonNull).map(Object::toString).toList();
-    }
-
-    private void putIfPresent(Map<String, Object> target, String key, Object value) {
-        if (value instanceof List<?> list && list.isEmpty()) {
-            return;
-        }
-        if (value instanceof String text && text.isBlank()) {
-            return;
-        }
-        if (value != null) {
-            target.put(key, value);
-        }
     }
 }
