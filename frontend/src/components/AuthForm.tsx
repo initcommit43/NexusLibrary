@@ -72,6 +72,8 @@ const FieldGroup = ({
           const shown = revealed[field.name] ?? false
           return (
             <label key={field.name}>
+              {/* A date box draws its own format and ignores a placeholder, so it is named beside it. */}
+              {field.type === 'date' && <span className="field-lead">{field.label}</span>}
               <input
                 type={shown ? 'text' : field.type}
                 name={field.name}

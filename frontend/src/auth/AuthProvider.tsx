@@ -48,10 +48,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       email: string,
       username: string,
       password: string,
+      dateOfBirth: string,
       acceptedTerms: boolean,
       turnstileToken: string,
     ) => {
-      const res = await api.register({ email, username, password, acceptedTerms, turnstileToken })
+      const res = await api.register({
+        email,
+        username,
+        password,
+        dateOfBirth,
+        acceptedTerms,
+        turnstileToken,
+      })
       // No body means the account exists but waits on its address: nothing to sign in with.
       if (!res) return 'confirm-email'
       setAccessToken(res.accessToken)

@@ -171,6 +171,11 @@ input[aria-invalid='true'] {
   font-size: var(--text-xs);
 }
 
+/* What a field will accept, said before it is typed into. Sits where its error would. */
+.field-hint {
+  font-size: var(--text-xs);
+}
+
 .checkbox {
   display: flex;
   align-items: center;
@@ -7444,6 +7449,20 @@ a.icon-button.active {
 
   .field-group input:focus-visible {
     outline-offset: -2px;
+  }
+
+  /* Names a row whose control draws no placeholder to be named by, such as a date. */
+  .field-group .field-lead {
+    flex: none;
+    padding-inline-start: var(--m-row-padding);
+    color: var(--text-muted);
+    font-size: var(--text-lg);
+    white-space: nowrap;
+  }
+
+  .field-group .field-lead + input {
+    padding-inline-start: var(--space-3);
+    text-align: end;
   }
 
   .field-group input[aria-invalid='true'] {

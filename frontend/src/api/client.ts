@@ -526,6 +526,8 @@ export const api = {
     email: string
     username: string
     password: string
+    /** ISO yyyy-mm-dd, straight off the date input. */
+    dateOfBirth: string
     acceptedTerms: boolean
     turnstileToken: string
   }) =>

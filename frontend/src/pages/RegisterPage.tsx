@@ -36,6 +36,7 @@ export const RegisterPage = () => {
         // saved that instead, and then filled it into the email box on every sign-in.
         { name: 'email', label: 'Email', type: 'email', autoComplete: 'username' },
         { name: 'username', label: 'Username', type: 'text', autoComplete: 'nickname' },
+        { name: 'dateOfBirth', label: 'Date of birth', type: 'date', autoComplete: 'bday' },
         { name: 'password', label: 'Password', type: 'password', autoComplete: 'new-password' },
         // The native screen asks twice, as a phone's keyboard makes a typo easy to miss.
         ...(narrow
@@ -79,6 +80,7 @@ export const RegisterPage = () => {
           v.email ?? '',
           v.username ?? '',
           v.password ?? '',
+          v.dateOfBirth ?? '',
           true,
           v.turnstileToken ?? '',
         )
