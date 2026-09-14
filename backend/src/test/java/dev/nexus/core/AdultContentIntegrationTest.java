@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import dev.nexus.core.domain.UserEntryRepository;
 import dev.nexus.modules.anime.AniListClient;
 import dev.nexus.modules.games.IgdbClient;
 import dev.nexus.support.AuthenticatedTest;
@@ -18,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
@@ -35,6 +37,9 @@ class AdultContentIntegrationTest extends PostgresIntegrationTest {
 
     @MockitoBean
     AniListClient aniListClient;
+
+    @Autowired
+    UserEntryRepository entries;
 
     private HttpTestClient http;
 
@@ -60,6 +65,18 @@ class AdultContentIntegrationTest extends PostgresIntegrationTest {
                 .thenReturn(List.of(GamesTestData.botw(), GamesTestData.eroticGame()));
         when(igdbClient.findGameById(GamesTestData.BOTW_ID)).thenReturn(List.of(GamesTestData.botw()));
         when(igdbClient.findGameById(GamesTestData.EROTIC_ID)).thenReturn(List.of(GamesTestData.eroticGame()));
+    }
+
+    private Response track(String token, String externalId) {
+        return http.postJson(
+                "/entries",
+                Map.of("source", "IGDB", "externalId", externalId, "status", "PLANNING"),
+                "Authorization",
+                "Bearer " + token);
+    }
+
+    private Response setShowAdult(String token, boolean on) {
+        return http.patchJson("/settings/content", Map.of("showAdult", on), "Authorization", "Bearer " + token);
     }
 
     private Response get(String path, String token) {
@@ -103,6 +120,35 @@ class AdultContentIntegrationTest extends PostgresIntegrationTest {
 
         assertThat(get("/catalog/media/IGDB/" + GamesTestData.EROTIC_ID, hidden).status()).isEqualTo(404);
         assertThat(get("/catalog/media/IGDB/" + GamesTestData.BOTW_ID, hidden).body()).containsEntry("adult", false);
+    }
+
+    /** Refused with the same 404 as the title's page, so tracking cannot confirm the id. */
+    @Test
+    void trackingAnAdultTitleWithThemOffIsNotFound() {
+        assertThat(track(hidden, GamesTestData.EROTIC_ID).status()).isEqualTo(404);
+        assertThat(entries.count()).isZero();
+
+        assertThat(track(shown, GamesTestData.EROTIC_ID).status()).isEqualTo(201);
+    }
+
+    /** Switching them off hides an adult entry without deleting it, and switching back restores it. */
+    @Test
+    void anAdultEntryIsHiddenRatherThanLostWhenTheSettingGoesOff() {
+        track(shown, GamesTestData.BOTW_ID);
+        Response tracked = track(shown, GamesTestData.EROTIC_ID);
+        Object adultEntryId = tracked.body().get("id");
+        assertThat(tracked.body()).containsEntry("adult", true);
+        assertThat(titles(get("/entries", shown), null)).hasSize(2);
+
+        setShowAdult(shown, false);
+
+        assertThat(titles(get("/entries", shown), null)).containsExactly("The Legend of Zelda: Breath of the Wild");
+        assertThat(get("/entries/" + adultEntryId, shown).status()).isEqualTo(404);
+        assertThat(entries.count()).isEqualTo(2);
+
+        setShowAdult(shown, true);
+        assertThat(titles(get("/entries", shown), null)).hasSize(2);
+        assertThat(get("/entries/" + adultEntryId, shown).status()).isEqualTo(200);
     }
 
     @Test

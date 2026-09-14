@@ -3,7 +3,9 @@ package dev.nexus.core.tracking;
 import dev.nexus.core.activity.ActivityRecorder;
 import dev.nexus.core.activity.ActivityRecorder.EntrySnapshot;
 import dev.nexus.core.cache.ItemCacheService;
+import dev.nexus.core.cache.ItemNotFoundException;
 import dev.nexus.core.cache.ItemRefreshService;
+import dev.nexus.core.content.ContentPreferences;
 import dev.nexus.core.domain.ActivityRepository;
 import dev.nexus.core.domain.MediaType;
 import dev.nexus.core.domain.NotificationRepository;
@@ -44,6 +46,7 @@ public class TrackingService {
     private final ProviderActivityRepository imported;
     private final ActivityRepository activities;
     private final NotificationRepository notifications;
+    private final ContentPreferences content;
 
     public TrackingService(
             UserEntryRepository entries,
@@ -52,7 +55,8 @@ public class TrackingService {
             ItemRefreshService refresh,
             ProviderActivityRepository imported,
             ActivityRepository activities,
-            NotificationRepository notifications) {
+            NotificationRepository notifications,
+            ContentPreferences content) {
         this.entries = entries;
         this.itemCache = itemCache;
         this.activity = activity;
@@ -60,6 +64,7 @@ public class TrackingService {
         this.imported = imported;
         this.activities = activities;
         this.notifications = notifications;
+        this.content = content;
     }
 
     /**
@@ -101,7 +106,14 @@ public class TrackingService {
         // The dashboard is the read that keeps the cache honest: it sees a user's whole library
         // at once, so anything past its TTL is noticed here and re-fetched behind the response.
         refresh.refreshIfStale(owned.stream().map(UserEntry::getItem).toList());
-        return owned;
+
+        // Hidden, not deleted: an import can bring adult titles in, and switching them back on
+        // brings every entry back as it was. The refresh above still covers them, since the
+        // cache is shared with readers who can see them.
+        if (content.forUser(userId).showAdult()) {
+            return owned;
+        }
+        return owned.stream().filter(entry -> !entry.getItem().isAdult()).toList();
     }
 
     /** This reader's entry for a catalogue item, when they have one. */
@@ -113,6 +125,10 @@ public class TrackingService {
     @Transactional(readOnly = true)
     public UserEntry requireOwned(Long entryId, Long userId) {
         UserEntry entry = entries.findByIdAndUserId(entryId, userId).orElseThrow(EntryNotFoundException::new);
+        // An entry the reader has chosen not to see answers like one that is not theirs.
+        if (entry.getItem().isAdult() && !content.forUser(userId).showAdult()) {
+            throw new EntryNotFoundException();
+        }
         refresh.refreshIfStale(entry.getItem());
         return entry;
     }
@@ -124,6 +140,10 @@ public class TrackingService {
     @Transactional
     public UserEntry track(Long userId, TrackRequest request) {
         TrackableItem item = itemCache.findOrCache(request.source(), request.externalId());
+        // The same 404 the title's page gives, so tracking cannot confirm a hidden title exists.
+        if (item.isAdult() && !content.forUser(userId).showAdult()) {
+            throw new ItemNotFoundException("No item " + request.externalId() + " in " + request.source());
+        }
 
         UserEntry existing = entries.findByUserIdAndItemId(userId, item.getId()).orElse(null);
         boolean isNew = existing == null;

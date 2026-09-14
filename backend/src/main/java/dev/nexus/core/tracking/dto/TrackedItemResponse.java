@@ -19,6 +19,8 @@ public record TrackedItemResponse(
         String title,
         String coverUrl,
         LocalDate releaseDate,
+        /** Whether the source files it as adult: what the reader's blur setting applies to. */
+        boolean adult,
         Map<String, Object> metadata,
         TrackingStatus status,
         Short rating,
@@ -62,6 +64,7 @@ public record TrackedItemResponse(
                 item.getTitle(),
                 item.getCoverUrl(),
                 item.getReleaseDate(),
+                item.isAdult(),
                 item.getMetadata(),
                 entry.getStatus(),
                 entry.getRating(),
