@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import {
-  ApiError,
   api,
+  errorMessage,
   type BrowseShelf,
   type FilterField,
   type FilterValues,
@@ -155,7 +155,7 @@ export const BrowsePage = () => {
             asked: settled,
             results: [],
             hasMore: false,
-            error: err instanceof ApiError ? err.message : 'Could not reach the server.',
+            error: errorMessage(err, 'Could not reach the server.'),
           }),
       )
 
@@ -210,7 +210,7 @@ export const BrowsePage = () => {
         setLoaded({
           mediaType,
           shelves: [],
-          error: err instanceof ApiError ? err.message : 'Could not reach the server.',
+          error: errorMessage(err, 'Could not reach the server.'),
         })
       })
 

@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  ApiError,
   api,
+  errorMessage,
   type ActivityDay,
   type MediaType,
   type ProfileBanner,
@@ -117,7 +117,7 @@ export const ProfilePage = () => {
         setPicture(face)
       })
       .catch((err) =>
-        setError(err instanceof ApiError ? err.message : 'Could not load your library.'),
+        setError(errorMessage(err, 'Could not load your library.')),
       )
   }, [])
 
@@ -222,7 +222,7 @@ export const ProfilePage = () => {
       setRowOrder(saved.order)
       setPaired(saved.paired)
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not save that order.')
+      setError(errorMessage(err, 'Could not save that order.'))
       setRowOrder(held.order)
       setPaired(held.paired)
     }
@@ -276,7 +276,7 @@ export const ProfilePage = () => {
       const byId = new Map(saved.map((entry) => [entry.id, entry]))
       setEntries((held) => held?.map((entry) => byId.get(entry.id) ?? entry) ?? null)
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not save that order.')
+      setError(errorMessage(err, 'Could not save that order.'))
       api.listEntries().then(setEntries).catch(() => {})
     }
   }

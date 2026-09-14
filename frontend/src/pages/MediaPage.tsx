@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { ApiError, api, type MediaDetail, type MediaType, type TrackedItem } from '../api/client'
+import {
+  api,
+  errorMessage,
+  type MediaDetail,
+  type MediaType,
+  type TrackedItem,
+} from '../api/client'
 import { AppShell } from '../components/AppShell'
 import { EntryEditDialog } from '../components/EntryEditDialog'
 import { MediaAchievements } from '../components/MediaAchievements'
@@ -71,7 +77,7 @@ export const MediaPage = () => {
         setLoaded({ key: `${source}/${externalId}`, media: next })
       })
       .catch((err) =>
-        setError(err instanceof ApiError ? err.message : 'Could not load that title.'),
+        setError(errorMessage(err, 'Could not load that title.')),
       )
   }, [source, externalId])
 
@@ -89,7 +95,7 @@ export const MediaPage = () => {
       })
       load()
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not add that to your list.')
+      setError(errorMessage(err, 'Could not add that to your list.'))
     } finally {
       setBusy(false)
     }

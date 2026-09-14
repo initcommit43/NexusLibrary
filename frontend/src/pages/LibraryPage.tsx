@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
-import { ApiError, api, type TrackedItem, type TrackingStatus } from '../api/client'
+import { api, errorMessage, type TrackedItem, type TrackingStatus } from '../api/client'
 import { AppShell } from '../components/AppShell'
 import { EntryCard } from '../components/EntryCard'
 import { EntryEditDialog } from '../components/EntryEditDialog'
@@ -48,7 +48,7 @@ export const LibraryPage = () => {
       .listEntries()
       .then(setEntries)
       .catch((err) =>
-        setError(err instanceof ApiError ? err.message : 'Could not load your library.'),
+        setError(errorMessage(err, 'Could not load your library.')),
       )
   }, [])
 

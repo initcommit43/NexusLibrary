@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { ApiError, api, type SearchResult } from '../api/client'
+import { api, errorMessage, type SearchResult } from '../api/client'
 import { AppShell } from '../components/AppShell'
 import { CatalogCard } from '../components/CatalogCard'
 import { EntryEditDialog } from '../components/EntryEditDialog'
@@ -65,7 +65,7 @@ export const StudioPage = () => {
       })
       .catch((err) => {
         if (cancelled) return
-        setError(err instanceof ApiError ? err.message : 'Could not reach the server.')
+        setError(errorMessage(err, 'Could not reach the server.'))
       })
 
     return () => {

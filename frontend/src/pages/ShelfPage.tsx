@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ApiError, api, type SearchResult } from '../api/client'
+import { api, errorMessage, type SearchResult } from '../api/client'
 import { AppShell } from '../components/AppShell'
 import { EntryEditDialog } from '../components/EntryEditDialog'
 import { CatalogCard } from '../components/CatalogCard'
@@ -89,7 +89,7 @@ export const ShelfPage = () => {
           for: key,
           results: [],
           hasMore: false,
-          error: err instanceof ApiError ? err.message : 'Could not reach the server.',
+          error: errorMessage(err, 'Could not reach the server.'),
         })
       })
 

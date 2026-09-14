@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { ApiError, api, type SearchResult } from '../api/client'
+import { api, errorMessage, type SearchResult } from '../api/client'
 import { AppShell } from '../components/AppShell'
 import { EntryEditDialog } from '../components/EntryEditDialog'
 import { CatalogCard } from '../components/CatalogCard'
@@ -48,7 +48,7 @@ export const SearchPage = () => {
         current &&
         setFailure({
           asked,
-          message: err instanceof ApiError ? err.message : 'Could not reach the server.',
+          message: errorMessage(err, 'Could not reach the server.'),
         }),
       )
 
