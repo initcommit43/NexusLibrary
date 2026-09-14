@@ -19,6 +19,7 @@ import dev.nexus.core.domain.Source;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -38,6 +39,9 @@ public class TmdbMetadataAdapter implements MetadataAdapter {
 
     /** TMDB rates on 0-10; core stores 0-100, so ratings scale once, here. */
     private static final int RATING_SCALE = 10;
+
+    /** A show's episode count per season, excluding specials. */
+    static final String SEASON_EPISODES = "seasonEpisodes";
 
     private static final String STATUS_RELEASED = "Released";
 
@@ -471,11 +475,31 @@ public class TmdbMetadataAdapter implements MetadataAdapter {
         } else {
             putIfPresent(metadata, "episodes", row.get("number_of_episodes"));
             putIfPresent(metadata, "seasons", row.get("number_of_seasons"));
+            // Always written, empty or not: its presence marks a cached show as read since the
+            // breakdown was stored, so an older copy can be told apart and refreshed once.
+            metadata.put(SEASON_EPISODES, seasonEpisodes(row.get("seasons")));
         }
 
         if (row.get("vote_average") instanceof Number rating && rating.doubleValue() > 0) {
             metadata.put("externalRating", Math.round(rating.doubleValue() * RATING_SCALE));
         }
         return metadata;
+    }
+
+    /**
+     * Episodes per season in season order, for turning an episode count into seasons watched.
+     * Season 0 is TMDB's specials, which a reader's episode progress does not count.
+     */
+    private List<Integer> seasonEpisodes(Object raw) {
+        if (!(raw instanceof List<?> seasons)) {
+            return List.of();
+        }
+        return seasons.stream()
+                .filter(Map.class::isInstance)
+                .map(season -> (Map<?, ?>) season)
+                .filter(season -> season.get("season_number") instanceof Number number && number.intValue() > 0)
+                .sorted(Comparator.comparingInt(season -> ((Number) season.get("season_number")).intValue()))
+                .map(season -> season.get("episode_count") instanceof Number count ? count.intValue() : 0)
+                .toList();
     }
 }

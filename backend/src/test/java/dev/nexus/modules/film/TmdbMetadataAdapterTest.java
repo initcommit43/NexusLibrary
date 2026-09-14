@@ -160,6 +160,30 @@ class TmdbMetadataAdapterTest {
         assertThat(metadata).containsEntry("seasons", 5);
     }
 
+    /** Specials are season 0, and a reader's episode progress does not count them. */
+    @Test
+    void storesEpisodesPerSeasonInOrderWithoutSpecials() {
+        when(client.findById(TmdbKind.SHOW, "1396"))
+                .thenReturn(Optional.of(Map.of(
+                        "id", 1396,
+                        "name", "Breaking Bad",
+                        "seasons", List.of(
+                                Map.of("season_number", 2, "episode_count", 13),
+                                Map.of("season_number", 0, "episode_count", 9),
+                                Map.of("season_number", 1, "episode_count", 7)))));
+
+        assertThat(adapter.fetchById("tv:1396").orElseThrow().metadata())
+                .containsEntry("seasonEpisodes", List.of(7, 13));
+    }
+
+    /** Written even when TMDB lists no seasons, so the show is not taken for an old copy again. */
+    @Test
+    void aShowWithNoSeasonsStillRecordsAnEmptyBreakdown() {
+        when(client.findById(TmdbKind.SHOW, "1")).thenReturn(Optional.of(Map.of("id", 1, "name", "Pilot")));
+
+        assertThat(adapter.fetchById("tv:1").orElseThrow().metadata()).containsEntry("seasonEpisodes", List.of());
+    }
+
     @Test
     void searchAsksForTheKindThatMatchesTheMediaType() {
         when(client.search(TmdbKind.SHOW, "bad", 5)).thenReturn(List.of());
