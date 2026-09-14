@@ -14,6 +14,7 @@ import dev.nexus.core.account.AccountNotFoundException;
 import dev.nexus.core.account.PasswordMismatchException;
 import dev.nexus.core.adapter.MetadataAdapterNotAvailableException;
 import dev.nexus.core.cache.ItemNotFoundException;
+import dev.nexus.core.content.AdultContentNotPermittedException;
 import dev.nexus.core.mail.MailNotSentException;
 import dev.nexus.core.importing.ExternalAccountNotConnectedException;
 import dev.nexus.core.importing.CsvFormatException;
@@ -146,6 +147,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<ApiError> handleVerificationUnavailable(VerificationUnavailableException e) {
         log.error("A verification link was requested but this deployment has no mailer");
         return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body(new ApiError(e.getMessage()));
+    }
+
+    @ExceptionHandler(AdultContentNotPermittedException.class)
+    public ResponseEntity<ApiError> handleAdultNotPermitted(AdultContentNotPermittedException e) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ApiError(e.getMessage()));
     }
 
     @ExceptionHandler(DateOfBirthRejectedException.class)
