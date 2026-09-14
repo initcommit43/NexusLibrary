@@ -4,36 +4,27 @@ import { mediaPathFor } from '../modules/registry'
 import { ChevronRight } from './GroupedList'
 import { progressLine, progressShare } from './progress'
 import { EntryCoverMenu } from './CoverStatusMenu'
-import { StatusMenu } from './StatusMenu'
 
 /**
- * One title as a row of the library's list view: cover, title, progress and a bar towards the
- * total where there is one.
+ * One title as a row of the library's list view on a phone: cover, title, progress and a bar
+ * towards the total where there is one. A wide screen gets {@code EntryTable} instead.
  *
  * <p>The whole row opens the title, so the link is stretched over it and the status menu stands
- * above that. Wide, the menu is the labelled one beside the chevron, where a row has room to
- * say what shelf a title is on. On a phone ({@code compact}) the row keeps the native app's
- * shape of cover, text and chevron, so the menu is the round "…" on the cover's corner, the
- * same control in the same place as on a phone's grid card.
+ * above that. The row keeps the native app's shape of cover, text and chevron, so the menu is
+ * the round "…" on the cover's corner, the same control in the same place as on a phone's grid
+ * card.
  */
 export const EntryRow = ({
   entry,
   onChanged,
   onEdit,
-  compact = false,
 }: {
   entry: TrackedItem
   onChanged: (updated: TrackedItem) => void
   onEdit: () => void
-  compact?: boolean
 }) => {
   const progress = progressLine(entry)
   const share = progressShare(entry)
-  const menu = compact ? (
-    <EntryCoverMenu entry={entry} onChanged={onChanged} onOpenEditor={onEdit} />
-  ) : (
-    <StatusMenu entry={entry} onChanged={onChanged} onOpenEditor={onEdit} />
-  )
 
   return (
     <li className="entry-row">
@@ -43,7 +34,7 @@ export const EntryRow = ({
         ) : (
           <div className="cover-placeholder" aria-hidden="true" />
         )}
-        {compact && menu}
+        <EntryCoverMenu entry={entry} onChanged={onChanged} onOpenEditor={onEdit} />
       </div>
 
       <Link className="entry-row-link" to={mediaPathFor(entry)}>
@@ -56,7 +47,6 @@ export const EntryRow = ({
         )}
       </Link>
 
-      {!compact && menu}
       <ChevronRight />
     </li>
   )

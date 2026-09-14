@@ -4495,21 +4495,6 @@ input.filter-control::-webkit-search-cancel-button {
   background: var(--accent);
 }
 
-.entry-row > .status-menu {
-  position: relative;
-  z-index: 1;
-  flex: none;
-  width: 10rem;
-}
-
-/* Quiet, since every row carries one: a filled accent button forty times over is a wall. */
-.entry-row .status-action,
-.entry-row .status-action:hover:not(:disabled) {
-  border-color: var(--border-strong);
-  background: var(--surface);
-  color: var(--text-body);
-}
-
 .entry-row > .chevron-right {
   flex: none;
   color: var(--text-muted);
@@ -4524,11 +4509,6 @@ input.filter-control::-webkit-search-cancel-button {
   .entry-row.is-pending .entry-row-cover {
     animation: none;
   }
-}
-
-/* An open menu lifts its row above the next one, which would otherwise paint over the options. */
-.entry-row > .status-menu:has(> [aria-expanded='true']) {
-  z-index: 5;
 }
 
 /*

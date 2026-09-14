@@ -5,6 +5,7 @@ import { AppShell } from '../components/AppShell'
 import { EntryCard } from '../components/EntryCard'
 import { EntryEditDialog } from '../components/EntryEditDialog'
 import { EntryRow } from '../components/EntryRow'
+import { EntryTable } from '../components/EntryTable'
 import { LibraryPhoneFilters } from '../components/LibraryPhoneFilters'
 import { ListSidebar } from '../components/ListSidebar'
 import { EMPTY_FILTERS, firstGenre, type ListFilters } from '../components/listFilters'
@@ -259,7 +260,7 @@ export const LibraryPage = () => {
                       />
                     ))}
                   </div>
-                ) : (
+                ) : narrow ? (
                   <ul className="entry-list">
                     {group.map((entry) => (
                       <EntryRow
@@ -267,10 +268,16 @@ export const LibraryPage = () => {
                         entry={entry}
                         onChanged={replace}
                         onEdit={() => setEditing(entry)}
-                        compact={narrow}
                       />
                     ))}
                   </ul>
+                ) : (
+                  <EntryTable
+                    entries={group}
+                    columns={active.listColumns}
+                    onChanged={replace}
+                    onEdit={setEditing}
+                  />
                 )}
               </section>
             )
