@@ -5666,9 +5666,14 @@ input.filter-control::-webkit-search-cancel-button {
    */
   .media-cover-column {
     display: grid;
-    grid-template-columns: 5rem minmax(0, 1fr);
+    grid-template-columns: 6rem minmax(0, 1fr);
     align-items: end;
     column-gap: var(--m-gap);
+  }
+
+  /* About two fifths of the screen's width, so the cover stands on the lower half of it. */
+  .media-banner {
+    height: 10rem;
   }
 
   .has-banner .media-head {
