@@ -5,6 +5,7 @@ import { mediaPathFor } from '../modules/registry'
 import { CoverStatusMenu } from './CoverStatusMenu'
 import { ChevronRight } from './GroupedList'
 import { useShelfResults } from './useShelfResults'
+import { coverBlurClass, useBlurAdult } from '../content/blur'
 
 /** What a title needs to be put on a shelf, whether or not it is in the library yet. */
 export type Shelvable = Pick<SearchResult, 'source' | 'externalId' | 'mediaType'>
@@ -14,12 +15,27 @@ export interface RowCard extends Shelvable {
   key: string
   title: string
   coverUrl: string | null
+  adult: boolean
   to: string
   /** One muted line under the title: a countdown, a count, a year. */
   subtitle: string | null
   status: TrackingStatus | null
   /** Episodes aired and not yet watched, marked in the corner as the library marks them. */
   waiting?: number | null
+}
+
+const CardCover = ({ card }: { card: RowCard }) => {
+  const blur = useBlurAdult()
+  return card.coverUrl ? (
+    <img
+      className={coverBlurClass(card.adult, blur)}
+      src={card.coverUrl}
+      alt=""
+      loading="lazy"
+    />
+  ) : (
+    <span className="cover-placeholder" />
+  )
 }
 
 /**
@@ -58,11 +74,7 @@ export const ShelfRow = ({
           <div className="shelf-card-cover">
             {/* The title under it is the same link and the one a screen reader is given. */}
             <Link to={card.to} tabIndex={-1} aria-hidden="true">
-              {card.coverUrl ? (
-                <img src={card.coverUrl} alt="" loading="lazy" />
-              ) : (
-                <span className="cover-placeholder" />
-              )}
+              <CardCover card={card} />
             </Link>
             {card.waiting !== null && card.waiting !== undefined && card.waiting > 0 && (
               <span className="airing-mark" title={`${card.waiting} waiting to watch`}>
@@ -118,6 +130,7 @@ export const CatalogueShelfRow = ({
         mediaType: item.mediaType,
         title: item.title,
         coverUrl: item.coverUrl,
+        adult: item.adult,
         to: mediaPathFor(item),
         // The same line a catalogue card carries on search and browse.
         subtitle: item.releaseDate?.slice(0, 4) ?? 'Unreleased',

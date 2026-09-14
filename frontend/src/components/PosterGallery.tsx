@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom'
+import { coverBlurClass, useBlurAdult } from '../content/blur'
 
 /** One cover in a gallery: where it goes, and the line it wears across its foot. */
 export interface Poster {
   key: string
   title: string
   coverUrl: string | null
+  adult: boolean
   to: string
   /**
    * Lines across the cover's foot: one for progress, two for something airing — the episode
@@ -30,6 +32,7 @@ export const PosterGallery = ({
   /** Exactly five across, whatever the width — a shelf is a taste of a list, not the list. */
   oneRow?: boolean
 }) => {
+  const blur = useBlurAdult()
   if (posters.length === 0) return null
 
   return (
@@ -47,7 +50,12 @@ export const PosterGallery = ({
           )}
           <Link className="poster" to={poster.to} title={poster.title} aria-label={poster.title}>
             {poster.coverUrl ? (
-              <img src={poster.coverUrl} alt="" loading="lazy" />
+              <img
+                className={coverBlurClass(poster.adult, blur)}
+                src={poster.coverUrl}
+                alt=""
+                loading="lazy"
+              />
             ) : (
               <span className="poster-blank cover-placeholder" aria-hidden="true" />
             )}

@@ -340,6 +340,7 @@ const OverviewSection = ({ entries, mediaType }: SectionProps) => {
               id: entry.id,
               title: entry.title,
               coverUrl: entry.coverUrl,
+              adult: entry.adult,
               to: mediaPathFor(entry),
               amount,
               figure,

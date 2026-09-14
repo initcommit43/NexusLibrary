@@ -136,7 +136,7 @@ export const MediaPage = () => {
       <div className={banner ? 'media-hero has-banner' : 'media-hero'}>
         {banner && (
           <div
-            className="media-banner"
+            className={coverBlurClass(media.adult, blur, 'media-banner')}
             style={{ backgroundImage: `url(${banner})` }}
             aria-hidden="true"
           />

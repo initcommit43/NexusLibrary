@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom'
+import { coverBlurClass, useBlurAdult } from '../../content/blur'
 
 export interface BoardRow {
   id: number
   title: string
   coverUrl: string | null
+  adult: boolean
   /** Where the title's own page is; a leaderboard names things worth going back to. */
   to: string
   amount: number
@@ -20,6 +22,7 @@ export interface BoardRow {
  * medium's own unit rather than a bare number.
  */
 export const Leaderboard = ({ rows }: { rows: BoardRow[] }) => {
+  const blur = useBlurAdult()
   if (rows.length === 0) return null
   const peak = Math.max(...rows.map((row) => row.amount))
 
@@ -29,7 +32,12 @@ export const Leaderboard = ({ rows }: { rows: BoardRow[] }) => {
         <li key={row.id}>
           <span className="board-rank">{index + 1}</span>
           {row.coverUrl ? (
-            <img className="board-cover" src={row.coverUrl} alt="" loading="lazy" />
+            <img
+              className={coverBlurClass(row.adult, blur, 'board-cover')}
+              src={row.coverUrl}
+              alt=""
+              loading="lazy"
+            />
           ) : (
             <span className="board-cover blank" aria-hidden="true" />
           )}

@@ -33,6 +33,7 @@ export const ShelfGallery = ({
           key: `${item.source}-${item.externalId}`,
           title: item.title,
           coverUrl: item.coverUrl,
+          adult: item.adult,
           to: mediaPathFor(item),
         }))}
         oneRow
