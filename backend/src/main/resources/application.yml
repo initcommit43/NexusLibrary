@@ -78,6 +78,11 @@ nexus:
     # How long a mailed password reset link works. Half an hour: it is read within minutes of
     # arriving, and past that it is only a live credential sitting in an inbox.
     password-reset-ttl-minutes: 30
+  site-gate:
+    # A temporary password in front of the whole site, API included, while it is in
+    # development. Unset turns the gate off.
+    # Changing it signs every browser out of the gate at once.
+    password: ${SITE_PASSWORD:}
   rate-limit:
     auth-requests-per-minute: 10
     search-requests-per-minute: 30
