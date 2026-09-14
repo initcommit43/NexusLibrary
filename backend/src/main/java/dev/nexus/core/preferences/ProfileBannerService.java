@@ -85,12 +85,7 @@ public class ProfileBannerService {
 
     /** Only the source that wrote a detail knows where its wide art sits inside it. */
     private Optional<String> bannerOf(TrackableItem item) {
-        if (!(item.getMetadata().get(MediaDetailService.DETAIL_KEY) instanceof Map<?, ?> detail)) {
-            return Optional.empty();
-        }
-
-        @SuppressWarnings("unchecked")
-        Map<String, Object> typed = (Map<String, Object>) detail;
-        return adapters.forSource(item.getSource()).flatMap(adapter -> adapter.bannerFrom(typed));
+        Map<String, Object> detail = MediaDetailService.detailOf(item);
+        return adapters.forSource(item.getSource()).flatMap(adapter -> adapter.bannerFrom(detail));
     }
 }

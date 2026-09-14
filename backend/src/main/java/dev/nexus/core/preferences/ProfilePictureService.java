@@ -87,13 +87,8 @@ public class ProfilePictureService {
 
     /** Only the source that wrote a detail knows how it names and pictures its characters. */
     private Optional<CharacterPortrait> characterOf(TrackableItem item, String characterId) {
-        if (!(item.getMetadata().get(MediaDetailService.DETAIL_KEY) instanceof Map<?, ?> detail)) {
-            return Optional.empty();
-        }
-
-        @SuppressWarnings("unchecked")
-        Map<String, Object> typed = (Map<String, Object>) detail;
+        Map<String, Object> detail = MediaDetailService.detailOf(item);
         return adapters.forSource(item.getSource())
-                .flatMap(adapter -> adapter.characterFrom(typed, characterId));
+                .flatMap(adapter -> adapter.characterFrom(detail, characterId));
     }
 }

@@ -26,6 +26,21 @@ public class MediaDetailService {
     public static final String DETAIL_KEY = "detail";
 
     /**
+     * The detail a source attached to an item, or an empty map where it attached none.
+     *
+     * <p>The one place the unchecked cast off the metadata map is written. Everything that
+     * reads a detail — the profile picture, the banner, the Steam cross-reference — asks the
+     * same two questions of it, and asking them once means a title with no detail yet reads
+     * as empty everywhere rather than as null in whichever caller forgot.
+     */
+    @SuppressWarnings("unchecked")
+    public static Map<String, Object> detailOf(TrackableItem item) {
+        return item.getMetadata().get(DETAIL_KEY) instanceof Map<?, ?> detail
+                ? (Map<String, Object>) detail
+                : Map.of();
+    }
+
+    /**
      * Bumped whenever the shape or meaning of what a source returns changes. Detail cached
      * under an older stamp is re-fetched rather than shown, which is how a fix to a query
      * reaches titles that were cached before it.

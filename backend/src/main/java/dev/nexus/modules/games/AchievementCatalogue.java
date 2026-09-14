@@ -1,5 +1,7 @@
 package dev.nexus.modules.games;
 
+import static dev.nexus.core.adapter.Payloads.string;
+
 import dev.nexus.core.catalog.MediaDetailService;
 import dev.nexus.core.domain.ExternalIds;
 import dev.nexus.core.domain.MediaType;
@@ -168,14 +170,8 @@ public class AchievementCatalogue {
 
     @SuppressWarnings("unchecked")
     private List<Map<String, Object>> websites(TrackableItem item) {
-        if (!(item.getMetadata().get(MediaDetailService.DETAIL_KEY) instanceof Map<?, ?> detail)
-                || !(((Map<String, Object>) detail).get("websites") instanceof List<?> websites)) {
-            return List.of();
-        }
-        return (List<Map<String, Object>>) websites;
-    }
-
-    private String string(Object value) {
-        return value == null ? null : value.toString();
+        return MediaDetailService.detailOf(item).get("websites") instanceof List<?> websites
+                ? (List<Map<String, Object>>) websites
+                : List.of();
     }
 }
