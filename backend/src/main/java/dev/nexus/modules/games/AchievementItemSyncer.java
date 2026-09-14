@@ -1,5 +1,7 @@
 package dev.nexus.modules.games;
 
+import static dev.nexus.core.adapter.Payloads.string;
+
 import dev.nexus.core.activity.ActivityRecorder;
 import dev.nexus.core.activity.ActivityRecorder.EntrySnapshot;
 import dev.nexus.core.domain.ExternalIds;
@@ -180,9 +182,5 @@ public class AchievementItemSyncer {
         Map<String, Object> copy = new LinkedHashMap<>((Map<String, Object>) map);
         copy.remove(SYNCED_AT_KEY);
         return copy;
-    }
-
-    private String string(Object value) {
-        return value == null ? null : value.toString();
     }
 }

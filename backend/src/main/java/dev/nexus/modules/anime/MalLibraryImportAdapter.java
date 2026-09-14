@@ -1,5 +1,7 @@
 package dev.nexus.modules.anime;
 
+import static dev.nexus.core.adapter.Payloads.string;
+
 import dev.nexus.core.adapter.ExternalItemRef;
 import dev.nexus.core.adapter.ImportedEntry;
 import dev.nexus.core.adapter.LibraryImportAdapter;
@@ -163,9 +165,5 @@ public class MalLibraryImportAdapter implements LibraryImportAdapter {
 
     private Integer number(Object value) {
         return value instanceof Number n ? n.intValue() : null;
-    }
-
-    private String string(Object value) {
-        return value == null ? null : value.toString();
     }
 }

@@ -1,5 +1,7 @@
 package dev.nexus.modules.film;
 
+import static dev.nexus.core.adapter.Payloads.string;
+
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
@@ -143,9 +145,5 @@ public class SimklOAuthService {
 
     private String encode(String value) {
         return URLEncoder.encode(value, StandardCharsets.UTF_8);
-    }
-
-    private String string(Object value) {
-        return value == null ? null : value.toString();
     }
 }

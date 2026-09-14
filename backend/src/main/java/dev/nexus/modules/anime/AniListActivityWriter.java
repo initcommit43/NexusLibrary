@@ -1,5 +1,7 @@
 package dev.nexus.modules.anime;
 
+import static dev.nexus.core.adapter.Payloads.string;
+
 import dev.nexus.core.domain.Provider;
 import dev.nexus.core.domain.ProviderActivity;
 import dev.nexus.core.domain.ProviderActivityRepository;
@@ -127,9 +129,5 @@ public class AniListActivityWriter {
 
     private static String mediaId(Map<String, Object> row) {
         return row.get("media") instanceof Map<?, ?> media ? string(media.get("id")) : null;
-    }
-
-    private static String string(Object value) {
-        return value == null ? null : String.valueOf(value);
     }
 }
