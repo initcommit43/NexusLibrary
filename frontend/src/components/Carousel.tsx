@@ -22,6 +22,36 @@ const SLACK = 4
 const LINE_HEIGHT = 16
 
 /**
+ * How long the pointer has to rest on a row, with no wheel turned, before the wheel scrolls the
+ * row instead of the page. Scrolling down a page full of shelves passes over one after another,
+ * and without a pause to show intent every one of them caught the wheel on the way past.
+ */
+const WHEEL_DELAY_MS = 400
+
+/** When a wheel turn last scrolled the page rather than a row, shared by every carousel. */
+let lastPageWheelAt = 0
+let watchingPageWheel = false
+
+/**
+ * Once for the app: a turn no row claimed has bubbled up unprevented, so it moved the page.
+ *
+ * <p>Uncancelable turns do not count. Chrome hands one over as uncancelable right after the
+ * page has taken a turn, even after a long pause, and letting it restart the wait would keep a
+ * rested pointer from ever reaching the row.
+ */
+const watchPageWheel = () => {
+  if (watchingPageWheel) return
+  watchingPageWheel = true
+  document.addEventListener(
+    'wheel',
+    (event) => {
+      if (event.cancelable && !event.defaultPrevented) lastPageWheelAt = event.timeStamp
+    },
+    { passive: true },
+  )
+}
+
+/**
  * A shelf you can step through, rather than six covers and a "view all".
  *
  * <p>The row is a real scroll container, so a trackpad, a touchscreen and the keyboard all
@@ -71,6 +101,11 @@ export const Carousel = ({ children, label }: Props) => {
    * <p>A row too short to scroll keeps nothing, since there is nothing in it to scroll and a
    * page held still under the pointer would simply be stuck.
    *
+   * <p>Only once the pointer has rested on the row for {@link WHEEL_DELAY_MS}, counted from
+   * when it arrived or from the last wheel turn that scrolled the page, whichever is later.
+   * A page being scrolled keeps scrolling however many rows pass under the pointer, including
+   * rows the page brings beneath a pointer that never moved.
+   *
    * <p>Listened for here rather than with onWheel: React attaches wheel handlers passively,
    * and a passive listener is one that cannot hold the page still while the row moves.
    */
@@ -78,7 +113,17 @@ export const Carousel = ({ children, label }: Props) => {
     const element = row.current
     if (!element) return
 
+    let enteredAt = 0
+    const enter = (event: PointerEvent) => {
+      enteredAt = event.timeStamp
+    }
+
     const wheel = (event: WheelEvent) => {
+      // A turn the browser already committed to the page cannot be taken back, so moving the row
+      // as well would scroll both.
+      if (!event.cancelable) return
+      if (event.timeStamp - Math.max(enteredAt, lastPageWheelAt) < WHEEL_DELAY_MS) return
+
       // A trackpad's sideways swipe is already scrolling the row; only a turn down the page
       // is the one being borrowed.
       if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return
@@ -93,8 +138,13 @@ export const Carousel = ({ children, label }: Props) => {
       readPosition()
     }
 
+    watchPageWheel()
+    element.addEventListener('pointerenter', enter)
     element.addEventListener('wheel', wheel, { passive: false })
-    return () => element.removeEventListener('wheel', wheel)
+    return () => {
+      element.removeEventListener('pointerenter', enter)
+      element.removeEventListener('wheel', wheel)
+    }
   }, [])
 
   /** Just under a full row, so one card stays on screen as an anchor between steps. */
