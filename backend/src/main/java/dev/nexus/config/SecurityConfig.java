@@ -1,6 +1,10 @@
 package dev.nexus.config;
 
 import dev.nexus.auth.JwtAuthenticationFilter;
+import dev.nexus.core.security.SiteGate;
+import dev.nexus.core.security.SiteGateFilter;
+import dev.nexus.core.web.ClientIpResolver;
+import dev.nexus.core.web.RateLimiter;
 import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -23,6 +27,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.CorsFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -56,7 +61,13 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtFilter) throws Exception {
+    public SecurityFilterChain filterChain(
+            HttpSecurity http,
+            JwtAuthenticationFilter jwtFilter,
+            SiteGate siteGate,
+            RateLimiter rateLimiter,
+            ClientIpResolver clientIp)
+            throws Exception {
         return http.cors(Customizer.withDefaults())
                 /*
                  * Nothing is authenticated from a cookie except /auth/refresh and
@@ -112,6 +123,9 @@ public class SecurityConfig {
                         }))
                 .exceptionHandling(handling ->
                         handling.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
+                // After CORS, so a preflight is answered before the gate sees it, and inside the
+                // chain rather than in front of it, so the password page carries the headers.
+                .addFilterAfter(new SiteGateFilter(siteGate, rateLimiter, clientIp, properties), CorsFilter.class)
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
