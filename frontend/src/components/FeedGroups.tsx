@@ -44,7 +44,9 @@ const RowBody = ({
 const happened = (notification: NotificationEntry) =>
   notification.type === 'EPISODE_AIRED'
     ? `${episodeLabel(notification)} aired`
-    : 'Added'
+    : notification.type === 'RELEASE_STARTED'
+      ? 'Started releasing'
+      : 'Added'
 
 export const NotificationGroups = ({
   notifications,

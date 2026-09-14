@@ -230,7 +230,7 @@ export type ActivityEntry = {
 /** What happened to a title while the reader was away. */
 export type NotificationEntry = {
   id: number
-  type: 'EPISODE_AIRED' | 'TITLE_ADDED'
+  type: 'EPISODE_AIRED' | 'TITLE_ADDED' | 'RELEASE_STARTED'
   mediaType: MediaType
   title: string
   coverUrl: string | null

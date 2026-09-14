@@ -31,6 +31,9 @@ const sentence = (notification: NotificationEntry, onRead?: (id: number) => void
       </>
     )
   }
+  if (notification.type === 'RELEASE_STARTED') {
+    return <>{title} started releasing</>
+  }
   return <>{title} was added</>
 }
 
