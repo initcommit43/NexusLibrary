@@ -2,9 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ChangeEvent, ReactNode } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import {
+  ApiError,
   api,
   errorMessage,
   type ConnectedAccount,
+  type ContentPreferences,
   type ImportReport,
   type MediaType,
   type SyncJob,
@@ -26,6 +28,8 @@ import {
 import { useModules } from '../modules/useModules'
 import { useAuth } from '../auth/useAuth'
 import { useEscapeKey } from '../components/useEscapeKey'
+import { ADULT_AGE } from '../content/age'
+import { publishBlurAdult } from '../content/blur'
 
 /**
  * An import runs in three stretches of very different length — pulling the list, matching
@@ -219,6 +223,96 @@ export const SettingsPage = () => {
   }, [])
 
   useEffect(load, [load])
+
+  /** Null until read; the switches stay disabled meanwhile rather than guessing. */
+  const [content, setContent] = useState<ContentPreferences | null>(null)
+  const [birthDate, setBirthDate] = useState('')
+  const [birthError, setBirthError] = useState<string | null>(null)
+  const [savingBirth, setSavingBirth] = useState(false)
+
+  useEffect(() => {
+    api
+      .contentPreferences()
+      .then(setContent)
+      .catch((err) => setError(errorMessage(err, 'Could not load your content settings.')))
+  }, [])
+
+  /** Takes the server's whole answer back: it decides whether the account may show 18+ at all. */
+  const applyContent = (saved: ContentPreferences) => {
+    setContent(saved)
+    if (user) publishBlurAdult(user.id, saved.blurAdult)
+  }
+
+  const changeContent = async (change: { showAdult?: boolean; blurAdult?: boolean }) => {
+    setError(null)
+    try {
+      applyContent(await api.setContentPreferences(change))
+    } catch (err) {
+      setError(errorMessage(err, 'Could not save that setting.'))
+    }
+  }
+
+  const saveBirthDate = async () => {
+    setSavingBirth(true)
+    setBirthError(null)
+    setError(null)
+    try {
+      applyContent(await api.setDateOfBirth(birthDate))
+      setBirthDate('')
+    } catch (err) {
+      if (err instanceof ApiError && err.fieldErrors.dateOfBirth) {
+        setBirthError(err.fieldErrors.dateOfBirth)
+      } else {
+        setError(errorMessage(err, 'Could not save your date of birth.'))
+      }
+    } finally {
+      setSavingBirth(false)
+    }
+  }
+
+  /** Why the 18+ switch cannot be moved, or nothing when it can. */
+  const adultLockedReason = (preferences: ContentPreferences | null) => {
+    if (!preferences || preferences.adultAllowed) return undefined
+    return preferences.dateOfBirthSet
+      ? `${ADULT_AGE} and over only`
+      : 'Add your date of birth first'
+  }
+
+  /**
+   * For an account made before registration asked. Set once and never edited, because a birth
+   * date that could be changed would be a key to the 18+ switch rather than a check on it.
+   */
+  const birthDateForm = () => (
+    <div className="field-stack">
+      <label className="field">
+        <span>Date of birth</span>
+        <input
+          type="date"
+          autoComplete="bday"
+          value={birthDate}
+          aria-invalid={Boolean(birthError)}
+          onChange={(e) => setBirthDate(e.target.value)}
+        />
+        {birthError ? (
+          <small className="field-error">{birthError}</small>
+        ) : (
+          <small className="muted field-hint">
+            It can be set once and cannot be changed afterwards, so check it before saving.
+          </small>
+        )}
+      </label>
+
+      <div className="integration-actions">
+        <button
+          type="button"
+          disabled={!birthDate || savingBirth}
+          onClick={() => void saveBirthDate()}
+        >
+          {savingBirth ? 'Saving…' : 'Save date of birth'}
+        </button>
+      </div>
+    </div>
+  )
 
   const runImport = async (provider: ModuleProvider['provider']) => {
     setBusy({ provider, action: 'import' })
@@ -588,6 +682,62 @@ export const SettingsPage = () => {
             )
           })}
         </ul>
+      </article>
+
+      <h2>Mature content</h2>
+      <article className="card">
+        <div className="settings-group">
+          <p className="muted">
+            Titles their source files as 18+ are hidden by default. Turning them on needs an
+            account that is {ADULT_AGE} or over, going by its date of birth.
+          </p>
+
+          <ul className="switch-list">
+            <li>
+              <label className={content?.adultAllowed ? 'switch-row' : 'switch-row disabled'}>
+                <input
+                  type="checkbox"
+                  checked={content?.showAdult ?? false}
+                  disabled={!content?.adultAllowed}
+                  onChange={(event) => void changeContent({ showAdult: event.target.checked })}
+                />
+                <span>Show 18+ titles</span>
+                {adultLockedReason(content) && (
+                  <span className="muted">{adultLockedReason(content)}</span>
+                )}
+              </label>
+            </li>
+            <li>
+              {/* Usable while 18+ titles are off: the standing choice for when they are on. */}
+              <label className={content ? 'switch-row' : 'switch-row disabled'}>
+                <input
+                  type="checkbox"
+                  checked={content?.blurAdult ?? true}
+                  disabled={!content}
+                  onChange={(event) => void changeContent({ blurAdult: event.target.checked })}
+                />
+                <span>Blur their covers</span>
+              </label>
+            </li>
+          </ul>
+
+          <p className="muted">
+            While 18+ titles are off they stay out of search, browse and your library, including
+            anything an import brought in. Nothing is deleted, and turning them back on brings it
+            all back.
+          </p>
+        </div>
+
+        {content && !content.dateOfBirthSet && (
+          <div className="settings-group">
+            <h3>Add your date of birth</h3>
+            <p className="muted">
+              Your account was made before we asked for one, so the 18+ switch stays off until
+              you add it.
+            </p>
+            {birthDateForm()}
+          </div>
+        )}
       </article>
     </section>
   )
@@ -972,6 +1122,18 @@ export const SettingsPage = () => {
       ),
     },
     clear: { title: 'Clear your library', render: clearGroup },
+    birth: {
+      title: 'Add your date of birth',
+      render: () => (
+        <div className="settings-group">
+          <p className="muted">
+            Your account was made before we asked for one, so the 18+ switch stays off until you
+            add it.
+          </p>
+          {content?.dateOfBirthSet ? <p className="muted note">Saved.</p> : birthDateForm()}
+        </div>
+      ),
+    },
     ...Object.fromEntries(
       connectable.map((provider) => [
         provider.provider.toLowerCase(),
@@ -1017,6 +1179,45 @@ export const SettingsPage = () => {
         <p className="group-footnote">
           Nothing you have already tracked is deleted, and turning a module back on brings it
           all back.
+        </p>
+      </div>
+
+      <div className="settings-anchor">
+        <Group label="Mature content">
+          <GroupRow
+            title="Show 18+ titles"
+            subtitle={adultLockedReason(content)}
+            trailing={
+              <Toggle
+                label="Show 18+ titles"
+                checked={content?.showAdult ?? false}
+                disabled={!content?.adultAllowed}
+                onChange={(on) => void changeContent({ showAdult: on })}
+              />
+            }
+          />
+          <GroupRow
+            title="Blur their covers"
+            trailing={
+              <Toggle
+                label="Blur their covers"
+                checked={content?.blurAdult ?? true}
+                disabled={!content}
+                onChange={(on) => void changeContent({ blurAdult: on })}
+              />
+            }
+          />
+          {content && !content.dateOfBirthSet && (
+            <GroupRow
+              title={subViews.birth.title}
+              to="/settings?section=birth"
+              trailing={<ChevronRight />}
+            />
+          )}
+        </Group>
+        <p className="group-footnote">
+          While 18+ titles are off they stay out of search, browse and your library. Nothing is
+          deleted, and turning them back on brings it all back.
         </p>
       </div>
 
