@@ -1,14 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
-import { ApiError, api, type Framing, type ProfileBanner } from '../api/client'
-import {
-  CLOSEST,
-  COVER,
-  type DragOrigin,
-  draggedTo,
-  framedStyle,
-  framingOf,
-  hidden,
-} from './framing'
+import { useState } from 'react'
+import { api, type ProfileBanner } from '../api/client'
+import { CLOSEST, COVER, framedStyle, framingOf } from './framing'
+import { useFramingEditor } from './useFramingEditor'
 
 /** Arrows to opposite corners: the gesture for taking hold of a picture and sizing it. */
 const ResizeIcon = () => (
@@ -27,12 +20,12 @@ const ResizeIcon = () => (
  *
  * <p>A strip five times wider than it is tall and a sixteen-by-nine screenshot are not the
  * same shape, so a plain cover crop takes a band out of the middle and throws away whatever
- * the reader picked the picture for. Dragging says which band; the slider says how close.
+ * the reader picked the picture for. Dragging says which band; the slider says how close. The
+ * editing itself is {@link useFramingEditor}, shared with the avatar circle.
  *
- * <p>The drag is measured against how much of the image is actually hidden, so the picture
- * keeps pace with the pointer rather than racing it on a tall image and crawling on a wide
- * one. Where nothing is hidden in an axis, that axis does not move — there is nowhere for
- * it to go, and a control that pretends otherwise reads as broken.
+ * <p>What is this frame's own is the hint: where nothing is hidden in an axis, that axis does
+ * not move — there is nowhere for it to go, and a line telling the reader to drag is a control
+ * that reads as broken.
  */
 export const ProfileBannerFrame = ({
   banner,
@@ -47,30 +40,14 @@ export const ProfileBannerFrame = ({
   onFramed: (framed: ProfileBanner) => void
   onClose: () => void
 }) => {
-  /*
-   * A different picture, or an adjustment left rather than saved: either way the strip goes
-   * back to what is stored, which is what makes closing the bar a cancel. Kept as the
-   * session an edit belongs to rather than reset in an effect, so leaving adjust mode is
-   * one render rather than a render and a correction.
-   */
-  const session = `${banner.imageUrl}#${adjusting}`
-
-  const [edit, setEdit] = useState(() => ({
-    session,
-    framing: framingOf(banner),
-    error: null as string | null,
-  }))
-
-  const held = edit.session === session
-    ? edit
-    : { session, framing: framingOf(banner), error: null }
-
-  const framing = held.framing
-  const error = held.error
-
-  const setFraming = (next: Framing) => setEdit({ ...held, framing: next })
-
-  const [busy, setBusy] = useState(false)
+  const { framing, error, busy, image, setFraming, dragHandlers, commit } = useFramingEditor({
+    session: `${banner.imageUrl}#${adjusting}`,
+    stored: () => framingOf(banner),
+    adjusting,
+    save: api.frameProfileBanner,
+    onFramed,
+    onClose,
+  })
 
   /*
    * Both shapes, as width over height, taken when the picture loads. Which of them is the
@@ -80,64 +57,9 @@ export const ProfileBannerFrame = ({
    */
   const [shapes, setShapes] = useState<{ picture: number; strip: number } | null>(null)
 
-  const image = useRef<HTMLImageElement>(null)
-  const drag = useRef<DragOrigin | null>(null)
-
-  useEffect(() => {
-    if (!adjusting) return
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose()
-    }
-    document.addEventListener('keydown', onKeyDown)
-    return () => document.removeEventListener('keydown', onKeyDown)
-  }, [adjusting, onClose])
-
   const zoomed = framing.zoom > COVER
   const canMoveDown = zoomed || (shapes !== null && shapes.picture < shapes.strip)
   const canMoveAcross = zoomed || (shapes !== null && shapes.picture > shapes.strip)
-
-  const startDrag = (event: React.PointerEvent<HTMLImageElement>) => {
-    if (!adjusting) return
-    event.currentTarget.setPointerCapture(event.pointerId)
-    drag.current = { x: event.clientX, y: event.clientY, from: framing }
-  }
-
-  const moveDrag = (event: React.PointerEvent<HTMLImageElement>) => {
-    const from = drag.current
-    const room = hidden(image.current, framing.zoom)
-    if (!from || !room) return
-
-    setFraming(draggedTo(from, room, event.clientX, event.clientY))
-  }
-
-  const endDrag = () => {
-    drag.current = null
-  }
-
-  const save = async () => {
-    setBusy(true)
-    setEdit({ ...held, error: null })
-    try {
-      onFramed(
-        await api.frameProfileBanner({
-          focusX: Math.round(framing.focusX),
-          focusY: Math.round(framing.focusY),
-          zoom: Math.round(framing.zoom),
-        }),
-      )
-      onClose()
-    } catch (err) {
-      setEdit({
-        ...held,
-        error: err instanceof ApiError ? err.message : 'Could not save that.',
-      })
-    } finally {
-      // Cleared on the way out however it went: the banner stays on the page after a save,
-      // so a flag left set here is a Save button that never comes back.
-      setBusy(false)
-    }
-  }
 
   return (
     <div className={adjusting ? 'profile-banner adjusting' : 'profile-banner'}>
@@ -153,10 +75,7 @@ export const ProfileBannerFrame = ({
             strip: event.currentTarget.offsetWidth / event.currentTarget.offsetHeight,
           })
         }
-        onPointerDown={startDrag}
-        onPointerMove={moveDrag}
-        onPointerUp={endDrag}
-        onPointerCancel={endDrag}
+        {...dragHandlers}
       />
 
       {/*
@@ -206,7 +125,7 @@ export const ProfileBannerFrame = ({
           <button type="button" className="ghost small" disabled={busy} onClick={onClose}>
             Cancel
           </button>
-          <button type="button" className="small" disabled={busy} onClick={() => void save()}>
+          <button type="button" className="small" disabled={busy} onClick={() => void commit()}>
             Save
           </button>
         </div>
