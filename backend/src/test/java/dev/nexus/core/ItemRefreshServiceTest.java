@@ -8,7 +8,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import dev.nexus.core.adapter.MetadataAdapter;
+import dev.nexus.core.adapter.MetadataAdapterRegistry;
 import dev.nexus.core.cache.ItemRefreshRunner;
 import dev.nexus.core.cache.ItemRefreshService;
 import dev.nexus.core.cache.RefreshProperties;
@@ -21,6 +24,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -32,6 +36,7 @@ class ItemRefreshServiceTest {
     private static final Duration RETRY_AFTER = Duration.ofMinutes(15);
 
     private final ItemRefreshRunner runner = mock(ItemRefreshRunner.class);
+    private final MetadataAdapterRegistry adapters = mock(MetadataAdapterRegistry.class);
 
     @Test
     void staleItemsOfOneSourceAreDispatchedAsASingleBatch() {
@@ -82,9 +87,28 @@ class ItemRefreshServiceTest {
         assertThat(dispatched.getValue()).containsExactly(1L, 2L);
     }
 
+    /**
+     * A released title never goes stale, so a copy cached before its adapter stored something
+     * new would never gain it. The adapter can ask for that one refetch.
+     */
+    @Test
+    void aReleasedItemItsAdapterCallsOutdatedIsRefreshed() {
+        MetadataAdapter adapter = mock(MetadataAdapter.class);
+        TrackableItem outdated = item(1L, ItemState.RELEASED, Instant.now().minus(Duration.ofDays(400)));
+        TrackableItem current = item(2L, ItemState.RELEASED, Instant.now().minus(Duration.ofDays(400)));
+        when(adapter.isOutdated(outdated)).thenReturn(true);
+        when(adapters.forSource(Source.IGDB)).thenReturn(Optional.of(adapter));
+
+        service(50).refreshIfStale(List.of(outdated, current));
+
+        ArgumentCaptor<List<Long>> dispatched = ArgumentCaptor.captor();
+        verify(runner).refresh(eq(Source.IGDB), dispatched.capture());
+        assertThat(dispatched.getValue()).containsExactly(1L);
+    }
+
     private ItemRefreshService service(int maxItemsPerRead) {
         RefreshProperties properties = new RefreshProperties(TTL, TTL, RETRY_AFTER, maxItemsPerRead);
-        return new ItemRefreshService(new StalenessPolicy(properties), runner, properties);
+        return new ItemRefreshService(new StalenessPolicy(properties), runner, properties, adapters);
     }
 
     private TrackableItem stale(long id) {

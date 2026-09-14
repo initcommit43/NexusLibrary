@@ -16,6 +16,7 @@ import dev.nexus.core.adapter.TrackableItemData;
 import dev.nexus.core.domain.ItemState;
 import dev.nexus.core.domain.MediaType;
 import dev.nexus.core.domain.Source;
+import dev.nexus.core.domain.TrackableItem;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -122,6 +123,12 @@ public class TmdbMetadataAdapter implements MetadataAdapter {
                         releaseDate(kind, row)))
                 .filter(result -> result.title() != null)
                 .toList();
+    }
+
+    /** A show cached before the per-season breakdown was stored has none to count seasons by. */
+    @Override
+    public boolean isOutdated(TrackableItem item) {
+        return item.getMediaType() == MediaType.SHOW && !item.getMetadata().containsKey(SEASON_EPISODES);
     }
 
     @Override

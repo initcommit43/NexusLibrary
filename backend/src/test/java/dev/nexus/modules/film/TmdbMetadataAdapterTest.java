@@ -11,6 +11,7 @@ import dev.nexus.core.adapter.TrackableItemData;
 import dev.nexus.core.domain.ItemState;
 import dev.nexus.core.domain.MediaType;
 import dev.nexus.core.domain.Source;
+import dev.nexus.core.domain.TrackableItem;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -174,6 +175,21 @@ class TmdbMetadataAdapterTest {
 
         assertThat(adapter.fetchById("tv:1396").orElseThrow().metadata())
                 .containsEntry("seasonEpisodes", List.of(7, 13));
+    }
+
+    @Test
+    void aShowCachedWithoutTheSeasonBreakdownIsOutdated() {
+        TrackableItem old = new TrackableItem(
+                MediaType.SHOW, Source.TMDB, "tv:1", "Old", null, null, ItemState.RELEASED, Map.of("seasons", 3));
+        TrackableItem current = new TrackableItem(
+                MediaType.SHOW, Source.TMDB, "tv:2", "New", null, null, ItemState.RELEASED,
+                Map.of("seasonEpisodes", List.of()));
+        TrackableItem film = new TrackableItem(
+                MediaType.MOVIE, Source.TMDB, "movie:3", "Film", null, null, ItemState.RELEASED, Map.of());
+
+        assertThat(adapter.isOutdated(old)).isTrue();
+        assertThat(adapter.isOutdated(current)).isFalse();
+        assertThat(adapter.isOutdated(film)).isFalse();
     }
 
     /** Written even when TMDB lists no seasons, so the show is not taken for an old copy again. */

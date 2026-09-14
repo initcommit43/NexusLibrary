@@ -1,5 +1,6 @@
 package dev.nexus.core.cache;
 
+import dev.nexus.core.adapter.MetadataAdapterRegistry;
 import dev.nexus.core.domain.Source;
 import dev.nexus.core.domain.TrackableItem;
 import java.time.Instant;
@@ -25,6 +26,7 @@ public class ItemRefreshService {
     private final StalenessPolicy policy;
     private final ItemRefreshRunner runner;
     private final RefreshProperties properties;
+    private final MetadataAdapterRegistry adapters;
 
     /**
      * When each item was last put up for refresh. In memory, and therefore per instance —
@@ -33,10 +35,15 @@ public class ItemRefreshService {
      */
     private final Map<Long, Instant> attemptedAt = new ConcurrentHashMap<>();
 
-    public ItemRefreshService(StalenessPolicy policy, ItemRefreshRunner runner, RefreshProperties properties) {
+    public ItemRefreshService(
+            StalenessPolicy policy,
+            ItemRefreshRunner runner,
+            RefreshProperties properties,
+            MetadataAdapterRegistry adapters) {
         this.policy = policy;
         this.runner = runner;
         this.properties = properties;
+        this.adapters = adapters;
     }
 
     public void refreshIfStale(TrackableItem item) {
@@ -54,7 +61,7 @@ public class ItemRefreshService {
             if (remaining == 0) {
                 break;
             }
-            if (!policy.isStale(item, now) || !claim(item.getId(), now, retryFrom)) {
+            if (!(policy.isStale(item, now) || isOutdated(item)) || !claim(item.getId(), now, retryFrom)) {
                 continue;
             }
             due.computeIfAbsent(item.getSource(), source -> new ArrayList<>()).add(item.getId());
@@ -62,6 +69,11 @@ public class ItemRefreshService {
         }
 
         due.forEach(runner::refresh);
+    }
+
+    /** Asked of the item's own adapter, since only the source knows what it now stores. */
+    private boolean isOutdated(TrackableItem item) {
+        return adapters.forSource(item.getSource()).map(adapter -> adapter.isOutdated(item)).orElse(false);
     }
 
     /**

@@ -2,6 +2,7 @@ package dev.nexus.core.adapter;
 
 import dev.nexus.core.domain.MediaType;
 import dev.nexus.core.domain.Source;
+import dev.nexus.core.domain.TrackableItem;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -107,6 +108,18 @@ public interface MetadataAdapter {
      */
     default Optional<CharacterPortrait> characterFrom(Map<String, Object> detail, String characterId) {
         return Optional.empty();
+    }
+
+    /**
+     * Whether a cached copy predates something this adapter now stores, and so is due one
+     * refetch whatever its state says. A released title is otherwise never refreshed, which
+     * would leave every copy cached before a new field was added without it for good.
+     *
+     * <p>Answer true only for data a fresh fetch always writes, empty or not, or the item is
+     * fetched again on every read.
+     */
+    default boolean isOutdated(TrackableItem item) {
+        return false;
     }
 
     /**
