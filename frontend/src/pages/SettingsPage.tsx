@@ -490,7 +490,7 @@ export const SettingsPage = () => {
                     disabled={busy !== null}
                     onClick={() => void runAniListActivity()}
                   >
-                    {working('ANILIST', 'activity') ? 'Reading…' : 'Import AniList activity'}
+                    {working('ANILIST', 'activity') ? 'Reading…' : 'Import activity'}
                   </button>
                 )}
 
