@@ -40,7 +40,10 @@ export const LibraryPage = () => {
 
   const [entries, setEntries] = useState<TrackedItem[] | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [filters, setFilters] = useState<ListFilters>(EMPTY_FILTERS)
+  // A phone opens on the in-progress list, as the native app does; wide shows every section.
+  const [filters, setFilters] = useState<ListFilters>(() =>
+    narrow ? { ...EMPTY_FILTERS, status: 'IN_PROGRESS' } : EMPTY_FILTERS,
+  )
   const [editing, setEditing] = useState<TrackedItem | null>(null)
   const [view, setView] = useLibraryView()
 
