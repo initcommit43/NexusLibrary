@@ -11,6 +11,7 @@ import dev.nexus.auth.VerificationLinkExpiredException;
 import dev.nexus.auth.VerificationUnavailableException;
 import dev.nexus.auth.RegistrationConflictException;
 import dev.nexus.core.account.AccountNotFoundException;
+import dev.nexus.core.account.DateOfBirthAlreadySetException;
 import dev.nexus.core.account.PasswordMismatchException;
 import dev.nexus.core.adapter.MetadataAdapterNotAvailableException;
 import dev.nexus.core.cache.ItemNotFoundException;
@@ -169,6 +170,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
      * Not a 401: the session is fine, and answering with one would sign them out of a page
      * they are still signed into.
      */
+    @ExceptionHandler(DateOfBirthAlreadySetException.class)
+    public ResponseEntity<ApiError> handleDateOfBirthAlreadySet(DateOfBirthAlreadySetException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ApiError(e.getMessage(), Map.of("dateOfBirth", e.getMessage())));
+    }
+
     @ExceptionHandler(PasswordMismatchException.class)
     public ResponseEntity<ApiError> handlePasswordMismatch(PasswordMismatchException e) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)

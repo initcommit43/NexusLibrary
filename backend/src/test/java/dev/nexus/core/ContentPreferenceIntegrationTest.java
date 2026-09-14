@@ -104,8 +104,45 @@ class ContentPreferenceIntegrationTest extends PostgresIntegrationTest {
         assertThat(get(adult).body()).containsEntry("showAdult", false);
     }
 
+    private Response declare(String token, String dateOfBirth) {
+        return http.putJson(
+                "/settings/account/date-of-birth", Map.of("dateOfBirth", dateOfBirth), "Authorization", "Bearer " + token);
+    }
+
+    @Test
+    void anAccountWithoutADateOfBirthCanGiveItOnceAndThenTurnAdultTitlesOn() {
+        jdbc.update("UPDATE app_user SET date_of_birth = NULL WHERE email = 'grown@example.com'");
+
+        Response declared = declare(adult, "1985-06-01");
+        assertThat(declared.status()).isEqualTo(200);
+        assertThat(declared.body()).containsEntry("adultAllowed", true).containsEntry("dateOfBirthSet", true);
+        assertThat(change(adult, Map.of("showAdult", true)).status()).isEqualTo(200);
+    }
+
+    /** Given once means once: a second answer could be whatever unlocks the switch. */
+    @Test
+    void aDateOfBirthAlreadyGivenCannotBeChanged() {
+        Response again = declare(adult, "1970-01-01");
+
+        assertThat(again.status()).isEqualTo(409);
+        assertThat(jdbc.queryForObject(
+                        "SELECT date_of_birth::text FROM app_user WHERE email = 'grown@example.com'", String.class))
+                .isEqualTo("1990-01-01");
+    }
+
+    @Test
+    void anImplausibleOrFutureDateIsRefused() {
+        jdbc.update("UPDATE app_user SET date_of_birth = NULL WHERE email = 'grown@example.com'");
+
+        assertThat(declare(adult, "1850-01-01").status()).isEqualTo(400);
+        assertThat(declare(adult, AgePolicy.today().plusDays(2).toString()).status()).isEqualTo(400);
+        assertThat(get(adult).body()).containsEntry("dateOfBirthSet", false);
+    }
+
     @Test
     void signedOutCallersAreRefused() {
+        assertThat(http.putJson("/settings/account/date-of-birth", Map.of("dateOfBirth", "1990-01-01")).status())
+                .isEqualTo(401);
         assertThat(http.get("/settings/content").status()).isEqualTo(401);
         assertThat(http.patchJson("/settings/content", Map.of("blurAdult", false)).status()).isEqualTo(401);
     }

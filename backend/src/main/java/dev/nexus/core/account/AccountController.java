@@ -7,8 +7,11 @@ import dev.nexus.auth.SessionResponses;
 import dev.nexus.auth.dto.AuthResponse;
 import dev.nexus.auth.dto.UserResponse;
 import dev.nexus.core.account.AccountRequests.AccountDeletion;
+import dev.nexus.core.account.AccountRequests.DateOfBirthDeclaration;
 import dev.nexus.core.account.AccountRequests.PasswordChange;
 import dev.nexus.core.account.AccountRequests.ProfileUpdate;
+import dev.nexus.core.content.ContentPreferences;
+import dev.nexus.core.content.ContentPreferences.Visibility;
 import jakarta.validation.Valid;
 import java.util.Map;
 import org.springframework.http.HttpHeaders;
@@ -20,6 +23,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -37,12 +41,26 @@ public class AccountController {
     private final AccountService accounts;
     private final RefreshTokenService refreshTokens;
     private final SessionResponses sessions;
+    private final ContentPreferences content;
 
     public AccountController(
-            AccountService accounts, RefreshTokenService refreshTokens, SessionResponses sessions) {
+            AccountService accounts,
+            RefreshTokenService refreshTokens,
+            SessionResponses sessions,
+            ContentPreferences content) {
         this.accounts = accounts;
         this.refreshTokens = refreshTokens;
         this.sessions = sessions;
+        this.content = content;
+    }
+
+    /** Answers with the content settings, since whether 18+ titles can be switched on is what changed. */
+    @PutMapping("/date-of-birth")
+    public Visibility declareDateOfBirth(
+            @AuthenticationPrincipal CurrentUser user, @RequestBody @Valid DateOfBirthDeclaration declaration) {
+
+        accounts.declareDateOfBirth(user.id(), declaration.dateOfBirth());
+        return content.forUser(user.id());
     }
 
     @PatchMapping

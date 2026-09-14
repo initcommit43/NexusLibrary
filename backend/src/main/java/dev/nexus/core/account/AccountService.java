@@ -1,7 +1,9 @@
 package dev.nexus.core.account;
 
+import dev.nexus.auth.AgePolicy;
 import dev.nexus.auth.AppUser;
 import dev.nexus.auth.AppUserRepository;
+import dev.nexus.auth.DateOfBirthRejectedException;
 import dev.nexus.auth.RegistrationConflictException;
 import dev.nexus.core.account.AccountRequests.PasswordChange;
 import dev.nexus.core.account.AccountRequests.ProfileUpdate;
@@ -10,6 +12,7 @@ import dev.nexus.core.domain.ExternalAccountRepository;
 import dev.nexus.core.domain.UserEntryRepository;
 import dev.nexus.core.tracking.dto.TrackedItemResponse;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -80,6 +83,24 @@ public class AccountService {
         }
 
         return users.save(user);
+    }
+
+    /**
+     * Gives an account from before V23 its date of birth, once.
+     *
+     * <p>No age floor here, unlike registration: the account predates the rule, and turning an
+     * existing library away over it is not this setting's job. An age under 18 simply keeps
+     * adult titles out of reach.
+     */
+    @Transactional
+    public void declareDateOfBirth(long userId, LocalDate dateOfBirth) {
+        require(userId);
+        if (!AgePolicy.isPlausible(dateOfBirth)) {
+            throw DateOfBirthRejectedException.implausible();
+        }
+        if (users.declareDateOfBirthIfUnset(userId, dateOfBirth) == 0) {
+            throw new DateOfBirthAlreadySetException();
+        }
     }
 
     /** Answers with the account so the caller can put it back into a session of its own. */

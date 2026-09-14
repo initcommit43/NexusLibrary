@@ -4,13 +4,19 @@ import dev.nexus.auth.AuthClient;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Past;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import java.time.LocalDate;
 
 /** What the account section can ask for. The rules match registration's, deliberately. */
 public final class AccountRequests {
 
     private AccountRequests() {}
+
+    /** For an account made before registration asked. */
+    public record DateOfBirthDeclaration(
+            @NotNull @Past(message = "Please give the date you were born.") LocalDate dateOfBirth) {}
 
     /** Either field may be left out; what is sent is what changes. */
     public record ProfileUpdate(
