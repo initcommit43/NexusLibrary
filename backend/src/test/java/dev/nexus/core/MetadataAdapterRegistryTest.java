@@ -53,7 +53,7 @@ class MetadataAdapterRegistryTest {
             }
 
             @Override
-            public List<ItemSearchResult> search(MediaType type, String query, int limit) {
+            public List<ItemSearchResult> search(MediaType type, String query, int limit, boolean includeAdult) {
                 return List.of();
             }
 

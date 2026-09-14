@@ -96,8 +96,9 @@ public class BrowseService {
      * is what makes holding a copy worth it; a filter combination is close to unique per reader,
      * so a cache keyed by all six values would store an answer each and hit almost never.
      */
-    public BrowseResults discover(MediaType mediaType, DiscoverFilters filters, int page) {
-        return adapters.requireForMediaType(mediaType).discover(mediaType, filters, page, PAGE_SIZE);
+    public BrowseResults discover(
+            MediaType mediaType, DiscoverFilters filters, int page, boolean includeAdult) {
+        return adapters.requireForMediaType(mediaType).discover(mediaType, filters, page, PAGE_SIZE, includeAdult);
     }
 
     /**

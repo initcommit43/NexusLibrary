@@ -127,7 +127,7 @@ public class CatalogController {
         rateLimiter.check("search:" + user.id(), searchesPerMinute);
 
         return timings.time(
-                "search", () -> adapters.requireForMediaType(mediaType).search(mediaType, query.trim(), MAX_RESULTS));
+                "search", () -> adapters.requireForMediaType(mediaType).search(mediaType, query.trim(), MAX_RESULTS, false));
     }
 
     /**
@@ -245,7 +245,7 @@ public class CatalogController {
         rateLimiter.check("discover:" + user.id(), searchesPerMinute);
 
         DiscoverFilters filters = new DiscoverFilters(filterValues(params));
-        return timings.time("discover", () -> browse.discover(mediaType, filters, page));
+        return timings.time("discover", () -> browse.discover(mediaType, filters, page, false));
     }
 
     /**

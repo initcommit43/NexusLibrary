@@ -128,7 +128,7 @@ class AniListMetadataAdapterTest {
     void aSearchAsksForTheTypeTheCallerWants() {
         when(client.searchMedia(any(), anyString(), anyInt(), anyBoolean())).thenReturn(List.of(media()));
 
-        var results = adapter.search(MediaType.ANIME, "one piece", 10);
+        var results = adapter.search(MediaType.ANIME, "one piece", 10, false);
 
         assertThat(results).singleElement().satisfies(result -> {
             assertThat(result.title()).isEqualTo("One Piece");

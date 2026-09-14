@@ -48,8 +48,8 @@ class TmdbMetadataAdapterTest {
         when(client.search(TmdbKind.MOVIE, "550", 1, false)).thenReturn(List.of(Map.of("id", 550, "title", "Fight Club")));
         when(client.search(TmdbKind.SHOW, "550", 1, false)).thenReturn(List.of(Map.of("id", 550, "name", "Lost Girl")));
 
-        String movieId = adapter.search(MediaType.MOVIE, "550", 1).getFirst().externalId();
-        String showId = adapter.search(MediaType.SHOW, "550", 1).getFirst().externalId();
+        String movieId = adapter.search(MediaType.MOVIE, "550", 1, false).getFirst().externalId();
+        String showId = adapter.search(MediaType.SHOW, "550", 1, false).getFirst().externalId();
 
         assertThat(movieId).isEqualTo("movie:550");
         assertThat(showId).isEqualTo("tv:550");
@@ -258,7 +258,7 @@ class TmdbMetadataAdapterTest {
     void searchAsksForTheKindThatMatchesTheMediaType() {
         when(client.search(TmdbKind.SHOW, "bad", 5, false)).thenReturn(List.of());
 
-        adapter.search(MediaType.SHOW, "bad", 5);
+        adapter.search(MediaType.SHOW, "bad", 5, false);
 
         verify(client).search(TmdbKind.SHOW, "bad", 5, false);
         verify(client, org.mockito.Mockito.never()).search(org.mockito.ArgumentMatchers.eq(TmdbKind.MOVIE), anyString(), anyInt(), org.mockito.ArgumentMatchers.anyBoolean());

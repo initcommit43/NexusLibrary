@@ -179,7 +179,7 @@ class BrowseServiceTest {
             }
 
             @Override
-            public List<ItemSearchResult> search(MediaType mediaType, String query, int limit) {
+            public List<ItemSearchResult> search(MediaType mediaType, String query, int limit, boolean includeAdult) {
                 return List.of();
             }
 

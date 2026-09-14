@@ -24,7 +24,12 @@ public interface MetadataAdapter {
 
     Source source();
 
-    List<ItemSearchResult> search(MediaType mediaType, String query, int limit);
+    /**
+     * @param includeAdult whether titles the source files as adult may appear. Asked of the
+     *     source rather than filtered from its answer, so a search is never short. A source with
+     *     no such notion ignores it.
+     */
+    List<ItemSearchResult> search(MediaType mediaType, String query, int limit, boolean includeAdult);
 
     Optional<TrackableItemData> fetchById(String externalId);
 
@@ -70,8 +75,10 @@ public interface MetadataAdapter {
      * limits accordingly.
      *
      * @param page one-based
+     * @param includeAdult as on {@link #search}
      */
-    default BrowseResults discover(MediaType mediaType, DiscoverFilters filters, int page, int size) {
+    default BrowseResults discover(
+            MediaType mediaType, DiscoverFilters filters, int page, int size, boolean includeAdult) {
         return BrowseResults.empty();
     }
 

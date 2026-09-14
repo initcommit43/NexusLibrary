@@ -98,8 +98,8 @@ public class IgdbMetadataAdapter implements MetadataAdapter {
     }
 
     @Override
-    public List<ItemSearchResult> search(MediaType mediaType, String query, int limit) {
-        return client.searchGames(query, limit, false).stream()
+    public List<ItemSearchResult> search(MediaType mediaType, String query, int limit, boolean includeAdult) {
+        return client.searchGames(query, limit, includeAdult).stream()
                 .filter(IgdbMobile::isNotMobileOnly)
                 .map(game -> new ItemSearchResult(
                         MediaType.GAME,
@@ -296,13 +296,14 @@ public class IgdbMetadataAdapter implements MetadataAdapter {
     }
 
     @Override
-    public BrowseResults discover(MediaType mediaType, DiscoverFilters filters, int page, int size) {
+    public BrowseResults discover(
+            MediaType mediaType, DiscoverFilters filters, int page, int size, boolean includeAdult) {
         List<Map<String, Object>> games = client.discoverGames(
                 filters.one("q"),
                 IgdbFilters.where(filters, Instant.now().getEpochSecond()),
                 (page - 1) * size,
                 size,
-                false);
+                includeAdult);
 
         // A filtered page is one request, so hasMore is whether it came back full.
         return new BrowseResults(toSearchResults(games), games.size() == size);

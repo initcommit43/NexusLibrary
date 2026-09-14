@@ -176,7 +176,8 @@ class AniListFiltersTest {
                         "format", List.of("TV"),
                         "status", List.of("FINISHED"))),
                 2,
-                40);
+                40,
+                false);
 
         verify(client)
                 .discoverMedia(
@@ -204,7 +205,7 @@ class AniListFiltersTest {
                         any(MediaType.class), any(), any(), any(), any(), any(), any(), any(), anyInt(), anyInt(), anyBoolean()))
                 .thenReturn(new AniListClient.MediaPage(List.of(media()), false));
 
-        adapter.discover(MediaType.ANIME, new DiscoverFilters(Map.of("genres", List.of("Fantasy"))), 1, 20);
+        adapter.discover(MediaType.ANIME, new DiscoverFilters(Map.of("genres", List.of("Fantasy"))), 1, 20, false);
 
         verify(client)
                 .discoverMedia(

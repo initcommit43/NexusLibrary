@@ -144,6 +144,6 @@ class OpenLibraryMetadataAdapterTest {
         when(client.search(anyString(), anyInt()))
                 .thenReturn(List.of(Map.of("key", "/works/OL1W"), Map.of("key", "/works/OL2W", "title", "Real")));
 
-        assertThat(adapter.search(MediaType.BOOK, "x", 5)).hasSize(1);
+        assertThat(adapter.search(MediaType.BOOK, "x", 5, false)).hasSize(1);
     }
 }

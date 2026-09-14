@@ -172,7 +172,7 @@ class AniListBrowseTest {
         when(client.searchMedia(any(), any(), anyInt(), anyBoolean()))
                 .thenReturn(List.of(Map.of("id", 1, "type", "ANIME", "title", Map.of("romaji", "Frieren"))));
 
-        assertThat(adapter.search(MediaType.ANIME, "frieren", 5).getFirst().facets())
+        assertThat(adapter.search(MediaType.ANIME, "frieren", 5, false).getFirst().facets())
                 .isEmpty();
     }
 

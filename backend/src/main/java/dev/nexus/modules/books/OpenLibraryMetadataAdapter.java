@@ -68,8 +68,9 @@ public class OpenLibraryMetadataAdapter implements MetadataAdapter {
         return Source.OPEN_LIBRARY;
     }
 
+    /** {@code includeAdult} is ignored: Open Library rates nothing, so there is nothing to filter on. */
     @Override
-    public List<ItemSearchResult> search(MediaType mediaType, String query, int limit) {
+    public List<ItemSearchResult> search(MediaType mediaType, String query, int limit, boolean includeAdult) {
         return client.search(query, limit).stream()
                 .map(doc -> new ItemSearchResult(
                         MediaType.BOOK,
@@ -150,7 +151,8 @@ public class OpenLibraryMetadataAdapter implements MetadataAdapter {
     }
 
     @Override
-    public BrowseResults discover(MediaType mediaType, DiscoverFilters filters, int page, int size) {
+    public BrowseResults discover(
+            MediaType mediaType, DiscoverFilters filters, int page, int size, boolean includeAdult) {
         List<Map<String, Object>> works =
                 client.discover(OpenLibraryFilters.query(filters), (page - 1) * size, size);
 
