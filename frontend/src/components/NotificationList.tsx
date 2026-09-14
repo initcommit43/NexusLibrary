@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import type { NotificationEntry } from '../api/client'
-import { relative } from './activity'
+import { episodeLabel, relative } from './activity'
 import { mediaPathFor } from '../modules/registry'
 
 /**
@@ -24,9 +24,10 @@ const sentence = (notification: NotificationEntry, onRead?: (id: number) => void
   )
 
   if (notification.type === 'EPISODE_AIRED') {
+    // A show numbers episodes per season, so its season is said with the episode.
     return (
       <>
-        Episode {notification.payload.episode} of {title} aired
+        {episodeLabel(notification)} of {title} aired
       </>
     )
   }

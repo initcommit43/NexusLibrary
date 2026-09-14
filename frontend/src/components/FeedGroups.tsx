@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import type { ActivityEntry, NotificationEntry } from '../api/client'
 import { mediaPathFor } from '../modules/registry'
-import { describe, isRun, runTip, runTitle } from './activity'
+import { describe, episodeLabel, isRun, runTip, runTitle } from './activity'
 import { Tooltip } from './charts/Tooltip'
 import { useTooltip } from './charts/useTooltip'
 import { byDay, clockTime, shortAgo } from './feedDays'
@@ -43,7 +43,7 @@ const RowBody = ({
 /** What happened, in the desktop list's own words less the title, which the row leads with. */
 const happened = (notification: NotificationEntry) =>
   notification.type === 'EPISODE_AIRED'
-    ? `Episode ${notification.payload.episode} aired`
+    ? `${episodeLabel(notification)} aired`
     : 'Added'
 
 export const NotificationGroups = ({

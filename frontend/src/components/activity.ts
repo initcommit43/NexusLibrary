@@ -5,7 +5,7 @@
  * describing the same event in two voices is how "Watched episode 7" and "Progress 6 → 7"
  * end up on one screen.
  */
-import type { ActivityEntry, TrackingStatus } from '../api/client'
+import type { ActivityEntry, NotificationEntry, TrackingStatus } from '../api/client'
 import { MODULES, statusLabelsFor, type ModuleDefinition } from '../modules/registry'
 import type { TipContent } from './charts/useTooltip'
 import { toDisplayScore } from './rating'
@@ -108,6 +108,12 @@ export const runTip = (activity: ActivityEntry): TipContent => {
     lines: [...named, ...(rest > 0 ? [`and ${rest} more`] : [])],
   }
 }
+
+/** "Episode 9", or "Season 2, episode 5" for a show that numbers episodes per season. */
+export const episodeLabel = ({ payload }: NotificationEntry) =>
+  payload.season !== undefined
+    ? `Season ${payload.season}, episode ${payload.episode}`
+    : `Episode ${payload.episode}`
 
 export const relative = (iso: string) => {
   const minutes = Math.round((Date.now() - new Date(iso).getTime()) / 60000)

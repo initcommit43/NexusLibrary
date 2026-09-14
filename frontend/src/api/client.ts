@@ -236,7 +236,7 @@ export type NotificationEntry = {
   coverUrl: string | null
   source: string
   externalId: string
-  payload: { episode?: number; title?: string }
+  payload: { episode?: number; season?: number; title?: string }
   /** Whether it has been seen. The one thing that makes a row look new. */
   read: boolean
   createdAt: string
