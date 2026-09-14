@@ -118,8 +118,8 @@ export const PrivacyPage = () => (
 
     <h2>Cookies and local storage</h2>
     <p>
-      One cookie, and three values kept in your browser's local storage. All four are needed
-      for the site to work as you asked it to, so none of them requires consent under
+      Up to two cookies, and three values kept in your browser's local storage. All of them are
+      needed for the site to work as you asked it to, so none of them requires consent under
       § 25(2) TDDDG:
     </p>
     <ul>
@@ -127,6 +127,11 @@ export const PrivacyPage = () => (
         <code>nexus_refresh</code> — the cookie that keeps you signed in. It is httpOnly, so
         no script can read it, restricted to this site, and scoped to the sign-in endpoints
         alone. It lasts 30 days, or until you sign out.
+      </li>
+      <li>
+        <code>nexus_site</code> — set only while the site is private, once you enter its
+        password, so you are not asked again. It is httpOnly, holds an expiry and a signature
+        rather than the password, and lasts 30 days.
       </li>
       <li>
         <code>nexus.theme</code> — whether you chose light, dark or your system setting.
@@ -140,7 +145,7 @@ export const PrivacyPage = () => (
       </li>
     </ul>
     <p>
-      The last three never leave your browser. Clearing your site data removes all four; you
+      The last three never leave your browser. Clearing your site data removes all of them; you
       will be signed out and the display preferences will return to their defaults.
     </p>
 
