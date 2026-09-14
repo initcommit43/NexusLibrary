@@ -354,19 +354,30 @@ export const SettingsPage = () => {
    * The way in that needs no account: upload what the service exported. Sits under the
    * connection buttons on every card, because it is the alternative to using them.
    */
-  const csvRow = (provider: ModuleProvider) => (
-    <div className="integration-csv">
-      <button
-        type="button"
-        className="ghost"
-        disabled={busy !== null}
-        onClick={() => pickCsv(provider.provider)}
-      >
-        {working(provider.provider, 'import') ? 'Importing…' : 'Import from CSV'}
-      </button>
-      {provider.csvHint && <span className="muted csv-hint">{provider.csvHint}</span>}
-    </div>
-  )
+  const csvRow = (provider: ModuleProvider) => {
+    const hintId = `csv-hint-${provider.provider.toLowerCase()}`
+    return (
+      <div className="integration-csv">
+        {/* What the file needs, shown on hover or focus rather than as a line beside the button. */}
+        <span className="hint-anchor">
+          <button
+            type="button"
+            className="ghost"
+            disabled={busy !== null}
+            aria-describedby={provider.csvHint ? hintId : undefined}
+            onClick={() => pickCsv(provider.provider)}
+          >
+            {working(provider.provider, 'import') ? 'Importing…' : 'Import from CSV'}
+          </button>
+          {provider.csvHint && (
+            <span id={hintId} role="tooltip" className="hint-tip">
+              {provider.csvHint}
+            </span>
+          )}
+        </span>
+      </div>
+    )
+  }
 
   const disconnect = async (provider: ModuleProvider['provider']) => {
     setBusy({ provider, action: 'disconnect' })

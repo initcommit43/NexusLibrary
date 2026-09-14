@@ -860,10 +860,6 @@ a.list-link:hover {
     margin-top: 0;
   }
 
-  .settings-subview .csv-hint {
-    flex: none;
-  }
-
   /* No dark strip on a screen that is only this service: the pill under the blurb is the call. */
   .settings-subview .integration-head.banner {
     padding: 0;
@@ -6083,9 +6079,42 @@ button.ghost.danger:hover:not(:disabled) {
   border-top: 1px solid var(--border);
 }
 
-.csv-hint {
-  font-size: var(--text-sm);
-  flex: 1 1 16rem;
+/*
+ * A short explanation beside its control on hover or keyboard focus. Beside rather than above,
+ * so it never lands on the dark strip a connection card starts with.
+ */
+.hint-anchor {
+  position: relative;
+  display: inline-flex;
+}
+
+.hint-tip {
+  position: absolute;
+  top: 50%;
+  left: calc(100% + var(--space-2));
+  transform: translateY(-50%);
+  z-index: 20;
+  width: max-content;
+  max-width: 36rem;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--banner-bg);
+  box-shadow: var(--shadow-2);
+  color: var(--banner-text);
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--duration-fast) var(--ease),
+    visibility var(--duration-fast) var(--ease);
+  pointer-events: none;
+}
+
+.hint-anchor:hover .hint-tip,
+.hint-anchor:focus-within .hint-tip {
+  opacity: 1;
+  visibility: visible;
 }
 
 .note {
