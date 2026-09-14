@@ -150,10 +150,6 @@ public class TrackableItem {
         return metadata;
     }
 
-    public Instant getCachedAt() {
-        return cachedAt;
-    }
-
     public Instant getRefreshedAt() {
         return refreshedAt;
     }

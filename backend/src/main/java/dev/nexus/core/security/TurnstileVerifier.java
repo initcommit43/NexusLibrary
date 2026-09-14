@@ -37,11 +37,6 @@ public class TurnstileVerifier {
         }
     }
 
-    /** Whether the check is switched on at all, which is what having a secret key means. */
-    public boolean isConfigured() {
-        return configured;
-    }
-
     /**
      * @throws BotCheckFailedException if the token is missing or Cloudflare rejects it — and
      *     equally if Cloudflare cannot be reached at all. Failing closed costs sign-ups while

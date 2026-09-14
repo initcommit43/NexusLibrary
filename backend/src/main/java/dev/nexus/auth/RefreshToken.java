@@ -34,9 +34,6 @@ public class RefreshToken {
     @Column(nullable = false, updatable = false)
     private AuthClient client;
 
-    @Column(name = "issued_at", nullable = false, updatable = false, insertable = false)
-    private Instant issuedAt;
-
     @Column(name = "expires_at", nullable = false, updatable = false)
     private Instant expiresAt;
 
@@ -58,20 +55,12 @@ public class RefreshToken {
         return id;
     }
 
-    public UUID getJti() {
-        return jti;
-    }
-
     public Long getUserId() {
         return userId;
     }
 
     public AuthClient getClient() {
         return client;
-    }
-
-    public Instant getIssuedAt() {
-        return issuedAt;
     }
 
     public Instant getExpiresAt() {

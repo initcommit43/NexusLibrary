@@ -87,10 +87,6 @@ public class ProfilePicture {
         return item;
     }
 
-    public String getCharacterId() {
-        return characterId;
-    }
-
     public String getCharacterName() {
         return characterName;
     }

@@ -4,7 +4,6 @@ import dev.nexus.core.adapter.BrowseResults;
 import dev.nexus.core.adapter.BrowseShelf;
 import dev.nexus.core.adapter.DiscoverFilters;
 import dev.nexus.core.adapter.FilterField;
-import dev.nexus.core.adapter.MetadataAdapter;
 import dev.nexus.core.adapter.MetadataAdapterRegistry;
 import dev.nexus.core.adapter.StudioBrowse;
 import dev.nexus.core.domain.MediaType;

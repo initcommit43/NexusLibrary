@@ -64,10 +64,6 @@ public class FavouriteRow {
         return mediaType;
     }
 
-    public int getSortOrder() {
-        return sortOrder;
-    }
-
     public boolean sharesLane() {
         return sharesLane;
     }

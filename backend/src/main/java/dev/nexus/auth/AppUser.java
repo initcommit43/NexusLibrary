@@ -87,10 +87,6 @@ public class AppUser {
         this.termsAcceptedAt = at;
     }
 
-    public Instant getEmailVerifiedAt() {
-        return emailVerifiedAt;
-    }
-
     public boolean isEmailVerified() {
         return emailVerifiedAt != null;
     }

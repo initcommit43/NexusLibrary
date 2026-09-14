@@ -1,6 +1,5 @@
 package dev.nexus.core.activity;
 
-import dev.nexus.core.domain.Activity;
 import dev.nexus.core.domain.ActivityRepository;
 import dev.nexus.core.domain.ActivityType;
 import dev.nexus.core.domain.ProviderActivity;
