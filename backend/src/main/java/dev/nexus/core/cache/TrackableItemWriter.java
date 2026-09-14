@@ -1,6 +1,7 @@
 package dev.nexus.core.cache;
 
 import dev.nexus.core.adapter.TrackableItemData;
+import dev.nexus.core.domain.ItemState;
 import dev.nexus.core.domain.Source;
 import dev.nexus.core.domain.TrackableItem;
 import dev.nexus.core.domain.TrackableItemRepository;
@@ -9,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,10 +26,18 @@ import org.springframework.transaction.annotation.Transactional;
 public class TrackableItemWriter {
 
     private final TrackableItemRepository items;
+    private final ApplicationEventPublisher events;
 
-    public TrackableItemWriter(TrackableItemRepository items) {
+    public TrackableItemWriter(TrackableItemRepository items, ApplicationEventPublisher events) {
         this.items = items;
+        this.events = events;
     }
+
+    /**
+     * A cached title the source had as upcoming and now has as out. Published inside the
+     * refresh's transaction, so whatever it causes is written or rolled back with the refresh.
+     */
+    public record ReleaseStarted(TrackableItem item) {}
 
     /** Bulk insert for imports, where losing a race on one item must not fail the batch. */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -59,9 +69,13 @@ public class TrackableItemWriter {
         Instant now = Instant.now();
         for (TrackableItem item : items.findBySourceAndExternalIdIn(source, byExternalId.keySet())) {
             TrackableItemData data = byExternalId.get(item.getExternalId());
+            boolean wasUpcoming = item.getItemState() == ItemState.UPCOMING;
             item.refreshFrom(
                     data.title(), data.coverUrl(), data.releaseDate(), data.itemState(), data.metadata(), now);
             items.save(item);
+            if (wasUpcoming && data.itemState() != ItemState.UPCOMING) {
+                events.publishEvent(new ReleaseStarted(item));
+            }
         }
     }
 

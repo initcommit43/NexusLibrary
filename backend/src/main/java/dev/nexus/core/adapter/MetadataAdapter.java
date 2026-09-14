@@ -123,6 +123,16 @@ public interface MetadataAdapter {
     }
 
     /**
+     * Whether a title of this type moving from upcoming to out is news for its readers.
+     *
+     * <p>Only where nothing better announces it: an anime's premiere is its first episode
+     * airing, and a film or game coming out is not a notification anyone asked for.
+     */
+    default boolean announcesReleaseStart(MediaType mediaType) {
+        return false;
+    }
+
+    /**
      * Fetches many items at once. Importing a library needs hundreds of items, and one
      * request each would spend minutes inside the source's rate limit.
      *

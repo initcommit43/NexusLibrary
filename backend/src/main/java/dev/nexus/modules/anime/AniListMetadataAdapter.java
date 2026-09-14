@@ -59,6 +59,12 @@ public class AniListMetadataAdapter implements MetadataAdapter, StudioBrowse {
         return Source.ANILIST;
     }
 
+    /** Manga carry no chapter schedule, so publication starting is the one thing to tell. */
+    @Override
+    public boolean announcesReleaseStart(MediaType mediaType) {
+        return mediaType == MediaType.MANGA;
+    }
+
     @Override
     public List<ItemSearchResult> search(MediaType mediaType, String query, int limit) {
         return client.searchMedia(mediaType, query, limit).stream()

@@ -26,6 +26,12 @@ public interface UserEntryRepository extends JpaRepository<UserEntry, Long> {
 
     List<UserEntry> findByUserIdAndItemIdIn(Long userId, Collection<Long> itemIds);
 
+    /**
+     * Every reader keeping one title. Unscoped on purpose and never reachable from a request:
+     * it fans a notification about a shared title out to the readers it concerns.
+     */
+    List<UserEntry> findByItemId(Long itemId);
+
     long deleteByIdAndUserId(Long id, Long userId);
 
     /**
