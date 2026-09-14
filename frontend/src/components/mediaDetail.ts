@@ -7,6 +7,8 @@
  * AniList says it.
  */
 
+import { array, record, text } from './json'
+
 export interface Person {
   id: string
   name: string
@@ -37,14 +39,6 @@ export interface ExternalLink {
   url: string
   language: string | null
 }
-
-const record = (value: unknown): Record<string, unknown> =>
-  typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {}
-
-const array = (value: unknown): unknown[] => (Array.isArray(value) ? value : [])
-
-const text = (value: unknown): string | null =>
-  typeof value === 'string' && value.trim() ? value : null
 
 /** "MAIN" reads as "Main", "SERIES_COMPOSITION" as "Series composition". */
 export const humanise = (raw: unknown): string | null => {

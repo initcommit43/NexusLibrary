@@ -9,14 +9,7 @@ import type { MediaDetailView, Score } from './detailView'
 import { emptyView } from './detailView'
 import type { MediaTag, Person } from './mediaDetail'
 import { readScoreDistribution, readStatusDistribution } from './mediaDetail'
-
-const text = (value: unknown): string | null =>
-  typeof value === 'string' && value.trim() ? value : null
-
-const record = (value: unknown): Record<string, unknown> =>
-  typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {}
-
-const array = (value: unknown): unknown[] => (Array.isArray(value) ? value : [])
+import { array, record, text } from './json'
 
 /**
  * Subjects in the shape tags are read.

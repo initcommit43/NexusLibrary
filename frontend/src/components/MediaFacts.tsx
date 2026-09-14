@@ -1,16 +1,18 @@
 import { Link } from 'react-router-dom'
 import type { MediaDetail } from '../api/client'
 import { browsePathFor } from '../modules/registry'
+import { record } from './json'
 import { countdown, readNextEpisode, readRankings } from './mediaDetail'
 
+/**
+ * Its own reader rather than {@link text} from json: a fact is as often a number as a string
+ * — a year, an episode count, a page count — and every one of them is read here to be printed.
+ */
 const text = (value: unknown): string | null =>
   typeof value === 'string' && value.trim() ? value : typeof value === 'number' ? String(value) : null
 
 const list = (value: unknown): string[] =>
   Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []
-
-const record = (value: unknown): Record<string, unknown> =>
-  typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {}
 
 /** "Spring 2017" from AniList's separate season and year. */
 const season = (detail: Record<string, unknown>): string | null => {

@@ -8,14 +8,7 @@
 import type { MediaDetailView, RelatedTitle, Score } from './detailView'
 import { emptyView } from './detailView'
 import type { MediaTag, Person } from './mediaDetail'
-
-const text = (value: unknown): string | null =>
-  typeof value === 'string' && value.trim() ? value : null
-
-const record = (value: unknown): Record<string, unknown> =>
-  typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {}
-
-const array = (value: unknown): unknown[] => (Array.isArray(value) ? value : [])
+import { array, record, text } from './json'
 
 /** TMDB rates out of ten; every other score on this page is a percentage. */
 const percent = (value: unknown): string | null =>

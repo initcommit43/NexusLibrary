@@ -26,6 +26,7 @@ import {
 import { readGameDetail } from './gameDetail'
 import { readFilmDetail } from './filmDetail'
 import { readBookDetail } from './bookDetail'
+import { array, record, text } from './json'
 
 /** A title related to this one, from either side of the relation. */
 export interface RelatedTitle {
@@ -99,14 +100,6 @@ export const emptyView: MediaDetailView = {
   statusDistribution: [],
   scoreDistribution: [],
 }
-
-const text = (value: unknown): string | null =>
-  typeof value === 'string' && value.trim() ? value : null
-
-const record = (value: unknown): Record<string, unknown> =>
-  typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {}
-
-const array = (value: unknown): unknown[] => (Array.isArray(value) ? value : [])
 
 /** AniList nests relations as edges, each carrying the relation and the title it points at. */
 const readAniListRelations = (detail: Record<string, unknown>): RelatedTitle[] =>
