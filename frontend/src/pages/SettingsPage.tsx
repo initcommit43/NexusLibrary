@@ -572,7 +572,6 @@ export const SettingsPage = () => {
                     onChange={(event) => void setEnabled(module.slug, event.target.checked)}
                   />
                   <span>{module.label}</span>
-                  {!built && <span className="muted">Not built yet</span>}
                 </label>
               </li>
             )

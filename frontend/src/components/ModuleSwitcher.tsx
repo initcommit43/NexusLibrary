@@ -95,10 +95,7 @@ export const ModuleSwitcher = ({
     if (to) navigate(to)
   }
 
-  /*
-   * A module switched off in settings is not listed at all; one that is simply not built yet
-   * stays, since what is coming is part of what the app is.
-   */
+  // A module switched off in settings is not listed at all.
   const listed = modules.filter((module) => isEnabled(module.slug))
 
   const title = variant === 'title'
@@ -176,11 +173,9 @@ export const ModuleSwitcher = ({
             const subtitle =
               module.slug === current.slug
                 ? 'Current'
-                : !available
-                  ? 'Not built yet'
-                  : count === null
-                    ? ' '
-                    : `${count.toLocaleString()} tracked`
+                : count === null
+                  ? ' '
+                  : `${count.toLocaleString()} tracked`
             return (
               <li key={module.slug} role="none">
                 <button
@@ -201,10 +196,7 @@ export const ModuleSwitcher = ({
                       <ChevronRight />
                     </span>
                   ) : (
-                    <>
-                      <span>{module.label}</span>
-                      {!available && <span className="muted">Not built yet</span>}
-                    </>
+                    <span>{module.label}</span>
                   )}
                 </button>
               </li>
