@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import type { Distribution, ExternalLink, MediaTag, Person } from './mediaDetail'
 import type { CharacterRole } from './mediaDetail'
 import type { Score } from './detailView'
 import { Bars } from './Bars'
+import { useEscapeKey } from './useEscapeKey'
 
 const PersonTile = ({ left, right }: { left: Person; right: Person | null }) => (
   <div className="person-card">
@@ -106,15 +107,7 @@ const GALLERY_COUNT = 6
 export const MediaGallery = ({ images }: { images: string[] }) => {
   const [expanded, setExpanded] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!expanded) return
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setExpanded(null)
-    }
-    document.addEventListener('keydown', onKeyDown)
-    return () => document.removeEventListener('keydown', onKeyDown)
-  }, [expanded])
+  useEscapeKey(() => setExpanded(null), Boolean(expanded))
 
   if (images.length === 0) return null
 

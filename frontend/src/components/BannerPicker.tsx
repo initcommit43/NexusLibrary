@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
-import { ApiError, api, type ProfileBanner, type TrackedItem } from '../api/client'
+import { useMemo, useState } from 'react'
+import { api, errorMessage, type ProfileBanner, type TrackedItem } from '../api/client'
+import { useEscapeKey } from './useEscapeKey'
 
 /*
  * Open Library has no wide art of any kind, so a book cannot supply a banner and is not
@@ -40,13 +41,7 @@ export const BannerPicker = ({
   const [busy, setBusy] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose()
-    }
-    document.addEventListener('keydown', onKeyDown)
-    return () => document.removeEventListener('keydown', onKeyDown)
-  }, [onClose])
+  useEscapeKey(onClose)
 
   const matching = useMemo(() => {
     const needle = query.trim().toLowerCase()
@@ -66,7 +61,7 @@ export const BannerPicker = ({
     } catch (err) {
       // A title whose source has no banner for it answers plainly, and the picker stays
       // open on the message: the next thing the reader does is pick a different one.
-      setError(err instanceof ApiError ? err.message : 'Could not use that as a banner.')
+      setError(errorMessage(err, 'Could not use that as a banner.'))
       setBusy(null)
     }
   }
@@ -79,7 +74,7 @@ export const BannerPicker = ({
       onCleared()
       onClose()
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not remove the banner.')
+      setError(errorMessage(err, 'Could not remove the banner.'))
     }
   }
 

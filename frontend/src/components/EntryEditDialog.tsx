@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
-import { ApiError, api, type TrackedItem, type TrackingStatus } from '../api/client'
+import { useRef, useState } from 'react'
+import { api, errorMessage, type TrackedItem, type TrackingStatus } from '../api/client'
 import { statusLabelsFor, typeDefinitionFor } from '../modules/registry'
 import { Heart } from './Heart'
 import { STATUS_ORDER } from './trackingStatus'
 import { MINUTES_PER_HOUR } from './progress'
+import { useEscapeKey } from './useEscapeKey'
 
 /**
  * Everything about one entry, in one place. The card carries no controls of its own: on a
@@ -43,13 +44,7 @@ export const EntryEditDialog = ({
 
   const panel = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose()
-    }
-    document.addEventListener('keydown', onKeyDown)
-    return () => document.removeEventListener('keydown', onKeyDown)
-  }, [onClose])
+  useEscapeKey(onClose)
 
   /**
    * Written on the click, unlike every other field here.
@@ -66,7 +61,7 @@ export const EntryEditDialog = ({
       onSaved(await api.updateEntry(entry.id, { favorite: next }))
     } catch (err) {
       setFavorite(!next)
-      setError(err instanceof ApiError ? err.message : 'Could not save that.')
+      setError(errorMessage(err, 'Could not save that.'))
     }
   }
 
@@ -95,7 +90,7 @@ export const EntryEditDialog = ({
       )
       onClose()
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not save that.')
+      setError(errorMessage(err, 'Could not save that.'))
       setBusy(false)
     }
   }
@@ -108,7 +103,7 @@ export const EntryEditDialog = ({
       onDeleted(entry.id)
       onClose()
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not remove that.')
+      setError(errorMessage(err, 'Could not remove that.'))
       setBusy(false)
     }
   }

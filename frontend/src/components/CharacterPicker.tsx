@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
-import { ApiError, api, type ProfilePicture, type TrackedItem } from '../api/client'
+import { useMemo, useState } from 'react'
+import { api, errorMessage, type ProfilePicture, type TrackedItem } from '../api/client'
 import { readCharacters, type CharacterRole } from './mediaDetail'
+import { useEscapeKey } from './useEscapeKey'
 
 /*
  * Only AniList names characters. A film has a cast — real actors, credited with the part they
@@ -43,13 +44,7 @@ export const CharacterPicker = ({
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose()
-    }
-    document.addEventListener('keydown', onKeyDown)
-    return () => document.removeEventListener('keydown', onKeyDown)
-  }, [onClose])
+  useEscapeKey(onClose)
 
   const matching = useMemo(() => {
     const needle = query.trim().toLowerCase()
@@ -72,7 +67,7 @@ export const CharacterPicker = ({
       const media = await api.media(entry.source, entry.externalId)
       setCharacters(readCharacters((media.metadata.detail ?? {}) as Record<string, unknown>))
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not load that title.')
+      setError(errorMessage(err, 'Could not load that title.'))
       setCharacters([])
     }
   }
@@ -92,7 +87,7 @@ export const CharacterPicker = ({
     } catch (err) {
       // A character the title turns out not to have answers plainly, and the picker stays
       // open on the message: the next thing the reader does is pick a different one.
-      setError(err instanceof ApiError ? err.message : 'Could not use that as a picture.')
+      setError(errorMessage(err, 'Could not use that as a picture.'))
       setBusy(null)
     }
   }
@@ -105,7 +100,7 @@ export const CharacterPicker = ({
       onCleared()
       onClose()
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not remove the picture.')
+      setError(errorMessage(err, 'Could not remove the picture.'))
     }
   }
 

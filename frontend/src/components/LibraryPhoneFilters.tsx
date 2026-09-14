@@ -4,6 +4,7 @@ import type { MediaTypeDefinition } from '../modules/registry'
 import { ListFilterFields } from './ListSidebar'
 import { EMPTY_FILTERS, activeFilterCount, countIn, type ListFilters } from './listFilters'
 import { SearchField } from './SearchField'
+import { useEscapeKey } from './useEscapeKey'
 
 const FilterIcon = () => (
   <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" aria-hidden>
@@ -101,20 +102,17 @@ const FilterSheet = ({
   const titleId = useId()
   const panel = useRef<HTMLDivElement>(null)
 
+  useEscapeKey(onClose)
+
   // Focus goes in so a screen reader lands in the sheet, and back to the button on the way out.
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null
     panel.current?.focus()
 
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose()
-    }
-    document.addEventListener('keydown', onKeyDown)
-    return () => {
-      document.removeEventListener('keydown', onKeyDown)
-      opener?.focus({ preventScroll: true })
-    }
-  }, [onClose])
+    return () => opener?.focus({ preventScroll: true })
+    // Mount and unmount only: refocusing the sheet on any later render would take the cursor
+    // out of whatever field the reader is typing in.
+  }, [])
 
   return (
     <div className="dialog-backdrop" onClick={onClose} role="presentation">
