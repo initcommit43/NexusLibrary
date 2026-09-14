@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { api, errorMessage, type ProfileBanner, type TrackedItem } from '../api/client'
 import { useEscapeKey } from './useEscapeKey'
+import { coverBlurClass, useBlurAdult } from '../content/blur'
 
 /*
  * Open Library has no wide art of any kind, so a book cannot supply a banner and is not
@@ -37,6 +38,7 @@ export const BannerPicker = ({
   onCleared: () => void
   onClose: () => void
 }) => {
+  const blur = useBlurAdult()
   const [query, setQuery] = useState('')
   const [busy, setBusy] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -129,7 +131,12 @@ export const BannerPicker = ({
                   onClick={() => void choose(entry)}
                 >
                   {entry.coverUrl ? (
-                    <img src={entry.coverUrl} alt="" loading="lazy" />
+                    <img
+                      className={coverBlurClass(entry.adult, blur)}
+                      src={entry.coverUrl}
+                      alt=""
+                      loading="lazy"
+                    />
                   ) : (
                     <span className="cover-placeholder" aria-hidden="true" />
                   )}

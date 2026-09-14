@@ -4,6 +4,7 @@ import { mediaPathFor } from '../modules/registry'
 import { Tooltip } from './charts/Tooltip'
 import { useTooltip } from './charts/useTooltip'
 import { describe, isRun, relative, runTip, runTitle } from './activity'
+import { coverBlurClass, useBlurAdult } from '../content/blur'
 
 /**
  * What happened, newest first.
@@ -24,6 +25,7 @@ export const ActivityFeed = ({
   onForget: (activityId: string) => void
 }) => {
   const tip = useTooltip()
+  const blur = useBlurAdult()
 
   return (
     <>
@@ -63,7 +65,12 @@ export const ActivityFeed = ({
                   {runTitle(activity).charAt(0)}
                 </span>
               ) : activity.coverUrl ? (
-                <img src={activity.coverUrl} alt="" loading="lazy" />
+                <img
+                  className={coverBlurClass(activity.adult, blur)}
+                  src={activity.coverUrl}
+                  alt=""
+                  loading="lazy"
+                />
               ) : (
                 <div className="activity-thumb-placeholder" aria-hidden="true" />
               )}

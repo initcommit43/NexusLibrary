@@ -7,6 +7,7 @@ import { Tooltip } from './charts/Tooltip'
 import { useTooltip } from './charts/useTooltip'
 import { byDay, clockTime, shortAgo } from './feedDays'
 import { Group } from './GroupedList'
+import { coverBlurClass, useBlurAdult } from '../content/blur'
 
 /*
  * The phone's notifications and activity, as the native app lists them: rows in grouped cards
@@ -15,12 +16,19 @@ import { Group } from './GroupedList'
  * but with GroupRow's classes, so it is drawn the same.
  */
 
-const Thumb = ({ coverUrl }: { coverUrl: string | null }) =>
-  coverUrl ? (
-    <img className="group-row-thumb" src={coverUrl} alt="" loading="lazy" />
+const Thumb = ({ coverUrl, adult }: { coverUrl: string | null; adult: boolean }) => {
+  const blur = useBlurAdult()
+  return coverUrl ? (
+    <img
+      className={coverBlurClass(adult, blur, 'group-row-thumb')}
+      src={coverUrl}
+      alt=""
+      loading="lazy"
+    />
   ) : (
     <span className="group-row-thumb" aria-hidden="true" />
   )
+}
 
 const RowBody = ({
   title,
@@ -66,7 +74,7 @@ export const NotificationGroups = ({
               // Opening it is what marks it seen, as on the wide list.
               onClick={() => !notification.read && onRead(notification.id)}
             >
-              <Thumb coverUrl={notification.coverUrl} />
+              <Thumb coverUrl={notification.coverUrl} adult={notification.adult} />
               <RowBody
                 title={notification.payload.title ?? notification.title}
                 subtitle={happened(notification)}
@@ -123,7 +131,7 @@ export const ActivityGroups = ({
                     {title?.charAt(0)}
                   </span>
                 ) : (
-                  <Thumb coverUrl={activity.coverUrl} />
+                  <Thumb coverUrl={activity.coverUrl} adult={activity.adult} />
                 )}
                 <RowBody
                   title={title}

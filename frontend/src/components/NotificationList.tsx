@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import type { NotificationEntry } from '../api/client'
 import { episodeLabel, relative } from './activity'
 import { mediaPathFor } from '../modules/registry'
+import { coverBlurClass, useBlurAdult } from '../content/blur'
 
 /**
  * What a notification says, in the source's own terms.
@@ -37,6 +38,20 @@ const sentence = (notification: NotificationEntry, onRead?: (id: number) => void
   return <>{title} was added</>
 }
 
+const Cover = ({ notification }: { notification: NotificationEntry }) => {
+  const blur = useBlurAdult()
+  return notification.coverUrl ? (
+    <img
+      className={coverBlurClass(notification.adult, blur)}
+      src={notification.coverUrl}
+      alt=""
+      loading="lazy"
+    />
+  ) : (
+    <div className="activity-thumb-placeholder" aria-hidden="true" />
+  )
+}
+
 /**
  * What happened while the reader was away, newest first.
  *
@@ -58,11 +73,7 @@ export const NotificationList = ({
         key={notification.id}
         className={notification.read ? 'activity-row' : 'activity-row is-new'}
       >
-        {notification.coverUrl ? (
-          <img src={notification.coverUrl} alt="" loading="lazy" />
-        ) : (
-          <div className="activity-thumb-placeholder" aria-hidden="true" />
-        )}
+        <Cover notification={notification} />
 
         <div className="activity-text">
           <span>{sentence(notification, onRead)}</span>

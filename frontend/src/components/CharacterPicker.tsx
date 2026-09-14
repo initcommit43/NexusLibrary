@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { api, errorMessage, type ProfilePicture, type TrackedItem } from '../api/client'
 import { readCharacters, type CharacterRole } from './mediaDetail'
 import { useEscapeKey } from './useEscapeKey'
+import { coverBlurClass, useBlurAdult } from '../content/blur'
 
 /*
  * Only AniList names characters. A film has a cast — real actors, credited with the part they
@@ -38,6 +39,7 @@ export const CharacterPicker = ({
   onCleared: () => void
   onClose: () => void
 }) => {
+  const blur = useBlurAdult()
   const [query, setQuery] = useState('')
   const [opened, setOpened] = useState<TrackedItem | null>(null)
   const [characters, setCharacters] = useState<CharacterRole[] | null>(null)
@@ -190,7 +192,12 @@ export const CharacterPicker = ({
                       onClick={() => void open(entry)}
                     >
                       {entry.coverUrl ? (
-                        <img src={entry.coverUrl} alt="" loading="lazy" />
+                        <img
+                          className={coverBlurClass(entry.adult, blur)}
+                          src={entry.coverUrl}
+                          alt=""
+                          loading="lazy"
+                        />
                       ) : (
                         <span className="cover-placeholder" aria-hidden="true" />
                       )}
