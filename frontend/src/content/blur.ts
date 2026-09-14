@@ -53,6 +53,12 @@ export const useBlurAdult = (): boolean => {
   return current.userId === userId ? current.blurAdult : true
 }
 
-/** The class an 18+ cover wears, or nothing. A class rather than a wrapper, so no layout changes. */
-export const coverBlurClass = (adult: boolean | undefined, blur: boolean): string | undefined =>
-  adult && blur ? 'nsfw-blur' : undefined
+/**
+ * A cover's class list with the blur added when it applies. A class rather than a wrapper, so
+ * no layout that draws a cover has to change shape for it.
+ */
+export const coverBlurClass = (
+  adult: boolean | undefined,
+  blur: boolean,
+  base?: string,
+): string | undefined => [base, adult && blur ? 'nsfw-blur' : null].filter(Boolean).join(' ') || undefined

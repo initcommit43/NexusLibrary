@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import type { SearchResult, TrackingStatus } from '../api/client'
 import { mediaPathFor } from '../modules/registry'
+import { coverBlurClass, useBlurAdult } from '../content/blur'
 import { AddToShelfMenu } from './AddToShelfMenu'
 
 interface Props {
@@ -22,6 +23,7 @@ interface Props {
  * looks like it would.
  */
 export const CatalogCard = ({ result, state, onTrack, onEdit }: Props) => {
+  const blur = useBlurAdult()
   const path = mediaPathFor(result)
 
   return (
@@ -29,7 +31,12 @@ export const CatalogCard = ({ result, state, onTrack, onEdit }: Props) => {
       <div className="cover-art">
         <Link className="cover-link" to={path} aria-label={result.title}>
           {result.coverUrl ? (
-            <img src={result.coverUrl} alt="" loading="lazy" />
+            <img
+              className={coverBlurClass(result.adult, blur)}
+              src={result.coverUrl}
+              alt=""
+              loading="lazy"
+            />
           ) : (
             <div className="cover-placeholder" aria-hidden="true" />
           )}

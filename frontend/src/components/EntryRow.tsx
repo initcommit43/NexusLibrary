@@ -4,6 +4,7 @@ import { mediaPathFor } from '../modules/registry'
 import { ChevronRight } from './GroupedList'
 import { progressLine, progressShare } from './progress'
 import { EntryCoverMenu } from './CoverStatusMenu'
+import { coverBlurClass, useBlurAdult } from '../content/blur'
 
 /**
  * One title as a row of the library's list view on a phone: cover, title, progress and a bar
@@ -23,6 +24,7 @@ export const EntryRow = ({
   onChanged: (updated: TrackedItem) => void
   onEdit: () => void
 }) => {
+  const blur = useBlurAdult()
   const progress = progressLine(entry)
   const share = progressShare(entry)
 
@@ -30,7 +32,12 @@ export const EntryRow = ({
     <li className="entry-row">
       <div className="entry-row-cover">
         {entry.coverUrl ? (
-          <img src={entry.coverUrl} alt="" loading="lazy" />
+          <img
+            className={coverBlurClass(entry.adult, blur)}
+            src={entry.coverUrl}
+            alt=""
+            loading="lazy"
+          />
         ) : (
           <div className="cover-placeholder" aria-hidden="true" />
         )}

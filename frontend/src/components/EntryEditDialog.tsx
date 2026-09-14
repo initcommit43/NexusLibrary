@@ -5,6 +5,7 @@ import { Heart } from './Heart'
 import { STATUS_ORDER } from './trackingStatus'
 import { MINUTES_PER_HOUR } from './progress'
 import { useEscapeKey } from './useEscapeKey'
+import { coverBlurClass, useBlurAdult } from '../content/blur'
 
 /**
  * Everything about one entry, in one place. The card carries no controls of its own: on a
@@ -22,6 +23,7 @@ export const EntryEditDialog = ({
   onDeleted: (id: number) => void
   onClose: () => void
 }) => {
+  const blur = useBlurAdult()
   const labels = statusLabelsFor(entry.mediaType)
   const tracksMinutes = entry.progressUnit === 'MINUTES'
   const progressLabel = typeDefinitionFor(entry.mediaType)?.progressLabel ?? 'Progress'
@@ -121,7 +123,11 @@ export const EntryEditDialog = ({
       >
         <header className="dialog-head">
           {entry.coverUrl ? (
-            <img className="dialog-cover" src={entry.coverUrl} alt="" />
+            <img
+              className={coverBlurClass(entry.adult, blur, 'dialog-cover')}
+              src={entry.coverUrl}
+              alt=""
+            />
           ) : (
             <div className="dialog-cover cover-placeholder" aria-hidden="true" />
           )}

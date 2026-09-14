@@ -4,6 +4,7 @@ import { api, errorMessage, type SearchResult } from '../api/client'
 import { keyOf } from './useTrackable'
 import { useMenuDismiss } from './useMenuDismiss'
 import { mediaPathFor } from '../modules/registry'
+import { coverBlurClass, useBlurAdult } from '../content/blur'
 import type { MediaTypeDefinition, ModuleDefinition } from '../modules/registry'
 
 /** Below this a term matches most of the catalogue and answers nothing useful. */
@@ -54,6 +55,7 @@ export const HeaderSearch = ({
   module: ModuleDefinition
   type: MediaTypeDefinition
 }) => {
+  const blur = useBlurAdult()
   const { open, setOpen, dismiss, container, trigger } = useMenuDismiss<
     HTMLDivElement,
     HTMLButtonElement
@@ -231,7 +233,12 @@ export const HeaderSearch = ({
                         <li key={keyOf(result)}>
                           <button type="button" onClick={() => openResult(result)}>
                             {result.coverUrl ? (
-                              <img src={result.coverUrl} alt="" loading="lazy" />
+                              <img
+                                className={coverBlurClass(result.adult, blur)}
+                                src={result.coverUrl}
+                                alt=""
+                                loading="lazy"
+                              />
                             ) : (
                               <span className="search-result-blank" aria-hidden />
                             )}

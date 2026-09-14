@@ -29,6 +29,7 @@ import {
 } from '../components/MediaPanels'
 import { readDetail } from '../components/detailView'
 import { moduleForMediaType } from '../modules/registry'
+import { coverBlurClass, useBlurAdult } from '../content/blur'
 
 /** AniList writes synopses in HTML, and pads them with blank lines it does not mean. */
 const plainText = (html: unknown): string | null => {
@@ -58,6 +59,7 @@ const creditsLabel = (mediaType: MediaType): string => {
 
 export const MediaPage = () => {
   const { source, externalId } = useParams()
+  const blur = useBlurAdult()
   // Keyed by the title being shown, so following a relation drops the previous one without
   // a second render pass to clear it.
   const [loaded, setLoaded] = useState<{ key: string; media: MediaDetail } | null>(null)
@@ -143,7 +145,11 @@ export const MediaPage = () => {
         <div className="media-head">
           <div className="media-cover-column">
             {media.coverUrl ? (
-              <img className="media-cover" src={media.coverUrl} alt="" />
+              <img
+                className={coverBlurClass(media.adult, blur, 'media-cover')}
+                src={media.coverUrl}
+                alt=""
+              />
             ) : (
               <div className="media-cover cover-placeholder" aria-hidden="true" />
             )}

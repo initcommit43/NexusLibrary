@@ -171,6 +171,30 @@ input[aria-invalid='true'] {
   font-size: var(--text-xs);
 }
 
+/*
+ * An 18+ cover, for a reader who shows them but not at full size. The filter travels with the
+ * image, so no layout that draws a cover can miss it. It lifts on a deliberate hover or focus.
+ */
+.nsfw-blur {
+  filter: blur(18px);
+  /* Clipped after the filter, so the blur stays inside the cover instead of smearing past it. */
+  clip-path: inset(0 round var(--radius-md));
+  transition: filter var(--duration-fast) var(--ease);
+}
+
+.nsfw-blur:hover,
+a:hover > .nsfw-blur,
+a:focus-visible > .nsfw-blur {
+  filter: none;
+  clip-path: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nsfw-blur {
+    transition: none;
+  }
+}
+
 /* What a field will accept, said before it is typed into. Sits where its error would. */
 .field-hint {
   font-size: var(--text-xs);

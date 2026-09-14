@@ -5,6 +5,7 @@ import { mediaPathFor, type ListColumn } from '../modules/registry'
 import { LIST_COLUMNS, STEPPED_UNITS } from './listColumns'
 import { episodesWaiting } from './progress'
 import { StatusMenu } from './StatusMenu'
+import { coverBlurClass, useBlurAdult } from '../content/blur'
 
 const Row = ({
   entry,
@@ -17,6 +18,7 @@ const Row = ({
   onChanged: (updated: TrackedItem) => void
   onEdit: () => void
 }) => {
+  const blur = useBlurAdult()
   const [stepping, setStepping] = useState(false)
   const [stepFailed, setStepFailed] = useState(false)
 
@@ -49,14 +51,24 @@ const Row = ({
           />
         )}
         {entry.coverUrl ? (
-          <img src={entry.coverUrl} alt="" loading="lazy" />
+          <img
+            className={coverBlurClass(entry.adult, blur)}
+            src={entry.coverUrl}
+            alt=""
+            loading="lazy"
+          />
         ) : (
           <div className="cover-placeholder" aria-hidden="true" />
         )}
         <StatusMenu entry={entry} onChanged={onChanged} onOpenEditor={onEdit} dots />
         {/* The thumbnail is too small to recognise a title by; hovering shows it at size. */}
         {entry.coverUrl && (
-          <img className="entry-table-preview" src={entry.coverUrl} alt="" aria-hidden="true" />
+          <img
+            className={coverBlurClass(entry.adult, blur, 'entry-table-preview')}
+            src={entry.coverUrl}
+            alt=""
+            aria-hidden="true"
+          />
         )}
       </div>
 

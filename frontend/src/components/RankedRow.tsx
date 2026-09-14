@@ -1,4 +1,5 @@
 import type { SearchResult } from '../api/client'
+import { coverBlurClass, useBlurAdult } from '../content/blur'
 
 interface Props {
   result: SearchResult
@@ -21,6 +22,7 @@ const facetList = (value: unknown): string[] => (Array.isArray(value) ? value.ma
  * on a shelf happens where the title itself is, one tap further in.
  */
 export const RankedRow = ({ result, rank }: Props) => {
+  const blur = useBlurAdult()
   const score = typeof result.facets?.score === 'number' ? result.facets.score : null
   const format = facetText(result.facets?.format)
   const genres = facetList(result.facets?.genres)
@@ -34,7 +36,12 @@ export const RankedRow = ({ result, rank }: Props) => {
       </span>
 
       {result.coverUrl ? (
-        <img className="ranked-cover" src={result.coverUrl} alt="" loading="lazy" />
+        <img
+          className={coverBlurClass(result.adult, blur, 'ranked-cover')}
+          src={result.coverUrl}
+          alt=""
+          loading="lazy"
+        />
       ) : (
         <div className="ranked-cover cover-placeholder" aria-hidden="true" />
       )}

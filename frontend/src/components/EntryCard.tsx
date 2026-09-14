@@ -4,6 +4,7 @@ import { mediaPathFor } from '../modules/registry'
 import { toDisplayScore } from './rating'
 import { episodesWaiting, progressLine, progressSummary } from './progress'
 import { EntryCoverMenu } from './CoverStatusMenu'
+import { coverBlurClass, useBlurAdult } from '../content/blur'
 
 /**
  * Cover, title, and the two numbers worth seeing on a shelf. Everything editable lives
@@ -33,6 +34,7 @@ export const EntryCard = ({
    */
   artOnly?: boolean
 }) => {
+  const blur = useBlurAdult()
   const compact = onChanged !== undefined
   const progress = compact ? progressLine(entry) : progressSummary(entry)
   const waiting = episodesWaiting(entry)
@@ -65,7 +67,12 @@ export const EntryCard = ({
       <div className="cover-art">
         <Link className="cover-link" to={to} title={entry.title}>
           {entry.coverUrl ? (
-            <img src={entry.coverUrl} alt="" loading="lazy" />
+            <img
+              className={coverBlurClass(entry.adult, blur)}
+              src={entry.coverUrl}
+              alt=""
+              loading="lazy"
+            />
           ) : (
             <div className="cover-placeholder" aria-hidden="true" />
           )}
