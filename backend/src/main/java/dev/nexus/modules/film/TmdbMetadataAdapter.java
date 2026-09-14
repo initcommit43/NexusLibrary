@@ -17,7 +17,10 @@ import dev.nexus.core.domain.ItemState;
 import dev.nexus.core.domain.MediaType;
 import dev.nexus.core.domain.Source;
 import dev.nexus.core.domain.TrackableItem;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -43,6 +46,19 @@ public class TmdbMetadataAdapter implements MetadataAdapter {
 
     /** A show's episode count per season, excluding specials. */
     static final String SEASON_EPISODES = "seasonEpisodes";
+
+    /**
+     * A show's next episode, in the shape the aired-episode sweep reads: season, episode, and
+     * the moment it counts as out. Beside anime's {@code nextEpisode} rather than in it, because
+     * TMDB numbers episodes per season and the shelves read that key as an absolute count.
+     */
+    static final String NEXT_SEASON_EPISODE = "nextSeasonEpisode";
+
+    /**
+     * TMDB gives an air date and no time. An episode counts as out from this hour, UTC, on
+     * that day: the morning in Europe, which can be before a US evening broadcast.
+     */
+    private static final LocalTime AIRS_FROM = LocalTime.of(6, 0);
 
     private static final String STATUS_RELEASED = "Released";
 
@@ -125,10 +141,26 @@ public class TmdbMetadataAdapter implements MetadataAdapter {
                 .toList();
     }
 
-    /** A show cached before the per-season breakdown was stored has none to count seasons by. */
+    /**
+     * A show cached before the per-season breakdown was stored has none to count seasons by, and
+     * one whose stored next episode came out since it was last fetched has to be asked what
+     * comes after it. Once only: a copy fetched after that moment is as new as TMDB has.
+     */
     @Override
     public boolean isOutdated(TrackableItem item) {
-        return item.getMediaType() == MediaType.SHOW && !item.getMetadata().containsKey(SEASON_EPISODES);
+        if (item.getMediaType() != MediaType.SHOW) {
+            return false;
+        }
+        if (!item.getMetadata().containsKey(SEASON_EPISODES)) {
+            return true;
+        }
+        if (!(item.getMetadata().get(NEXT_SEASON_EPISODE) instanceof Map<?, ?> next)
+                || !(next.get("airingAt") instanceof Number airingAt)) {
+            return false;
+        }
+        Instant aired = Instant.ofEpochSecond(airingAt.longValue());
+        Instant fetched = item.lastRefreshedAt();
+        return !aired.isAfter(Instant.now()) && (fetched == null || fetched.isBefore(aired));
     }
 
     @Override
@@ -485,12 +517,30 @@ public class TmdbMetadataAdapter implements MetadataAdapter {
             // Always written, empty or not: its presence marks a cached show as read since the
             // breakdown was stored, so an older copy can be told apart and refreshed once.
             metadata.put(SEASON_EPISODES, seasonEpisodes(row.get("seasons")));
+            // Written as null when TMDB lists none: a refresh merges keys rather than replacing
+            // the map, so an episode that has aired would otherwise stay "next" for good.
+            metadata.put(NEXT_SEASON_EPISODE, nextSeasonEpisode(row.get("next_episode_to_air")));
         }
 
         if (row.get("vote_average") instanceof Number rating && rating.doubleValue() > 0) {
             metadata.put("externalRating", Math.round(rating.doubleValue() * RATING_SCALE));
         }
         return metadata;
+    }
+
+    private Map<String, Object> nextSeasonEpisode(Object raw) {
+        if (!(raw instanceof Map<?, ?> next)
+                || !(next.get("season_number") instanceof Number season)
+                || !(next.get("episode_number") instanceof Number episode)
+                || !(next.get("air_date") instanceof String airDate)) {
+            return null;
+        }
+        try {
+            long airingAt = LocalDate.parse(airDate).atTime(AIRS_FROM).toEpochSecond(ZoneOffset.UTC);
+            return Map.of("season", season.intValue(), "episode", episode.intValue(), "airingAt", airingAt);
+        } catch (DateTimeParseException e) {
+            return null;
+        }
     }
 
     /**

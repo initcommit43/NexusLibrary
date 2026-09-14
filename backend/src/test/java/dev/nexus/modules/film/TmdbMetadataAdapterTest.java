@@ -200,6 +200,50 @@ class TmdbMetadataAdapterTest {
         assertThat(adapter.fetchById("tv:1").orElseThrow().metadata()).containsEntry("seasonEpisodes", List.of());
     }
 
+    /** TMDB gives a date only; the episode counts as out from 06:00 UTC that day. */
+    @Test
+    void storesTheNextEpisodeWithItsSeasonAiringOnTheMorningOfItsDate() {
+        when(client.findById(TmdbKind.SHOW, "1396"))
+                .thenReturn(Optional.of(Map.of(
+                        "id", 1396,
+                        "name", "Breaking Bad",
+                        "next_episode_to_air",
+                        Map.of("season_number", 2, "episode_number", 5, "air_date", "2026-10-01"))));
+
+        assertThat(adapter.fetchById("tv:1396").orElseThrow().metadata())
+                .containsEntry(
+                        "nextSeasonEpisode",
+                        Map.of("season", 2, "episode", 5, "airingAt",
+                                java.time.Instant.parse("2026-10-01T06:00:00Z").getEpochSecond()));
+    }
+
+    /** Written as null, so a refresh clears an episode that has aired instead of keeping it. */
+    @Test
+    void aShowWithNothingScheduledRecordsNoNextEpisode() {
+        when(client.findById(TmdbKind.SHOW, "1")).thenReturn(Optional.of(Map.of("id", 1, "name", "Pilot")));
+
+        Map<String, Object> metadata = adapter.fetchById("tv:1").orElseThrow().metadata();
+        assertThat(metadata).containsKey("nextSeasonEpisode");
+        assertThat(metadata.get("nextSeasonEpisode")).isNull();
+    }
+
+    @Test
+    void aShowWhoseNextEpisodeHasAiredIsOutdated() {
+        long past = java.time.Instant.now().minusSeconds(60).getEpochSecond();
+        long future = java.time.Instant.now().plusSeconds(3600).getEpochSecond();
+        TrackableItem aired = new TrackableItem(
+                MediaType.SHOW, Source.TMDB, "tv:1", "Aired", null, null, ItemState.ONGOING,
+                Map.of("seasonEpisodes", List.of(8),
+                        "nextSeasonEpisode", Map.of("season", 1, "episode", 3, "airingAt", past)));
+        TrackableItem waiting = new TrackableItem(
+                MediaType.SHOW, Source.TMDB, "tv:2", "Waiting", null, null, ItemState.ONGOING,
+                Map.of("seasonEpisodes", List.of(8),
+                        "nextSeasonEpisode", Map.of("season", 1, "episode", 3, "airingAt", future)));
+
+        assertThat(adapter.isOutdated(aired)).isTrue();
+        assertThat(adapter.isOutdated(waiting)).isFalse();
+    }
+
     @Test
     void searchAsksForTheKindThatMatchesTheMediaType() {
         when(client.search(TmdbKind.SHOW, "bad", 5)).thenReturn(List.of());
