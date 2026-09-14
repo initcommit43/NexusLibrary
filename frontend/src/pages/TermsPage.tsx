@@ -14,7 +14,7 @@ import { LegalLayout } from '../components/LegalLayout'
  * which is not much, and what it expects, which is less.
  */
 export const TermsPage = () => (
-  <LegalLayout title="Terms of Service" updated="7 September 2026">
+  <LegalLayout title="Terms of Service" updated="14 September 2026">
     <p>
       By creating an account you agree to these terms. If you do not, please do not register.
     </p>
@@ -35,7 +35,22 @@ export const TermsPage = () => (
       someone else has got into your account.
     </p>
     <p>
-      You must be at least 16 years old to register.
+      You must be at least 16 years old to register, and we ask for your date of birth when
+      you create an account. Give it accurately: it also decides whether the 18+ setting
+      below is available to you, and it cannot be changed from the app once it is set.
+    </p>
+
+    <h2>Mature content</h2>
+    <p>
+      Some of the catalogues this app reads from file certain titles as 18+. Those titles are
+      hidden by default and stay hidden unless you switch them on in Settings, which only an
+      account whose date of birth puts it at 18 or over can do. Their covers are blurred
+      unless you turn that off as well.
+    </p>
+    <p>
+      What counts as 18+ is the source's own classification, not ours: AniList's adult flag,
+      TMDB's, an erotic theme on an IGDB game. A title may be filed differently than you
+      would file it yourself.
     </p>
 
     <h2>What you may not do</h2>

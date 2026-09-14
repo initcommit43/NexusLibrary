@@ -15,7 +15,7 @@ import { LegalLayout } from '../components/LegalLayout'
  * named here exists, and the retention periods are the ones the app really applies.
  */
 export const PrivacyPage = () => (
-  <LegalLayout title="Privacy Policy" updated="7 September 2026">
+  <LegalLayout title="Privacy Policy" updated="14 September 2026">
     <p>
       NexusLibrary is a media tracker. It keeps the list of things you are reading, watching
       and playing, and it needs an account to know whose list is whose. This page says
@@ -36,6 +36,20 @@ export const PrivacyPage = () => (
       bcrypt hash, which cannot be read back. The email address is how you sign in and how a
       password reset link would reach you. Legal basis: performance of the contract you enter
       into by creating an account, Art. 6(1)(b) GDPR.
+    </p>
+    <p>
+      Your date of birth, given when you register. An account made before registration asked
+      for it can add it once in Settings. It is stored as the date rather than as an age, and
+      it cannot be changed afterwards from the app; to correct a mistake, write to us. It is
+      used for two things only: refusing accounts under 16, and deciding whether the 18+
+      content setting is available to you. It is never shown on your profile and no proof of
+      it is asked for. It is included in your data export and deleted with your account.
+      Legal basis: Art. 6(1)(c) GDPR for the youth-protection duties of the JMStV, and our
+      legitimate interest in running the service lawfully, Art. 6(1)(f) GDPR.
+    </p>
+    <p>
+      Your content settings: whether 18+ titles are shown to you and whether their covers are
+      blurred. Legal basis: Art. 6(1)(b) GDPR.
     </p>
 
     <h3>Your library</h3>
@@ -178,8 +192,9 @@ export const PrivacyPage = () => (
 
     <h2>Age</h2>
     <p>
-      This service is not intended for anyone under 16. If you are under 16, please do not
-      create an account.
+      This service is not intended for anyone under 16, and registration refuses a date of
+      birth below that. If you believe an account here belongs to someone under 16, write to
+      [CONTACT EMAIL] and we will delete it.
     </p>
 
     <h2>Changes</h2>
