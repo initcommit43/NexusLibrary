@@ -66,12 +66,13 @@ public class AniListNotificationRunner {
 
                 log.debug(
                         "AniList notification page {}: {} seen, {} stored, {} already held,"
-                                + " {} off-shelf, next page {}",
+                                + " {} off-shelf, {} not for this list, next page {}",
                         page,
                         written.seen(),
                         written.stored(),
                         written.known(),
                         written.unmatched(),
+                        written.ignored(),
                         answer.hasNextPage());
 
                 // The end of the stream is what stops the walk, for the reason the activity

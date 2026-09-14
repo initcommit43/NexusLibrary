@@ -123,12 +123,55 @@ class AniListNotificationImportTest extends PostgresIntegrationTest {
         assertThat(written.unmatched()).isEqualTo(1);
     }
 
+    /** AniList tells of every episode of anything listed; here only what is being watched hears of them. */
+    @Test
+    void aLaterEpisodeOfATitleOffTheWatchingListIsIgnored() {
+        track("PLANNING");
+
+        AniListNotificationWriter.Written written = writer.save(userId, List.of(aired(9, LAST_NIGHT)));
+
+        assertThat(written.stored()).isZero();
+        assertThat(written.ignored()).isEqualTo(1);
+        assertThat(notifications()).isEmpty();
+    }
+
+    @Test
+    void thePremiereArrivesWhateverListTheTitleIsOn() {
+        track("COMPLETED");
+
+        assertThat(writer.save(userId, List.of(aired(1, LAST_NIGHT))).stored()).isEqualTo(1);
+
+        assertThat(notifications()).singleElement()
+                .satisfies(waiting -> assertThat(payloadOf(waiting)).containsEntry("episode", 1));
+    }
+
+    /** Someone else keeping the title puts it in the shared cache, not on this reader's list. */
+    @Test
+    void aTitleCachedForSomebodyElseIsStillOffThisShelf() {
+        String other = registerAndGetToken(http, "other@example.com", "other");
+        Response theirs = http.postJson(
+                "/entries",
+                Map.of("source", "ANILIST", "externalId", "21", "status", "IN_PROGRESS"),
+                "Authorization",
+                "Bearer " + other);
+        assertThat(theirs.status()).isEqualTo(201);
+
+        AniListNotificationWriter.Written written = writer.save(userId, List.of(aired(1, LAST_NIGHT)));
+
+        assertThat(written.stored()).isZero();
+        assertThat(written.unmatched()).isEqualTo(1);
+    }
+
     // --- helpers ----------------------------------------------------------
 
     private void track() {
+        track("IN_PROGRESS");
+    }
+
+    private void track(String status) {
         Response tracked = http.postJson(
                 "/entries",
-                Map.of("source", "ANILIST", "externalId", "21", "status", "IN_PROGRESS"),
+                Map.of("source", "ANILIST", "externalId", "21", "status", status),
                 "Authorization",
                 "Bearer " + token);
         assertThat(tracked.status()).isEqualTo(201);

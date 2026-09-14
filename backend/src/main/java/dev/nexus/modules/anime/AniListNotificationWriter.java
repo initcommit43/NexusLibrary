@@ -6,6 +6,9 @@ import dev.nexus.core.domain.NotificationType;
 import dev.nexus.core.domain.Source;
 import dev.nexus.core.domain.TrackableItem;
 import dev.nexus.core.domain.TrackableItemRepository;
+import dev.nexus.core.domain.TrackingStatus;
+import dev.nexus.core.domain.UserEntry;
+import dev.nexus.core.domain.UserEntryRepository;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,20 +31,24 @@ public class AniListNotificationWriter {
      * @param stored notifications written
      * @param known ones already held, which a re-run is mostly made of
      * @param unmatched ones about a title that is not on the shelf
+     * @param ignored aired episodes the reader's list does not ask to hear about
      */
-    public record Written(int stored, int known, int unmatched) {
+    public record Written(int stored, int known, int unmatched, int ignored) {
 
         public int seen() {
-            return stored + known + unmatched;
+            return stored + known + unmatched + ignored;
         }
     }
 
     private final NotificationRepository notifications;
     private final TrackableItemRepository items;
+    private final UserEntryRepository entries;
 
-    public AniListNotificationWriter(NotificationRepository notifications, TrackableItemRepository items) {
+    public AniListNotificationWriter(
+            NotificationRepository notifications, TrackableItemRepository items, UserEntryRepository entries) {
         this.notifications = notifications;
         this.items = items;
+        this.entries = entries;
     }
 
     /**
@@ -57,7 +64,7 @@ public class AniListNotificationWriter {
     @Transactional
     public Written save(Long userId, List<Map<String, Object>> rows) {
         if (rows.isEmpty()) {
-            return new Written(0, 0, 0);
+            return new Written(0, 0, 0, 0);
         }
 
         Set<String> mediaIds = rows.stream()
@@ -78,10 +85,22 @@ public class AniListNotificationWriter {
                         .map(row -> key(row.getItemId(), row.getType(), row.getSubject()))
                         .collect(Collectors.toSet());
 
+        // The reader's own entries, not the shared cache, decide whether an aired episode is theirs
+        // to hear about: the same rule the sweep applies.
+        Map<Long, TrackingStatus> listed = shelved.isEmpty()
+                ? Map.of()
+                : entries
+                        .findByUserIdAndItemIdIn(
+                                userId,
+                                shelved.values().stream().map(TrackableItem::getId).toList())
+                        .stream()
+                        .collect(Collectors.toMap(entry -> entry.getItem().getId(), UserEntry::getStatus));
+
         List<Notification> fresh = new ArrayList<>();
         Set<String> writing = new HashSet<>();
         int known = 0;
         int unmatched = 0;
+        int ignored = 0;
 
         for (Map<String, Object> row : rows) {
             TrackableItem item = shelved.get(mediaId(row));
@@ -92,6 +111,18 @@ public class AniListNotificationWriter {
             if (item == null || type == null || subject == null || happened == null) {
                 unmatched++;
                 continue;
+            }
+
+            if (type == NotificationType.EPISODE_AIRED) {
+                TrackingStatus status = listed.get(item.getId());
+                if (status == null) {
+                    unmatched++;
+                    continue;
+                }
+                if (!toldAbout(status, row)) {
+                    ignored++;
+                    continue;
+                }
             }
 
             // Held already, or held by an earlier row of this same page: AniList raises one
@@ -106,7 +137,13 @@ public class AniListNotificationWriter {
         }
 
         notifications.saveAll(fresh);
-        return new Written(fresh.size(), known, unmatched);
+        return new Written(fresh.size(), known, unmatched, ignored);
+    }
+
+    /** Every episode of what is being watched; only the premiere of anything else on the list. */
+    private static boolean toldAbout(TrackingStatus status, Map<String, Object> row) {
+        return status == TrackingStatus.IN_PROGRESS
+                || (row.get("episode") instanceof Number episode && episode.intValue() == 1);
     }
 
     /**

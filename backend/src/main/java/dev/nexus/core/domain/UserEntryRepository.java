@@ -24,6 +24,8 @@ public interface UserEntryRepository extends JpaRepository<UserEntry, Long> {
 
     Optional<UserEntry> findByUserIdAndItemId(Long userId, Long itemId);
 
+    List<UserEntry> findByUserIdAndItemIdIn(Long userId, Collection<Long> itemIds);
+
     long deleteByIdAndUserId(Long id, Long userId);
 
     /**
