@@ -243,7 +243,7 @@ export const ProfilePage = () => {
           return {
             key: `${module.slug}/${type.slug}`,
             path: `/library/${module.slug}/${type.slug}`,
-            label: type.listLabel,
+            label: type.label,
             summary: summarise(held),
             time: timeSpent(held, type.mediaType),
           }

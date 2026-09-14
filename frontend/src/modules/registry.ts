@@ -32,7 +32,7 @@ export type ListColumn =
 export interface MediaTypeDefinition {
   mediaType: MediaType
   label: string
-  /** What home and profile call this shelf; the header nav and library heading use `label`. */
+  /** What home calls this shelf; the header nav, library heading and profile use `label`. */
   listLabel: string
   /** Lowercase media type, used in the URL. */
   slug: string
