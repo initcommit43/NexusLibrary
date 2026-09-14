@@ -9,11 +9,15 @@ import dev.nexus.core.web.RateLimiter;
 import dev.nexus.core.web.ServerTimings;
 import dev.nexus.core.jobs.JobRegistry;
 import dev.nexus.core.jobs.SyncJob;
+import dev.nexus.modules.anime.AniListActivityService;
 import dev.nexus.modules.anime.AniListOAuthService;
+import dev.nexus.modules.anime.MalOAuthService;
 import dev.nexus.modules.film.SimklOAuthService;
 import dev.nexus.modules.games.SteamOpenIdService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -86,21 +90,20 @@ public class IntegrationController {
     /** The raw openid.* parameters, forwarded by the frontend for verification. */
     public record SteamCallbackRequest(@NotEmpty Map<String, String> params) {}
 
-    /** The authorization code AniList hands back, forwarded for exchange server-side. */
-    public record AniListCallbackRequest(@jakarta.validation.constraints.NotBlank String code) {}
-
-    /** The authorization code MAL hands back, forwarded for exchange server-side. */
-    public record MalCallbackRequest(@jakarta.validation.constraints.NotBlank String code) {}
-
-    /** The authorization code Simkl hands back, forwarded for exchange server-side. */
-    public record SimklCallbackRequest(@jakarta.validation.constraints.NotBlank String code) {}
+    /**
+     * The authorization code a provider hands back, forwarded for exchange server-side.
+     *
+     * <p>One record for AniList, MAL and Simkl alike: all three send back the same field, and
+     * three copies of it only invited the three callbacks to validate it differently.
+     */
+    public record OAuthCallbackRequest(@NotBlank String code) {}
 
     private final ExternalAccountService accounts;
     private final LibraryImportService importService;
     private final SteamOpenIdService steamOpenId;
     private final AniListOAuthService anilistOAuth;
-    private final dev.nexus.modules.anime.AniListActivityService anilistActivity;
-    private final dev.nexus.modules.anime.MalOAuthService malOAuth;
+    private final AniListActivityService anilistActivity;
+    private final MalOAuthService malOAuth;
     private final SimklOAuthService simklOAuth;
     private final ImportRunner runner;
     private final CsvImportService csvImports;
@@ -115,8 +118,8 @@ public class IntegrationController {
             LibraryImportService importService,
             SteamOpenIdService steamOpenId,
             AniListOAuthService anilistOAuth,
-            dev.nexus.modules.anime.AniListActivityService anilistActivity,
-            dev.nexus.modules.anime.MalOAuthService malOAuth,
+            AniListActivityService anilistActivity,
+            MalOAuthService malOAuth,
             SimklOAuthService simklOAuth,
             ImportRunner runner,
             CsvImportService csvImports,
@@ -188,7 +191,7 @@ public class IntegrationController {
     @PostMapping("/anilist/callback")
     public ConnectedAccount completeAniList(
             @AuthenticationPrincipal CurrentUser user,
-            @org.springframework.validation.annotation.Validated @RequestBody AniListCallbackRequest request) {
+            @Valid @RequestBody OAuthCallbackRequest request) {
 
         AniListOAuthService.Connection connection =
                 anilistOAuth.exchangeCode(request.code(), anilistRedirectUri());
@@ -224,9 +227,9 @@ public class IntegrationController {
     @PostMapping("/mal/callback")
     public ConnectedAccount completeMal(
             @AuthenticationPrincipal CurrentUser user,
-            @org.springframework.validation.annotation.Validated @RequestBody MalCallbackRequest request) {
+            @Valid @RequestBody OAuthCallbackRequest request) {
 
-        dev.nexus.modules.anime.MalOAuthService.Connection connection =
+        MalOAuthService.Connection connection =
                 malOAuth.exchangeCode(user.id(), request.code(), malRedirectUri());
 
         return ConnectedAccount.from(accounts.connect(
@@ -259,7 +262,7 @@ public class IntegrationController {
     @PostMapping("/simkl/callback")
     public ConnectedAccount completeSimkl(
             @AuthenticationPrincipal CurrentUser user,
-            @org.springframework.validation.annotation.Validated @RequestBody SimklCallbackRequest request) {
+            @Valid @RequestBody OAuthCallbackRequest request) {
 
         SimklOAuthService.Connection connection = simklOAuth.exchangeCode(request.code(), simklRedirectUri());
 
@@ -352,7 +355,7 @@ public class IntegrationController {
     private byte[] read(MultipartFile file) {
         try {
             return file.getBytes();
-        } catch (java.io.IOException e) {
+        } catch (IOException e) {
             throw new CsvFormatException("That file could not be read. Please try uploading it again.");
         }
     }
