@@ -47,7 +47,8 @@ public class MediaDetailService {
      */
     static final String VERSION_KEY = "schemaVersion";
 
-    static final int DETAIL_VERSION = 3;
+    /** 4: AniList relations carry isAdult, so they can be hidden. */
+    static final int DETAIL_VERSION = 4;
 
     private static final Logger log = LoggerFactory.getLogger(MediaDetailService.class);
 

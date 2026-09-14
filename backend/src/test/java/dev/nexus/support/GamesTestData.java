@@ -10,6 +10,8 @@ public final class GamesTestData {
     public static final String BOTW_ID = "7346";
     public static final String HADES_ID = "113112";
 
+    public static final String EROTIC_ID = "4242";
+
     private GamesTestData() {}
 
     public static Map<String, Object> botw() {
@@ -18,6 +20,13 @@ public final class GamesTestData {
 
     public static Map<String, Object> hades() {
         return game(113112, "Hades");
+    }
+
+    /** Filed under IGDB's Erotic theme, which is what makes a game adult here. */
+    public static Map<String, Object> eroticGame() {
+        Map<String, Object> game = game(4242, "An Adult Game");
+        game.put("themes", List.of(42));
+        return game;
     }
 
     public static Map<String, Object> game(int id, String name) {

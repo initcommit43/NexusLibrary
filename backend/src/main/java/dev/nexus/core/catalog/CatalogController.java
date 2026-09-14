@@ -8,6 +8,8 @@ import dev.nexus.core.adapter.FilterField;
 import dev.nexus.core.adapter.ItemSearchResult;
 import dev.nexus.core.adapter.StudioBrowse;
 import dev.nexus.core.adapter.MetadataAdapterRegistry;
+import dev.nexus.core.cache.ItemNotFoundException;
+import dev.nexus.core.content.ContentPreferences;
 import dev.nexus.core.domain.MediaType;
 import dev.nexus.core.domain.Source;
 import dev.nexus.core.domain.TrackableItem;
@@ -81,6 +83,8 @@ public class CatalogController {
             String coverUrl,
             LocalDate releaseDate,
             String itemState,
+            /** Whether the source files it as adult: what the reader's blur setting applies to. */
+            boolean adult,
             Map<String, Object> metadata,
             TrackedItemResponse entry) {}
 
@@ -89,6 +93,7 @@ public class CatalogController {
     private final MediaDetailService media;
     private final BrowseService browse;
     private final TrackingService tracking;
+    private final ContentPreferences content;
     private final RateLimiter rateLimiter;
     private final AchievementCatalogue achievements;
     private final int searchesPerMinute;
@@ -99,6 +104,7 @@ public class CatalogController {
             MediaDetailService media,
             BrowseService browse,
             TrackingService tracking,
+            ContentPreferences content,
             RateLimiter rateLimiter,
             AchievementCatalogue achievements,
             NexusProperties properties) {
@@ -107,6 +113,7 @@ public class CatalogController {
         this.media = media;
         this.browse = browse;
         this.tracking = tracking;
+        this.content = content;
         this.rateLimiter = rateLimiter;
         this.achievements = achievements;
         this.searchesPerMinute = properties.rateLimit().searchRequestsPerMinute();
@@ -126,8 +133,10 @@ public class CatalogController {
         // about protecting the external API budget as about abuse.
         rateLimiter.check("search:" + user.id(), searchesPerMinute);
 
+        boolean includeAdult = content.forUser(user.id()).showAdult();
         return timings.time(
-                "search", () -> adapters.requireForMediaType(mediaType).search(mediaType, query.trim(), MAX_RESULTS, false));
+                "search",
+                () -> adapters.requireForMediaType(mediaType).search(mediaType, query.trim(), MAX_RESULTS, includeAdult));
     }
 
     /**
@@ -142,6 +151,13 @@ public class CatalogController {
             @PathVariable @Size(max = MAX_EXTERNAL_ID) String externalId) {
 
         TrackableItem item = media.require(source, externalId);
+        boolean showAdult = content.forUser(user.id()).showAdult();
+        // The same answer as a title that does not exist, so this route cannot confirm that a
+        // given adult title is in the catalogue.
+        if (item.isAdult() && !showAdult) {
+            throw new ItemNotFoundException("No item " + externalId + " in " + source);
+        }
+
         Optional<TrackedItemResponse> entry = timings.time(
                 "entry", () -> tracking.findByItem(user.id(), item.getId()).map(TrackedItemResponse::from));
 
@@ -153,8 +169,24 @@ public class CatalogController {
                 item.getCoverUrl(),
                 item.getReleaseDate(),
                 item.getItemState().name(),
-                item.getMetadata(),
+                item.isAdult(),
+                showAdult ? item.getMetadata() : withoutAdultDetail(item),
                 entry.orElse(null));
+    }
+
+    /** The metadata with adult titles taken out of its detail, leaving the cached item untouched. */
+    private Map<String, Object> withoutAdultDetail(TrackableItem item) {
+        Map<String, Object> detail = MediaDetailService.detailOf(item);
+        Map<String, Object> hidden = adapters.forSource(item.getSource())
+                .map(adapter -> adapter.withoutAdult(detail))
+                .orElse(detail);
+        if (hidden == detail) {
+            return item.getMetadata();
+        }
+
+        Map<String, Object> copy = new LinkedHashMap<>(item.getMetadata());
+        copy.put(MediaDetailService.DETAIL_KEY, hidden);
+        return copy;
     }
 
     /**
@@ -219,7 +251,13 @@ public class CatalogController {
             @RequestParam(defaultValue = "1") @Positive @Max(MAX_PAGE) int page) {
 
         rateLimiter.check("studio:" + user.id(), searchesPerMinute);
-        return timings.time("studio", () -> browse.worksOf(source, studioId, page));
+        StudioBrowse.Works works = timings.time("studio", () -> browse.worksOf(source, studioId, page));
+        if (content.forUser(user.id()).showAdult()) {
+            return works;
+        }
+        // Filtered here rather than asked of the source: a studio's credits come as they are.
+        return new StudioBrowse.Works(
+                works.name(), works.items().stream().filter(item -> !item.adult()).toList(), works.hasMore());
     }
 
     /** The controls this media type's browse bar offers, so the client renders what exists. */
@@ -245,7 +283,8 @@ public class CatalogController {
         rateLimiter.check("discover:" + user.id(), searchesPerMinute);
 
         DiscoverFilters filters = new DiscoverFilters(filterValues(params));
-        return timings.time("discover", () -> browse.discover(mediaType, filters, page, false));
+        boolean includeAdult = content.forUser(user.id()).showAdult();
+        return timings.time("discover", () -> browse.discover(mediaType, filters, page, includeAdult));
     }
 
     /**

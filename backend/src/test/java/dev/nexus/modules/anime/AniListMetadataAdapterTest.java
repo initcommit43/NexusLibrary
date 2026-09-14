@@ -78,6 +78,20 @@ class AniListMetadataAdapterTest {
     }
 
     @Test
+    void adultRelationsAreLeftOutOfACopyAndTheCachedDetailIsUntouched() {
+        Map<String, Object> detail = Map.of("relations", Map.of("edges", List.of(
+                Map.of("relationType", "SEQUEL", "node", Map.of("id", 1, "isAdult", false)),
+                Map.of("relationType", "SIDE_STORY", "node", Map.of("id", 2, "isAdult", true)))));
+
+        Map<String, Object> hidden = adapter.withoutAdult(detail);
+
+        assertThat(hidden).isNotSameAs(detail);
+        assertThat((Map<?, ?>) hidden.get("relations")).extracting(r -> ((List<?>) r.get("edges")).size()).isEqualTo(1);
+        assertThat(((List<?>) ((Map<?, ?>) detail.get("relations")).get("edges"))).hasSize(2);
+        assertThat(adapter.withoutAdult(Map.of("title", "x"))).containsOnlyKeys("title");
+    }
+
+    @Test
     void mangaIsRecognisedFromTheRecordRatherThanTheQuery() {
         Map<String, Object> manga = media();
         manga.put("type", "MANGA");

@@ -94,6 +94,15 @@ public interface MetadataAdapter {
     }
 
     /**
+     * A detail this adapter wrote, with anything it knows to be adult taken out, for a reader
+     * who has adult titles hidden. Returns a copy when it removes anything and never touches
+     * the detail it was given, which is the shared cached copy.
+     */
+    default Map<String, Object> withoutAdult(Map<String, Object> detail) {
+        return detail;
+    }
+
+    /**
      * The wide key art in a detail this adapter itself wrote, if it has any.
      *
      * <p>Where that lives is the source's own business — AniList names a banner outright, a

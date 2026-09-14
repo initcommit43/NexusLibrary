@@ -271,6 +271,27 @@ public class AniListMetadataAdapter implements MetadataAdapter, StudioBrowse {
         return detail.isEmpty() ? Optional.empty() : Optional.of(detail);
     }
 
+    /** Relations are the one place AniList's detail points at other titles, so they are what goes. */
+    @Override
+    public Map<String, Object> withoutAdult(Map<String, Object> detail) {
+        if (!(detail.get("relations") instanceof Map<?, ?> relations)
+                || !(relations.get("edges") instanceof List<?> edges)) {
+            return detail;
+        }
+        List<?> kept = edges.stream()
+                .filter(edge -> !(edge instanceof Map<?, ?> row
+                        && row.get("node") instanceof Map<?, ?> node
+                        && Boolean.TRUE.equals(node.get("isAdult"))))
+                .toList();
+        if (kept.size() == edges.size()) {
+            return detail;
+        }
+
+        Map<String, Object> copy = new HashMap<>(detail);
+        copy.put("relations", Map.of("edges", kept));
+        return copy;
+    }
+
     /** AniList names its own banner, and leaves it null for a title that has none. */
     @Override
     public Optional<String> bannerFrom(Map<String, Object> detail) {

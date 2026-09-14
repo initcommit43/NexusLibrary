@@ -268,7 +268,7 @@ public class AniListClient {
                   edges {
                     relationType(version: 2)
                     node {
-                      id type format status
+                      id type format status isAdult
                       title { romaji english native }
                       coverImage { large }
                       startDate { year }
