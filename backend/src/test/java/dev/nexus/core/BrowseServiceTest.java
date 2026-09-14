@@ -46,7 +46,7 @@ class BrowseServiceTest {
     }
 
     private ItemSearchResult game(String id) {
-        return new ItemSearchResult(MediaType.GAME, Source.IGDB, id, "Game " + id, null, null);
+        return new ItemSearchResult(MediaType.GAME, Source.IGDB, id, "Game " + id, null, null, false);
     }
 
     /** Every reader after the first is served from memory, which is the whole point. */

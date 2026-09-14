@@ -123,6 +123,7 @@ class ShowNotificationIntegrationTest extends PostgresIntegrationTest {
                 item.getCoverUrl(),
                 item.getReleaseDate(),
                 item.getItemState(),
+                item.isAdult(),
                 Map.of("nextSeasonEpisode",
                         Map.of("season", season, "episode", episode, "airingAt", when.getEpochSecond())),
                 item.getRefreshedAt());

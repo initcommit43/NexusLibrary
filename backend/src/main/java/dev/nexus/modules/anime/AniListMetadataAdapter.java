@@ -74,7 +74,8 @@ public class AniListMetadataAdapter implements MetadataAdapter, StudioBrowse {
                         string(media.get("id")),
                         title(media),
                         coverUrl(media),
-                        releaseDate(media)))
+                        releaseDate(media),
+                        isAdult(media)))
                 .toList();
     }
 
@@ -233,6 +234,7 @@ public class AniListMetadataAdapter implements MetadataAdapter, StudioBrowse {
                 title(media),
                 coverUrl(media),
                 releaseDate(media),
+                isAdult(media),
                 Map.copyOf(facets));
     }
 
@@ -320,7 +322,13 @@ public class AniListMetadataAdapter implements MetadataAdapter, StudioBrowse {
                 coverUrl(media),
                 releaseDate(media),
                 itemState(media),
+                isAdult(media),
                 metadata(media));
+    }
+
+    /** The flag AniList's own 18+ setting reads, so what it hides is what a reader expects. */
+    private boolean isAdult(Map<String, Object> media) {
+        return Boolean.TRUE.equals(media.get("isAdult"));
     }
 
     private MediaType mediaTypeOf(Map<String, Object> media) {

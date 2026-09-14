@@ -25,9 +25,21 @@ public class IgdbClient {
     /** Drops DLC, expansions and re-releases from anything that lists games. */
     private static final String BASE_CONDITIONS = "parent_game = null & version_parent = null";
 
+    /**
+     * IGDB's "Erotic" theme, the only adult marking it keeps. Not an age rating: PEGI 18 is Doom,
+     * and a game whose subject is sex is the narrow claim that belongs behind an adult switch.
+     */
+    static final int EROTIC_THEME = 42;
+
     private static final String GAME_FIELDS =
             "id,name,summary,first_release_date,cover.url,platforms.id,platforms.name,"
-                    + "genres.name,total_rating,status";
+                    + "genres.name,total_rating,status,themes";
+
+    /** Whether IGDB files this game under its erotic theme, read off the theme ids. */
+    static boolean isAdult(Map<String, Object> game) {
+        return game.get("themes") instanceof List<?> themes
+                && themes.stream().anyMatch(theme -> theme instanceof Number id && id.intValue() == EROTIC_THEME);
+    }
 
     private final RestClient restClient;
     private final IgdbAuthClient auth;

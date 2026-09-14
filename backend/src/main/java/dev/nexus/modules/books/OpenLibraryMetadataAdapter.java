@@ -77,7 +77,8 @@ public class OpenLibraryMetadataAdapter implements MetadataAdapter {
                         workId(doc),
                         title(doc),
                         properties.coverUrl(doc.get("cover_i")),
-                        publishedDate(doc)))
+                        publishedDate(doc),
+                        false))
                 .filter(result -> result.title() != null && result.externalId() != null)
                 .toList();
     }
@@ -166,6 +167,7 @@ public class OpenLibraryMetadataAdapter implements MetadataAdapter {
                         title(doc),
                         properties.coverUrl(doc.get("cover_i")),
                         publishedDate(doc),
+                        false,
                         facets(doc)))
                 .filter(result -> result.title() != null && result.externalId() != null)
                 .toList();
@@ -189,6 +191,8 @@ public class OpenLibraryMetadataAdapter implements MetadataAdapter {
                 properties.coverUrl(doc.get("cover_i")),
                 publishedDate(doc),
                 itemState(doc),
+                // A library catalogue that rates nothing: no book it lists claims to be adult.
+                false,
                 metadata(doc, description));
     }
 

@@ -118,7 +118,7 @@ class ItemRefreshServiceTest {
     /** The id and the timestamps belong to JPA and the database, so tests plant them. */
     private TrackableItem item(long id, ItemState state, Instant refreshedAt) {
         TrackableItem item = new TrackableItem(
-                MediaType.GAME, Source.IGDB, "igdb-" + id, "Title " + id, null, null, state, Map.of());
+                MediaType.GAME, Source.IGDB, "igdb-" + id, "Title " + id, null, null, state, false, Map.of());
         ReflectionTestUtils.setField(item, "id", id);
         ReflectionTestUtils.setField(item, "refreshedAt", refreshedAt);
         return item;

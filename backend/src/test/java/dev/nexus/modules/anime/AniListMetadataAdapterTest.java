@@ -68,6 +68,15 @@ class AniListMetadataAdapterTest {
 
     /** The type comes off the record, so a manga never lands on the anime shelf. */
     @Test
+    void theAdultFlagIsCarriedOverFromAniList() {
+        assertThat(adapter.toItemData(media()).adult()).isFalse();
+
+        Map<String, Object> adult = media();
+        adult.put("isAdult", true);
+        assertThat(adapter.toItemData(adult).adult()).isTrue();
+    }
+
+    @Test
     void mangaIsRecognisedFromTheRecordRatherThanTheQuery() {
         Map<String, Object> manga = media();
         manga.put("type", "MANGA");

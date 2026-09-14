@@ -121,6 +121,7 @@ class EntryExportServiceTest {
                 null,
                 LocalDate.of(1989, 8, 25),
                 ItemState.RELEASED,
+                false,
                 Map.of());
         return new UserEntry(7L, item, TrackingStatus.IN_PROGRESS);
     }

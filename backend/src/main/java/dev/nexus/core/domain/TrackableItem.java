@@ -51,6 +51,10 @@ public class TrackableItem {
     @Column(name = "item_state", nullable = false)
     private ItemState itemState;
 
+    /** Whether the source files this title as adult. On the item because it is about the title. */
+    @Column(nullable = false)
+    private boolean adult;
+
     /** Type-specific fields: platforms for games, authors for books, studio for anime. */
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(nullable = false)
@@ -74,6 +78,7 @@ public class TrackableItem {
             String coverUrl,
             LocalDate releaseDate,
             ItemState itemState,
+            boolean adult,
             Map<String, Object> metadata) {
         this.mediaType = mediaType;
         this.source = source;
@@ -82,6 +87,7 @@ public class TrackableItem {
         this.coverUrl = coverUrl;
         this.releaseDate = releaseDate;
         this.itemState = itemState;
+        this.adult = adult;
         this.metadata = metadata == null ? new HashMap<>() : new HashMap<>(metadata);
     }
 
@@ -97,12 +103,16 @@ public class TrackableItem {
             String coverUrl,
             LocalDate releaseDate,
             ItemState itemState,
+            boolean adult,
             Map<String, Object> metadata,
             Instant refreshedAt) {
         this.title = title;
         this.coverUrl = coverUrl;
         this.releaseDate = releaseDate;
         this.itemState = itemState;
+        // Overwritten, not only ever set: a source that reclassifies a title must be able to
+        // close the shelf again as well as open it.
+        this.adult = adult;
         if (metadata != null) {
             this.metadata.putAll(metadata);
         }
@@ -112,6 +122,10 @@ public class TrackableItem {
     /** When this copy last matched the source: its most recent refresh, or the first fetch. */
     public Instant lastRefreshedAt() {
         return refreshedAt != null ? refreshedAt : cachedAt;
+    }
+
+    public boolean isAdult() {
+        return adult;
     }
 
     public Long getId() {

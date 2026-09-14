@@ -58,6 +58,16 @@ class TmdbMetadataAdapterTest {
 
     /** {@code fetchById} is handed an id and no media type, so the id has to route the call. */
     @Test
+    void theAdultFlagIsCarriedOverFromTmdb() {
+        when(client.findById(TmdbKind.MOVIE, "1"))
+                .thenReturn(Optional.of(Map.of("id", 1, "title", "Grown-up film", "adult", true)));
+        when(client.findById(TmdbKind.MOVIE, "2")).thenReturn(Optional.of(Map.of("id", 2, "title", "Fight Club")));
+
+        assertThat(adapter.fetchById("movie:1").orElseThrow().adult()).isTrue();
+        assertThat(adapter.fetchById("movie:2").orElseThrow().adult()).isFalse();
+    }
+
+    @Test
     void fetchByIdRoutesToTheEndpointItsPrefixNames() {
         when(client.findById(TmdbKind.SHOW, "1396"))
                 .thenReturn(Optional.of(Map.of("id", 1396, "name", "Breaking Bad", "status", "Ended")));
@@ -180,12 +190,12 @@ class TmdbMetadataAdapterTest {
     @Test
     void aShowCachedWithoutTheSeasonBreakdownIsOutdated() {
         TrackableItem old = new TrackableItem(
-                MediaType.SHOW, Source.TMDB, "tv:1", "Old", null, null, ItemState.RELEASED, Map.of("seasons", 3));
+                MediaType.SHOW, Source.TMDB, "tv:1", "Old", null, null, ItemState.RELEASED, false, Map.of("seasons", 3));
         TrackableItem current = new TrackableItem(
-                MediaType.SHOW, Source.TMDB, "tv:2", "New", null, null, ItemState.RELEASED,
+                MediaType.SHOW, Source.TMDB, "tv:2", "New", null, null, ItemState.RELEASED, false,
                 Map.of("seasonEpisodes", List.of()));
         TrackableItem film = new TrackableItem(
-                MediaType.MOVIE, Source.TMDB, "movie:3", "Film", null, null, ItemState.RELEASED, Map.of());
+                MediaType.MOVIE, Source.TMDB, "movie:3", "Film", null, null, ItemState.RELEASED, false, Map.of());
 
         assertThat(adapter.isOutdated(old)).isTrue();
         assertThat(adapter.isOutdated(current)).isFalse();
@@ -232,11 +242,11 @@ class TmdbMetadataAdapterTest {
         long past = java.time.Instant.now().minusSeconds(60).getEpochSecond();
         long future = java.time.Instant.now().plusSeconds(3600).getEpochSecond();
         TrackableItem aired = new TrackableItem(
-                MediaType.SHOW, Source.TMDB, "tv:1", "Aired", null, null, ItemState.ONGOING,
+                MediaType.SHOW, Source.TMDB, "tv:1", "Aired", null, null, ItemState.ONGOING, false,
                 Map.of("seasonEpisodes", List.of(8),
                         "nextSeasonEpisode", Map.of("season", 1, "episode", 3, "airingAt", past)));
         TrackableItem waiting = new TrackableItem(
-                MediaType.SHOW, Source.TMDB, "tv:2", "Waiting", null, null, ItemState.ONGOING,
+                MediaType.SHOW, Source.TMDB, "tv:2", "Waiting", null, null, ItemState.ONGOING, false,
                 Map.of("seasonEpisodes", List.of(8),
                         "nextSeasonEpisode", Map.of("season", 1, "episode", 3, "airingAt", future)));
 

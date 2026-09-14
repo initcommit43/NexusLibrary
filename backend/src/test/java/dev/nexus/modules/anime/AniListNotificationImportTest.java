@@ -185,6 +185,7 @@ class AniListNotificationImportTest extends PostgresIntegrationTest {
                 item.getCoverUrl(),
                 item.getReleaseDate(),
                 item.getItemState(),
+                item.isAdult(),
                 Map.of("nextEpisode", Map.of("episode", episode, "airingAt", when.getEpochSecond())),
                 item.getRefreshedAt());
         items.saveAndFlush(item);

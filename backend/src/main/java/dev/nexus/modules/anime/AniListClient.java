@@ -47,6 +47,7 @@ public class AniListClient {
             chapters
             volumes
             averageScore
+            isAdult
             description(asHtml: false)
             title { romaji english native }
             coverImage { large }

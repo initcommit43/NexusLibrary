@@ -84,7 +84,7 @@ class ReleaseStartIntegrationTest extends PostgresIntegrationTest {
         writer.refreshAll(
                 Source.ANILIST,
                 List.of(new TrackableItemData(
-                        mediaType, Source.ANILIST, externalId, "Title", null, null, ItemState.ONGOING, Map.of())));
+                        mediaType, Source.ANILIST, externalId, "Title", null, null, ItemState.ONGOING, false, Map.of())));
     }
 
     @SuppressWarnings("unchecked")

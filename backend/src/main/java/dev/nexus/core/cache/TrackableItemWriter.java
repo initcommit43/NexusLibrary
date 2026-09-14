@@ -71,7 +71,13 @@ public class TrackableItemWriter {
             TrackableItemData data = byExternalId.get(item.getExternalId());
             boolean wasUpcoming = item.getItemState() == ItemState.UPCOMING;
             item.refreshFrom(
-                    data.title(), data.coverUrl(), data.releaseDate(), data.itemState(), data.metadata(), now);
+                    data.title(),
+                    data.coverUrl(),
+                    data.releaseDate(),
+                    data.itemState(),
+                    data.adult(),
+                    data.metadata(),
+                    now);
             items.save(item);
             if (wasUpcoming && data.itemState() != ItemState.UPCOMING) {
                 events.publishEvent(new ReleaseStarted(item));
@@ -100,6 +106,7 @@ public class TrackableItemWriter {
                 data.coverUrl(),
                 data.releaseDate(),
                 data.itemState(),
+                data.adult(),
                 data.metadata());
     }
 }

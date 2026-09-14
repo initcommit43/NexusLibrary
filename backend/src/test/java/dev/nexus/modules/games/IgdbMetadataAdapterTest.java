@@ -51,6 +51,19 @@ class IgdbMetadataAdapterTest {
         verifyNoInteractions(client);
     }
 
+    /** The Erotic theme is the flag; other themes, and none at all, are not. */
+    @Test
+    void aGameIsAdultOnlyUnderTheEroticTheme() {
+        Map<String, Object> erotic = new java.util.HashMap<>(game());
+        erotic.put("themes", List.of(1, IgdbClient.EROTIC_THEME));
+        Map<String, Object> horror = new java.util.HashMap<>(game());
+        horror.put("themes", List.of(19));
+
+        assertThat(IgdbClient.isAdult(erotic)).isTrue();
+        assertThat(IgdbClient.isAdult(horror)).isFalse();
+        assertThat(IgdbClient.isAdult(game())).isFalse();
+    }
+
     @Test
     void mapsSearchResults() {
         when(client.searchGames(anyString(), anyInt())).thenReturn(List.of(game()));

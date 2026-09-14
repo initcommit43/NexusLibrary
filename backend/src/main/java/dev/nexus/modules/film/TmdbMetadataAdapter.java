@@ -136,7 +136,8 @@ public class TmdbMetadataAdapter implements MetadataAdapter {
                         kind.externalId(row.get("id")),
                         title(kind, row),
                         posterUrl(row),
-                        releaseDate(kind, row)))
+                        releaseDate(kind, row),
+                        isAdult(row)))
                 .filter(result -> result.title() != null)
                 .toList();
     }
@@ -414,6 +415,7 @@ public class TmdbMetadataAdapter implements MetadataAdapter {
                         title(kind, row),
                         posterUrl(row),
                         releaseDate(kind, row),
+                        isAdult(row),
                         facets(row)))
                 .filter(result -> result.title() != null && !result.title().isBlank())
                 .toList();
@@ -457,7 +459,13 @@ public class TmdbMetadataAdapter implements MetadataAdapter {
                 posterUrl(row),
                 releaseDate(kind, row),
                 itemState(kind, row),
+                isAdult(row),
                 metadata(kind, row));
+    }
+
+    /** TMDB's own flag, present on a listing row and a detail alike. */
+    private boolean isAdult(Map<String, Object> row) {
+        return Boolean.TRUE.equals(row.get("adult"));
     }
 
     /** TMDB calls a film's name "title" and a show's "name". */

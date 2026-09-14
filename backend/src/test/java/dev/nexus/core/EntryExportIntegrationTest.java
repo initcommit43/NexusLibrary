@@ -97,7 +97,7 @@ class EntryExportIntegrationTest extends PostgresIntegrationTest {
     private void trackFor(String email, MediaType mediaType, String externalId, String title) {
         Long userId = users.findByEmail(email).orElseThrow().getId();
         TrackableItem item = items.save(new TrackableItem(
-                mediaType, Source.ANILIST, externalId, title, null, null, ItemState.RELEASED, Map.of()));
+                mediaType, Source.ANILIST, externalId, title, null, null, ItemState.RELEASED, false, Map.of()));
         entries.save(new UserEntry(userId, item, TrackingStatus.COMPLETED));
     }
 }

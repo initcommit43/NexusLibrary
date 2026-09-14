@@ -9,6 +9,8 @@ import java.util.Map;
  * A lightweight search hit. Deliberately not persisted: an item enters the cache when
  * someone actually tracks it, not because it appeared in someone's search results.
  *
+ * @param adult whether the source files this title as adult, so a hit can be dropped or blurred
+ *     for a reader before it is sent
  * @param facets what a ranked list shows beside the title — a score, a format, an episode
  *     count. Empty for a plain search hit, which needs none of it; a browse shelf that ranks
  *     its rows fills in whatever its source happens to know. Deliberately loose, for the same
@@ -21,6 +23,7 @@ public record ItemSearchResult(
         String title,
         String coverUrl,
         LocalDate releaseDate,
+        boolean adult,
         Map<String, Object> facets) {
 
     public ItemSearchResult(
@@ -29,7 +32,8 @@ public record ItemSearchResult(
             String externalId,
             String title,
             String coverUrl,
-            LocalDate releaseDate) {
-        this(mediaType, source, externalId, title, coverUrl, releaseDate, Map.of());
+            LocalDate releaseDate,
+            boolean adult) {
+        this(mediaType, source, externalId, title, coverUrl, releaseDate, adult, Map.of());
     }
 }

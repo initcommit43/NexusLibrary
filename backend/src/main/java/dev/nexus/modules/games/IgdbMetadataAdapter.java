@@ -107,7 +107,8 @@ public class IgdbMetadataAdapter implements MetadataAdapter {
                         string(game.get("id")),
                         string(game.get("name")),
                         coverUrl(game),
-                        releaseDate(game)))
+                        releaseDate(game),
+                        IgdbClient.isAdult(game)))
                 .toList();
     }
 
@@ -412,7 +413,8 @@ public class IgdbMetadataAdapter implements MetadataAdapter {
                         string(game.get("id")),
                         string(game.get("name")),
                         coverUrl(game),
-                        releaseDate(game)))
+                        releaseDate(game),
+                        IgdbClient.isAdult(game)))
                 .filter(result -> result.title() != null && !result.title().isBlank())
                 .toList();
     }
@@ -440,6 +442,7 @@ public class IgdbMetadataAdapter implements MetadataAdapter {
                 coverUrl(game),
                 releaseDate(game),
                 itemState(game),
+                IgdbClient.isAdult(game),
                 metadata(game));
     }
 
