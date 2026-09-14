@@ -100,15 +100,35 @@ class NotificationIntegrationTest extends PostgresIntegrationTest {
         assertThat(notifications()).hasSize(1);
     }
 
-    /** Paused, dropped, planned: a shelf is not a subscription list. */
+    /** Only the Watching list hears about every episode. */
     @Test
-    void everyStatusIsToldAboutIt() {
-        track("PAUSED");
-        airedAt(Instant.now().minusSeconds(60), 3);
+    void aTitleOffTheWatchingListIsNotToldAboutALaterEpisode() {
+        for (String status : List.of("PLANNING", "PAUSED", "COMPLETED", "DROPPED")) {
+            resetDatabase();
+            token = registerAndGetToken(http, "reader@example.com", "reader");
+            track(status);
+            airedAt(Instant.now().minusSeconds(60), 3);
 
-        detector.sweep();
+            detector.sweep();
 
-        assertThat(notifications()).hasSize(1);
+            assertThat(notifications()).as(status).isEmpty();
+        }
+    }
+
+    /** A premiere is news on any list the title is kept on. */
+    @Test
+    void thePremiereIsToldToEveryList() {
+        for (String status : List.of("IN_PROGRESS", "PLANNING", "PAUSED", "COMPLETED", "DROPPED")) {
+            resetDatabase();
+            token = registerAndGetToken(http, "reader@example.com", "reader");
+            track(status);
+            airedAt(Instant.now().minusSeconds(60), 1);
+
+            detector.sweep();
+
+            assertThat(notifications()).as(status).singleElement()
+                    .satisfies(told -> assertThat(payloadOf(told)).containsEntry("episode", 1));
+        }
     }
 
     @Test

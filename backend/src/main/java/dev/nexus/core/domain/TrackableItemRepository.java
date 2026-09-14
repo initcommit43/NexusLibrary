@@ -20,8 +20,9 @@ public interface TrackableItemRepository extends JpaRepository<TrackableItem, Lo
      * the moment it lands ride on the item so a shelf can count down beside every row, which
      * makes "has it aired yet" a question the database can answer without asking AniList.
      *
-     * <p>Any status counts. Someone who paused a series still wants telling that it is still
-     * going, and a shelf is not a subscription list.
+     * <p>Every episode for a title on the Watching list; only the premiere for a title kept on
+     * any other list. A planned or finished series is worth a word when it starts, not a
+     * notification per week for a show nobody on this account is following along with.
      */
     @Query(
             value =
@@ -33,6 +34,8 @@ public interface TrackableItemRepository extends JpaRepository<TrackableItem, Lo
                       JOIN user_entry e ON e.trackable_item_id = i.id
                      WHERE i.metadata -> 'nextEpisode' ->> 'airingAt' IS NOT NULL
                        AND (i.metadata -> 'nextEpisode' ->> 'airingAt')::bigint <= :now
+                       AND (e.status = 'IN_PROGRESS'
+                            OR (i.metadata -> 'nextEpisode' ->> 'episode')::int = 1)
                     """,
             nativeQuery = true)
     List<AiredEpisode> airedSince(@Param("now") long now);
