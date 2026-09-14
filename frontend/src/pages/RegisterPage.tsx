@@ -31,8 +31,8 @@ export const RegisterPage = () => {
       submitLabel="Create account"
       botCheck
       fields={[
-        // Sign-in is by email, so the email is the credential's name: 'username' is what tells a
-        // password manager which field to save beside the password. Put on the display name, it
+        // The email is what a password manager should save as the sign-in, which either name
+        // accepts: 'username' is what tells it which field to save beside the password. Put on the display name, it
         // saved that instead, and then filled it into the email box on every sign-in.
         { name: 'email', label: 'Email', type: 'email', autoComplete: 'username' },
         { name: 'username', label: 'Username', type: 'text', autoComplete: 'nickname' },

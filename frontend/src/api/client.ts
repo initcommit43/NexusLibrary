@@ -569,7 +569,8 @@ export const api = {
   resendVerification: (email: string) =>
     request<void>('/auth/verify-email/resend', { method: 'POST', body: JSON.stringify({ email }) }),
 
-  login: (payload: { email: string; password: string }) =>
+  /** `login` is a username or an email address; the server works out which. */
+  login: (payload: { login: string; password: string }) =>
     request<AuthResponse>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ ...payload, client: WEB_CLIENT }),

@@ -12,7 +12,7 @@ export type RegisterOutcome = 'signed-in' | 'confirm-email'
 export type AuthContextValue = {
   user: User | null
   status: AuthStatus
-  login: (email: string, password: string) => Promise<void>
+  login: (login: string, password: string) => Promise<void>
   register: (
     email: string,
     username: string,

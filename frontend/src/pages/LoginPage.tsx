@@ -25,11 +25,13 @@ export const LoginPage = () => {
    * correct. What they need is the inbox, and a way to ask again if the first mail never came.
    */
   if (unconfirmed) {
+    // Signed in by username, there is no address on the page to show or to send another link to.
+    const address = unconfirmed.includes('@') ? unconfirmed : null
     return (
       <AuthNotice
         title="Confirm your email first"
         action={
-          resent === 'sent' ? (
+          !address ? undefined : resent === 'sent' ? (
             'Another link is on its way.'
           ) : (
             <button
@@ -41,7 +43,7 @@ export const LoginPage = () => {
                 setResent('sending')
                 // Settles the same whatever the server did with it; there is nothing to report.
                 void api
-                  .resendVerification(unconfirmed)
+                  .resendVerification(address)
                   .finally(() => setResent('sent'))
               }}
             >
@@ -62,8 +64,8 @@ export const LoginPage = () => {
           </button>
         }
       >
-        Your account is waiting on the link we sent to <strong>{unconfirmed}</strong>. Follow it,
-        then sign in.
+        Your account is waiting on the link we sent to{' '}
+        {address ? <strong>{address}</strong> : 'your email address'}. Follow it, then sign in.
       </AuthNotice>
     )
   }
@@ -73,16 +75,16 @@ export const LoginPage = () => {
       title="Sign in"
       submitLabel="Sign in"
       fields={[
-        // 'username' rather than 'email': it names the field a saved sign-in is filled into.
-        { name: 'email', label: 'Email', type: 'email', autoComplete: 'username' },
+        // Either one signs in. 'username' is also what tells a password manager where to fill.
+        { name: 'login', label: 'Username or email', type: 'text', autoComplete: 'username' },
         { name: 'password', label: 'Password', type: 'password', autoComplete: 'current-password' },
       ]}
       onSubmit={async (v) => {
         try {
-          await login(v.email ?? '', v.password ?? '')
+          await login(v.login ?? '', v.password ?? '')
         } catch (err) {
           if (isUnverified(err)) {
-            setUnconfirmed(v.email ?? '')
+            setUnconfirmed(v.login ?? '')
             return
           }
           throw err

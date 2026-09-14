@@ -33,8 +33,8 @@ export const PrivacyPage = () => (
     <h3>Your account</h3>
     <p>
       Your email address, your username, and your password — the password only ever as a
-      bcrypt hash, which cannot be read back. The email address is how you sign in and how a
-      password reset link would reach you. Legal basis: performance of the contract you enter
+      bcrypt hash, which cannot be read back. You sign in with either the username or the email
+      address, and the email address is how a password reset link would reach you. Legal basis: performance of the contract you enter
       into by creating an account, Art. 6(1)(b) GDPR.
     </p>
     <p>

@@ -36,8 +36,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => onSessionLostHandler(null)
   }, [])
 
-  const login = useCallback(async (email: string, password: string) => {
-    const res = await api.login({ email, password })
+  const login = useCallback(async (identifier: string, password: string) => {
+    const res = await api.login({ login: identifier, password })
     setAccessToken(res.accessToken)
     setUser(res.user)
     setStatus('authenticated')
