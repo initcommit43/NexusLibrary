@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react'
-import { ApiError, api, type SearchResult, type TrackedItem, type TrackingStatus } from '../api/client'
+import {
+  api,
+  errorMessage,
+  type SearchResult,
+  type TrackedItem,
+  type TrackingStatus,
+} from '../api/client'
 
 type TrackState = Record<string, 'idle' | 'saving' | 'tracked'>
 
@@ -70,7 +76,7 @@ export const useTrackable = (): Trackable => {
       return remember(entry)
     } catch (err) {
       setTrackState((s) => ({ ...s, [key]: held ? 'tracked' : 'idle' }))
-      setError(err instanceof ApiError ? err.message : 'Could not save that. Please try again.')
+      setError(errorMessage(err, 'Could not save that. Please try again.'))
       return null
     }
   }

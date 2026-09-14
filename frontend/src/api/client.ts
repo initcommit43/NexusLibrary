@@ -339,6 +339,17 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * What to show a reader when a call failed.
+ *
+ * <p>The server writes a message for every failure it knows about, and that message is always
+ * better than a generic one — it says which title, which column, which service. Anything that
+ * is not an {@link ApiError} came from the network stack or from a bug, neither of which has
+ * anything a reader can act on, so those get the caller's own words instead.
+ */
+export const errorMessage = (err: unknown, fallback: string): string =>
+  err instanceof ApiError ? err.message : fallback
+
 // The access token is deliberately module state, never localStorage: an XSS payload
 // can read storage but cannot read a closure variable it has no reference to.
 let accessToken: string | null = null
@@ -676,8 +687,6 @@ export const api = {
       throw err
     })),
 
-  getEntry: (id: number) => request<TrackedItem>(`/entries/${id}`),
-
   createEntry: (payload: TrackPayload) =>
     request<TrackedItem>('/entries', { method: 'POST', body: JSON.stringify(payload) }).then(
       forgetEntries,
@@ -833,8 +842,10 @@ export const api = {
       body: JSON.stringify({ params }),
     }),
 
-  /** Answers immediately with a job to watch: an import is minutes of background work. */
-  /** A reader's AniList history: what they did, and what happened to what they keep. */
+  /**
+   * A reader's AniList history: what they did, and what happened to what they keep. Answers
+   * immediately with a job to watch, because a history walk is minutes of background work.
+   */
   importAniListActivity: () =>
     request<SyncJob>('/integrations/anilist/activity', { method: 'POST' }),
 

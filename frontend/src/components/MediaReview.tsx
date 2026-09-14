@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ApiError, api, type Review, type TrackedItem } from '../api/client'
+import { api, errorMessage, type Review, type TrackedItem } from '../api/client'
 
 /**
  * What this reader made of the title, written on the title's own page.
@@ -50,7 +50,7 @@ export const MediaReview = ({ entry }: { entry: TrackedItem | null }) => {
       setReview(await api.writeReview(entryId, draft, spoilers))
       setEditing(false)
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not save that review.')
+      setError(errorMessage(err, 'Could not save that review.'))
     } finally {
       setBusy(false)
     }
@@ -66,7 +66,7 @@ export const MediaReview = ({ entry }: { entry: TrackedItem | null }) => {
       setDraft('')
       setSpoilers(false)
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not delete that review.')
+      setError(errorMessage(err, 'Could not delete that review.'))
     } finally {
       setBusy(false)
     }

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ApiError, api, type SearchResult } from '../api/client'
+import { api, errorMessage, type SearchResult } from '../api/client'
 import { keyOf } from './useTrackable'
 import { useMenuDismiss } from './useMenuDismiss'
 import { mediaPathFor } from '../modules/registry'
@@ -117,7 +117,7 @@ export const HeaderSearch = ({
             current &&
             setFailures((held) => ({
               ...held,
-              [asked]: err instanceof ApiError ? err.message : 'Could not reach the server.',
+              [asked]: errorMessage(err, 'Could not reach the server.'),
             })),
         )
     }

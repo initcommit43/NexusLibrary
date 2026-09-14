@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { ApiError, api, type ActivityEntry } from '../api/client'
+import { api, errorMessage, type ActivityEntry } from '../api/client'
 import { moduleOf } from './activity'
 
 /**
@@ -91,7 +91,7 @@ export const useActivityFeed = (
       })
       .catch((err) => {
         if (!current) return
-        setError(err instanceof ApiError ? err.message : 'Could not load your activity.')
+        setError(errorMessage(err, 'Could not load your activity.'))
       })
 
     return () => {
@@ -127,7 +127,7 @@ export const useActivityFeed = (
       await api.forgetActivity(activityId)
     } catch (err) {
       setAll(held)
-      setError(err instanceof ApiError ? err.message : 'Could not delete that.')
+      setError(errorMessage(err, 'Could not delete that.'))
     }
   }
 

@@ -1,5 +1,11 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { ApiError, api, type MediaType, type TrackedItem, type TrackingStatus } from '../api/client'
+import {
+  api,
+  errorMessage,
+  type MediaType,
+  type TrackedItem,
+  type TrackingStatus,
+} from '../api/client'
 import { statusLabelsFor, typeDefinitionFor } from '../modules/registry'
 import { STATUS_ORDER } from './trackingStatus'
 import { useMenuDismiss } from './useMenuDismiss'
@@ -103,7 +109,7 @@ export const CoverStatusMenu = ({
       await onChoose(status)
       setOpen(false)
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not change that.')
+      setError(errorMessage(err, 'Could not change that.'))
     } finally {
       setBusy(false)
     }
