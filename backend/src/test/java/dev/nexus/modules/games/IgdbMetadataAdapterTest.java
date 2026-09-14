@@ -1,6 +1,7 @@
 package dev.nexus.modules.games;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -66,7 +67,7 @@ class IgdbMetadataAdapterTest {
 
     @Test
     void mapsSearchResults() {
-        when(client.searchGames(anyString(), anyInt())).thenReturn(List.of(game()));
+        when(client.searchGames(anyString(), anyInt(), anyBoolean())).thenReturn(List.of(game()));
 
         var results = adapter.search(MediaType.GAME, "zelda", 10);
 

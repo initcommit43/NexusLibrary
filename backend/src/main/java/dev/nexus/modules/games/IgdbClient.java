@@ -31,6 +31,12 @@ public class IgdbClient {
      */
     static final int EROTIC_THEME = 42;
 
+    /**
+     * The theme as a condition for the queries that leave it out. A game with no themes at all
+     * is kept explicitly, in case IGDB reads "not in" against a missing list as false.
+     */
+    static final String WITHOUT_EROTIC = "(themes = null | themes != (%d))".formatted(EROTIC_THEME);
+
     private static final String GAME_FIELDS =
             "id,name,summary,first_release_date,cover.url,platforms.id,platforms.name,"
                     + "genres.name,total_rating,status,themes";
@@ -53,9 +59,13 @@ public class IgdbClient {
         this.rateLimiter = new OutboundRateLimiter(properties.requestsPerSecond());
     }
 
-    public List<Map<String, Object>> searchGames(String query, int limit) {
+    public List<Map<String, Object>> searchGames(String query, int limit, boolean includeAdult) {
         String escaped = quotedTerm(query);
-        return post("search \"%s\"; fields %s; limit %d;".formatted(escaped, GAME_FIELDS, limit));
+        if (includeAdult) {
+            return post("search \"%s\"; fields %s; limit %d;".formatted(escaped, GAME_FIELDS, limit));
+        }
+        return post("search \"%s\"; where %s; fields %s; limit %d;"
+                .formatted(escaped, WITHOUT_EROTIC, GAME_FIELDS, limit));
     }
 
     /**
@@ -66,15 +76,16 @@ public class IgdbClient {
      * without them returns four editions of the same game. The obvious alternative, IGDB's
      * {@code category}, is deprecated in favour of {@code game_type}, and IGDB has already
      * retired {@code category} on {@code external_games} once; these two fields are older
-     * than both and have not moved.
+     * than both and have not moved. A shelf is handed to every reader unasked, so it leaves
+     * adult games out for everyone.
      *
      * @param where an APIcalypse condition, already written by the caller
      * @param sort the ordering, without the trailing semicolon
      * @param offset how many rows to skip, which is how a "view all" grid pages through
      */
     public List<Map<String, Object>> browseGames(String where, String sort, int offset, int limit) {
-        return post("where parent_game = null & version_parent = null & %s; sort %s; fields %s; offset %d; limit %d;"
-                .formatted(where, sort, GAME_FIELDS, offset, limit));
+        return post("where %s & %s & %s; sort %s; fields %s; offset %d; limit %d;"
+                .formatted(BASE_CONDITIONS, WITHOUT_EROTIC, where, sort, GAME_FIELDS, offset, limit));
     }
 
     /**
@@ -86,10 +97,14 @@ public class IgdbClient {
      *
      * @param where the caller's conditions, without the exclusions every query here carries
      */
-    public List<Map<String, Object>> discoverGames(String search, String where, int offset, int limit) {
+    public List<Map<String, Object>> discoverGames(
+            String search, String where, int offset, int limit, boolean includeAdult) {
         String conditions = where == null || where.isBlank()
                 ? BASE_CONDITIONS
                 : BASE_CONDITIONS + " & " + where;
+        if (!includeAdult) {
+            conditions = conditions + " & " + WITHOUT_EROTIC;
+        }
 
         if (search == null || search.isBlank()) {
             return post("where %s; sort total_rating_count desc; fields %s; offset %d; limit %d;"

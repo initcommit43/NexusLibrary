@@ -2,6 +2,7 @@ package dev.nexus.core;
 
 import static dev.nexus.support.AuthenticatedTest.registerAndGetToken;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -57,7 +58,7 @@ class GamesTrackingIntegrationTest extends PostgresIntegrationTest {
         http = new HttpTestClient(port);
         token = registerAndGetToken(http, "player@example.com", "player");
 
-        when(igdbClient.searchGames(anyString(), anyInt())).thenReturn(List.of(GamesTestData.botw()));
+        when(igdbClient.searchGames(anyString(), anyInt(), anyBoolean())).thenReturn(List.of(GamesTestData.botw()));
         when(igdbClient.findGameById(eq(GamesTestData.BOTW_ID))).thenReturn(List.of(GamesTestData.botw()));
         when(igdbClient.findGameById(eq(GamesTestData.HADES_ID))).thenReturn(List.of(GamesTestData.hades()));
     }
@@ -213,7 +214,7 @@ class GamesTrackingIntegrationTest extends PostgresIntegrationTest {
     void searchIsNeverRunForAnUnauthenticatedCaller() {
         http.get("/catalog/search?mediaType=GAME&q=zelda");
 
-        verify(igdbClient, never()).searchGames(anyString(), anyInt());
+        verify(igdbClient, never()).searchGames(anyString(), anyInt(), anyBoolean());
     }
 
     private long trackedEntryId() {

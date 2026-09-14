@@ -99,7 +99,7 @@ public class IgdbMetadataAdapter implements MetadataAdapter {
 
     @Override
     public List<ItemSearchResult> search(MediaType mediaType, String query, int limit) {
-        return client.searchGames(query, limit).stream()
+        return client.searchGames(query, limit, false).stream()
                 .filter(IgdbMobile::isNotMobileOnly)
                 .map(game -> new ItemSearchResult(
                         MediaType.GAME,
@@ -301,7 +301,8 @@ public class IgdbMetadataAdapter implements MetadataAdapter {
                 filters.one("q"),
                 IgdbFilters.where(filters, Instant.now().getEpochSecond()),
                 (page - 1) * size,
-                size);
+                size,
+                false);
 
         // A filtered page is one request, so hasMore is whether it came back full.
         return new BrowseResults(toSearchResults(games), games.size() == size);
@@ -370,8 +371,10 @@ public class IgdbMetadataAdapter implements MetadataAdapter {
             };
         }
 
-        // A full page is the only signal IGDB gives that there is another one behind it.
-        return new BrowseResults(toSearchResults(games), games.size() == size);
+        // The popularity tables take no conditions, so their adult rows are dropped here. A full
+        // page before that is still the only signal IGDB gives that there is another behind it.
+        List<Map<String, Object>> shown = games.stream().filter(game -> !IgdbClient.isAdult(game)).toList();
+        return new BrowseResults(toSearchResults(shown), games.size() == size);
     }
 
     /**

@@ -86,7 +86,30 @@ class IgdbClientTest {
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("search \"zelda\";")))
                 .andRespond(withSuccess("[]", MediaType.APPLICATION_JSON));
 
-        client.searchGames("zelda", 10);
+        client.searchGames("zelda", 10, true);
+
+        server.verify();
+    }
+
+    @Test
+    void searchLeavesTheEroticThemeOutUnlessAskedAndKeepsThemelessGames() {
+        server.expect(requestTo("https://igdb.test/v4/games"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString(
+                        "where (themes = null | themes != (42));")))
+                .andRespond(withSuccess("[]", MediaType.APPLICATION_JSON));
+
+        client.searchGames("zelda", 10, false);
+
+        server.verify();
+    }
+
+    @Test
+    void everyShelfLeavesTheEroticThemeOut() {
+        server.expect(requestTo("https://igdb.test/v4/games"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("(themes = null | themes != (42))")))
+                .andRespond(withSuccess("[]", MediaType.APPLICATION_JSON));
+
+        client.browseGames("total_rating_count > 10", "total_rating desc", 0, 20);
 
         server.verify();
     }
