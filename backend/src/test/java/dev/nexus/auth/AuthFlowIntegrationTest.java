@@ -141,6 +141,46 @@ class AuthFlowIntegrationTest extends PostgresIntegrationTest {
     }
 
     @Test
+    void loginAcceptsTheUsernameInAnyCase() {
+        register("player@example.com", "Player_One", PASSWORD);
+
+        assertThat(login("Player_One", PASSWORD).status()).isEqualTo(200);
+        assertThat(login("player_one", PASSWORD).status()).isEqualTo(200);
+        assertThat(login("player_one", "wrong-password-entirely").status()).isEqualTo(401);
+    }
+
+    /** An app build from before the login field still sends the address as email. */
+    @Test
+    void loginStillReadsTheOldEmailField() {
+        register("player@example.com", "player", PASSWORD);
+
+        Response response = http.postJson(
+                "/auth/login", Map.of("email", "player@example.com", "password", PASSWORD, "client", "WEB"));
+
+        assertThat(response.status()).isEqualTo(200);
+    }
+
+    @Test
+    void loginRefusesARequestNamingNoAccount() {
+        Response response = http.postJson("/auth/login", Map.of("password", PASSWORD, "client", "WEB"));
+
+        assertThat(response.status()).isEqualTo(400);
+        assertThat(response.fieldErrors()).containsKey("login");
+    }
+
+    /** An unknown username must read exactly like a wrong password, or it tells who is here. */
+    @Test
+    void anUnknownUsernameAnswersLikeAWrongPassword() {
+        register("player@example.com", "player", PASSWORD);
+
+        Response unknown = login("nobody", PASSWORD);
+        Response wrong = login("player", "wrong-password-entirely");
+
+        assertThat(unknown.status()).isEqualTo(401);
+        assertThat(unknown.body()).isEqualTo(wrong.body());
+    }
+
+    @Test
     void meRequiresAValidAccessToken() {
         String token = register("player@example.com", "player", PASSWORD).accessToken();
 
@@ -259,8 +299,8 @@ class AuthFlowIntegrationTest extends PostgresIntegrationTest {
                 Map.of("email", email, "username", username, "password", password, "client", "WEB", "dateOfBirth", "1990-01-01", "acceptedTerms", true));
     }
 
-    private Response login(String email, String password) {
-        return http.postJson("/auth/login", Map.of("email", email, "password", password, "client", "WEB"));
+    private Response login(String login, String password) {
+        return http.postJson("/auth/login", Map.of("login", login, "password", password, "client", "WEB"));
     }
 
     private Response authedGet(String path, String token) {

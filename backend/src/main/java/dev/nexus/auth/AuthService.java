@@ -66,15 +66,19 @@ public class AuthService {
 
     @Transactional(readOnly = true)
     public AppUser authenticate(LoginRequest request) {
-        Optional<AppUser> match = users.findByEmail(normalizeEmail(request.email()));
+        // A username cannot contain an @, so one in the identifier means an email address.
+        String identifier = request.identifier();
+        Optional<AppUser> match = identifier.contains("@")
+                ? users.findByEmail(normalizeEmail(identifier))
+                : users.findByUsernameIgnoreCase(identifier);
 
         // Always spend a full bcrypt comparison, even with no account matched: skipping it
-        // would make unregistered emails answer measurably faster and leak who has an account.
+        // would make an unregistered name answer measurably faster and leak who has an account.
         String hash = match.map(AppUser::getPasswordHash).orElse(decoyHash);
         boolean passwordMatches = passwordEncoder.matches(request.password(), hash);
 
         AppUser user = match.filter(candidate -> passwordMatches)
-                .orElseThrow(() -> new AuthenticationFailedException("Invalid email or password."));
+                .orElseThrow(() -> new AuthenticationFailedException("Invalid username, email or password."));
 
         // After the password, never before. Answering "confirm your email" to a wrong password
         // would tell whoever guessed it that the address has an account here.
