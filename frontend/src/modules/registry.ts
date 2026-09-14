@@ -12,6 +12,20 @@ export interface ModuleProvider {
 }
 
 /**
+ * A column of the desktop list view. Each type picks its own, because what is worth a column
+ * differs: a format for anime, hours for games, an author for books.
+ */
+export type ListColumn =
+  | 'score'
+  | 'progress'
+  | 'hours'
+  | 'format'
+  | 'seasons'
+  | 'runtime'
+  | 'year'
+  | 'author'
+
+/**
  * One kind of thing a module tracks. A module can own several, and they do not share a
  * vocabulary: you watch anime and read manga, and calling both "watching" is simply wrong.
  */
@@ -28,6 +42,8 @@ export interface MediaTypeDefinition {
   /** Section order down the page; each community has its own habit. */
   statusOrder: TrackingStatus[]
   searchPlaceholder: string
+  /** The columns after the title in the desktop list view, left to right. */
+  listColumns: ListColumn[]
 }
 
 /**
@@ -88,6 +104,7 @@ export const MODULES: ModuleDefinition[] = [
         listLabel: 'Game List',
         slug: 'games',
         progressLabel: 'Hours played',
+        listColumns: ['score', 'hours', 'year'],
         searchPlaceholder: 'Search games…',
         statusOrder: ['IN_PROGRESS', 'PLANNING', 'COMPLETED', 'PAUSED', 'DROPPED'],
         statusLabels: playing,
@@ -112,6 +129,7 @@ export const MODULES: ModuleDefinition[] = [
         listLabel: 'Anime List',
         slug: 'anime',
         progressLabel: 'Episodes',
+        listColumns: ['score', 'progress', 'format'],
         searchPlaceholder: 'Search anime…',
         statusOrder: ['IN_PROGRESS', 'COMPLETED', 'PAUSED', 'DROPPED', 'PLANNING'],
         statusLabels: watching,
@@ -122,6 +140,7 @@ export const MODULES: ModuleDefinition[] = [
         listLabel: 'Manga List',
         slug: 'manga',
         progressLabel: 'Chapters',
+        listColumns: ['score', 'progress', 'format'],
         searchPlaceholder: 'Search manga…',
         statusOrder: ['IN_PROGRESS', 'COMPLETED', 'PAUSED', 'DROPPED', 'PLANNING'],
         statusLabels: reading,
@@ -155,6 +174,7 @@ export const MODULES: ModuleDefinition[] = [
         listLabel: 'Movie List',
         slug: 'movies',
         progressLabel: 'Progress',
+        listColumns: ['score', 'runtime', 'year'],
         searchPlaceholder: 'Search movies…',
         statusOrder: ['IN_PROGRESS', 'COMPLETED', 'PAUSED', 'DROPPED', 'PLANNING'],
         statusLabels: watching,
@@ -165,6 +185,7 @@ export const MODULES: ModuleDefinition[] = [
         listLabel: 'TV List',
         slug: 'tv',
         progressLabel: 'Episodes',
+        listColumns: ['score', 'progress', 'seasons'],
         searchPlaceholder: 'Search shows…',
         statusOrder: ['IN_PROGRESS', 'COMPLETED', 'PAUSED', 'DROPPED', 'PLANNING'],
         statusLabels: watching,
@@ -192,6 +213,7 @@ export const MODULES: ModuleDefinition[] = [
         listLabel: 'Book List',
         slug: 'books',
         progressLabel: 'Pages',
+        listColumns: ['score', 'progress', 'author'],
         searchPlaceholder: 'Search books…',
         statusOrder: ['IN_PROGRESS', 'PLANNING', 'COMPLETED', 'PAUSED', 'DROPPED'],
         statusLabels: reading,
