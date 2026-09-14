@@ -778,7 +778,8 @@ button.small {
 
 /*
  * Hangs off the trigger with no gap between them: the menu opens on hover, and a gap is a
- * strip of header that closes it again on the way down.
+ * strip of header that closes it again on the way down. The padding is that bridge, and it
+ * reaches past the header's rule as the module menu does (3.5rem is .shell-header's height).
  */
 .account-menu {
   position: absolute;
@@ -786,12 +787,12 @@ button.small {
   top: 100%;
   left: 50%;
   transform: translateX(-50%);
-  padding-top: var(--space-2);
+  padding-top: calc((3.5rem - var(--icon-control)) / 2 + var(--space-2));
 }
 
-/* A set width, so a long username cannot widen the menu out over the window edge. */
+/* As wide as its longest item and no wider, so no row trails off into empty menu. */
 .account-menu ul {
-  width: 9rem;
+  width: max-content;
   margin: 0;
   padding: var(--space-1);
   list-style: none;
@@ -804,18 +805,29 @@ button.small {
 .account-menu a,
 .account-menu button {
   width: 100%;
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
   background: transparent;
   border: none;
   border-radius: var(--radius-sm);
   color: var(--text);
-  text-align: center;
+  text-align: left;
   font-size: var(--text-base);
   font-weight: 500;
   /* A button carries its own line-height and a link inherits the body's; without this the
      two rows are different heights at the same font size, which reads as different sizes. */
   line-height: var(--leading-normal);
+}
+
+.account-menu svg {
+  flex: none;
+  color: var(--text-muted);
+}
+
+.account-menu button.danger svg {
+  color: inherit;
 }
 
 .account-menu a:hover,
