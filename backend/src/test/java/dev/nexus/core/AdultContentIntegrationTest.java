@@ -7,7 +7,13 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import dev.nexus.core.domain.Notification;
+import dev.nexus.core.domain.NotificationRepository;
+import dev.nexus.core.domain.NotificationType;
+import dev.nexus.core.domain.Source;
+import dev.nexus.core.domain.TrackableItemRepository;
 import dev.nexus.core.domain.UserEntryRepository;
+import dev.nexus.auth.AppUserRepository;
 import dev.nexus.modules.anime.AniListClient;
 import dev.nexus.modules.games.IgdbClient;
 import dev.nexus.support.AuthenticatedTest;
@@ -40,6 +46,15 @@ class AdultContentIntegrationTest extends PostgresIntegrationTest {
 
     @Autowired
     UserEntryRepository entries;
+
+    @Autowired
+    TrackableItemRepository items;
+
+    @Autowired
+    NotificationRepository notifications;
+
+    @Autowired
+    AppUserRepository users;
 
     private HttpTestClient http;
 
@@ -149,6 +164,42 @@ class AdultContentIntegrationTest extends PostgresIntegrationTest {
         setShowAdult(shown, true);
         assertThat(titles(get("/entries", shown), null)).hasSize(2);
         assertThat(get("/entries/" + adultEntryId, shown).status()).isEqualTo(200);
+    }
+
+    /** Left out in the query, so the feed still fills the page it was asked for. */
+    @Test
+    void theFeedLeavesAdultTitlesOutAndStillFillsItsPage() {
+        track(shown, GamesTestData.BOTW_ID);
+        track(shown, GamesTestData.EROTIC_ID);
+        assertThat(titles(get("/activity?limit=1", shown), null)).containsExactly("An Adult Game");
+
+        setShowAdult(shown, false);
+
+        assertThat(titles(get("/activity?limit=1", shown), null))
+                .containsExactly("The Legend of Zelda: Breath of the Wild");
+    }
+
+    /** The unread count and the list agree, or the badge would count a row that is not there. */
+    @Test
+    void notificationsAboutAdultTitlesAreLeftOutOfTheListAndTheCount() {
+        track(shown, GamesTestData.BOTW_ID);
+        track(shown, GamesTestData.EROTIC_ID);
+        Long userId = users.findByEmail("shown@example.com").orElseThrow().getId();
+        for (String id : List.of(GamesTestData.BOTW_ID, GamesTestData.EROTIC_ID)) {
+            notifications.save(new Notification(
+                    userId,
+                    items.findBySourceAndExternalId(Source.IGDB, id).orElseThrow(),
+                    NotificationType.TITLE_ADDED,
+                    "test:" + id,
+                    Map.of()));
+        }
+        assertThat(get("/notifications", shown).body()).containsEntry("unread", 2);
+
+        setShowAdult(shown, false);
+
+        Response waiting = get("/notifications", shown);
+        assertThat(waiting.body()).containsEntry("unread", 1);
+        assertThat(titles(waiting, "items")).containsExactly("The Legend of Zelda: Breath of the Wild");
     }
 
     @Test

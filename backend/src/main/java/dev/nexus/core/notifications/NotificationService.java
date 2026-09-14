@@ -1,5 +1,6 @@
 package dev.nexus.core.notifications;
 
+import dev.nexus.core.content.ContentPreferences;
 import dev.nexus.core.domain.MediaType;
 import dev.nexus.core.domain.Notification;
 import dev.nexus.core.domain.NotificationRepository;
@@ -22,9 +23,11 @@ public class NotificationService {
     private static final int DEFAULT_LIMIT = 50;
 
     private final NotificationRepository notifications;
+    private final ContentPreferences content;
 
-    public NotificationService(NotificationRepository notifications) {
+    public NotificationService(NotificationRepository notifications, ContentPreferences content) {
         this.notifications = notifications;
+        this.content = content;
     }
 
     /** Every module's, for a caller that has not said which one it is showing. */
@@ -38,9 +41,15 @@ public class NotificationService {
     public List<Notification> feedFor(Long userId, Collection<MediaType> mediaTypes, int limit) {
         Limit cap = Limit.of(limit <= 0 ? DEFAULT_LIMIT : limit);
 
+        if (content.forUser(userId).showAdult()) {
+            return mediaTypes.isEmpty()
+                    ? notifications.findByUserIdOrderByCreatedAtDesc(userId, cap)
+                    : notifications.findByUserIdAndItemMediaTypeInOrderByCreatedAtDesc(userId, mediaTypes, cap);
+        }
         return mediaTypes.isEmpty()
-                ? notifications.findByUserIdOrderByCreatedAtDesc(userId, cap)
-                : notifications.findByUserIdAndItemMediaTypeInOrderByCreatedAtDesc(userId, mediaTypes, cap);
+                ? notifications.findByUserIdAndItemAdultFalseOrderByCreatedAtDesc(userId, cap)
+                : notifications.findByUserIdAndItemMediaTypeInAndItemAdultFalseOrderByCreatedAtDesc(
+                        userId, mediaTypes, cap);
     }
 
     @Transactional(readOnly = true)
@@ -50,9 +59,14 @@ public class NotificationService {
 
     @Transactional(readOnly = true)
     public long unreadCount(Long userId, Collection<MediaType> mediaTypes) {
+        if (content.forUser(userId).showAdult()) {
+            return mediaTypes.isEmpty()
+                    ? notifications.countByUserIdAndReadAtIsNull(userId)
+                    : notifications.countByUserIdAndItemMediaTypeInAndReadAtIsNull(userId, mediaTypes);
+        }
         return mediaTypes.isEmpty()
-                ? notifications.countByUserIdAndReadAtIsNull(userId)
-                : notifications.countByUserIdAndItemMediaTypeInAndReadAtIsNull(userId, mediaTypes);
+                ? notifications.countByUserIdAndReadAtIsNullAndItemAdultFalse(userId)
+                : notifications.countByUserIdAndItemMediaTypeInAndReadAtIsNullAndItemAdultFalse(userId, mediaTypes);
     }
 
     /**

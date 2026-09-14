@@ -51,6 +51,8 @@ public class ActivityController {
             MediaType mediaType,
             String title,
             String coverUrl,
+            /** Whether the blur setting applies to the cover. False for an event about a run. */
+            boolean adult,
             /** With the source beside it, so a row in the feed leads to the title's own page. */
             Source source,
             String externalId,
@@ -71,6 +73,7 @@ public class ActivityController {
                     item == null ? null : item.getMediaType(),
                     item == null ? null : item.getTitle(),
                     item == null ? null : item.getCoverUrl(),
+                    item != null && item.isAdult(),
                     item == null ? null : item.getSource(),
                     item == null ? null : item.getExternalId(),
                     event.payload(),

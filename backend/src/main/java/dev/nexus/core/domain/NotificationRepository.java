@@ -23,6 +23,20 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     List<Notification> findByUserIdAndItemMediaTypeInOrderByCreatedAtDesc(
             Long userId, Collection<MediaType> mediaTypes, Limit limit);
 
+    /**
+     * The list and the count again, without adult titles, for a reader who has them off. The
+     * count has to agree with the list, or a badge says three over two rows.
+     */
+    List<Notification> findByUserIdAndItemAdultFalseOrderByCreatedAtDesc(Long userId, Limit limit);
+
+    List<Notification> findByUserIdAndItemMediaTypeInAndItemAdultFalseOrderByCreatedAtDesc(
+            Long userId, Collection<MediaType> mediaTypes, Limit limit);
+
+    long countByUserIdAndReadAtIsNullAndItemAdultFalse(Long userId);
+
+    long countByUserIdAndItemMediaTypeInAndReadAtIsNullAndItemAdultFalse(
+            Long userId, Collection<MediaType> mediaTypes);
+
     long countByUserIdAndReadAtIsNull(Long userId);
 
     long countByUserIdAndItemMediaTypeInAndReadAtIsNull(Long userId, Collection<MediaType> mediaTypes);

@@ -26,6 +26,12 @@ public interface ProviderActivityRepository extends JpaRepository<ProviderActivi
     /** Newest first, for the half of the feed that came in with a library. */
     List<ProviderActivity> findByUserIdOrderByHappenedOnDescIdDesc(Long userId, Limit limit);
 
+    /** The same, without events about adult titles, excluded in the query to keep the page full. */
+    @Query("SELECT p FROM ProviderActivity p WHERE p.userId = :userId AND NOT EXISTS "
+            + "(SELECT t.id FROM TrackableItem t WHERE t.id = p.itemId AND t.adult = true) "
+            + "ORDER BY p.happenedOn DESC, p.id DESC")
+    List<ProviderActivity> findWithoutAdultTitles(@Param("userId") Long userId, Limit limit);
+
     /** Scoped to the owner in the query itself, so an id alone can never reach another's row. */
     long deleteByIdAndUserId(Long id, Long userId);
 

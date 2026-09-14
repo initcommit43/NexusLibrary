@@ -14,6 +14,14 @@ public interface ActivityRepository extends JpaRepository<Activity, Long> {
 
     List<Activity> findByUserIdOrderByCreatedAtDesc(Long userId, Limit limit);
 
+    /**
+     * The same, without events about adult titles. Excluded in the query so a page of the feed
+     * is still a full page; an event about a run carries no title and always stays.
+     */
+    @Query("SELECT a FROM Activity a LEFT JOIN a.item i "
+            + "WHERE a.userId = :userId AND (i IS NULL OR i.adult = false) ORDER BY a.createdAt DESC")
+    List<Activity> findWithoutAdultTitles(@Param("userId") Long userId, Limit limit);
+
     /** Scoped to the owner in the query itself, so an id alone can never reach another's row. */
     long deleteByIdAndUserId(Long id, Long userId);
 

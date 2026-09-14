@@ -48,6 +48,8 @@ public class NotificationController {
             MediaType mediaType,
             String title,
             String coverUrl,
+            /** Whether the blur setting applies to the cover. */
+            boolean adult,
             Source source,
             String externalId,
             Map<String, Object> payload,
@@ -63,6 +65,7 @@ public class NotificationController {
                     item.getMediaType(),
                     item.getTitle(),
                     item.getCoverUrl(),
+                    item.isAdult(),
                     item.getSource(),
                     item.getExternalId(),
                     notification.getPayload(),

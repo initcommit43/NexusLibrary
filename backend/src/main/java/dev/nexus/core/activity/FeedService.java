@@ -1,6 +1,8 @@
 package dev.nexus.core.activity;
 
+import dev.nexus.core.domain.Activity;
 import dev.nexus.core.domain.ActivityRepository;
+import dev.nexus.core.content.ContentPreferences;
 import dev.nexus.core.domain.ActivityType;
 import dev.nexus.core.domain.ProviderActivity;
 import dev.nexus.core.domain.ProviderActivityRepository;
@@ -46,14 +48,17 @@ public class FeedService {
     private final ActivityRepository activities;
     private final ProviderActivityRepository imported;
     private final TrackableItemRepository items;
+    private final ContentPreferences content;
 
     public FeedService(
             ActivityRepository activities,
             ProviderActivityRepository imported,
-            TrackableItemRepository items) {
+            TrackableItemRepository items,
+            ContentPreferences content) {
         this.activities = activities;
         this.imported = imported;
         this.items = items;
+        this.content = content;
     }
 
     /**
@@ -65,8 +70,9 @@ public class FeedService {
      */
     @Transactional(readOnly = true)
     public List<FeedEvent> feedFor(Long userId, int limit) {
-        List<FeedEvent> merged = new ArrayList<>(own(userId, limit));
-        merged.addAll(imported(userId, limit));
+        boolean showAdult = content.forUser(userId).showAdult();
+        List<FeedEvent> merged = new ArrayList<>(own(userId, limit, showAdult));
+        merged.addAll(imported(userId, limit, showAdult));
 
         return merged.stream()
                 .sorted(Comparator.comparing(FeedEvent::at).reversed())
@@ -92,8 +98,12 @@ public class FeedService {
         }
     }
 
-    private List<FeedEvent> own(Long userId, int limit) {
-        return activities.findByUserIdOrderByCreatedAtDesc(userId, Limit.of(limit)).stream()
+    private List<FeedEvent> own(Long userId, int limit, boolean showAdult) {
+        List<Activity> events = showAdult
+                ? activities.findByUserIdOrderByCreatedAtDesc(userId, Limit.of(limit))
+                : activities.findWithoutAdultTitles(userId, Limit.of(limit));
+
+        return events.stream()
                 .map(activity -> new FeedEvent(
                         OWN + activity.getId(),
                         activity.getType(),
@@ -103,9 +113,10 @@ public class FeedService {
                 .toList();
     }
 
-    private List<FeedEvent> imported(Long userId, int limit) {
-        List<ProviderActivity> events =
-                imported.findByUserIdOrderByHappenedOnDescIdDesc(userId, Limit.of(limit));
+    private List<FeedEvent> imported(Long userId, int limit, boolean showAdult) {
+        List<ProviderActivity> events = showAdult
+                ? imported.findByUserIdOrderByHappenedOnDescIdDesc(userId, Limit.of(limit))
+                : imported.findWithoutAdultTitles(userId, Limit.of(limit));
 
         Map<Long, TrackableItem> titles = items
                 .findAllById(events.stream().map(ProviderActivity::getItemId).collect(Collectors.toSet()))
