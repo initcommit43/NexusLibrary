@@ -2,8 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ChangeEvent, ReactNode } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import {
-  ApiError,
   api,
+  errorMessage,
   type ConnectedAccount,
   type ImportReport,
   type MediaType,
@@ -25,6 +25,7 @@ import {
 } from '../modules/registry'
 import { useModules } from '../modules/useModules'
 import { useAuth } from '../auth/useAuth'
+import { useEscapeKey } from '../components/useEscapeKey'
 
 /**
  * An import runs in three stretches of very different length — pulling the list, matching
@@ -99,6 +100,62 @@ const jobSummary = (job: SyncJob): string => {
 }
 
 /**
+ * How much of a running import a card shows. Steam spells out a failure and animates a run
+ * with no total yet; AniList shows only the finished report.
+ */
+type RunProgress = 'plain' | 'detailed' | 'hidden'
+
+/**
+ * What a service needs beyond its registry entry to be connected to.
+ *
+ * <p>A provider absent from here has no account to link — Goodreads closed its API to new keys
+ * in 2020 — and its card offers only the CSV route.
+ */
+interface Connection {
+  /** Asks the backend where to send the reader to approve the link. */
+  authorize: () => Promise<{ url: string }>
+  /** What to say if we cannot even get that far. */
+  failure: string
+  /** "Import library" or "Import lists", in the words of what the service holds. */
+  importLabel: string
+  /** Anything the reader has to do at the other end for the import to return anything. */
+  note?: ReactNode
+  /** Defaults to plain: a muted status line and a bar once the run has a total. */
+  progress?: RunProgress
+}
+
+const CONNECTIONS: Partial<Record<ModuleProvider['provider'], Connection>> = {
+  STEAM: {
+    authorize: api.steamAuthorizeUrl,
+    failure: 'Could not start Steam sign-in.',
+    importLabel: 'Import library',
+    progress: 'detailed',
+    note: (
+      <>
+        Your Steam profile must have <strong>Game details</strong> set to Public, otherwise Steam
+        returns an empty library. Signing in cannot override that setting.
+      </>
+    ),
+  },
+  ANILIST: {
+    authorize: api.anilistAuthorizeUrl,
+    failure: 'Could not start the AniList link.',
+    importLabel: 'Import lists',
+    progress: 'hidden',
+  },
+  MAL: {
+    authorize: api.malAuthorizeUrl,
+    failure: 'Could not start the MyAnimeList link.',
+    importLabel: 'Import lists',
+  },
+  SIMKL: {
+    authorize: api.simklAuthorizeUrl,
+    failure: 'Could not start the Simkl link.',
+    importLabel: 'Import library',
+  },
+}
+
+/**
  * Settings spans every module rather than belonging to one: connections sit under the
  * module they feed, so a new module brings its own box instead of a new page.
  */
@@ -152,34 +209,16 @@ export const SettingsPage = () => {
   const connected = (provider: ModuleProvider['provider']) =>
     accounts?.find((account) => account.provider === provider) ?? null
 
-  const steam = connected('STEAM')
-  const anilist = connected('ANILIST')
-  const mal = connected('MAL')
-  const simkl = connected('SIMKL')
-
   const load = useCallback(() => {
     api
       .listIntegrations()
       .then(setAccounts)
       .catch((err) =>
-        setError(err instanceof ApiError ? err.message : 'Could not load your connections.'),
+        setError(errorMessage(err, 'Could not load your connections.')),
       )
   }, [])
 
   useEffect(load, [load])
-
-  const connectSteam = async () => {
-    setBusy({ provider: 'STEAM', action: 'connect' })
-    setError(null)
-    try {
-      const { url } = await api.steamAuthorizeUrl()
-      // Full-page navigation: Steam will not render inside a frame or a popup reliably.
-      window.location.href = url
-    } catch (err) {
-      setBusy(null)
-      setError(err instanceof ApiError ? err.message : 'Could not start Steam sign-in.')
-    }
-  }
 
   const runImport = async (provider: ModuleProvider['provider']) => {
     setBusy({ provider, action: 'import' })
@@ -200,7 +239,7 @@ export const SettingsPage = () => {
         await watchJob(finished.followUpJobId)
       }
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'The import could not be completed.')
+      setError(errorMessage(err, 'The import could not be completed.'))
     } finally {
       setBusy(null)
     }
@@ -226,7 +265,7 @@ export const SettingsPage = () => {
       }
       load()
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Your AniList history could not be read.')
+      setError(errorMessage(err, 'Your AniList history could not be read.'))
     } finally {
       setBusy(null)
     }
@@ -250,16 +289,22 @@ export const SettingsPage = () => {
     return finished
   }
 
-  const connectAniList = async () => {
-    setBusy({ provider: 'ANILIST', action: 'connect' })
+  /**
+   * Sends the reader off to approve the link.
+   *
+   * <p>A full-page navigation rather than a frame or a popup: the approval screen is the
+   * provider's own, Steam will not render inside either reliably, and a reader who is about to
+   * hand over access to an account should be looking at that provider's address bar.
+   */
+  const startConnect = async (provider: ModuleProvider['provider'], connection: Connection) => {
+    setBusy({ provider, action: 'connect' })
     setError(null)
     try {
-      const { url } = await api.anilistAuthorizeUrl()
-      // Full-page navigation: the approval screen is AniList's, not ours to embed.
-      window.location.href = url
+      const { url } = await connection.authorize()
+      window.location.assign(url)
     } catch (err) {
       setBusy(null)
-      setError(err instanceof ApiError ? err.message : 'Could not start the AniList link.')
+      setError(errorMessage(err, connection.failure))
     }
   }
 
@@ -299,7 +344,7 @@ export const SettingsPage = () => {
         setReport(finished.report)
       }
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'That file could not be imported.')
+      setError(errorMessage(err, 'That file could not be imported.'))
     } finally {
       setBusy(null)
     }
@@ -323,75 +368,6 @@ export const SettingsPage = () => {
     </div>
   )
 
-  const anilistCard = (provider: ModuleProvider) => (
-    <div key={provider.provider} className="connection">
-      <div className={anilist ? 'integration-head' : 'integration-head banner'}>
-        <div>
-          <h3>{provider.label}</h3>
-          <p className="muted">
-            {anilist ? `Connected as ${anilist.externalUserId}` : provider.blurb}
-          </p>
-        </div>
-
-        {anilist ? (
-          <div className="integration-actions">
-            <button type="button" disabled={busy !== null} onClick={() => void runImport('ANILIST')}>
-              {working('ANILIST', 'import') ? 'Importing…' : 'Import lists'}
-            </button>
-            <button
-              type="button"
-              className="ghost"
-              disabled={busy !== null}
-              onClick={() => void runAniListActivity()}
-            >
-              {working('ANILIST', 'activity') ? 'Reading…' : 'Import AniList activity'}
-            </button>
-            <button
-              type="button"
-              className="ghost"
-              disabled={busy !== null}
-              onClick={() => void disconnect('ANILIST')}
-            >
-              Disconnect
-            </button>
-          </div>
-        ) : (
-          <button type="button" disabled={busy !== null} onClick={() => void connectAniList()}>
-            {working('ANILIST', 'connect') ? 'Redirecting…' : 'Connect AniList'}
-          </button>
-        )}
-      </div>
-
-      {csvRow(provider)}
-
-      {anilist?.lastSyncedAt && (
-        <p className="muted">Last imported {new Date(anilist.lastSyncedAt).toLocaleString()}.</p>
-      )}
-
-      {report && runningFor === provider.provider && (
-        <>
-          <p className="muted">
-            {report.created} added, {report.updated} updated
-            {report.unmatched.length > 0 && `, ${report.unmatched.length} not matched`}.
-          </p>
-
-          {report.unmatched.length > 0 && (
-            <details className="unmatched">
-              <summary>Titles we could not match ({report.unmatched.length})</summary>
-              <ul>
-                {report.unmatched.map((item) => (
-                  <li key={item.providerItemId}>
-                    {item.title} <span className="muted">— {item.reason}</span>
-                  </li>
-                ))}
-              </ul>
-            </details>
-          )}
-        </>
-      )}
-    </div>
-  )
-
   const disconnect = async (provider: ModuleProvider['provider']) => {
     setBusy({ provider, action: 'disconnect' })
     setError(null)
@@ -400,55 +376,24 @@ export const SettingsPage = () => {
       setReport(null)
       load()
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not disconnect.')
+      setError(errorMessage(err, 'Could not disconnect.'))
     } finally {
       setBusy(null)
     }
   }
 
-  const steamCard = (provider: ModuleProvider) => (
-    <div key={provider.provider} className="connection">
-      <div className={steam ? 'integration-head' : 'integration-head banner'}>
-        <div>
-          <h3>{provider.label}</h3>
-          <p className="muted">{steam ? `Connected as ${steam.externalUserId}` : provider.blurb}</p>
-        </div>
-
-        {steam ? (
-          <div className="integration-actions">
-            <button type="button" disabled={busy !== null} onClick={() => void runImport('STEAM')}>
-              {working('STEAM', 'import') ? 'Importing…' : 'Import library'}
-            </button>
-            <button
-              type="button"
-              className="ghost"
-              disabled={busy !== null}
-              onClick={() => void disconnect('STEAM')}
-            >
-              Disconnect
-            </button>
-          </div>
-        ) : (
-          <button type="button" disabled={busy !== null} onClick={() => void connectSteam()}>
-            {working('STEAM', 'connect') ? 'Redirecting…' : 'Connect Steam'}
-          </button>
-        )}
-      </div>
-
-      <p className="muted note">
-        Your Steam profile must have <strong>Game details</strong> set to Public, otherwise Steam
-        returns an empty library. Signing in cannot override that setting.
-      </p>
-
-      {steam?.lastSyncedAt && (
-        <p className="muted">Last imported {new Date(steam.lastSyncedAt).toLocaleString()}.</p>
-      )}
-
-      {job && runningFor === provider.provider && (
+  /** Progress and results for the run this card owns, whichever card that is. */
+  const runFeedback = (provider: ModuleProvider, progress: RunProgress = 'plain') => (
+    <>
+      {progress !== 'hidden' && job && runningFor === provider.provider && (
         <>
-          <p className={job.state === 'FAILED' ? 'alert' : 'muted'} role={job.state === 'FAILED' ? 'alert' : undefined}>
-            {jobLabel(job)}
-          </p>
+          {progress === 'detailed' && job.state === 'FAILED' ? (
+            <p className="alert" role="alert">
+              {jobLabel(job)}
+            </p>
+          ) : (
+            <p className="muted">{jobLabel(job)}</p>
+          )}
           {/* A run with a total fills towards it; one without says only that it is going. */}
           {job.total > 0 ? (
             <div className="achievement-bar">
@@ -458,6 +403,7 @@ export const SettingsPage = () => {
               />
             </div>
           ) : (
+            progress === 'detailed' &&
             job.state === 'RUNNING' && (
               <div className="achievement-bar">
                 <div className="achievement-bar-fill is-running" />
@@ -488,259 +434,99 @@ export const SettingsPage = () => {
           )}
         </>
       )}
-    </div>
-  )
-
-  const connectMal = async () => {
-    setBusy({ provider: 'MAL', action: 'connect' })
-    setError(null)
-    try {
-      const { url } = await api.malAuthorizeUrl()
-      // Full-page navigation: the approval screen is MAL's, not ours to embed.
-      window.location.href = url
-    } catch (err) {
-      setBusy(null)
-      setError(err instanceof ApiError ? err.message : 'Could not start the MyAnimeList link.')
-    }
-  }
-
-  const malCard = (provider: ModuleProvider) => (
-    <div key={provider.provider} className="connection">
-      <div className={mal ? 'integration-head' : 'integration-head banner'}>
-        <div>
-          <h3>{provider.label}</h3>
-          <p className="muted">{mal ? `Connected as ${mal.externalUserId}` : provider.blurb}</p>
-        </div>
-
-        {mal ? (
-          <div className="integration-actions">
-            <button type="button" disabled={busy !== null} onClick={() => void runImport('MAL')}>
-              {working('MAL', 'import') ? 'Importing…' : 'Import lists'}
-            </button>
-            <button
-              type="button"
-              className="ghost"
-              disabled={busy !== null}
-              onClick={() => void disconnect('MAL')}
-            >
-              Disconnect
-            </button>
-          </div>
-        ) : (
-          <button type="button" disabled={busy !== null} onClick={() => void connectMal()}>
-            {working('MAL', 'connect') ? 'Redirecting…' : 'Connect MyAnimeList'}
-          </button>
-        )}
-      </div>
-
-      {csvRow(provider)}
-
-      {mal?.lastSyncedAt && (
-        <p className="muted">Last imported {new Date(mal.lastSyncedAt).toLocaleString()}.</p>
-      )}
-
-      {job && runningFor === provider.provider && (
-        <>
-          <p className="muted">{jobLabel(job)}</p>
-          {job.total > 0 && (
-            <div className="achievement-bar">
-              <div
-                className="achievement-bar-fill"
-                style={{ width: `${Math.round((job.processed / job.total) * 100)}%` }}
-              />
-            </div>
-          )}
-        </>
-      )}
-
-      {report && runningFor === provider.provider && (
-        <>
-          <p className="muted">
-            {report.created} added, {report.updated} updated
-            {report.unmatched.length > 0 && `, ${report.unmatched.length} not matched`}.
-          </p>
-
-          {report.unmatched.length > 0 && (
-            <details className="unmatched">
-              <summary>Titles we could not match ({report.unmatched.length})</summary>
-              <ul>
-                {report.unmatched.map((item) => (
-                  <li key={item.providerItemId}>
-                    {item.title} <span className="muted">— {item.reason}</span>
-                  </li>
-                ))}
-              </ul>
-            </details>
-          )}
-        </>
-      )}
-    </div>
-  )
-
-  const connectSimkl = async () => {
-    setBusy({ provider: 'SIMKL', action: 'connect' })
-    setError(null)
-    try {
-      const { url } = await api.simklAuthorizeUrl()
-      // Full-page navigation: the approval screen is Simkl's, not ours to embed.
-      window.location.href = url
-    } catch (err) {
-      setBusy(null)
-      setError(err instanceof ApiError ? err.message : 'Could not start the Simkl link.')
-    }
-  }
-
-  const simklCard = (provider: ModuleProvider) => (
-    <div key={provider.provider} className="connection">
-      <div className={simkl ? 'integration-head' : 'integration-head banner'}>
-        <div>
-          <h3>{provider.label}</h3>
-          <p className="muted">
-            {simkl ? `Connected as ${simkl.externalUserId}` : provider.blurb}
-          </p>
-        </div>
-
-        {simkl ? (
-          <div className="integration-actions">
-            <button type="button" disabled={busy !== null} onClick={() => void runImport('SIMKL')}>
-              {working('SIMKL', 'import') ? 'Importing…' : 'Import library'}
-            </button>
-            <button
-              type="button"
-              className="ghost"
-              disabled={busy !== null}
-              onClick={() => void disconnect('SIMKL')}
-            >
-              Disconnect
-            </button>
-          </div>
-        ) : (
-          <button type="button" disabled={busy !== null} onClick={() => void connectSimkl()}>
-            {working('SIMKL', 'connect') ? 'Redirecting…' : 'Connect Simkl'}
-          </button>
-        )}
-      </div>
-
-      {csvRow(provider)}
-
-      {simkl?.lastSyncedAt && (
-        <p className="muted">Last imported {new Date(simkl.lastSyncedAt).toLocaleString()}.</p>
-      )}
-
-      {job && runningFor === provider.provider && (
-        <>
-          <p className="muted">{jobLabel(job)}</p>
-          {job.total > 0 && (
-            <div className="achievement-bar">
-              <div
-                className="achievement-bar-fill"
-                style={{ width: `${Math.round((job.processed / job.total) * 100)}%` }}
-              />
-            </div>
-          )}
-        </>
-      )}
-
-      {report && runningFor === provider.provider && (
-        <>
-          <p className="muted">
-            {report.created} added, {report.updated} updated
-            {report.unmatched.length > 0 && `, ${report.unmatched.length} not matched`}.
-          </p>
-
-          {report.unmatched.length > 0 && (
-            <details className="unmatched">
-              <summary>Titles we could not match ({report.unmatched.length})</summary>
-              <ul>
-                {report.unmatched.map((item) => (
-                  <li key={item.providerItemId}>
-                    {item.title} <span className="muted">— {item.reason}</span>
-                  </li>
-                ))}
-              </ul>
-            </details>
-          )}
-        </>
-      )}
-    </div>
-  )
-
-  /** Providers whose flow is not built yet, listed so the shape of the app stays visible. */
-  const pendingCard = (provider: ModuleProvider) => (
-    <div key={provider.provider} className="connection">
-      <div className="integration-head">
-        <div>
-          <h3>{provider.label}</h3>
-          <p className="muted">{provider.blurb}</p>
-        </div>
-        <button type="button" disabled>
-          Not built yet
-        </button>
-      </div>
-    </div>
-  )
-
-  /**
-   * Progress and results for the run this card owns. The connected-account cards each carry
-   * their own copy of this from before there was a card without a connection to show.
-   */
-  const runFeedback = (provider: ModuleProvider) => (
-    <>
-      {job && runningFor === provider.provider && (
-        <>
-          <p className="muted">{jobLabel(job)}</p>
-          {job.total > 0 && (
-            <div className="achievement-bar">
-              <div
-                className="achievement-bar-fill"
-                style={{ width: `${Math.round((job.processed / job.total) * 100)}%` }}
-              />
-            </div>
-          )}
-        </>
-      )}
-
-      {report && runningFor === provider.provider && (
-        <>
-          <p className="muted">
-            {report.created} added, {report.updated} updated
-            {report.unmatched.length > 0 && `, ${report.unmatched.length} not matched`}.
-          </p>
-
-          {report.unmatched.length > 0 && (
-            <details className="unmatched">
-              <summary>Titles we could not match ({report.unmatched.length})</summary>
-              <ul>
-                {report.unmatched.map((item) => (
-                  <li key={item.providerItemId}>
-                    {item.title} <span className="muted">— {item.reason}</span>
-                  </li>
-                ))}
-              </ul>
-            </details>
-          )}
-        </>
-      )}
     </>
   )
 
   /**
-   * The only card with no connection to make: Goodreads closed its API to new keys in 2020,
-   * so uploading an export is the whole integration rather than the fallback it is elsewhere.
+   * One card for every service, connected or not.
+   *
+   * <p>There were five of these, one per provider, and they had drifted: the same run showed a
+   * progress bar under Steam and nothing under AniList, and a failed one read as an alert on
+   * one card and as a muted line on another. What actually differs between services is small
+   * enough to sit in {@link CONNECTIONS} — where the approve screen is, what the import button
+   * says, and whether there is anything to warn about — so the card is written once.
    */
-  const goodreadsCard = (provider: ModuleProvider) => (
-    <div key={provider.provider} className="connection">
-      <div className="integration-head">
-        <div>
-          <h3>{provider.label}</h3>
-          <p className="muted">{provider.blurb}</p>
-        </div>
-      </div>
+  const connectionCard = (provider: ModuleProvider) => {
+    const connection = CONNECTIONS[provider.provider]
+    const account = connected(provider.provider)
 
-      {csvRow(provider)}
-      {runFeedback(provider)}
-    </div>
-  )
+    // Goodreads closed its API to new keys in 2020, so uploading an export is the whole
+    // integration there rather than the fallback it is elsewhere: no head buttons, no account.
+    // The banner treatment is for a card asking to be connected; a card with nothing to
+    // connect to — Goodreads — is not asking for anything and reads as a plain head.
+    const head =
+      connection && !account ? 'integration-head banner' : 'integration-head'
+
+    return (
+      <div key={provider.provider} className="connection">
+        <div className={head}>
+          <div>
+            <h3>{provider.label}</h3>
+            <p className="muted">
+              {account ? `Connected as ${account.externalUserId}` : provider.blurb}
+            </p>
+          </div>
+
+          {connection &&
+            (account ? (
+              <div className="integration-actions">
+                <button
+                  type="button"
+                  disabled={busy !== null}
+                  onClick={() => void runImport(provider.provider)}
+                >
+                  {working(provider.provider, 'import') ? 'Importing…' : connection.importLabel}
+                </button>
+
+                {/*
+                  * AniList alone keeps a history worth walking, and it is its own press: a
+                  * library is what you need before anything else works, and a history is years
+                  * deep and worth waiting for separately.
+                  */}
+                {provider.provider === 'ANILIST' && (
+                  <button
+                    type="button"
+                    className="ghost"
+                    disabled={busy !== null}
+                    onClick={() => void runAniListActivity()}
+                  >
+                    {working('ANILIST', 'activity') ? 'Reading…' : 'Import AniList activity'}
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  className="ghost"
+                  disabled={busy !== null}
+                  onClick={() => void disconnect(provider.provider)}
+                >
+                  Disconnect
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                disabled={busy !== null}
+                onClick={() => void startConnect(provider.provider, connection)}
+              >
+                {working(provider.provider, 'connect') ? 'Redirecting…' : `Connect ${provider.label}`}
+              </button>
+            ))}
+        </div>
+
+        {connection?.note && <p className="muted note">{connection.note}</p>}
+
+        {/* The way in that needs no account, for every service that publishes an export. */}
+        {provider.csvHint && csvRow(provider)}
+
+        {account?.lastSyncedAt && (
+          <p className="muted">Last imported {new Date(account.lastSyncedAt).toLocaleString()}.</p>
+        )}
+
+        {runFeedback(provider, connection?.progress)}
+      </div>
+    )
+  }
 
   const [exporting, setExporting] = useState<MediaType | null>(null)
 
@@ -751,7 +537,7 @@ export const SettingsPage = () => {
       const { filename, blob } = await api.exportCsv(type.mediaType)
       saveFile(blob, filename)
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'That shelf could not be exported.')
+      setError(errorMessage(err, 'That shelf could not be exported.'))
     } finally {
       setExporting(null)
     }
@@ -809,7 +595,7 @@ export const SettingsPage = () => {
       const counted = await work()
       setAccountNote(counted ?? done)
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'That did not work. Please try again.')
+      setError(errorMessage(err, 'That did not work. Please try again.'))
     } finally {
       setAccountBusy(null)
     }
@@ -1083,15 +869,6 @@ export const SettingsPage = () => {
     (module) => module.providers,
   )
 
-  const providerCard = (provider: ModuleProvider) => {
-    if (provider.provider === 'STEAM') return steamCard(provider)
-    if (provider.provider === 'ANILIST') return anilistCard(provider)
-    if (provider.provider === 'MAL') return malCard(provider)
-    if (provider.provider === 'SIMKL') return simklCard(provider)
-    if (provider.provider === 'GOODREADS') return goodreadsCard(provider)
-    return pendingCard(provider)
-  }
-
   /**
    * Every service that can be connected, in one card. Which module a service belongs to is
    * not what anyone is after when they come here to reconnect Steam; module sections come
@@ -1102,7 +879,7 @@ export const SettingsPage = () => {
       <h2>Connections</h2>
 
       <article className="card">
-        {connectable.map(providerCard)}
+        {connectable.map(connectionCard)}
       </article>
     </section>
   )
@@ -1188,7 +965,7 @@ export const SettingsPage = () => {
     ...Object.fromEntries(
       connectable.map((provider) => [
         provider.provider.toLowerCase(),
-        { title: provider.label, render: () => providerCard(provider) },
+        { title: provider.label, render: () => connectionCard(provider) },
       ]),
     ),
   }
@@ -1277,14 +1054,7 @@ export const SettingsPage = () => {
     setDeleting(true)
   }
 
-  useEffect(() => {
-    if (!deleting) return
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setDeleting(false)
-    }
-    document.addEventListener('keydown', onKeyDown)
-    return () => document.removeEventListener('keydown', onKeyDown)
-  }, [deleting])
+  useEscapeKey(() => setDeleting(false), deleting)
 
   const deleteDialog = () => (
     // The scrim closes it, as the app's other dialogs do; a tap inside the card must not.
