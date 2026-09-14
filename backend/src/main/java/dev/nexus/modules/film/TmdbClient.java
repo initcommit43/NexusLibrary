@@ -34,9 +34,15 @@ public class TmdbClient {
         this.rateLimiter = new OutboundRateLimiter(properties.requestsPerSecond());
     }
 
-    /** TMDB pages at 20 results; anything past the first page is noise for a search box. */
-    public List<Map<String, Object>> search(TmdbKind kind, String query, int limit) {
-        Map<String, Object> body = get("/search/{kind}?query={query}&include_adult=false&page=1", kind.path(), query)
+    /**
+     * TMDB pages at 20 results; anything past the first page is noise for a search box.
+     *
+     * <p>{@code include_adult} is TMDB's own switch, asked of it rather than applied to the answer,
+     * so a search never comes back short.
+     */
+    public List<Map<String, Object>> search(TmdbKind kind, String query, int limit, boolean includeAdult) {
+        Map<String, Object> body = get(
+                        "/search/{kind}?query={query}&include_adult={adult}&page=1", kind.path(), query, includeAdult)
                 .orElse(Map.of());
         return results(body).stream().limit(limit).toList();
     }
@@ -45,6 +51,8 @@ public class TmdbClient {
      * One page of a browse shelf. Every shelf is one of TMDB's own curated lists, which is
      * why the path varies rather than a sort parameter: TMDB exposes "popular" and "top
      * rated" as endpoints, not as orderings of a general query.
+     *
+     * <p>No {@code include_adult}: TMDB's curated lists take none and carry no adult titles.
      *
      * @param path the list's path under the kind, such as {@code popular} or {@code top_rated}
      */
@@ -67,8 +75,13 @@ public class TmdbClient {
      * <p>Separate from {@link #search} because that one answers a search box, which wants a
      * handful of rows and never a second page.
      */
-    public Map<String, Object> searchPage(TmdbKind kind, String query, int page) {
-        return get("/search/{kind}?query={query}&include_adult=false&page={page}", kind.path(), query, page)
+    public Map<String, Object> searchPage(TmdbKind kind, String query, int page, boolean includeAdult) {
+        return get(
+                        "/search/{kind}?query={query}&include_adult={adult}&page={page}",
+                        kind.path(),
+                        query,
+                        includeAdult,
+                        page)
                 .orElse(Map.of());
     }
 
@@ -77,11 +90,12 @@ public class TmdbClient {
      *
      * @param query the filters as an already-built query string, without a leading separator
      */
-    public Map<String, Object> discover(TmdbKind kind, String query, int page) {
+    public Map<String, Object> discover(TmdbKind kind, String query, int page, boolean includeAdult) {
         String filters = query == null || query.isBlank() ? "" : "&" + query;
         return get(
-                        "/discover/{kind}?include_adult=false&sort_by=popularity.desc&page={page}" + filters,
+                        "/discover/{kind}?include_adult={adult}&sort_by=popularity.desc&page={page}" + filters,
                         kind.path(),
+                        includeAdult,
                         page)
                 .orElse(Map.of());
     }

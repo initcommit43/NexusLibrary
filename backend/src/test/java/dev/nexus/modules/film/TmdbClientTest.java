@@ -59,9 +59,23 @@ class TmdbClientTest {
         server.expect(requestTo("https://tmdb.test/3/search/tv?query=avatar%20%26%20co&include_adult=false&page=1"))
                 .andRespond(withSuccess("{\"results\":[{\"id\":1,\"name\":\"Avatar\"}]}", MediaType.APPLICATION_JSON));
 
-        List<Map<String, Object>> results = client.search(TmdbKind.SHOW, "avatar & co", 10);
+        List<Map<String, Object>> results = client.search(TmdbKind.SHOW, "avatar & co", 10, false);
 
         assertThat(results).hasSize(1);
+        server.verify();
+    }
+
+    @Test
+    void asksTmdbForAdultTitlesOnlyWhenTheyAreWanted() {
+        server.expect(requestTo("https://tmdb.test/3/search/movie?query=x&include_adult=true&page=1"))
+                .andRespond(withSuccess("{\"results\":[]}", MediaType.APPLICATION_JSON));
+        server.expect(requestTo(
+                        "https://tmdb.test/3/discover/movie?include_adult=false&sort_by=popularity.desc&page=2"))
+                .andRespond(withSuccess("{\"results\":[]}", MediaType.APPLICATION_JSON));
+
+        client.search(TmdbKind.MOVIE, "x", 5, true);
+        client.discover(TmdbKind.MOVIE, "", 2, false);
+
         server.verify();
     }
 
@@ -72,7 +86,7 @@ class TmdbClientTest {
         server.expect(requestTo(org.hamcrest.Matchers.startsWith("https://tmdb.test/3/search/movie")))
                 .andRespond(withSuccess("{\"results\":[" + rows + "]}", MediaType.APPLICATION_JSON));
 
-        assertThat(client.search(TmdbKind.MOVIE, "x", 5)).hasSize(5);
+        assertThat(client.search(TmdbKind.MOVIE, "x", 5, false)).hasSize(5);
     }
 
     /** A deleted or unknown id is a miss, not an outage: the caller wants an empty. */
@@ -149,7 +163,7 @@ class TmdbClientTest {
     void saysSoWhenNoTokenIsConfigured() {
         TmdbClient unconfigured = build("");
 
-        assertThatThrownBy(() -> unconfigured.search(TmdbKind.MOVIE, "x", 5))
+        assertThatThrownBy(() -> unconfigured.search(TmdbKind.MOVIE, "x", 5, false))
                 .isInstanceOf(TmdbUnavailableException.class)
                 .hasMessageContaining("TMDB_ACCESS_TOKEN");
     }

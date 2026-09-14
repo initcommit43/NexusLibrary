@@ -45,8 +45,8 @@ class TmdbMetadataAdapterTest {
      */
     @Test
     void idsCarryTheirKindSoTheTwoNumberSpacesCannotCollide() {
-        when(client.search(TmdbKind.MOVIE, "550", 1)).thenReturn(List.of(Map.of("id", 550, "title", "Fight Club")));
-        when(client.search(TmdbKind.SHOW, "550", 1)).thenReturn(List.of(Map.of("id", 550, "name", "Lost Girl")));
+        when(client.search(TmdbKind.MOVIE, "550", 1, false)).thenReturn(List.of(Map.of("id", 550, "title", "Fight Club")));
+        when(client.search(TmdbKind.SHOW, "550", 1, false)).thenReturn(List.of(Map.of("id", 550, "name", "Lost Girl")));
 
         String movieId = adapter.search(MediaType.MOVIE, "550", 1).getFirst().externalId();
         String showId = adapter.search(MediaType.SHOW, "550", 1).getFirst().externalId();
@@ -256,11 +256,11 @@ class TmdbMetadataAdapterTest {
 
     @Test
     void searchAsksForTheKindThatMatchesTheMediaType() {
-        when(client.search(TmdbKind.SHOW, "bad", 5)).thenReturn(List.of());
+        when(client.search(TmdbKind.SHOW, "bad", 5, false)).thenReturn(List.of());
 
         adapter.search(MediaType.SHOW, "bad", 5);
 
-        verify(client).search(TmdbKind.SHOW, "bad", 5);
-        verify(client, org.mockito.Mockito.never()).search(org.mockito.ArgumentMatchers.eq(TmdbKind.MOVIE), anyString(), anyInt());
+        verify(client).search(TmdbKind.SHOW, "bad", 5, false);
+        verify(client, org.mockito.Mockito.never()).search(org.mockito.ArgumentMatchers.eq(TmdbKind.MOVIE), anyString(), anyInt(), org.mockito.ArgumentMatchers.anyBoolean());
     }
 }

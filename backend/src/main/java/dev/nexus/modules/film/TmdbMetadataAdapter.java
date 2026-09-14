@@ -129,7 +129,7 @@ public class TmdbMetadataAdapter implements MetadataAdapter {
     @Override
     public List<ItemSearchResult> search(MediaType mediaType, String query, int limit) {
         TmdbKind kind = TmdbKind.of(mediaType);
-        return client.search(kind, query, limit).stream()
+        return client.search(kind, query, limit, false).stream()
                 .map(row -> new ItemSearchResult(
                         kind.mediaType(),
                         Source.TMDB,
@@ -375,12 +375,12 @@ public class TmdbMetadataAdapter implements MetadataAdapter {
         String term = filters.one("q");
 
         if (term == null || term.isBlank()) {
-            Map<String, Object> body = client.discover(kind, TmdbFilters.discoverQuery(kind, filters), page);
+            Map<String, Object> body = client.discover(kind, TmdbFilters.discoverQuery(kind, filters), page, false);
             return new BrowseResults(toSearchResults(kind, client.resultsOf(body)), client.hasMorePages(body, page));
         }
 
         // Search takes no filters of its own, so the rest are applied to what it answers.
-        Map<String, Object> body = client.searchPage(kind, term, page);
+        Map<String, Object> body = client.searchPage(kind, term, page, false);
         List<Map<String, Object>> rows = client.resultsOf(body).stream()
                 .filter(row -> TmdbFilters.matches(kind, row, filters))
                 .toList();
