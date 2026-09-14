@@ -13,7 +13,7 @@ package dev.nexus.auth;
  */
 public final class PolicyVersion {
 
-    public static final String CURRENT = "2026-09-07";
+    public static final String CURRENT = "2026-09-14";
 
     private PolicyVersion() {}
 }
