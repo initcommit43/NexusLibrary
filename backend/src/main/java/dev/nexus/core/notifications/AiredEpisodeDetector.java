@@ -64,13 +64,16 @@ public class AiredEpisodeDetector {
 
             Map<String, Object> payload = new HashMap<>();
             payload.put("episode", episode.getEpisode());
+            // Episode 5 of season 2 and episode 5 of season 3 are different events, so the season
+            // is part of the key wherever a source numbers per season.
+            String subject = "episode:" + episode.getEpisode();
+            if (episode.getSeason() != null) {
+                payload.put("season", episode.getSeason());
+                subject = "episode:S" + episode.getSeason() + "E" + episode.getEpisode();
+            }
 
             notifications.raise(
-                    episode.getUserId(),
-                    title,
-                    NotificationType.EPISODE_AIRED,
-                    "episode:" + episode.getEpisode(),
-                    payload);
+                    episode.getUserId(), title, NotificationType.EPISODE_AIRED, subject, payload);
         }
 
         /*

@@ -23,19 +23,25 @@ public interface TrackableItemRepository extends JpaRepository<TrackableItem, Lo
      * <p>Every episode for a title on the Watching list; only the premiere for a title kept on
      * any other list. A planned or finished series is worth a word when it starts, not a
      * notification per week for a show nobody on this account is following along with.
+     *
+     * <p>A source that numbers episodes per season stores {@code nextSeasonEpisode} instead,
+     * with the season beside the episode, so episode 1 there is every season's premiere.
      */
     @Query(
             value =
                     """
                     SELECT e.user_id AS userId,
                            i.id AS itemId,
-                           (i.metadata -> 'nextEpisode' ->> 'episode')::int AS episode
+                           (n.next ->> 'season')::int AS season,
+                           (n.next ->> 'episode')::int AS episode
                       FROM trackable_item i
+                     CROSS JOIN LATERAL (
+                           SELECT COALESCE(i.metadata -> 'nextEpisode', i.metadata -> 'nextSeasonEpisode') AS next
+                       ) n
                       JOIN user_entry e ON e.trackable_item_id = i.id
-                     WHERE i.metadata -> 'nextEpisode' ->> 'airingAt' IS NOT NULL
-                       AND (i.metadata -> 'nextEpisode' ->> 'airingAt')::bigint <= :now
-                       AND (e.status = 'IN_PROGRESS'
-                            OR (i.metadata -> 'nextEpisode' ->> 'episode')::int = 1)
+                     WHERE n.next ->> 'airingAt' IS NOT NULL
+                       AND (n.next ->> 'airingAt')::bigint <= :now
+                       AND (e.status = 'IN_PROGRESS' OR (n.next ->> 'episode')::int = 1)
                     """,
             nativeQuery = true)
     List<AiredEpisode> airedSince(@Param("now") long now);
@@ -50,11 +56,14 @@ public interface TrackableItemRepository extends JpaRepository<TrackableItem, Lo
     @Query(
             value =
                     """
-                    SELECT MIN((i.metadata -> 'nextEpisode' ->> 'airingAt')::bigint)
+                    SELECT MIN((n.next ->> 'airingAt')::bigint)
                       FROM trackable_item i
+                     CROSS JOIN LATERAL (
+                           SELECT COALESCE(i.metadata -> 'nextEpisode', i.metadata -> 'nextSeasonEpisode') AS next
+                       ) n
                       JOIN user_entry e ON e.trackable_item_id = i.id
-                     WHERE i.metadata -> 'nextEpisode' ->> 'airingAt' IS NOT NULL
-                       AND (i.metadata -> 'nextEpisode' ->> 'airingAt')::bigint > :now
+                     WHERE n.next ->> 'airingAt' IS NOT NULL
+                       AND (n.next ->> 'airingAt')::bigint > :now
                     """,
             nativeQuery = true)
     Long nextAiringAfter(@Param("now") long now);
@@ -64,6 +73,9 @@ public interface TrackableItemRepository extends JpaRepository<TrackableItem, Lo
         Long getUserId();
 
         Long getItemId();
+
+        /** Null for a source that numbers episodes straight through, as AniList does. */
+        Integer getSeason();
 
         Integer getEpisode();
     }
