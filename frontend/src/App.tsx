@@ -16,10 +16,12 @@ import { VerifyEmailPage } from './pages/VerifyEmailPage'
 import { SearchPage } from './pages/SearchPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { StudioPage } from './pages/StudioPage'
-import { AniListCallbackPage } from './pages/AniListCallbackPage'
-import { MalCallbackPage } from './pages/MalCallbackPage'
-import { SimklCallbackPage } from './pages/SimklCallbackPage'
-import { SteamCallbackPage } from './pages/SteamCallbackPage'
+import {
+  AniListCallbackPage,
+  MalCallbackPage,
+  SimklCallbackPage,
+  SteamCallbackPage,
+} from './pages/ConnectCallbackPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { CreditsPage } from './pages/CreditsPage'
 import { PrivacyPage } from './pages/PrivacyPage'
