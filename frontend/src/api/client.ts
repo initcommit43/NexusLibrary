@@ -27,6 +27,8 @@ export type SearchResult = {
   title: string
   coverUrl: string | null
   releaseDate: string | null
+  /** Whether the source files this as 18+. What the blur setting applies to. */
+  adult: boolean
   /** What a ranked shelf shows beside the title. Empty for a plain search hit. */
   facets?: Record<string, unknown>
 }
@@ -75,6 +77,7 @@ export type TrackedItem = {
   title: string
   coverUrl: string | null
   releaseDate: string | null
+  adult: boolean
   metadata: Record<string, unknown>
   status: TrackingStatus
   rating: number | null
@@ -144,6 +147,18 @@ export type ProfilePicture = {
  */
 export type Framing = { focusX: number; focusY: number; zoom: number }
 
+/** What this reader sees of 18+ titles, with the age question already answered by the server. */
+export type ContentPreferences = {
+  /** Whether 18+ titles appear at all. Always false on an account not old enough for them. */
+  showAdult: boolean
+  /** Whether their covers are drawn behind a blur until hovered. */
+  blurAdult: boolean
+  /** Whether this account may turn `showAdult` on. */
+  adultAllowed: boolean
+  /** False for an account made before registration asked, which may add it once. */
+  dateOfBirthSet: boolean
+}
+
 export type MediaDetail = {
   mediaType: MediaType
   source: string
@@ -152,6 +167,7 @@ export type MediaDetail = {
   coverUrl: string | null
   releaseDate: string | null
   itemState: string
+  adult: boolean
   metadata: Record<string, unknown>
   /** This reader's entry for it, when they have one. */
   entry: TrackedItem | null
@@ -209,6 +225,8 @@ export type ActivityEntry = {
   mediaType: MediaType | null
   title: string | null
   coverUrl: string | null
+  /** Whether the blur setting applies to this cover. False for a row about a run. */
+  adult: boolean
   /** With the id beside it, this is the way from a row in the feed to the title's own page. */
   source: string | null
   externalId: string | null
@@ -234,6 +252,7 @@ export type NotificationEntry = {
   mediaType: MediaType
   title: string
   coverUrl: string | null
+  adult: boolean
   source: string
   externalId: string
   payload: { episode?: number; season?: number; title?: string }
@@ -620,6 +639,22 @@ export const api = {
       method: 'PUT',
       body: JSON.stringify({ disabled }),
     }).then((body) => body.disabled),
+
+  contentPreferences: () => request<ContentPreferences>('/settings/content'),
+
+  /** Changes the switches the change names and leaves the other alone. */
+  setContentPreferences: (change: { showAdult?: boolean; blurAdult?: boolean }) =>
+    request<ContentPreferences>('/settings/content', {
+      method: 'PATCH',
+      body: JSON.stringify(change),
+    }),
+
+  /** For an account made before registration asked. Set once; the server refuses a second. */
+  setDateOfBirth: (dateOfBirth: string) =>
+    request<ContentPreferences>('/settings/account/date-of-birth', {
+      method: 'PUT',
+      body: JSON.stringify({ dateOfBirth }),
+    }),
 
   /*
    * Held per media type: home asks for one set per type in the module, so the anime module
