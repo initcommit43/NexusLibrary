@@ -401,6 +401,16 @@ const parseError = async (res: Response): Promise<ApiError> => {
   return new ApiError(res.status, message, fieldErrors)
 }
 
+/** What the server's site gate answers the API with while the site password is unmet. */
+const SITE_LOCKED = 'This site is locked.'
+
+const isSiteLocked = (res: Response): Promise<boolean> =>
+  res
+    .clone()
+    .json()
+    .then((body) => body?.message === SITE_LOCKED)
+    .catch(() => false)
+
 const refreshAccessToken = (): Promise<string | null> => {
   refreshInFlight ??= fetch(`${BASE}/auth/refresh`, {
     method: 'POST',
@@ -434,6 +444,15 @@ const send = async (path: string, init: RequestInit = {}, allowRetry = true): Pr
   if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`)
 
   const res = await fetch(BASE + path, { ...init, headers, credentials: 'include' })
+
+  // The site password ran out under an open tab. No token fixes that, so go to the password
+  // page and come back here, rather than refreshing into a signed-out app that cannot load.
+  if (res.status === 401 && (await isSiteLocked(res))) {
+    window.location.assign(
+      `/site-gate?next=${encodeURIComponent(window.location.pathname + window.location.search)}`,
+    )
+    throw new ApiError(401, SITE_LOCKED)
+  }
 
   if (res.status === 401 && allowRetry) {
     const renewed = await refreshAccessToken()

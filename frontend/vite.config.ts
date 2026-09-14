@@ -40,7 +40,8 @@ export default defineConfig(({ mode }) => {
           skipWaiting: true,
           clientsClaim: true,
           cleanupOutdatedCaches: true,
-          navigateFallbackDenylist: [/^\/api/],
+          // The site password page is the server's, never the app shell's.
+          navigateFallbackDenylist: [/^\/api/, /^\/site-gate/],
         },
       }),
     ],
