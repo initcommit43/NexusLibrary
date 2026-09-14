@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Navigate, NavLink, useParams } from 'react-router-dom'
-import { ApiError, api, type MediaType, type TrackedItem, type TrackingStatus } from '../api/client'
+import {
+  api,
+  errorMessage,
+  type MediaType,
+  type TrackedItem,
+  type TrackingStatus,
+} from '../api/client'
 import { AppShell } from '../components/AppShell'
 import { Bars } from '../components/Bars'
 import { Figures, type Figure } from '../components/Figures'
@@ -9,7 +15,7 @@ import { Scatter } from '../components/charts/Scatter'
 import { SplitLegend, StackedBar } from '../components/charts/StackedBar'
 import { Tooltip } from '../components/charts/Tooltip'
 import { useTooltip } from '../components/charts/useTooltip'
-import { MODULES, detailPathFor, statusLabelsFor } from '../modules/registry'
+import { MODULES, mediaPathFor, statusLabelsFor } from '../modules/registry'
 import {
   STATUS_ORDER,
   achievementTally,
@@ -334,7 +340,7 @@ const OverviewSection = ({ entries, mediaType }: SectionProps) => {
               id: entry.id,
               title: entry.title,
               coverUrl: entry.coverUrl,
-              to: detailPathFor(entry),
+              to: mediaPathFor(entry),
               amount,
               figure,
             }))}
@@ -475,7 +481,7 @@ export const StatsPage = () => {
       .listEntries()
       .then(setEntries)
       .catch((err) =>
-        setError(err instanceof ApiError ? err.message : 'Could not load your library.'),
+        setError(errorMessage(err, 'Could not load your library.')),
       )
   }, [])
 

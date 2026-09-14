@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  ApiError,
   api,
+  errorMessage,
   type BrowseShelf,
   type MediaType,
   type TrackedItem,
@@ -23,7 +23,7 @@ import { useActivityFeed } from '../components/useActivityFeed'
 import { useNarrowScreen } from '../components/useNarrowScreen'
 import { keyOf } from '../components/useTrackable'
 import {
-  detailPathFor,
+  mediaPathFor,
   mediaTypesOf,
   statusLabelsFor,
   type MediaTypeDefinition,
@@ -150,7 +150,7 @@ const posterOf =(entry: TrackedItem, ...caption: (string | null)[]): Poster => (
   key: String(entry.id),
   title: entry.title,
   coverUrl: entry.coverUrl,
-  to: detailPathFor(entry),
+  to: mediaPathFor(entry),
   caption: caption.flatMap((line) => (line ? [line] : [])),
   // The same corner mark the library shelves carry: a countdown says when the next one lands,
   // and this says how many landed while you were not looking.
@@ -290,7 +290,7 @@ export const HomePage = () => {
       .listEntries()
       .then(setEntries)
       .catch((err) =>
-        setError(err instanceof ApiError ? err.message : 'Could not load your library.'),
+        setError(errorMessage(err, 'Could not load your library.')),
       )
   }, [])
 
@@ -570,7 +570,7 @@ export const HomePage = () => {
             mediaType: entry.mediaType,
             title: entry.title,
             coverUrl: entry.coverUrl,
-            to: detailPathFor(entry),
+            to: mediaPathFor(entry),
             subtitle,
             status: entry.status,
             waiting: episodesWaiting(entry),

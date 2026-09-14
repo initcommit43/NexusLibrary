@@ -211,24 +211,16 @@ export const MODULES: ModuleDefinition[] = [
 ]
 
 /**
- * Where a catalogue result opens.
+ * Where a title opens, whether it is one this reader tracks or only a catalogue result.
  *
- * <p>Unlike an entry, which is a row this reader owns, a result is only a title — so it opens
- * the catalogue's own page for it. That page resolves anything the source knows about,
- * tracked or not, which is why this needs no entry to point at.
+ * <p>One path for both. An entry used to have a page of its own, holding the controls for
+ * editing it; those live in the dialog behind each card's pencil now, and everything else that
+ * page showed — the achievements, the review — is on the title's page beside what the source
+ * knows about it. That page resolves anything the source knows, tracked or not, which is why
+ * this needs no entry to point at.
  */
-export const mediaPathFor = (result: { source: string; externalId: string }): string =>
-  `/media/${result.source}/${encodeURIComponent(result.externalId)}`
-
-/**
- * Where opening this entry goes: the title's own page, whatever it is.
- *
- * <p>An entry used to have a page of its own, holding the controls for editing it. Those live
- * in the dialog behind each card's pencil now, and everything else that page showed — the
- * achievements, the review — is on the title's page beside what the source knows about it.
- */
-export const detailPathFor = (entry: { source: string; externalId: string }): string =>
-  mediaPathFor(entry)
+export const mediaPathFor = (title: { source: string; externalId: string }): string =>
+  `/media/${title.source}/${encodeURIComponent(title.externalId)}`
 
 export const moduleBySlug = (slug: string | undefined): ModuleDefinition | undefined =>
   MODULES.find((module) => module.slug === slug)

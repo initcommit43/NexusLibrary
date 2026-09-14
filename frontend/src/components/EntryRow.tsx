@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import type { TrackedItem } from '../api/client'
-import { detailPathFor } from '../modules/registry'
+import { mediaPathFor } from '../modules/registry'
 import { ChevronRight } from './GroupedList'
 import { progressLine, progressShare } from './progress'
 import { EntryCoverMenu } from './CoverStatusMenu'
@@ -46,7 +46,7 @@ export const EntryRow = ({
         {compact && menu}
       </div>
 
-      <Link className="entry-row-link" to={detailPathFor(entry)}>
+      <Link className="entry-row-link" to={mediaPathFor(entry)}>
         <span className="entry-row-title">{entry.title}</span>
         {progress && <span className="entry-row-progress">{progress}</span>}
         {share !== null && (

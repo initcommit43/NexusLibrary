@@ -7,20 +7,6 @@ import type { TrackedItem } from '../api/client'
  */
 export const MINUTES_PER_HOUR = 60
 
-export const minutesToHours = (minutes: number | null | undefined) =>
-  minutes === null || minutes === undefined ? null : minutes / MINUTES_PER_HOUR
-
-export const hoursToMinutes = (hours: number) => Math.round(hours * MINUTES_PER_HOUR)
-
-/** What to put in an editable field: hours to one decimal, or the raw count otherwise. */
-export const progressFieldValue = (entry: TrackedItem): string => {
-  if (entry.progressCurrent === null) return ''
-  if (entry.progressUnit === 'MINUTES') {
-    return (entry.progressCurrent / MINUTES_PER_HOUR).toFixed(1)
-  }
-  return String(entry.progressCurrent)
-}
-
 /**
  * Where a title stands, in its own unit: "191 h", "7 / 12", "41".
  *

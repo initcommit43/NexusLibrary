@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import type { TrackedItem } from '../api/client'
-import { detailPathFor } from '../modules/registry'
+import { mediaPathFor } from '../modules/registry'
 import { toDisplayScore } from './rating'
 import { episodesWaiting, progressLine, progressSummary } from './progress'
 import { EntryCoverMenu } from './CoverStatusMenu'
@@ -37,7 +37,7 @@ export const EntryCard = ({
   const progress = compact ? progressLine(entry) : progressSummary(entry)
   const waiting = episodesWaiting(entry)
   const score = compact ? null : toDisplayScore(entry.rating)
-  const to = detailPathFor(entry)
+  const to = mediaPathFor(entry)
 
   return (
     /*
