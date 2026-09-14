@@ -683,7 +683,12 @@ export const SettingsPage = () => {
           })}
         </ul>
       </article>
+    </section>
+  )
 
+  /** Below the account rather than beside the modules: it is rarely changed and never urgent. */
+  const matureSection = () => (
+    <section className="settings-section">
       <h2>Mature content</h2>
       <article className="card">
         <div className="settings-group">
@@ -1092,6 +1097,7 @@ export const SettingsPage = () => {
   const panes = [
     { id: 'general', label: 'General', render: generalSection },
     { id: 'account', label: 'Account', render: accountSection },
+    { id: 'mature', label: 'Mature content', render: matureSection },
     { id: 'connections', label: 'Connections', render: connectionsSection },
     { id: 'export', label: 'Export', render: exportSection },
   ]
@@ -1182,7 +1188,37 @@ export const SettingsPage = () => {
         </p>
       </div>
 
-      <div className="settings-anchor">
+      <div id="connections" className="settings-anchor">
+        <Group label="Connections">
+          {connectable.map((provider) => (
+            <GroupRow
+              key={provider.provider}
+              title={provider.label}
+              subtitle={connectionStatus(provider)}
+              to={`/settings?section=${provider.provider.toLowerCase()}`}
+              trailing={<ChevronRight />}
+            />
+          ))}
+        </Group>
+      </div>
+
+      <div id="account" className="settings-anchor">
+        <Group label="Account">
+          {(['profile', 'password', 'export', 'clear'] as const).map((id) => (
+            <GroupRow
+              key={id}
+              title={subViews[id].title}
+              to={`/settings?section=${id}`}
+              trailing={<ChevronRight />}
+            />
+          ))}
+          {/* Signed out here, having no account menu on a phone to do it from. */}
+          <GroupRow title="Sign out" onClick={() => void logout()} />
+          <GroupRow title="Delete account" danger onClick={openDelete} />
+        </Group>
+      </div>
+
+      <div id="mature" className="settings-anchor">
         <Group label="Mature content">
           <GroupRow
             title="Show 18+ titles"
@@ -1219,36 +1255,6 @@ export const SettingsPage = () => {
           While 18+ titles are off they stay out of search, browse and your library. Nothing is
           deleted, and turning them back on brings it all back.
         </p>
-      </div>
-
-      <div id="connections" className="settings-anchor">
-        <Group label="Connections">
-          {connectable.map((provider) => (
-            <GroupRow
-              key={provider.provider}
-              title={provider.label}
-              subtitle={connectionStatus(provider)}
-              to={`/settings?section=${provider.provider.toLowerCase()}`}
-              trailing={<ChevronRight />}
-            />
-          ))}
-        </Group>
-      </div>
-
-      <div id="account" className="settings-anchor">
-        <Group label="Account">
-          {(['profile', 'password', 'export', 'clear'] as const).map((id) => (
-            <GroupRow
-              key={id}
-              title={subViews[id].title}
-              to={`/settings?section=${id}`}
-              trailing={<ChevronRight />}
-            />
-          ))}
-          {/* Signed out here, having no account menu on a phone to do it from. */}
-          <GroupRow title="Sign out" onClick={() => void logout()} />
-          <GroupRow title="Delete account" danger onClick={openDelete} />
-        </Group>
       </div>
     </>
   )
