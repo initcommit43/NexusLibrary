@@ -1,14 +1,8 @@
 package dev.nexus.auth;
 
 import dev.nexus.config.NexusProperties;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Base64;
-import java.util.HexFormat;
 import java.util.Optional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -25,18 +19,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class PasswordResetService {
 
-    /**
-     * 32 bytes. Far past guessing, and short enough that the URL survives a mail client that
-     * decides where to wrap a line.
-     */
-    private static final int TOKEN_BYTES = 32;
-
     private final AppUserRepository users;
     private final PasswordResetTokenRepository tokens;
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenService sessions;
     private final Optional<PasswordResetMailer> mailer;
-    private final SecureRandom random = new SecureRandom();
     private final Duration ttl;
     private final String frontendUrl;
 
@@ -75,8 +62,8 @@ public class PasswordResetService {
             Instant now = Instant.now();
             tokens.spendEveryOutstandingLink(user.getId(), now);
 
-            String token = newToken();
-            tokens.save(new PasswordResetToken(digestOf(token), user.getId(), now.plus(ttl)));
+            String token = LinkTokens.mint();
+            tokens.save(new PasswordResetToken(LinkTokens.digestOf(token), user.getId(), now.plus(ttl)));
 
             send.send(user, frontendUrl + "/reset-password?token=" + token, ttl);
         });
@@ -99,7 +86,7 @@ public class PasswordResetService {
     public void reset(String presentedToken, String newPassword) {
         Instant now = Instant.now();
 
-        PasswordResetToken link = tokens.findByTokenHash(digestOf(presentedToken))
+        PasswordResetToken link = tokens.findByTokenHash(LinkTokens.digestOf(presentedToken))
                 .filter(candidate -> candidate.isLiveAt(now))
                 .orElseThrow(PasswordResetLinkExpiredException::new);
 
@@ -115,27 +102,5 @@ public class PasswordResetService {
     @Transactional
     public int pruneExpired() {
         return tokens.deleteByExpiresAtBefore(Instant.now());
-    }
-
-    private String newToken() {
-        byte[] bytes = new byte[TOKEN_BYTES];
-        random.nextBytes(bytes);
-        // URL-safe and unpadded: the token travels as a query parameter, and '+' or '=' in one
-        // is a link that works until something along the way decides to re-encode it.
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
-    }
-
-    /**
-     * A plain digest rather than a password hash. bcrypt exists to make guessing a human-chosen
-     * secret expensive; there is nothing to guess in 32 random bytes, and a salted hash could
-     * not be looked up by anyway.
-     */
-    private String digestOf(String token) {
-        try {
-            MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
-            return HexFormat.of().formatHex(sha256.digest(token.getBytes(StandardCharsets.UTF_8)));
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 is required of every JVM", e);
-        }
     }
 }

@@ -1,14 +1,8 @@
 package dev.nexus.auth;
 
 import dev.nexus.core.mail.Mailer;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Base64;
-import java.util.HexFormat;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,16 +13,15 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Proves the address on an account reaches whoever opened it.
  *
- * <p>Shaped like {@link PasswordResetService} on purpose — same token size, same digest, same
- * one-live-link rule — because the two are the same mechanism pointed at different questions,
- * and two flows that look alike and behave differently are how one of them ends up wrong.
+ * <p>Built out of the same parts as {@link PasswordResetService} on purpose — {@link LinkTokens}
+ * for the token, {@link OneTimeLink} for the row — because the two are the same mechanism
+ * pointed at different questions, and two flows that look alike and behave differently are how
+ * one of them ends up wrong.
  */
 @Service
 public class EmailVerificationService {
 
     private static final Logger log = LoggerFactory.getLogger(EmailVerificationService.class);
-
-    private static final int TOKEN_BYTES = 32;
 
     /** Enough to stop a resend button becoming a mail cannon aimed at someone else's inbox. */
     private static final int MAX_LINKS_PER_HOUR = 5;
@@ -36,7 +29,6 @@ public class EmailVerificationService {
     private final AppUserRepository users;
     private final EmailVerificationTokenRepository tokens;
     private final Optional<Mailer> mailer;
-    private final SecureRandom random = new SecureRandom();
     private final String frontendUrl;
     private final Duration ttl;
 
@@ -77,8 +69,8 @@ public class EmailVerificationService {
 
         tokens.spendEveryOutstandingLink(user.getId(), now);
 
-        String token = newToken();
-        tokens.save(new EmailVerificationToken(digestOf(token), user.getId(), now.plus(ttl)));
+        String token = LinkTokens.mint();
+        tokens.save(new EmailVerificationToken(LinkTokens.digestOf(token), user.getId(), now.plus(ttl)));
 
         send.send(user.getEmail(), "Confirm your email for NexusLibrary", body(user, token));
     }
@@ -94,7 +86,7 @@ public class EmailVerificationService {
     public void verify(String presentedToken) {
         Instant now = Instant.now();
 
-        EmailVerificationToken link = tokens.findByTokenHash(digestOf(presentedToken))
+        EmailVerificationToken link = tokens.findByTokenHash(LinkTokens.digestOf(presentedToken))
                 .filter(candidate -> candidate.isLiveAt(now))
                 .orElseThrow(VerificationLinkExpiredException::new);
 
@@ -141,22 +133,5 @@ public class EmailVerificationService {
     /** The username is the reader's own text going into HTML; it is not markup. */
     private static String escape(String value) {
         return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
-    }
-
-    private String newToken() {
-        byte[] bytes = new byte[TOKEN_BYTES];
-        random.nextBytes(bytes);
-        // URL-safe and unpadded: the token travels as a query parameter, and '+' or '=' in one
-        // is a link that works until something along the way decides to re-encode it.
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
-    }
-
-    private String digestOf(String token) {
-        try {
-            MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
-            return HexFormat.of().formatHex(sha256.digest(token.getBytes(StandardCharsets.UTF_8)));
-        } catch (NoSuchAlgorithmException impossible) {
-            throw new IllegalStateException("SHA-256 is required of every JVM", impossible);
-        }
     }
 }
