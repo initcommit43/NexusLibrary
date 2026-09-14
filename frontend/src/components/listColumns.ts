@@ -28,6 +28,28 @@ const formatOf = (entry: TrackedItem) => {
 
 const countOf = (value: unknown) => (typeof value === 'number' ? String(value) : null)
 
+/**
+ * Seasons fully watched out of the show's total, read off episode progress against the
+ * per-season episode counts. Just the total where there is no breakdown or no progress yet.
+ */
+const seasonsOf = (entry: TrackedItem) => {
+  const perSeason = array(entry.metadata.seasonEpisodes).filter(
+    (count): count is number => typeof count === 'number',
+  )
+  if (perSeason.length === 0 || entry.progressCurrent === null) {
+    return countOf(entry.metadata.seasons)
+  }
+
+  let remaining = entry.progressCurrent
+  let watched = 0
+  for (const episodes of perSeason) {
+    if (remaining < episodes) break
+    remaining -= episodes
+    watched += 1
+  }
+  return `${watched} / ${perSeason.length}`
+}
+
 export const LIST_COLUMNS: Record<
   ListColumn,
   { label: string; read: (entry: TrackedItem) => string | null }
@@ -36,7 +58,7 @@ export const LIST_COLUMNS: Record<
   progress: { label: 'Progress', read: progressSummary },
   hours: { label: 'Hours', read: progressSummary },
   format: { label: 'Format', read: formatOf },
-  seasons: { label: 'Seasons', read: (entry) => countOf(entry.metadata.seasons) },
+  seasons: { label: 'Seasons', read: seasonsOf },
   runtime: {
     label: 'Runtime',
     read: (entry) => {
