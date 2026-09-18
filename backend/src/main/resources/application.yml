@@ -78,6 +78,11 @@ nexus:
     # How long a mailed password reset link works. Half an hour: it is read within minutes of
     # arriving, and past that it is only a live credential sitting in an inbox.
     password-reset-ttl-minutes: 30
+  request:
+    # Nothing else bounds a JSON body at all. Multipart (the CSV import, the only such route)
+    # has its own larger ceiling above, under spring.servlet.multipart, and is untouched by
+    # this one.
+    max-json-body-size: 1MB
   site-gate:
     # A temporary password in front of the whole site, API included, while it is in
     # development. Unset turns the gate off.

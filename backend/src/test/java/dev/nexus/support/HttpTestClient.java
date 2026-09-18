@@ -116,6 +116,34 @@ public class HttpTestClient {
                 .POST(HttpRequest.BodyPublishers.ofString(write(payload))));
     }
 
+    /**
+     * A JSON body sent with no declared {@code Content-Length} — chunked transfer, as a
+     * client streaming from something without a known size would send it.
+     */
+    public Response postJsonChunked(String path, String rawJsonBody, String... headers) {
+        HttpRequest.BodyPublisher unknownLength =
+                HttpRequest.BodyPublishers.fromPublisher(HttpRequest.BodyPublishers.ofString(rawJsonBody));
+        return send(request(path, headers).header("Content-Type", "application/json").POST(unknownLength));
+    }
+
+    /** A single-file multipart upload, built by hand since the JDK client has no support of its own. */
+    public Response postMultipart(String path, String fieldName, String filename, byte[] content, String... headers) {
+        String boundary = "NexusTestBoundary" + System.nanoTime();
+        byte[] head = ("--" + boundary + "\r\n"
+                        + "Content-Disposition: form-data; name=\"" + fieldName + "\"; filename=\"" + filename
+                        + "\"\r\nContent-Type: text/csv\r\n\r\n")
+                .getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        byte[] tail = ("\r\n--" + boundary + "--\r\n").getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        byte[] body = new byte[head.length + content.length + tail.length];
+        System.arraycopy(head, 0, body, 0, head.length);
+        System.arraycopy(content, 0, body, head.length, content.length);
+        System.arraycopy(tail, 0, body, head.length + content.length, tail.length);
+
+        return send(request(path, headers)
+                .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+                .POST(HttpRequest.BodyPublishers.ofByteArray(body)));
+    }
+
     public Response post(String path, String... headers) {
         return send(request(path, headers).POST(HttpRequest.BodyPublishers.noBody()));
     }

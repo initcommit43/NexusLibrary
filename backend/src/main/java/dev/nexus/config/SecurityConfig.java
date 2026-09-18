@@ -5,6 +5,8 @@ import dev.nexus.core.security.SiteGate;
 import dev.nexus.core.security.SiteGateFilter;
 import dev.nexus.core.web.ClientIpResolver;
 import dev.nexus.core.web.RateLimiter;
+import dev.nexus.core.web.RequestSizeLimitFilter;
+import dev.nexus.core.web.RequestSizeProperties;
 import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -66,7 +68,8 @@ public class SecurityConfig {
             JwtAuthenticationFilter jwtFilter,
             SiteGate siteGate,
             RateLimiter rateLimiter,
-            ClientIpResolver clientIp)
+            ClientIpResolver clientIp,
+            RequestSizeProperties requestSizeProperties)
             throws Exception {
         return http.cors(Customizer.withDefaults())
                 /*
@@ -123,9 +126,13 @@ public class SecurityConfig {
                         }))
                 .exceptionHandling(handling ->
                         handling.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
+                // Before the gate and everything past it: an oversized body is refused on
+                // Content-Length alone wherever possible, without spending a password check
+                // or a controller's work on a request that is refused either way.
+                .addFilterAfter(new RequestSizeLimitFilter(requestSizeProperties), CorsFilter.class)
                 // After CORS, so a preflight is answered before the gate sees it, and inside the
                 // chain rather than in front of it, so the password page carries the headers.
-                .addFilterAfter(new SiteGateFilter(siteGate, rateLimiter, clientIp, properties), CorsFilter.class)
+                .addFilterAfter(new SiteGateFilter(siteGate, rateLimiter, clientIp, properties), RequestSizeLimitFilter.class)
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }

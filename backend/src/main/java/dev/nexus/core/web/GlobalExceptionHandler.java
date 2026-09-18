@@ -403,6 +403,17 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     /**
+     * A JSON body over the configured cap, caught mid-read because {@code Content-Length} was
+     * missing or lied about — {@link RequestSizeLimitFilter} already refused a declared length
+     * over the cap before dispatch. A 413, not the 400 a malformed body gets: nothing about
+     * this body was invalid, there was simply too much of it.
+     */
+    @ExceptionHandler(RequestTooLargeException.class)
+    public ResponseEntity<ApiError> handleRequestTooLarge(RequestTooLargeException e) {
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(new ApiError("That request is too large."));
+    }
+
+    /**
      * A uniqueness check that lost a race with a concurrent request. Registration and the
      * email change both ask the database first, so reaching the constraint itself means two
      * requests asked at the same moment and one of them arrived second.
