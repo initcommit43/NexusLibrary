@@ -54,8 +54,18 @@ public class SteamOpenIdService {
      * <p>The parameters have to be echoed back for confirmation rather than trusted as they
      * arrive. Without that round trip anyone could call the callback with a hand-written
      * claimed_id and be signed in as whichever account they named.
+     *
+     * <p>Steam's signature covers {@code openid.return_to}, so checking it against our own
+     * callback — as OpenID 2.0 §11.1 requires of a relying party — is what stops an
+     * assertion minted for somebody else's site being replayed here to link their SteamID
+     * to whoever opens the lure. It is checked before the round trip, not after: an
+     * assertion addressed elsewhere is not worth asking Steam about.
      */
-    public Optional<String> verifyCallback(Map<String, String> params) {
+    public Optional<String> verifyCallback(Map<String, String> params, String expectedReturnTo) {
+        if (!expectedReturnTo.equals(decode(params.get("openid.return_to")))) {
+            return Optional.empty();
+        }
+
         MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
         new LinkedHashMap<>(params).forEach(form::add);
         form.set("openid.mode", "check_authentication");
@@ -73,10 +83,22 @@ public class SteamOpenIdService {
         }
 
         return Optional.ofNullable(params.get("openid.claimed_id"))
-                .map(claimed -> URLDecoder.decode(claimed, StandardCharsets.UTF_8))
+                .map(SteamOpenIdService::decode)
                 .filter(claimed -> claimed.startsWith(CLAIMED_ID_PREFIX))
                 .map(claimed -> claimed.substring(CLAIMED_ID_PREFIX.length()))
                 .filter(SteamOpenIdService::isSteamId);
+    }
+
+    /**
+     * The browser may hand these back still encoded; a decoded value decodes to itself. A
+     * malformed escape is a caller's doing, so it fails the check rather than the request.
+     */
+    private static String decode(String value) {
+        try {
+            return value == null ? null : URLDecoder.decode(value, StandardCharsets.UTF_8);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     private static boolean isSteamId(String value) {

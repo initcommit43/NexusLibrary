@@ -160,9 +160,7 @@ public class IntegrationController {
     @PostMapping("/steam/authorize")
     public AuthorizeUrlResponse authorizeSteam(@AuthenticationPrincipal CurrentUser user) {
         return new AuthorizeUrlResponse(
-                steamOpenId
-                        .authenticationUrl(frontendUrl + "/settings/steam/callback", frontendUrl)
-                        .toString());
+                steamOpenId.authenticationUrl(steamReturnTo(), frontendUrl).toString());
     }
 
     /**
@@ -176,10 +174,15 @@ public class IntegrationController {
             @AuthenticationPrincipal CurrentUser user, @Valid @RequestBody SteamCallbackRequest request) {
 
         String steamId = steamOpenId
-                .verifyCallback(request.params())
+                .verifyCallback(request.params(), steamReturnTo())
                 .orElseThrow(() -> new SteamVerificationFailedException());
 
         return ConnectedAccount.from(accounts.connect(user.id(), Provider.STEAM, steamId));
+    }
+
+    /** Named once: the sign-in request and its verification must agree on this exactly. */
+    private String steamReturnTo() {
+        return frontendUrl + "/settings/steam/callback";
     }
 
     /** Where to send the reader to approve the link. */
