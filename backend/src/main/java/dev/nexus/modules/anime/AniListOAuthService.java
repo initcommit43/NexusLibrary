@@ -2,6 +2,9 @@ package dev.nexus.modules.anime;
 
 import static dev.nexus.core.adapter.Payloads.string;
 
+import dev.nexus.core.domain.Provider;
+import dev.nexus.core.security.OAuthStateMismatchException;
+import dev.nexus.core.security.OAuthStateStore;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -29,30 +32,43 @@ public class AniListOAuthService {
 
     private final RestClient restClient;
     private final AniListProperties properties;
+    private final OAuthStateStore states;
 
-    public AniListOAuthService(RestClient.Builder builder, AniListProperties properties) {
+    public AniListOAuthService(RestClient.Builder builder, AniListProperties properties, OAuthStateStore states) {
         this.restClient = builder.build();
         this.properties = properties;
+        this.states = states;
     }
 
     /**
      * The address to send the reader to. The redirect is built from configuration rather
-     * than taken from the caller, so this cannot be used to bounce someone elsewhere.
+     * than taken from the caller, so this cannot be used to bounce someone elsewhere, and
+     * the state minted here ties the callback to the session that asked for it.
      */
-    public String authorizationUrl(String redirectUri) {
+    public String authorizationUrl(Long userId, String redirectUri) {
         requireConfigured();
-        return "%s?client_id=%s&redirect_uri=%s&response_type=code"
-                .formatted(properties.authorizeUrl(), encode(properties.clientId()), encode(redirectUri));
+        return "%s?client_id=%s&redirect_uri=%s&response_type=code&state=%s"
+                .formatted(
+                        properties.authorizeUrl(),
+                        encode(properties.clientId()),
+                        encode(redirectUri),
+                        encode(states.issue(Provider.ANILIST, userId)));
     }
 
     /**
      * Swaps the code for a token and asks AniList who it belongs to.
      *
      * <p>The exchange carries the client secret, so it happens here and never in the
-     * browser: a code that reached the wrong person is useless without it.
+     * browser: a code that reached the wrong person is useless without it. The state is
+     * checked before any of that: a code this session never asked for would otherwise link
+     * whoever sent it to the reader's account.
      */
-    public Connection exchangeCode(String code, String redirectUri) {
+    public Connection exchangeCode(Long userId, String code, String state, String redirectUri) {
         requireConfigured();
+
+        if (!states.consume(Provider.ANILIST, userId, state)) {
+            throw new OAuthStateMismatchException("AniList");
+        }
 
         Map<String, Object> token = post(
                 properties.tokenUrl(),

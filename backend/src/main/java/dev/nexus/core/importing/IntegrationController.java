@@ -100,8 +100,13 @@ public class IntegrationController {
      * <p>512 is generous for any of the three: an authorization code is a short-lived,
      * single-use opaque string, well under a hundred characters for each provider today. The
      * bound exists only so an unbounded value never reaches the outbound exchange call.
+     *
+     * <p>{@code state} is optional rather than required because only two of the three mint
+     * one — MAL's PKCE verifier already binds its callback — and because a missing or wrong
+     * state is the service's to refuse, not a shape the request is malformed for. It is
+     * bounded for the same reason the code is.
      */
-    public record OAuthCallbackRequest(@NotBlank @Size(max = 512) String code) {}
+    public record OAuthCallbackRequest(@NotBlank @Size(max = 512) String code, @Size(max = 512) String state) {}
 
     private final ExternalAccountService accounts;
     private final LibraryImportService importService;
@@ -188,7 +193,7 @@ public class IntegrationController {
     /** Where to send the reader to approve the link. */
     @PostMapping("/anilist/authorize")
     public AuthorizeUrlResponse authorizeAniList(@AuthenticationPrincipal CurrentUser user) {
-        return new AuthorizeUrlResponse(anilistOAuth.authorizationUrl(anilistRedirectUri()));
+        return new AuthorizeUrlResponse(anilistOAuth.authorizationUrl(user.id(), anilistRedirectUri()));
     }
 
     /**
@@ -202,7 +207,7 @@ public class IntegrationController {
             @Valid @RequestBody OAuthCallbackRequest request) {
 
         AniListOAuthService.Connection connection =
-                anilistOAuth.exchangeCode(request.code(), anilistRedirectUri());
+                anilistOAuth.exchangeCode(user.id(), request.code(), request.state(), anilistRedirectUri());
 
         return ConnectedAccount.from(accounts.connect(
                 user.id(),
@@ -253,10 +258,10 @@ public class IntegrationController {
         return frontendUrl + "/settings/mal/callback";
     }
 
-    /** Where to send the reader to approve the Simkl link. Stateless: Simkl wants no PKCE. */
+    /** Where to send the reader to approve the Simkl link. No PKCE, but a state to come back with. */
     @PostMapping("/simkl/authorize")
     public AuthorizeUrlResponse authorizeSimkl(@AuthenticationPrincipal CurrentUser user) {
-        return new AuthorizeUrlResponse(simklOAuth.authorizationUrl(simklRedirectUri()));
+        return new AuthorizeUrlResponse(simklOAuth.authorizationUrl(user.id(), simklRedirectUri()));
     }
 
     /**
@@ -272,7 +277,8 @@ public class IntegrationController {
             @AuthenticationPrincipal CurrentUser user,
             @Valid @RequestBody OAuthCallbackRequest request) {
 
-        SimklOAuthService.Connection connection = simklOAuth.exchangeCode(request.code(), simklRedirectUri());
+        SimklOAuthService.Connection connection =
+                simklOAuth.exchangeCode(user.id(), request.code(), request.state(), simklRedirectUri());
 
         return ConnectedAccount.from(accounts.connect(
                 user.id(), Provider.SIMKL, connection.externalUserId(), connection.accessToken(), null, null));

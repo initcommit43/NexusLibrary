@@ -867,10 +867,15 @@ export const api = {
   anilistAuthorizeUrl: () =>
     request<{ url: string }>('/integrations/anilist/authorize', { method: 'POST' }),
 
-  completeAniListConnect: (code: string) =>
+  /**
+   * The state goes back with the code: the server minted it when the link was started, and
+   * refuses a callback that cannot produce it, so a code lured in from elsewhere cannot
+   * attach a stranger's AniList account to this one.
+   */
+  completeAniListConnect: (code: string, state: string | null) =>
     request<ConnectedAccount>('/integrations/anilist/callback', {
       method: 'POST',
-      body: JSON.stringify({ code }),
+      body: JSON.stringify({ code, state }),
     }),
 
   malAuthorizeUrl: () =>
@@ -887,10 +892,10 @@ export const api = {
     request<{ url: string }>('/integrations/simkl/authorize', { method: 'POST' }),
 
   /** Simkl keeps a status per title, so an imported shelf arrives as the reader arranged it. */
-  completeSimklConnect: (code: string) =>
+  completeSimklConnect: (code: string, state: string | null) =>
     request<ConnectedAccount>('/integrations/simkl/callback', {
       method: 'POST',
-      body: JSON.stringify({ code }),
+      body: JSON.stringify({ code, state }),
     }),
 
   completeSteamConnect: (params: Record<string, string>) =>

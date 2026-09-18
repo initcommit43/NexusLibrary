@@ -359,6 +359,17 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 .body(new ApiError("MyAnimeList is not configured on this server, so accounts cannot be connected."));
     }
 
+    /**
+     * A callback that did not carry the state we minted. What went wrong stays server-side:
+     * the reader is told the same thing whether it expired, was replayed, or was never ours.
+     */
+    @ExceptionHandler(dev.nexus.core.security.OAuthStateMismatchException.class)
+    public ResponseEntity<ApiError> handleOAuthStateMismatch(dev.nexus.core.security.OAuthStateMismatchException e) {
+        return ResponseEntity.badRequest()
+                .body(new ApiError(
+                        "The " + e.service() + " link attempt expired. Start it again from settings."));
+    }
+
     /** The PKCE verifier is gone — expired or already spent. Starting over mints a new one. */
     @ExceptionHandler(dev.nexus.modules.anime.MalAuthorizationExpiredException.class)
     public ResponseEntity<ApiError> handleMalAuthorizationExpired(

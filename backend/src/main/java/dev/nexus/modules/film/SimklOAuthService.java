@@ -2,6 +2,9 @@ package dev.nexus.modules.film;
 
 import static dev.nexus.core.adapter.Payloads.string;
 
+import dev.nexus.core.domain.Provider;
+import dev.nexus.core.security.OAuthStateMismatchException;
+import dev.nexus.core.security.OAuthStateStore;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
@@ -15,8 +18,9 @@ import org.springframework.web.client.RestClientException;
 /**
  * Simkl's authorization code grant — the least demanding of the four.
  *
- * <p>A plain code exchange with a client secret: no PKCE, so nothing has to be remembered
- * between sending the reader away and their coming back, and no pending state to evict.
+ * <p>A plain code exchange with a client secret: no PKCE, so the only thing remembered
+ * between sending the reader away and their coming back is the {@code state} that ties the
+ * callback to the session that started it.
  * What sets it apart is the other end — a Simkl token has no expiry to speak of and comes
  * with no refresh token, because it lives until the reader revokes the app in their Simkl
  * settings. So there is no {@code refresh} here at all: a token that stops working has been
@@ -39,28 +43,42 @@ public class SimklOAuthService {
 
     private final RestClient restClient;
     private final SimklProperties properties;
+    private final OAuthStateStore states;
 
-    public SimklOAuthService(RestClient.Builder builder, SimklProperties properties) {
+    public SimklOAuthService(RestClient.Builder builder, SimklProperties properties, OAuthStateStore states) {
         this.restClient = builder.build();
         this.properties = properties;
+        this.states = states;
     }
 
-    /** The address to send the reader to. Stateless: Simkl asks for no challenge. */
-    public String authorizationUrl(String redirectUri) {
+    /**
+     * The address to send the reader to. Simkl asks for no challenge, but it does carry back
+     * the state minted here, which is what binds the callback to this session.
+     */
+    public String authorizationUrl(Long userId, String redirectUri) {
         requireConfigured();
 
-        return "%s?response_type=code&client_id=%s&redirect_uri=%s&app-name=%s&app-version=%s"
+        return "%s?response_type=code&client_id=%s&redirect_uri=%s&app-name=%s&app-version=%s&state=%s"
                 .formatted(
                         properties.authorizeUrl(),
                         encode(properties.clientId()),
                         encode(redirectUri),
                         encode(properties.appName()),
-                        encode(properties.appVersion()));
+                        encode(properties.appVersion()),
+                        encode(states.issue(Provider.SIMKL, userId)));
     }
 
-    /** Swaps the code for a token and asks Simkl whose account it is. */
-    public Connection exchangeCode(String code, String redirectUri) {
+    /**
+     * Swaps the code for a token and asks Simkl whose account it is — but only for a
+     * callback carrying the state this session minted, since a code lured in from elsewhere
+     * would otherwise link the sender's account to the reader's.
+     */
+    public Connection exchangeCode(Long userId, String code, String state, String redirectUri) {
         requireConfigured();
+
+        if (!states.consume(Provider.SIMKL, userId, state)) {
+            throw new OAuthStateMismatchException("Simkl");
+        }
 
         Map<String, String> body = new LinkedHashMap<>();
         body.put("code", code);

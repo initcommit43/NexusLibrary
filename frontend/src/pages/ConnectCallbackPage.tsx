@@ -78,20 +78,28 @@ const ConnectCallback = ({
   )
 }
 
-/** The three OAuth callbacks, which differ only in whose code they forward. */
+/**
+ * The three OAuth callbacks, which differ only in whose code they forward.
+ *
+ * The state travels with it, for the two providers that mint one: the server checks that the
+ * callback carries the state it handed out when the link was started, which is what keeps a
+ * lure link from attaching a stranger's account to the reader's. MAL mints none — its PKCE
+ * verifier already binds the callback — and simply ignores the field.
+ */
 const OAuthCallback = ({
   label,
   exchange,
 }: {
   label: string
-  exchange: (code: string) => Promise<ConnectedAccount>
+  exchange: (code: string, state: string | null) => Promise<ConnectedAccount>
 }) => {
   const [params] = useSearchParams()
   const code = params.get('code')
+  const state = params.get('state')
 
   const complete = useMemo(
-    () => (code ? () => exchange(code) : null),
-    [code, exchange],
+    () => (code ? () => exchange(code, state) : null),
+    [code, state, exchange],
   )
 
   return (
