@@ -24,9 +24,11 @@ public class CsvImportService {
     private static final Logger log = LoggerFactory.getLogger(CsvImportService.class);
 
     private final List<CsvImportAdapter> adapters;
+    private final int maxRows;
 
-    public CsvImportService(List<CsvImportAdapter> adapters) {
+    public CsvImportService(List<CsvImportAdapter> adapters, CsvImportProperties properties) {
         this.adapters = List.copyOf(adapters);
+        this.maxRows = properties.maxCsvRows();
     }
 
     /** Which providers offer this route at all, so the settings page can show it honestly. */
@@ -40,7 +42,7 @@ public class CsvImportService {
                 .findFirst()
                 .orElseThrow(() -> new ImportNotSupportedException("No CSV import for " + provider));
 
-        List<ImportedEntry> entries = adapter.parse(CsvTable.parse(decode(content)));
+        List<ImportedEntry> entries = adapter.parse(CsvTable.parse(decode(content), maxRows));
         log.debug("Read {} rows from an uploaded {} export", entries.size(), provider);
 
         if (entries.isEmpty()) {

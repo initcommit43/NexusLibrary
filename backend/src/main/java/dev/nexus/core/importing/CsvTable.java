@@ -35,6 +35,15 @@ public final class CsvTable {
     }
 
     public static CsvTable parse(String text) {
+        return parse(text, Integer.MAX_VALUE);
+    }
+
+    /**
+     * @param maxRows refuses the file outright past this many data rows, rather than reading
+     *     an arbitrarily large upload in full first and reporting it after the fact — see
+     *     {@link CsvImportProperties}.
+     */
+    public static CsvTable parse(String text, int maxRows) {
         if (text == null || text.isBlank()) {
             throw new CsvFormatException("That file is empty.");
         }
@@ -58,6 +67,10 @@ public final class CsvTable {
         for (List<String> values : lines.subList(1, lines.size())) {
             if (values.stream().allMatch(String::isBlank)) {
                 continue;
+            }
+            if (rows.size() >= maxRows) {
+                throw new CsvFormatException(
+                        "That file has more than " + maxRows + " rows. Split it and import each part separately.");
             }
             Map<String, String> byColumn = new LinkedHashMap<>();
             for (int i = 0; i < headers.size() && i < values.size(); i++) {

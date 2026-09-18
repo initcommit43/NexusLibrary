@@ -152,4 +152,35 @@ class CsvTableTest {
         assertThat(table.has("imdb", "tmdb")).isTrue();
         assertThat(table.has("anilist_id")).isFalse();
     }
+
+    /** A file with no cap given at all still reads any number of rows, as every export test above relies on. */
+    @Test
+    void aPlainParseHasNoRowCap() {
+        CsvTable table = CsvTable.parse(rowsOfCsv(50_000));
+
+        assertThat(table.rows()).hasSize(50_000);
+    }
+
+    @Test
+    void aFileAtExactlyTheCapStillParses() {
+        CsvTable table = CsvTable.parse(rowsOfCsv(10_000), 10_000);
+
+        assertThat(table.rows()).hasSize(10_000);
+    }
+
+    /** Refused before the tens-of-thousandth row is ever read into memory, not after. */
+    @Test
+    void refusesAFileWithMoreRowsThanTheCap() {
+        assertThatExceptionOfType(CsvFormatException.class)
+                .isThrownBy(() -> CsvTable.parse(rowsOfCsv(10_001), 10_000))
+                .withMessageContaining("10000");
+    }
+
+    private static String rowsOfCsv(int rowCount) {
+        StringBuilder csv = new StringBuilder("title,year\n");
+        for (int i = 0; i < rowCount; i++) {
+            csv.append("Title ").append(i).append(",2000\n");
+        }
+        return csv.toString();
+    }
 }

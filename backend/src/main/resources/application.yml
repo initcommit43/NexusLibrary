@@ -88,6 +88,10 @@ nexus:
     search-requests-per-minute: 30
     # An import touches a whole library and spends external API budget.
     import-requests-per-minute: 3
+  import:
+    # A file with more rows than this is not a library anyone actually has, and each row
+    # spends source budget once the import runs.
+    max-csv-rows: 10000
   mail:
     # Must be an address on a domain verified with the provider. Until one is, Resend accepts
     # mail to the account owner's own address and silently drops everything else — the send
