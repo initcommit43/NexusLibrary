@@ -150,6 +150,9 @@ public class AuthController {
     @PostMapping("/refresh")
     public ResponseEntity<AuthResponse> refresh(
             @RequestBody(required = false) RefreshRequest request, HttpServletRequest http) {
+        // Unauthenticated, and every call parses a signed token and then reads its row. Forging
+        // one is not the threat the limit answers; asking for that work for free is.
+        rateLimiter.check("refresh:" + clientIp.resolve(http), authRequestsPerMinute);
         return sessions.issue(refreshTokens.renew(presentedToken(request, http)), HttpStatus.OK);
     }
 
@@ -159,6 +162,7 @@ public class AuthController {
      */
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(@RequestBody(required = false) RefreshRequest request, HttpServletRequest http) {
+        rateLimiter.check("logout:" + clientIp.resolve(http), authRequestsPerMinute);
         readToken(request, http).ifPresent(refreshTokens::end);
         return sessions.cleared();
     }
