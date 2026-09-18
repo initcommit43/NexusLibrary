@@ -11,4 +11,4 @@ import jakarta.validation.constraints.Size;
 public record ForgotPasswordRequest(
         @NotBlank @Email @Size(max = 320) String email,
         /** See {@link RegisterRequest#turnstileToken()}. */
-        String turnstileToken) {}
+        @Size(max = 2048) String turnstileToken) {}

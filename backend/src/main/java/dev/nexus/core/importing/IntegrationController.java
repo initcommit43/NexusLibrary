@@ -17,6 +17,7 @@ import dev.nexus.modules.games.SteamOpenIdService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Size;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
@@ -88,15 +89,19 @@ public class IntegrationController {
     }
 
     /** The raw openid.* parameters, forwarded by the frontend for verification. */
-    public record SteamCallbackRequest(@NotEmpty Map<String, String> params) {}
+    public record SteamCallbackRequest(@NotEmpty @Size(max = 32) Map<String, String> params) {}
 
     /**
      * The authorization code a provider hands back, forwarded for exchange server-side.
      *
      * <p>One record for AniList, MAL and Simkl alike: all three send back the same field, and
      * three copies of it only invited the three callbacks to validate it differently.
+     *
+     * <p>512 is generous for any of the three: an authorization code is a short-lived,
+     * single-use opaque string, well under a hundred characters for each provider today. The
+     * bound exists only so an unbounded value never reaches the outbound exchange call.
      */
-    public record OAuthCallbackRequest(@NotBlank String code) {}
+    public record OAuthCallbackRequest(@NotBlank @Size(max = 512) String code) {}
 
     private final ExternalAccountService accounts;
     private final LibraryImportService importService;

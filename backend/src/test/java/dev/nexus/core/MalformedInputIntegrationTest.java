@@ -105,6 +105,50 @@ class MalformedInputIntegrationTest extends PostgresIntegrationTest {
         assertThat(response.fieldErrors()).containsKey("characterId");
     }
 
+    /** Nothing legitimate mints a token this long; a value past the bound is refused outright. */
+    @Test
+    void aRefreshTokenPastItsBoundIsRefused() {
+        assertThat(http.postJson("/auth/refresh", Map.of("refreshToken", "a".repeat(2049)))
+                        .status())
+                .isEqualTo(400);
+    }
+
+    @Test
+    void aPasswordResetTokenPastItsBoundIsRefused() {
+        Response response = http.postJson(
+                "/auth/reset-password", Map.of("token", "a".repeat(65), "password", "a-new-password"));
+
+        assertThat(response.status()).isEqualTo(400);
+        assertThat(response.fieldErrors()).containsKey("token");
+    }
+
+    @Test
+    void aCurrentPasswordPastItsBoundIsRefused() {
+        Response response = http.postJson(
+                "/settings/account/password",
+                Map.of("currentPassword", "a".repeat(73), "newPassword", "a-new-password", "client", "WEB"),
+                "Authorization",
+                "Bearer " + token);
+
+        assertThat(response.status()).isEqualTo(400);
+        assertThat(response.fieldErrors()).containsKey("currentPassword");
+    }
+
+    /** Steam's callback forwards whatever query parameters the redirect carried. */
+    @Test
+    void tooManySteamCallbackParamsAreRefused() {
+        Map<String, String> params = new java.util.HashMap<>();
+        for (int i = 0; i < 33; i++) {
+            params.put("openid." + i, "value");
+        }
+
+        Response response = http.postJson(
+                "/integrations/steam/callback", Map.of("params", params), "Authorization", "Bearer " + token);
+
+        assertThat(response.status()).isEqualTo(400);
+        assertThat(response.fieldErrors()).containsKey("params");
+    }
+
     private Response get(String path) {
         return http.get(path, "Authorization", "Bearer " + token);
     }

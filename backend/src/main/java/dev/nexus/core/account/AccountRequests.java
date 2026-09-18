@@ -32,7 +32,9 @@ public final class AccountRequests {
      * left behind on a shared machine should not be enough to take the account with it.
      */
     public record PasswordChange(
-            @NotBlank String currentPassword,
+            // Same bound as login's password: bcrypt truncates past 72 bytes anyway, so an
+            // entry that long is refused rather than silently compared on its first 72.
+            @NotBlank @Size(max = 72) String currentPassword,
             // bcrypt silently ignores input past 72 bytes, so cap it rather than let a
             // longer password give a false sense of strength.
             @NotBlank @Size(min = 12, max = 72) String newPassword,
@@ -42,5 +44,7 @@ public final class AccountRequests {
             @NotNull AuthClient client) {}
 
     /** Deleting everything is worth one more proof that it is the account's owner asking. */
-    public record AccountDeletion(@NotBlank String password) {}
+    public record AccountDeletion(
+            // Same bound as login's password; see PasswordChange#currentPassword.
+            @NotBlank @Size(max = 72) String password) {}
 }

@@ -44,4 +44,4 @@ public record RegisterRequest(
          * <p>Required of every client, native included. {@code client} is chosen by the
          * caller, so exempting {@code NATIVE} would exempt anyone willing to claim it.
          */
-        String turnstileToken) {}
+        @Size(max = 2048) String turnstileToken) {}

@@ -149,7 +149,7 @@ public class AuthController {
 
     @PostMapping("/refresh")
     public ResponseEntity<AuthResponse> refresh(
-            @RequestBody(required = false) RefreshRequest request, HttpServletRequest http) {
+            @Valid @RequestBody(required = false) RefreshRequest request, HttpServletRequest http) {
         // Unauthenticated, and every call parses a signed token and then reads its row. Forging
         // one is not the threat the limit answers; asking for that work for free is.
         rateLimiter.check("refresh:" + clientIp.resolve(http), authRequestsPerMinute);
@@ -161,7 +161,8 @@ public class AuthController {
      * never did: the token it held stayed valid until it expired on its own.
      */
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@RequestBody(required = false) RefreshRequest request, HttpServletRequest http) {
+    public ResponseEntity<Void> logout(
+            @Valid @RequestBody(required = false) RefreshRequest request, HttpServletRequest http) {
         rateLimiter.check("logout:" + clientIp.resolve(http), authRequestsPerMinute);
         readToken(request, http).ifPresent(refreshTokens::end);
         return sessions.cleared();
