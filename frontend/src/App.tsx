@@ -23,7 +23,9 @@ import {
   SteamCallbackPage,
 } from './pages/ConnectCallbackPage'
 import { RegisterPage } from './pages/RegisterPage'
+import { CookiesPage } from './pages/CookiesPage'
 import { CreditsPage } from './pages/CreditsPage'
+import { EulaPage } from './pages/EulaPage'
 import { PrivacyPage } from './pages/PrivacyPage'
 import { TermsPage } from './pages/TermsPage'
 import { defaultTypeOf, moduleBySlug } from './modules/registry'
@@ -52,10 +54,13 @@ export const App = () => (
         link can be signed in yet. */}
     <Route path="/verify-email" element={<VerifyEmailPage />} />
     {/* Outside ProtectedRoute, and it has to be: the register form asks a reader to accept
-        two of these before they have an account to read them with. */}
+        several of these before they have an account to read them with. /eula is served here
+        as well as to the app — a store listing has to point at a URL anyone can open. */}
     <Route path="/credits" element={<CreditsPage />} />
     <Route path="/privacy" element={<PrivacyPage />} />
     <Route path="/terms" element={<TermsPage />} />
+    <Route path="/cookies" element={<CookiesPage />} />
+    <Route path="/eula" element={<EulaPage />} />
     <Route element={<ProtectedRoute />}>
       <Route path="/" element={<HomePage />} />
       <Route path="/library/:module" element={<ModuleRedirect />} />
