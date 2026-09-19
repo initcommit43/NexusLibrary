@@ -1,5 +1,7 @@
 package dev.nexus.auth.dto;
 
+import dev.nexus.auth.agreements.AcceptedAgreement;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Email;
 import dev.nexus.auth.AuthClient;
@@ -9,6 +11,7 @@ import jakarta.validation.constraints.Past;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
+import java.util.List;
 
 public record RegisterRequest(
         @NotBlank @Email @Size(max = 320) String email,
@@ -29,7 +32,13 @@ public record RegisterRequest(
         /** Required; see {@link LoginRequest}. */
         @NotNull AuthClient client,
         /**
-         * Whether the reader accepted the terms and the privacy policy. Checked here rather
+         * Whether the reader accepted the terms and the privacy policy.
+         *
+         * <p>Superseded by {@code acceptedAgreements}, and kept because clients already send
+         * it: on its own it records those two documents at their current version and nothing
+         * more. Still required, so a caller that sends neither field creates no account.
+         *
+         * <p>Checked here rather
          * than trusted from the form: the web client disables its own button until the box
          * is ticked, but a native client and a direct call to this endpoint go through no
          * such form, and an account with no recorded consent is one nobody can account for.
@@ -44,4 +53,22 @@ public record RegisterRequest(
          * <p>Required of every client, native included. {@code client} is chosen by the
          * caller, so exempting {@code NATIVE} would exempt anyone willing to claim it.
          */
-        @Size(max = 2048) String turnstileToken) {}
+        @Size(max = 2048) String turnstileToken,
+        /**
+         * Which documents were on screen and accepted, at which version. Optional, and the
+         * replacement for {@code acceptedTerms}: that boolean can say only that something was
+         * agreed to, which is not an answer once a document changes or once the documents
+         * differ per platform.
+         *
+         * <p>Left absent by a client that predates this field, and those keep working — see
+         * {@link dev.nexus.auth.agreements.AgreementService#acceptTermsAndPrivacy}. Anything
+         * not covered here is not assumed: it falls outstanding and is put to the reader on
+         * their next sign-in.
+         */
+        @Valid @Size(max = 16) List<AcceptedAgreement> acceptedAgreements) {
+
+    /** Never null, so neither the controller nor the service has to ask. */
+    public List<AcceptedAgreement> acceptedAgreements() {
+        return acceptedAgreements == null ? List.of() : acceptedAgreements;
+    }
+}

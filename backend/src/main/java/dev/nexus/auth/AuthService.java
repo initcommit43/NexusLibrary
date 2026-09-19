@@ -1,5 +1,7 @@
 package dev.nexus.auth;
 
+import dev.nexus.auth.agreements.AgreementPlatform;
+import dev.nexus.auth.agreements.AgreementService;
 import dev.nexus.auth.dto.LoginRequest;
 import dev.nexus.auth.dto.RegisterRequest;
 import java.time.Instant;
@@ -15,6 +17,7 @@ public class AuthService {
     private final AppUserRepository users;
     private final PasswordEncoder passwordEncoder;
     private final EmailPolicy emailPolicy;
+    private final AgreementService agreements;
     private final boolean verificationRequired;
     private final String decoyHash;
 
@@ -22,11 +25,13 @@ public class AuthService {
             AppUserRepository users,
             PasswordEncoder passwordEncoder,
             EmailPolicy emailPolicy,
+            AgreementService agreements,
             @org.springframework.beans.factory.annotation.Value("${nexus.verification.required:false}")
                     boolean verificationRequired) {
         this.users = users;
         this.passwordEncoder = passwordEncoder;
         this.emailPolicy = emailPolicy;
+        this.agreements = agreements;
         this.verificationRequired = verificationRequired;
         this.decoyHash = passwordEncoder.encode(UUID.randomUUID().toString());
     }
@@ -56,12 +61,39 @@ public class AuthService {
         }
 
         AppUser user = new AppUser(email, request.username(), passwordEncoder.encode(request.password()));
+        Instant now = Instant.now();
         // Recorded in the same transaction as the account. An account that exists without a
         // consent record beside it is one we could not answer an Art. 7(1) question about.
-        user.acceptTerms(PolicyVersion.CURRENT, Instant.now());
+        //
+        // Still written, though agreement_acceptance is now the fuller record: these two
+        // columns are what every account registered before V27 has, and a reader of them
+        // should not have to know which era an account comes from.
+        user.acceptTerms(PolicyVersion.CURRENT, now);
         user.declareDateOfBirth(request.dateOfBirth());
 
-        return users.save(user);
+        AppUser saved = users.save(user);
+        recordAgreements(saved, request, now);
+        return saved;
+    }
+
+    /**
+     * What the new account agreed to, per document and per platform.
+     *
+     * <p>Two shapes arrive here. A client that sends {@code acceptedAgreements} is telling us
+     * exactly which texts it rendered, and that is recorded as sent — a version that is not
+     * current is refused rather than corrected. A client that predates the field sends only
+     * the old boolean, and that box named the terms and the privacy policy, so those two are
+     * what it records. Nothing else is inferred from it: an EULA and a cookie notice were
+     * never on that form, and they fall outstanding for the reader's next sign-in.
+     */
+    private void recordAgreements(AppUser user, RegisterRequest request, Instant at) {
+        AgreementPlatform platform = AgreementPlatform.of(request.client());
+
+        if (request.acceptedAgreements().isEmpty()) {
+            agreements.acceptTermsAndPrivacy(user.getId(), platform, at);
+            return;
+        }
+        agreements.accept(user.getId(), platform, request.acceptedAgreements());
     }
 
     @Transactional(readOnly = true)
