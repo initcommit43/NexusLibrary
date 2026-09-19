@@ -118,7 +118,7 @@ export const PrivacyPage = () => (
 
     <h2>Cookies and local storage</h2>
     <p>
-      Up to two cookies, and three values kept in your browser's local storage. All of them are
+      Up to two cookies, and four values kept in your browser's local storage. All of them are
       needed for the site to work as you asked it to, so none of them requires consent under
       § 25(2) TDDDG:
     </p>
@@ -134,19 +134,25 @@ export const PrivacyPage = () => (
         rather than the password, and lasts 30 days.
       </li>
       <li>
-        <code>nexus.theme</code> — whether you chose light, dark or your system setting.
+        <code>nexus-theme</code> — whether you chose light, dark or your system setting.
       </li>
       <li>
-        <code>nexus.module</code> — which module you were last in, so a reload lands where
+        <code>nexus-module</code> — which module you were last in, so a reload lands where
         you left.
       </li>
       <li>
-        <code>nexus.folded.*</code> — which sections of the home page you collapsed.
+        <code>nexus-library-view</code> — whether your library shows as a grid or a table.
+      </li>
+      <li>
+        <code>nexus.home.folded.*</code> — which sections of the home page you collapsed, one
+        entry per module.
       </li>
     </ul>
     <p>
-      The last three never leave your browser. Clearing your site data removes all of them; you
-      will be signed out and the display preferences will return to their defaults.
+      The last four never leave your browser. Clearing your site data removes all of them; you
+      will be signed out and the display preferences will return to their defaults. The{' '}
+      <Link to="/cookies">Cookie Policy</Link> says the same thing at more length, including
+      what each cookie's flags mean.
     </p>
 
     <h2>Who else sees it</h2>

@@ -4,10 +4,14 @@ import { Link } from 'react-router-dom'
 /**
  * The legal floor of every page.
  *
- * <p>Sits below the app as well as below the sign-in card, because two of the things it
+ * <p>Sits below the app as well as below the sign-in card, because several of the things it
  * links to have to be reachable before anyone has an account: the privacy policy is what a
  * reader consents to when they register, and a policy you can only read once you are inside
  * is not one anyone agreed to.
+ *
+ * <p>No EULA link, deliberately. That document licenses the mobile app, is only ever put to
+ * a native caller, and says nothing to someone reading the site in a browser. It stays at
+ * /eula for the store listing to point at and for the app to open.
  */
 export const Footer = ({
   aside,
@@ -19,6 +23,7 @@ export const Footer = ({
     <nav className="site-footer-links">
       <Link to="/credits">Credits</Link>
       <Link to="/privacy">Privacy</Link>
+      <Link to="/cookies">Cookies</Link>
       <Link to="/terms">Terms</Link>
       <a href="https://github.com/initcommit43/NexusLibrary">GitHub</a>
     </nav>
