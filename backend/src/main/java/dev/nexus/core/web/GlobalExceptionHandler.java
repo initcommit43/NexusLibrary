@@ -31,6 +31,7 @@ import dev.nexus.core.security.BotCheckFailedException;
 import dev.nexus.core.review.ReviewNotFoundException;
 import dev.nexus.core.review.ReviewNotStartedException;
 import dev.nexus.auth.RegistrationClosedException;
+import dev.nexus.auth.agreements.AgreementRejectedException;
 import dev.nexus.core.activity.ActivityNotFoundException;
 import dev.nexus.core.tracking.EntryNotFoundException;
 import dev.nexus.modules.anime.AniListNotConfiguredException;
@@ -209,6 +210,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
       * A failed challenge is a 400 rather than a 403: nothing about the caller was refused,
       * the request simply arrived without usable proof it came from a browser.
       */
+    /**
+     * A stale version or a document that does not belong on the caller's platform. 400 and not
+     * 409: nothing about the account conflicts, the request simply describes a text we are not
+     * currently asking anyone to accept.
+     */
+    @ExceptionHandler(AgreementRejectedException.class)
+    public ResponseEntity<ApiError> handleAgreementRejected(AgreementRejectedException e) {
+        return ResponseEntity.badRequest().body(new ApiError(e.getMessage(), e.getFieldErrors()));
+    }
+
     @ExceptionHandler(BotCheckFailedException.class)
     public ResponseEntity<ApiError> handleBotCheck(BotCheckFailedException e) {
         return ResponseEntity.badRequest().body(new ApiError(e.getMessage()));

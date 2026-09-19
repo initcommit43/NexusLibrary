@@ -52,6 +52,10 @@ public class SecurityConfig {
         // What the signed-out screens are built from, the Turnstile site key included. That
         // key is published to every visitor by design; nothing secret is served here.
         ApiPaths.PREFIX + "/config",
+        // Which documents a sign-up form is asking to be accepted, and where to read them.
+        // Reached before anyone has an account, and says nothing about any person. Only the
+        // exact path: /agreements/outstanding is about a reader and stays authenticated.
+        ApiPaths.PREFIX + "/agreements",
         // An app too old to be served is too old to be asked for a token first.
         ApiPaths.PREFIX + "/client-version"
     };
