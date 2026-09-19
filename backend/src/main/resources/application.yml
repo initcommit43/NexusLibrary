@@ -221,3 +221,33 @@ nexus:
     site-key: ${TURNSTILE_SITE_KEY:}
     secret-key: ${TURNSTILE_SECRET_KEY:}
     verify-url: https://challenges.cloudflare.com/turnstile/v0/siteverify
+  agreements:
+    # What a reader is asked to accept, per document. Raising a version is what puts that
+    # document back in front of everyone who accepted the older text, so raise it in the same
+    # commit that changes the page — and only when the change is one a reader should have to
+    # accept again. A typo is not.
+    #
+    # Dated so the value sorts and matches the "Last updated" line on the page itself, which is
+    # what a reader would quote when asking what they agreed to. The env vars exist so a
+    # re-consent can be forced without a rebuild; the default is the text this build ships.
+    #
+    # Which platforms each document applies to is not configurable — it is product structure
+    # and lives in dev.nexus.auth.agreements.Agreement. An EULA is the store's requirement of
+    # the native build; a cookie notice is meaningless to a client that sets no cookies.
+    documents:
+      terms:
+        version: ${TERMS_VERSION:2026-09-14}
+        url: /terms
+      privacy:
+        version: ${PRIVACY_VERSION:2026-09-14}
+        url: /privacy
+      # Native only. No page exists on the web for either of the two below yet — the URLs are
+      # what a client is told to open, and they are relative so the app and the site each
+      # resolve them against their own origin.
+      eula:
+        version: ${EULA_VERSION:2026-09-19}
+        url: /eula
+      # Web only.
+      cookies:
+        version: ${COOKIE_POLICY_VERSION:2026-09-19}
+        url: /cookies
