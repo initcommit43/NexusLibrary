@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import dev.nexus.support.HttpTestClient;
 import dev.nexus.support.HttpTestClient.Response;
 import dev.nexus.support.PostgresIntegrationTest;
+import java.time.Instant;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -189,6 +190,24 @@ class AuthFlowIntegrationTest extends PostgresIntegrationTest {
         assertThat(authedGet("/auth/me", "forged.token.value").status()).isEqualTo(401);
     }
 
+    /**
+     * The date a profile's "member since" line is written from. Registering is the case worth
+     * pinning rather than /auth/me: the column is filled by its own database default, so the
+     * one response built from an account that has not been read back since its insert is where
+     * the date would silently come back null.
+     */
+    @Test
+    void theAccountCarriesTheDateItWasCreated() {
+        Response registered = register("player@example.com", "player", PASSWORD);
+
+        Instant atRegistration = Instant.parse((String) user(registered).get("createdAt"));
+        Response me = authedGet("/auth/me", registered.accessToken());
+
+        assertThat(Instant.parse((String) me.body().get("createdAt"))).isEqualTo(atRegistration);
+        assertThat(atRegistration)
+                .isEqualTo(users.findByEmail("player@example.com").orElseThrow().getCreatedAt());
+    }
+
     @Test
     void refreshCookieExchangesForANewAccessToken() {
         Response registered = register("player@example.com", "player", PASSWORD);
@@ -297,6 +316,11 @@ class AuthFlowIntegrationTest extends PostgresIntegrationTest {
         return http.postJson(
                 "/auth/register",
                 Map.of("email", email, "username", username, "password", password, "client", "WEB", "dateOfBirth", "1990-01-01", "acceptedTerms", true));
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> user(Response session) {
+        return (Map<String, Object>) session.body().get("user");
     }
 
     private Response login(String login, String password) {

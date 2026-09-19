@@ -8,6 +8,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.time.LocalDate;
+import org.hibernate.annotations.Generated;
+import org.hibernate.generator.EventType;
 
 @Entity
 @Table(name = "app_user")
@@ -26,6 +28,12 @@ public class AppUser {
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
+    /**
+     * Filled by the column's own default, so every account is stamped by one clock. Read back
+     * on insert because registering answers with this date too, and the entity behind that one
+     * response has never been re-read from the row it just wrote.
+     */
+    @Generated(event = EventType.INSERT)
     @Column(name = "created_at", nullable = false, updatable = false, insertable = false)
     private Instant createdAt;
 
