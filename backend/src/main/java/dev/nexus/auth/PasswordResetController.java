@@ -49,7 +49,20 @@ public class PasswordResetController {
     @PostMapping("/forgot-password")
     public ResponseEntity<Void> requestLink(@Valid @RequestBody ForgotPasswordRequest request, HttpServletRequest http) {
         rateLimiter.check("forgot-password:" + clientIp.resolve(http), authRequestsPerMinute);
-        turnstile.verify(request.turnstileToken(), clientIp.resolve(http));
+
+        /*
+         * Excused for a native client, which has no way to produce a token — the same exemption
+         * register makes, and for the same reason. Unlike register there is no account created
+         * here to charge a confirmed address for, so what pays for it is the per-account cap in
+         * PasswordResetService: five links an hour, whoever is asking and however they claim to
+         * be asking. That protects the address on the receiving end, which is the party at risk
+         * here, and which the challenge never protected — a person with a browser could always
+         * solve it by hand and aim the mail wherever they liked.
+         */
+        if (request.client() != AuthClient.NATIVE) {
+            turnstile.verify(request.turnstileToken(), clientIp.resolve(http));
+        }
+
         passwordResets.requestLink(request.email());
 
         return ResponseEntity.noContent().build();

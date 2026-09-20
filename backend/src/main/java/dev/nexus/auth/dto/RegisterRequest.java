@@ -50,8 +50,11 @@ public record RegisterRequest(
          * demand a token that no client could obtain. {@link
          * dev.nexus.core.security.TurnstileVerifier} decides whether its absence matters.
          *
-         * <p>Required of every client, native included. {@code client} is chosen by the
-         * caller, so exempting {@code NATIVE} would exempt anyone willing to claim it.
+         * <p>Asked of {@code WEB} only. Cloudflare ships no native SDK, so a native client
+         * cannot produce one; {@link dev.nexus.auth.AuthController#register} exempts
+         * {@code NATIVE} and charges it a confirmed email address instead, because
+         * {@code client} is chosen by the caller and an exemption nobody pays for is one
+         * anyone can claim.
          */
         @Size(max = 2048) String turnstileToken,
         /**

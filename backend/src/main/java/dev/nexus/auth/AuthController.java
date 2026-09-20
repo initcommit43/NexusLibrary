@@ -84,7 +84,28 @@ public class AuthController {
         // Throttle first: the counter is free, and confirming the challenge is an outbound
         // call to Cloudflare that a flood should not get to spend.
         rateLimiter.check("register:" + clientIp.resolve(http), authRequestsPerMinute);
-        turnstile.verify(request.turnstileToken(), clientIp.resolve(http));
+
+        /*
+         * Turnstile is a browser widget, and Cloudflare ships no native SDK — a native client
+         * has no way to obtain a token at all. The exemption is therefore given, but it is not
+         * given away: `client` is chosen by the caller, so anyone willing to claim NATIVE takes
+         * the same path, and what that path costs has to stand on its own.
+         *
+         * It does. A native sign-up must confirm its address whatever the deployment-wide
+         * setting says, so claiming NATIVE buys an account that is inert until a mailbox
+         * someone actually owns is read. That is the cost the challenge was imposing, collected
+         * differently; the per-address rate limit above is unchanged either way.
+         */
+        boolean nativeClient = request.client() == AuthClient.NATIVE;
+        if (nativeClient) {
+            // Refused before the row exists rather than after: an account gated behind a link
+            // this deployment cannot send is one nobody could ever open.
+            if (!verification.canSend()) {
+                throw new VerificationUnavailableException();
+            }
+        } else {
+            turnstile.verify(request.turnstileToken(), clientIp.resolve(http));
+        }
 
         AppUser created = authService.register(request);
 
@@ -96,7 +117,7 @@ public class AuthController {
          * A failure to send is not swallowed here for the same reason: "check your inbox" for a
          * mail that never left is an account nobody can ever open.
          */
-        if (verificationRequired) {
+        if (verificationRequired || nativeClient) {
             verification.sendLink(created);
             return ResponseEntity.status(HttpStatus.ACCEPTED).<AuthResponse>build();
         }
