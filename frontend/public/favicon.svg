@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240" role="img" aria-label="NexusLibrary">
-  <rect width="240" height="240" rx="44" fill="#0b1220"/>
-  <path d="M34.542 41.242H62.993L119.894 146.615V199.302L62.993 93.928V199.302H34.542Z" fill="#f5f5f4" stroke="#f5f5f4" stroke-width="4.8" stroke-linejoin="round"/>
-  <path d="M119.894 41.242H148.345V170.851H221.053V199.302H119.894Z" fill="#1f6fff" stroke="#1f6fff" stroke-width="4.8" stroke-linejoin="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="NexusLibrary">
+  <rect width="512" height="512" rx="93.87" fill="#0B1220"/>
+  <path d="M257.696 378.918C257.696 379.77 257.117 380.512 256.292 380.721C255.466 380.929 254.604 380.551 254.199 379.802L169.499 222.948V378.918C169.499 379.945 168.666 380.777 167.638 380.777H123.54C122.513 380.777 121.68 379.945 121.679 378.918V133.925C121.679 132.898 122.513 132.064 123.54 132.064H167.638L167.766 132.069C168.4 132.113 168.971 132.477 169.275 133.041L257.472 296.37C257.619 296.642 257.696 296.945 257.696 297.254V378.918Z" fill="#F5F5F4" stroke="#F5F5F4" stroke-width="3.72" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M299.935 132.064C300.962 132.064 301.795 132.898 301.795 133.925V332.959H412.632C413.659 332.959 414.491 333.792 414.491 334.819V378.918C414.491 379.945 413.659 380.777 412.632 380.777H255.836C254.809 380.777 253.976 379.945 253.976 378.918V133.925C253.976 132.898 254.809 132.064 255.836 132.064H299.935Z" fill="#1F6FFF" stroke="#1F6FFF" stroke-width="3.72" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
