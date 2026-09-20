@@ -66,7 +66,7 @@ public class PasswordResetService {
     public void requestLink(String email) {
         PasswordResetMailer send = mailer.orElseThrow(PasswordResetUnavailableException::new);
 
-        users.findByEmail(EmailAddresses.normalise(email)).ifPresent(user -> {
+        users.findByEmailIgnoreCase(EmailAddresses.normalise(email)).ifPresent(user -> {
             Instant now = Instant.now();
 
             /*

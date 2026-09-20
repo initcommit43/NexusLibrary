@@ -9,7 +9,17 @@ import org.springframework.data.repository.query.Param;
 
 public interface AppUserRepository extends JpaRepository<AppUser, Long> {
 
+    /**
+     * Exact match. Registration asks {@link #existsByEmailIgnoreCase}, so a row that reached
+     * the table with capitals in it — an import, a hand-written insert — would be "already
+     * registered" there and unfindable here: an address nobody can sign in with and nobody can
+     * register again. Production looks addresses up with {@link #findByEmailIgnoreCase}; this
+     * stays for tests, which write the addresses they then look up.
+     */
     Optional<AppUser> findByEmail(String email);
+
+    /** What every path that takes an address from a reader uses. Agrees with registration. */
+    Optional<AppUser> findByEmailIgnoreCase(String email);
 
     Optional<AppUser> findByUsernameIgnoreCase(String username);
 

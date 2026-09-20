@@ -101,7 +101,7 @@ public class AuthService {
         // A username cannot contain an @, so one in the identifier means an email address.
         String identifier = request.identifier();
         Optional<AppUser> match = identifier.contains("@")
-                ? users.findByEmail(normalizeEmail(identifier))
+                ? users.findByEmailIgnoreCase(normalizeEmail(identifier))
                 : users.findByUsernameIgnoreCase(identifier);
 
         // Always spend a full bcrypt comparison, even with no account matched: skipping it

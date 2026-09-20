@@ -107,7 +107,7 @@ public class EmailVerificationService {
      */
     @Transactional
     public void resend(String email) {
-        users.findByEmail(EmailAddresses.normalise(email))
+        users.findByEmailIgnoreCase(EmailAddresses.normalise(email))
                 .filter(user -> !user.isEmailVerified())
                 .ifPresent(this::sendLink);
     }

@@ -11,6 +11,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 class AuthFlowIntegrationTest extends PostgresIntegrationTest {
 
@@ -21,6 +22,9 @@ class AuthFlowIntegrationTest extends PostgresIntegrationTest {
 
     @Autowired
     AppUserRepository users;
+
+    @Autowired
+    JdbcTemplate jdbc;
 
     private HttpTestClient http;
 
@@ -310,6 +314,23 @@ class AuthFlowIntegrationTest extends PostgresIntegrationTest {
                 http.postJson("/auth/login", Map.of("email", "player@example.com", "password", PASSWORD));
 
         assertThat(response.status()).isEqualTo(400);
+    }
+
+    /**
+     * Registration asks {@code existsByEmailIgnoreCase}, so a row whose address carries
+     * capitals is already "taken" — and every path that takes an address from a reader has to
+     * agree with that, or the account is one nobody can sign in to and nobody can register
+     * again. The two only ever agreed because both sides normalise what they are handed, which
+     * says nothing about a row that arrived by an import or by hand.
+     */
+    @Test
+    void anAddressStoredWithCapitalsIsStillFound() {
+        register("player@example.com", "player", PASSWORD);
+        jdbc.update("UPDATE app_user SET email = 'Player@Example.COM' WHERE username = 'player'");
+
+        assertThat(login("player@example.com", PASSWORD).status()).isEqualTo(200);
+        assertThat(login("Player@Example.COM", PASSWORD).status()).isEqualTo(200);
+        assertThat(users.existsByEmailIgnoreCase("player@example.com")).isTrue();
     }
 
     private Response register(String email, String username, String password) {
