@@ -12,6 +12,13 @@ COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 
 COPY frontend/ ./
+
+# The legal pages import the same Markdown the backend serves rather than keeping
+# a second copy of the text, so this stage needs it at the path those imports
+# resolve to — one level above /build, mirroring the repository layout. Without
+# it the build fails only here and not locally, which is exactly how it got out.
+COPY backend/src/main/resources/agreements/ /backend/src/main/resources/agreements/
+
 RUN npm run build
 
 
