@@ -232,6 +232,58 @@ class PasswordResetIntegrationTest extends PostgresIntegrationTest {
         return link.substring(link.indexOf("token=") + "token=".length());
     }
 
+    /**
+     * The cap protects the address being named, not this server — the per-IP limiter already
+     * does that, and says nothing about how many of one caller's asks may name the same
+     * stranger. Without it, "forgot password?" is a mail cannon anyone can aim.
+     */
+    @Test
+    void aSixthLinkInAnHourIsNotSent() {
+        register("hounded@example.com", "hounded");
+
+        for (int i = 0; i < 6; i++) {
+            assertThat(requestLink("hounded@example.com").status()).isEqualTo(204);
+        }
+
+        verify(mailer, times(5)).send(any(), any(), any());
+    }
+
+    /**
+     * Refusing has to stay indistinguishable from sending, or six tries is all it takes to ask
+     * this endpoint whether an address has an account — the one thing it exists to not answer.
+     */
+    @Test
+    void beingOverTheCapIsNotSomethingTheCallerCanSee() {
+        register("hounded@example.com", "hounded");
+        for (int i = 0; i < 6; i++) {
+            requestLink("hounded@example.com");
+        }
+
+        Response overTheCap = requestLink("hounded@example.com");
+        Response noAccountAtAll = requestLink("stranger@example.com");
+
+        assertThat(overTheCap.status()).isEqualTo(noAccountAtAll.status()).isEqualTo(204);
+        assertThat(overTheCap.body()).isEqualTo(noAccountAtAll.body());
+    }
+
+    /**
+     * The order the cap is checked in. Retiring the live links and then declining to send a
+     * replacement would answer someone genuinely locked out by taking away what they had.
+     */
+    @Test
+    void theLastLinkSentStillWorksAfterTheCapIsHit() {
+        register("hounded@example.com", "hounded");
+        for (int i = 0; i < 5; i++) {
+            requestLink("hounded@example.com");
+        }
+        String fifth = mailedToken();
+
+        requestLink("hounded@example.com");
+
+        assertThat(reset(fifth, NEW_PASSWORD).status()).isEqualTo(204);
+        assertThat(login("hounded@example.com", NEW_PASSWORD).status()).isEqualTo(200);
+    }
+
     private Response requestLink(String email) {
         return http.postJson("/auth/forgot-password", Map.of("email", email));
     }

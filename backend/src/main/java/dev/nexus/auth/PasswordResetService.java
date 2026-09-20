@@ -19,6 +19,14 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class PasswordResetService {
 
+    /**
+     * Mirrors {@link EmailVerificationService}, which has always had this and which this flow is
+     * otherwise built from the same parts as. It protects the inbox on the other end, not this
+     * server: the per-IP limiter caps how fast one caller can ask, but says nothing about how
+     * many of those asks may name the same stranger's address.
+     */
+    private static final int MAX_LINKS_PER_HOUR = 5;
+
     private final AppUserRepository users;
     private final PasswordResetTokenRepository tokens;
     private final PasswordEncoder passwordEncoder;
@@ -60,6 +68,21 @@ public class PasswordResetService {
 
         users.findByEmail(EmailAddresses.normalise(email)).ifPresent(user -> {
             Instant now = Instant.now();
+
+            /*
+             * Over the cap, nothing is sent and nothing is said. Deliberately not an exception:
+             * a 429 for a real address beside a 204 for a stranger's is exactly the difference
+             * this endpoint exists to hide, and six tries would be all it took to read it.
+             *
+             * Checked before the retirement below, not after. The other order would answer the
+             * sixth ask by killing the five live links and sending no replacement, leaving
+             * someone who really is locked out with nothing at all.
+             */
+            if (tokens.countByUserIdAndCreatedAtAfter(user.getId(), now.minus(Duration.ofHours(1)))
+                    >= MAX_LINKS_PER_HOUR) {
+                return;
+            }
+
             tokens.spendEveryOutstandingLink(user.getId(), now);
 
             String token = LinkTokens.mint();

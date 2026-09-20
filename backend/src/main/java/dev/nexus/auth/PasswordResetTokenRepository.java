@@ -19,6 +19,9 @@ public interface PasswordResetTokenRepository extends JpaRepository<PasswordRese
     @Query("update PasswordResetToken t set t.usedAt = :at where t.userId = :userId and t.usedAt is null")
     int spendEveryOutstandingLink(@Param("userId") Long userId, @Param("at") Instant at);
 
+    /** How many links this account has been sent lately, which caps how many more it may have. */
+    long countByUserIdAndCreatedAtAfter(Long userId, Instant since);
+
     /** Housekeeping only: an expired row is already refused on its own expiry. */
     @Modifying
     int deleteByExpiresAtBefore(Instant cutoff);
