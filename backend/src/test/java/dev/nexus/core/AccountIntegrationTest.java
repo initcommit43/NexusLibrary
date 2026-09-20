@@ -130,6 +130,45 @@ class AccountIntegrationTest extends PostgresIntegrationTest {
         assertThat(response.body().toString()).doesNotContain("accessToken");
     }
 
+    /**
+     * Art. 15 is "everything you hold about me", and the export answered with four of the
+     * fifteen tables that carry a user id. Reviews were the largest thing missing — the
+     * reader's own writing — and the record of which documents they accepted was not in it
+     * either, which is the one an argument about consent would turn on.
+     */
+    @Test
+    void theExportCarriesEverythingElseTheReaderOwns() {
+        Response response = http.get("/settings/account/export", "Authorization", auth());
+
+        assertThat(response.body())
+                .containsKeys(
+                        "reviews",
+                        "agreementsAccepted",
+                        "contentSettings",
+                        "providerActivity",
+                        "notifications",
+                        "modulePreferences",
+                        "profile",
+                        "truncated");
+    }
+
+    /**
+     * The half of the export that is a rule rather than a feature. A refresh token is not a
+     * fact about somebody, it is the ability to act as them, and an export is a file that ends
+     * up in a downloads folder — so no credential may ever be written into one, whatever
+     * "everything about me" is taken to mean.
+     */
+    @Test
+    void theExportNeverCarriesACredential() {
+        String body = http.get("/settings/account/export", "Authorization", auth()).body().toString();
+
+        assertThat(body)
+                .doesNotContain("accessToken")
+                .doesNotContain("refreshToken")
+                .doesNotContain("passwordHash")
+                .doesNotContain("tokenHash");
+    }
+
     @Test
     void deletingNeedsThePasswordAndThenLeavesNothing() {
         assertThat(http.deleteJson("/settings/account", Map.of("password", "wrong"), "Authorization", auth())

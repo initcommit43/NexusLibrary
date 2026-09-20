@@ -7,16 +7,8 @@ import dev.nexus.auth.DateOfBirthRejectedException;
 import dev.nexus.auth.RegistrationConflictException;
 import dev.nexus.core.account.AccountRequests.PasswordChange;
 import dev.nexus.core.account.AccountRequests.ProfileUpdate;
-import dev.nexus.core.domain.ActivityRepository;
-import dev.nexus.core.domain.ExternalAccountRepository;
-import dev.nexus.core.domain.UserEntryRepository;
-import dev.nexus.core.tracking.dto.TrackedItemResponse;
-import java.time.Instant;
 import java.time.LocalDate;
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
-import org.springframework.data.domain.Limit;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,29 +20,17 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class AccountService {
 
-    /**
-     * An export is a file someone downloads once, so it may be large, but it is still one
-     * request holding the whole answer in memory. This is where a library stops being one.
-     */
-    private static final int MAX_EXPORTED_ACTIVITY = 5_000;
-
     private final AppUserRepository users;
-    private final UserEntryRepository entries;
-    private final ExternalAccountRepository accounts;
-    private final ActivityRepository activity;
     private final PasswordEncoder passwordEncoder;
+    private final AccountExport exportOf;
 
     public AccountService(
             AppUserRepository users,
-            UserEntryRepository entries,
-            ExternalAccountRepository accounts,
-            ActivityRepository activity,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            AccountExport exportOf) {
         this.users = users;
-        this.entries = entries;
-        this.accounts = accounts;
-        this.activity = activity;
         this.passwordEncoder = passwordEncoder;
+        this.exportOf = exportOf;
     }
 
     private AppUser require(long userId) {
@@ -117,47 +97,13 @@ public class AccountService {
     }
 
     /**
-     * Everything held about this reader, as one document.
-     *
-     * <p>Connected accounts are named but their tokens are not: a copy of someone's data is
-     * not a copy of their keys, and an export is a file that ends up in a downloads folder.
+     * Everything held about this reader, as one document. Assembled by {@link AccountExport},
+     * which is where the list of what that means — and of what is deliberately left out — is
+     * kept. This method exists so the caller still asks the account for its own data.
      */
     @Transactional(readOnly = true)
     public Map<String, Object> export(long userId) {
-        AppUser user = require(userId);
-
-        List<Map<String, Object>> connections = accounts.findByUserId(userId).stream()
-                .map(account -> Map.<String, Object>of(
-                        "provider", account.getProvider().name(),
-                        "externalUserId", account.getExternalUserId(),
-                        "connectedAt", String.valueOf(account.getConnectedAt())))
-                .toList();
-
-        List<Map<String, Object>> history = activity
-                .findByUserIdOrderByCreatedAtDesc(userId, Limit.of(MAX_EXPORTED_ACTIVITY))
-                .stream()
-                .map(row -> Map.<String, Object>of(
-                        "type", String.valueOf(row.getType()),
-                        "createdAt", String.valueOf(row.getCreatedAt())))
-                .toList();
-
-        // Not Map.of: an account made before V23 has no date of birth, and the export says so
-        // with a null rather than leaving the field out.
-        Map<String, Object> account = new LinkedHashMap<>();
-        account.put("email", user.getEmail());
-        account.put("username", user.getUsername());
-        account.put("registeredAt", String.valueOf(user.getCreatedAt()));
-        account.put("dateOfBirth", user.getDateOfBirth() == null ? null : user.getDateOfBirth().toString());
-
-        return Map.of(
-                "exportedAt", Instant.now().toString(),
-                "account", account,
-                "entries",
-                        entries.findByUserIdOrderByUpdatedAtDesc(userId).stream()
-                                .map(TrackedItemResponse::from)
-                                .toList(),
-                "connectedAccounts", connections,
-                "activity", history);
+        return exportOf.of(require(userId));
     }
 
     /**
