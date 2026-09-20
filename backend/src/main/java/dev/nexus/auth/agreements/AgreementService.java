@@ -22,10 +22,13 @@ public class AgreementService {
 
     private final AgreementAcceptanceRepository acceptances;
     private final AgreementProperties properties;
+    private final AgreementDocuments texts;
 
-    public AgreementService(AgreementAcceptanceRepository acceptances, AgreementProperties properties) {
+    public AgreementService(
+            AgreementAcceptanceRepository acceptances, AgreementProperties properties, AgreementDocuments texts) {
         this.acceptances = acceptances;
         this.properties = properties;
+        this.texts = texts;
     }
 
     /** Everything that applies to a platform, whether or not anyone has accepted it. Public. */
@@ -33,6 +36,16 @@ public class AgreementService {
         return Agreement.forPlatform(platform).stream()
                 .map(document -> AgreementResponse.of(document, properties.of(document)))
                 .toList();
+    }
+
+    /**
+     * One document's words, at the version it is currently being asked for. Public, and not
+     * filtered by platform: a document that does not apply to a caller is still one it may
+     * have to display — the web serves the EULA so the store listing has a public URL to link
+     * to, and a reader who follows a link to a document is not asking to accept it.
+     */
+    public AgreementTextResponse text(Agreement document) {
+        return AgreementTextResponse.of(document, properties.of(document), texts.of(document));
     }
 
     /**

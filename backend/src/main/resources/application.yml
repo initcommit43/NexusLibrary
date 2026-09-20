@@ -239,7 +239,7 @@ nexus:
         version: ${TERMS_VERSION:2026-09-14}
         url: /terms
       privacy:
-        version: ${PRIVACY_VERSION:2026-09-14}
+        version: ${PRIVACY_VERSION:2026-09-20}
         url: /privacy
       # Native only. No page exists on the web for either of the two below yet — the URLs are
       # what a client is told to open, and they are relative so the app and the site each

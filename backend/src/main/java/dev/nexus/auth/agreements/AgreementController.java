@@ -7,6 +7,7 @@ import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -43,6 +44,24 @@ public class AgreementController {
     @GetMapping
     public List<AgreementResponse> applicable(@RequestParam AuthClient client) {
         return agreements.current(AgreementPlatform.of(client));
+    }
+
+    /**
+     * The words of one document, for a client that renders them itself rather than opening a
+     * page — which a native build must, since text compiled into a binary cannot be revised
+     * without a release and would be shown beside a version string it no longer matches.
+     *
+     * <p>Public, and deliberately not under {@code /agreements/{document}}: the whitelist
+     * matches exact paths, so a wildcard there would take {@code /agreements/outstanding} with
+     * it, and that one is about a reader.
+     *
+     * <p>No {@code client} parameter. Which documents a caller is *asked* to accept is a
+     * per-platform question; which ones it may *read* is not — the EULA is served to the web
+     * so an app store listing has a public URL to point at.
+     */
+    @GetMapping("/documents/{document}")
+    public AgreementTextResponse text(@PathVariable Agreement document) {
+        return agreements.text(document);
     }
 
     /** What this reader still owes on the client they are calling from. Empty means clear. */

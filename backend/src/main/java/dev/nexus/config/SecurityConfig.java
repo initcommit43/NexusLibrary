@@ -56,6 +56,10 @@ public class SecurityConfig {
         // Reached before anyone has an account, and says nothing about any person. Only the
         // exact path: /agreements/outstanding is about a reader and stays authenticated.
         ApiPaths.PREFIX + "/agreements",
+        // The words of one document. Under its own segment precisely so this wildcard cannot
+        // reach /agreements/outstanding; a client that renders the text itself needs it before
+        // it has an account, and the same text is already public at /terms and /privacy.
+        ApiPaths.PREFIX + "/agreements/documents/*",
         // An app too old to be served is too old to be asked for a token first.
         ApiPaths.PREFIX + "/client-version"
     };
