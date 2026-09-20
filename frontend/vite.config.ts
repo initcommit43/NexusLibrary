@@ -47,6 +47,12 @@ export default defineConfig(({ mode }) => {
     ],
     server: {
       port: 5173,
+      fs: {
+        // The legal pages import the same Markdown the backend serves to the app, rather than
+        // keeping a second copy of the text in JSX. The build resolves it on its own; the dev
+        // server refuses to read outside its root unless told.
+        allow: ['..'],
+      },
       proxy: {
         '/api': {
           target: env.VITE_API_BASE_URL || 'http://localhost:8080',
