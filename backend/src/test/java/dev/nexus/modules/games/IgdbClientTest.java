@@ -123,4 +123,17 @@ class IgdbClientTest {
         assertThat(IgdbClient.partition(List.of("1"))).hasSize(1);
         assertThat(IgdbClient.partition(List.of())).isEmpty();
     }
+
+    /** Without the sub-field IGDB answers with the category's id, and there is no label to show. */
+    @Test
+    void gameDetailAsksForTheAgeRatingLabelAndTheCurrentStatusField() {
+        server.expect(requestTo("https://igdb.test/v4/games"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("age_ratings.rating_category.rating")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("game_status.status")))
+                .andRespond(withSuccess("[]", MediaType.APPLICATION_JSON));
+
+        client.findGameDetail("1942");
+
+        server.verify();
+    }
 }

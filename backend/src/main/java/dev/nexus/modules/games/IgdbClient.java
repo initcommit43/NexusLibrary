@@ -185,8 +185,11 @@ public class IgdbClient {
             "screenshots.image_id",
             "websites.url",
             "websites.type.type",
-            "age_ratings.rating_category",
-            "age_ratings.organization.name");
+            // The category is a reference: without ".rating" IGDB answers with its id alone.
+            "age_ratings.rating_category.rating",
+            "age_ratings.organization.name",
+            // Not the enum "status", which IGDB has deprecated for this reference.
+            "game_status.status");
 
     /**
      * Everything a game's own page shows beyond the fields core models.

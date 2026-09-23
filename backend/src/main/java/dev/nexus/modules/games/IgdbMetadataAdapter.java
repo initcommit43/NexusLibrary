@@ -228,7 +228,31 @@ public class IgdbMetadataAdapter implements MetadataAdapter {
         }
         putIfAny(detail, "websites", websites);
 
+        putIfAny(detail, "ageRatings", ageRatings(game.get("age_ratings")));
+        if (game.get("game_status") instanceof Map<?, ?> status) {
+            // IGDB leaves this unset on most released games, so absence is not "unknown".
+            putIfPresent(detail, "releaseStatus", string(status.get("status")));
+        }
+
         return detail;
+    }
+
+    /** One per rating board, as the board writes it: PEGI "18", ESRB "M", CERO "Z". */
+    private List<Map<String, Object>> ageRatings(Object raw) {
+        List<Map<String, Object>> ratings = new ArrayList<>();
+
+        for (Map<String, Object> rating : nested(raw, MAX_TAGS)) {
+            String organization = rating.get("organization") instanceof Map<?, ?> board
+                    ? string(board.get("name"))
+                    : null;
+            String value = rating.get("rating_category") instanceof Map<?, ?> category
+                    ? string(category.get("rating"))
+                    : null;
+            if (organization != null && value != null) {
+                ratings.add(Map.of("organization", organization, "rating", value));
+            }
+        }
+        return ratings;
     }
 
     private String roleOf(Map<String, Object> involved) {

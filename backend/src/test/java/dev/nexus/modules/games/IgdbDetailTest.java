@@ -125,4 +125,32 @@ class IgdbDetailTest {
         assertThat(adapter.bannerFrom(detailOf(Map.of("storyline", "A story.")))).isEmpty();
     }
 
+    /** One per board, as the board writes it; a rating missing either half says nothing. */
+    @Test
+    void anAgeRatingIsTheBoardAndWhatItRuled() {
+        Map<String, Object> detail = detailOf(Map.of(
+                "age_ratings",
+                List.of(
+                        Map.of("organization", Map.of("name", "PEGI"), "rating_category", Map.of("rating", "18")),
+                        Map.of("organization", Map.of("name", "ESRB"), "rating_category", Map.of("rating", "M")),
+                        Map.of("organization", Map.of("name", "USK")))));
+
+        assertThat((List<Map<String, Object>>) detail.get("ageRatings"))
+                .containsExactly(
+                        Map.of("organization", "PEGI", "rating", "18"),
+                        Map.of("organization", "ESRB", "rating", "M"));
+    }
+
+    @Test
+    void theReleaseStatusIsIgdbsOwnWord() {
+        Map<String, Object> detail = detailOf(Map.of("game_status", Map.of("id", 4, "status", "Early Access")));
+
+        assertThat(detail).containsEntry("releaseStatus", "Early Access");
+    }
+
+    /** IGDB leaves the status unset on most released games; nothing is invented in its place. */
+    @Test
+    void aGameWithNoStatusHasNone() {
+        assertThat(detailOf(Map.of("storyline", "A story."))).doesNotContainKey("releaseStatus");
+    }
 }
