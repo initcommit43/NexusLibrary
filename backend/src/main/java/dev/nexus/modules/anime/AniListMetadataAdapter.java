@@ -271,25 +271,30 @@ public class AniListMetadataAdapter implements MetadataAdapter, StudioBrowse {
         return detail.isEmpty() ? Optional.empty() : Optional.of(detail);
     }
 
-    /** Relations are the one place AniList's detail points at other titles, so they are what goes. */
+    /** Relations and recommendations are where AniList's detail points at other titles, so they are what goes. */
     @Override
     public Map<String, Object> withoutAdult(Map<String, Object> detail) {
-        if (!(detail.get("relations") instanceof Map<?, ?> relations)
-                || !(relations.get("edges") instanceof List<?> edges)) {
-            return detail;
-        }
-        List<?> kept = edges.stream()
-                .filter(edge -> !(edge instanceof Map<?, ?> row
-                        && row.get("node") instanceof Map<?, ?> node
-                        && Boolean.TRUE.equals(node.get("isAdult"))))
-                .toList();
-        if (kept.size() == edges.size()) {
-            return detail;
-        }
-
         Map<String, Object> copy = new HashMap<>(detail);
-        copy.put("relations", Map.of("edges", kept));
-        return copy;
+        boolean changed = dropAdult(copy, "relations", "edges", "node");
+        changed |= dropAdult(copy, "recommendations", "nodes", "mediaRecommendation");
+        return changed ? copy : detail;
+    }
+
+    /** Drops the rows of one connection whose title is adult; true when it dropped any. */
+    private boolean dropAdult(Map<String, Object> detail, String connection, String rowsKey, String mediaKey) {
+        if (!(detail.get(connection) instanceof Map<?, ?> rows) || !(rows.get(rowsKey) instanceof List<?> all)) {
+            return false;
+        }
+        List<?> kept = all.stream()
+                .filter(row -> !(row instanceof Map<?, ?> entry
+                        && entry.get(mediaKey) instanceof Map<?, ?> media
+                        && Boolean.TRUE.equals(media.get("isAdult"))))
+                .toList();
+        if (kept.size() == all.size()) {
+            return false;
+        }
+        detail.put(connection, Map.of(rowsKey, kept));
+        return true;
     }
 
     /** AniList names its own banner, and leaves it null for a title that has none. */

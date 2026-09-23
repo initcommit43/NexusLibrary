@@ -47,8 +47,8 @@ public class MediaDetailService {
      */
     static final String VERSION_KEY = "schemaVersion";
 
-    /** 7: TMDB certifications. */
-    static final int DETAIL_VERSION = 7;
+    /** 8: AniList end date, synonyms, recommendations and link types. */
+    static final int DETAIL_VERSION = 8;
 
     private static final Logger log = LoggerFactory.getLogger(MediaDetailService.class);
 

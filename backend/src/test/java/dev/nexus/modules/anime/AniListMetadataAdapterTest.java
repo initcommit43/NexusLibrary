@@ -91,6 +91,29 @@ class AniListMetadataAdapterTest {
         assertThat(adapter.withoutAdult(Map.of("title", "x"))).containsOnlyKeys("title");
     }
 
+    /** A recommendation points at another title as a relation does, and goes the same way. */
+    @Test
+    void adultRecommendationsAreLeftOutOfACopyToo() {
+        Map<String, Object> detail = Map.of("recommendations", Map.of("nodes", List.of(
+                Map.of("rating", 10, "mediaRecommendation", Map.of("id", 1, "isAdult", false)),
+                Map.of("rating", 5, "mediaRecommendation", Map.of("id", 2, "isAdult", true)))));
+
+        Map<String, Object> hidden = adapter.withoutAdult(detail);
+
+        assertThat((Map<?, ?>) hidden.get("recommendations"))
+                .extracting(r -> ((List<?>) r.get("nodes")).size())
+                .isEqualTo(1);
+        assertThat(((List<?>) ((Map<?, ?>) detail.get("recommendations")).get("nodes"))).hasSize(2);
+    }
+
+    @Test
+    void aDetailWithNothingAdultIsHandedBackAsItWas() {
+        Map<String, Object> detail = Map.of("recommendations", Map.of("nodes", List.of(
+                Map.of("rating", 10, "mediaRecommendation", Map.of("id", 1, "isAdult", false)))));
+
+        assertThat(adapter.withoutAdult(detail)).isSameAs(detail);
+    }
+
     @Test
     void mangaIsRecognisedFromTheRecordRatherThanTheQuery() {
         Map<String, Object> manga = media();

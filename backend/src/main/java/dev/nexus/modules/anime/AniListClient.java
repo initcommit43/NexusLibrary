@@ -257,6 +257,8 @@ public class AniListClient {
                 nextAiringEpisode { episode airingAt }
                 season
                 seasonYear
+                endDate { year month day }
+                synonyms
                 duration
                 source
                 hashtag
@@ -289,7 +291,18 @@ public class AniListClient {
                   scoreDistribution { score amount }
                 }
                 trailer { id site thumbnail }
-                externalLinks { site url icon language }
+                externalLinks { site url icon language type }
+                recommendations(sort: [RATING_DESC], perPage: 12) {
+                  nodes {
+                    rating
+                    mediaRecommendation {
+                      id type format status isAdult
+                      title { romaji english native }
+                      coverImage { large }
+                      startDate { year }
+                    }
+                  }
+                }
                 rankings { rank type year season allTime context }
               }
             }

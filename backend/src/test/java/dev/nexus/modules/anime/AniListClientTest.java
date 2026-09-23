@@ -316,4 +316,21 @@ class AniListClientTest {
         assertThat(client.browseMedia(MediaType.ANIME, "TRENDING_DESC", null, null, null, null, 1, 24).hasNextPage())
                 .isTrue();
     }
+
+    /** The detail is passed through as AniList answers it, so what it holds is what is asked for. */
+    @Test
+    void theDetailAsksForEndDateSynonymsRecommendationsAndLinkTypes() {
+        server.expect(requestTo(ENDPOINT))
+                .andExpect(content().string(containsString("endDate { year month day }")))
+                .andExpect(content().string(containsString("synonyms")))
+                .andExpect(content().string(containsString("recommendations(sort: [RATING_DESC]")))
+                .andExpect(content().string(containsString("isAdult")))
+                .andExpect(content().string(containsString("externalLinks { site url icon language type }")))
+                .andRespond(withSuccess(
+                        "{\"data\":{\"Media\":{\"synonyms\":[\"Bebop\"]}}}",
+                        org.springframework.http.MediaType.APPLICATION_JSON));
+
+        assertThat(client.findMediaDetail("1")).containsEntry("synonyms", List.of("Bebop"));
+        server.verify();
+    }
 }
