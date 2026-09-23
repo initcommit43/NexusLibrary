@@ -167,4 +167,20 @@ class TmdbClientTest {
                 .isInstanceOf(TmdbUnavailableException.class)
                 .hasMessageContaining("TMDB_ACCESS_TOKEN");
     }
+
+    /** Certifications ride on the detail request; they are a different sub-resource per kind. */
+    @Test
+    void detailAppendsTheCertificationsForItsKind() {
+        server.expect(requestTo(org.hamcrest.Matchers.containsString("/movie/603?append_to_response=")))
+                .andExpect(requestTo(org.hamcrest.Matchers.containsString("external_ids,release_dates&")))
+                .andRespond(withSuccess("{}", MediaType.APPLICATION_JSON));
+        server.expect(requestTo(org.hamcrest.Matchers.containsString("/tv/1399?append_to_response=")))
+                .andExpect(requestTo(org.hamcrest.Matchers.containsString("external_ids,content_ratings&")))
+                .andRespond(withSuccess("{}", MediaType.APPLICATION_JSON));
+
+        client.findDetail(TmdbKind.MOVIE, "603");
+        client.findDetail(TmdbKind.SHOW, "1399");
+
+        server.verify();
+    }
 }

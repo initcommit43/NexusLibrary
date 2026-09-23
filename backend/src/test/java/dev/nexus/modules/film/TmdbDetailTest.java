@@ -266,4 +266,79 @@ class TmdbDetailTest {
         assertThat(adapter.bannerFrom(detailOf(TmdbKind.MOVIE, movie(Map.of())))).isEmpty();
     }
 
+    /**
+     * A country lists a release per premiere, cinema run and disc, with the rating on only some
+     * of them: the cinema run's wins, and another release's stands in when it has none.
+     */
+    @SuppressWarnings("unchecked")
+    @Test
+    void aFilmIsCertifiedPerCountryWithTheUsOnePublishedOnItsOwn() {
+        Map<String, Object> detail = detailOf(
+                TmdbKind.MOVIE,
+                movie(Map.of(
+                        "release_dates",
+                        Map.of(
+                                "results",
+                                List.of(
+                                        Map.of(
+                                                "iso_3166_1", "US",
+                                                "release_dates", List.of(
+                                                        Map.of("certification", "PG-13", "type", 1),
+                                                        Map.of("certification", "R", "type", 3))),
+                                        Map.of(
+                                                "iso_3166_1", "FR",
+                                                "release_dates", List.of(
+                                                        Map.of("certification", "", "type", 3),
+                                                        Map.of("certification", "TP", "type", 5))),
+                                        Map.of(
+                                                "iso_3166_1", "IT",
+                                                "release_dates", List.of(Map.of("certification", "", "type", 3))))))));
+
+        assertThat(detail).containsEntry("certification", "R");
+        assertThat((Map<String, Object>) detail.get("certifications"))
+                .isEqualTo(Map.of("US", "R", "FR", "TP"));
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    void aShowIsCertifiedFromItsContentRatings() {
+        Map<String, Object> row = new LinkedHashMap<>();
+        row.put("id", 603);
+        row.put("name", "Game of Thrones");
+        row.put(
+                "content_ratings",
+                Map.of(
+                        "results",
+                        List.of(
+                                Map.of("iso_3166_1", "US", "rating", "TV-MA"),
+                                Map.of("iso_3166_1", "DE", "rating", "16"),
+                                Map.of("iso_3166_1", "KR", "rating", ""))));
+
+        Map<String, Object> detail = detailOf(TmdbKind.SHOW, row);
+
+        assertThat(detail).containsEntry("certification", "TV-MA");
+        assertThat((Map<String, Object>) detail.get("certifications")).isEqualTo(Map.of("US", "TV-MA", "DE", "16"));
+    }
+
+    /** No US rating is no headline figure; the other countries' are still there to choose from. */
+    @Test
+    void aTitleTheUsNeverRatedHasOnlyTheList() {
+        Map<String, Object> detail = detailOf(
+                TmdbKind.MOVIE,
+                movie(Map.of(
+                        "release_dates",
+                        Map.of(
+                                "results",
+                                List.of(Map.of(
+                                        "iso_3166_1", "DE",
+                                        "release_dates", List.of(Map.of("certification", "16", "type", 3))))))));
+
+        assertThat(detail).doesNotContainKey("certification").containsKey("certifications");
+    }
+
+    @Test
+    void aTitleNobodyRatedHasNoCertificationAtAll() {
+        assertThat(detailOf(TmdbKind.MOVIE, movie(Map.of())))
+                .doesNotContainKeys("certification", "certifications");
+    }
 }

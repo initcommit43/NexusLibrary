@@ -133,10 +133,15 @@ public class TmdbClient {
      *
      * <p>Images are asked for in English and with no language at all: a backdrop carrying
      * another language's title card is worse than one carrying none.
+     *
+     * <p>Certifications live under a different sub-resource for each kind — a film's per
+     * release, a show's once per country — so the last append follows the kind.
      */
     public Optional<Map<String, Object>> findDetail(TmdbKind kind, String tmdbId) {
+        String certifications = kind == TmdbKind.MOVIE ? "release_dates" : "content_ratings";
         return get(
-                "/{kind}/{id}?append_to_response=credits,videos,images,recommendations,keywords,external_ids"
+                "/{kind}/{id}?append_to_response=credits,videos,images,recommendations,keywords,external_ids,"
+                        + certifications
                         + "&include_image_language=en,null",
                 kind.path(),
                 tmdbId);

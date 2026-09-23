@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 import org.springframework.stereotype.Component;
 
 /**
@@ -69,6 +70,12 @@ public class TmdbMetadataAdapter implements MetadataAdapter {
      * shared item, so anything kept is paid for by every reader who opens the page and shows
      * none of it — the same bargain IGDB's detail strikes.
      */
+    /** The country whose certification is published on its own, beside the full list. */
+    private static final String CERTIFICATION_REGION = "US";
+
+    /** TMDB's release type for a cinema run, the release a certification is usually made for. */
+    private static final int THEATRICAL_RELEASE = 3;
+
     private static final int MAX_CAST = 18;
 
     private static final int MAX_CREW = 12;
@@ -220,7 +227,58 @@ public class TmdbMetadataAdapter implements MetadataAdapter {
         putIfAny(detail, "recommendations", recommendations(kind, nested(row.get("recommendations"))));
         putIfAny(detail, "links", links(row));
 
+        // Every country's, since the detail is shared and a reader's country is not known
+        // here; the US one on its own because it is the one TMDB fills most reliably.
+        Map<String, String> certifications = kind == TmdbKind.MOVIE
+                ? filmCertifications(nested(row.get("release_dates")))
+                : showCertifications(nested(row.get("content_ratings")));
+        putIfPresent(detail, "certification", certifications.get(CERTIFICATION_REGION));
+        if (!certifications.isEmpty()) {
+            detail.put("certifications", certifications);
+        }
+
         return detail;
+    }
+
+    /**
+     * One certification per country out of a film's release list. A country lists a release per
+     * premiere, cinema run, disc and broadcast, often with the rating on only some of them, so the
+     * theatrical release's is preferred and any other release's rating stands in for it.
+     */
+    private Map<String, String> filmCertifications(Map<String, Object> releaseDates) {
+        Map<String, String> byRegion = new TreeMap<>();
+
+        for (Map<String, Object> country : list(releaseDates.get("results"))) {
+            Object region = country.get("iso_3166_1");
+            if (region == null) {
+                continue;
+            }
+            List<Map<String, Object>> releases = list(country.get("release_dates"));
+            releases.stream()
+                    .sorted(Comparator.comparingInt(release -> isTheatrical(release) ? 0 : 1))
+                    .map(release -> release.get("certification"))
+                    .filter(certification -> certification != null && !certification.toString().isBlank())
+                    .findFirst()
+                    .ifPresent(certification -> byRegion.put(region.toString(), certification.toString().trim()));
+        }
+        return byRegion;
+    }
+
+    private boolean isTheatrical(Map<String, Object> release) {
+        return release.get("type") instanceof Number type && type.intValue() == THEATRICAL_RELEASE;
+    }
+
+    private Map<String, String> showCertifications(Map<String, Object> contentRatings) {
+        Map<String, String> byRegion = new TreeMap<>();
+
+        for (Map<String, Object> country : list(contentRatings.get("results"))) {
+            Object region = country.get("iso_3166_1");
+            Object rating = country.get("rating");
+            if (region != null && rating != null && !rating.toString().isBlank()) {
+                byRegion.putIfAbsent(region.toString(), rating.toString().trim());
+            }
+        }
+        return byRegion;
     }
 
     /** Cast and crew are the same tile; only the line under the name differs. */
