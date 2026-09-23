@@ -2,6 +2,7 @@ package dev.nexus.core.account;
 
 import dev.nexus.auth.AppUser;
 import dev.nexus.auth.CurrentUser;
+import dev.nexus.auth.DeviceTokenService;
 import dev.nexus.auth.RefreshTokenService;
 import dev.nexus.auth.SessionResponses;
 import dev.nexus.auth.dto.AuthResponse;
@@ -42,16 +43,19 @@ public class AccountController {
     private final RefreshTokenService refreshTokens;
     private final SessionResponses sessions;
     private final ContentPreferences content;
+    private final DeviceTokenService devices;
 
     public AccountController(
             AccountService accounts,
             RefreshTokenService refreshTokens,
             SessionResponses sessions,
-            ContentPreferences content) {
+            ContentPreferences content,
+            DeviceTokenService devices) {
         this.accounts = accounts;
         this.refreshTokens = refreshTokens;
         this.sessions = sessions;
         this.content = content;
+        this.devices = devices;
     }
 
     /** Answers with the content settings, since whether 18+ titles can be switched on is what changed. */
@@ -87,6 +91,8 @@ public class AccountController {
 
         AppUser changed = accounts.changePassword(user.id(), change);
         refreshTokens.endEverySession(changed.getId());
+        // The ended sessions' devices go with them; the caller's registers again on its next start.
+        devices.forgetAll(changed.getId());
 
         return sessions.issue(refreshTokens.begin(changed, change.client()), HttpStatus.OK);
     }

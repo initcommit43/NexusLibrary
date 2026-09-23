@@ -101,6 +101,22 @@ class DeviceTokenIntegrationTest extends PostgresIntegrationTest {
     }
 
     @Test
+    void changingThePasswordForgetsEveryDevice() {
+        String reader = register("reader@example.com", "reader");
+        put(reader, "apns-token-1", "IOS");
+        put(reader, "fcm-token-1", "ANDROID");
+
+        Response changed = http.postJson(
+                "/settings/account/password",
+                Map.of("currentPassword", PASSWORD, "newPassword", "a whole new one", "client", "WEB"),
+                "Authorization",
+                bearer(reader));
+
+        assertThat(changed.status()).isEqualTo(200);
+        assertThat(devices.count()).isZero();
+    }
+
+    @Test
     void deletingTheAccountTakesItsDevicesWithIt() {
         String reader = register("reader@example.com", "reader");
         put(reader, "apns-token-1", "IOS");

@@ -39,4 +39,13 @@ public class DeviceTokenService {
     public void unregister(Long userId, String token) {
         tokens.deleteByTokenAndUserId(token, userId);
     }
+
+    /**
+     * Forgets every device the reader had. Called wherever their sessions are all ended: a phone
+     * that has to sign in again should not be sent anything until it does.
+     */
+    @Transactional
+    public void forgetAll(Long userId) {
+        tokens.deleteByUserId(userId);
+    }
 }

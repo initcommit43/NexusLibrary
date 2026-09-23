@@ -36,5 +36,8 @@ public interface DeviceTokenRepository extends JpaRepository<DeviceToken, Long> 
     @Modifying
     int deleteByTokenAndUserId(String token, Long userId);
 
+    @Modifying
+    int deleteByUserId(Long userId);
+
     List<DeviceToken> findByUserIdOrderByLastSeenAtDesc(Long userId);
 }

@@ -31,6 +31,7 @@ public class PasswordResetService {
     private final PasswordResetTokenRepository tokens;
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenService sessions;
+    private final DeviceTokenService devices;
     private final Optional<PasswordResetMailer> mailer;
     private final Duration ttl;
     private final String frontendUrl;
@@ -40,12 +41,14 @@ public class PasswordResetService {
             PasswordResetTokenRepository tokens,
             PasswordEncoder passwordEncoder,
             RefreshTokenService sessions,
+            DeviceTokenService devices,
             Optional<PasswordResetMailer> mailer,
             NexusProperties properties) {
         this.users = users;
         this.tokens = tokens;
         this.passwordEncoder = passwordEncoder;
         this.sessions = sessions;
+        this.devices = devices;
         this.mailer = mailer;
         this.ttl = Duration.ofMinutes(properties.security().passwordResetTtlMinutes());
         this.frontendUrl = properties.security().frontendUrl();
@@ -119,6 +122,7 @@ public class PasswordResetService {
         user.changePasswordHash(passwordEncoder.encode(newPassword));
         link.spend(now);
         sessions.endEverySession(user.getId());
+        devices.forgetAll(user.getId());
     }
 
     /** Drops rows whose links have expired. They already admit nothing; this is space, not safety. */

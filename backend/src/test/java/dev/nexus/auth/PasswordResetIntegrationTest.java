@@ -43,6 +43,9 @@ class PasswordResetIntegrationTest extends PostgresIntegrationTest {
     @Autowired
     JdbcTemplate jdbc;
 
+    @Autowired
+    DeviceTokenRepository devices;
+
     private HttpTestClient http;
 
     @BeforeEach
@@ -144,6 +147,23 @@ class PasswordResetIntegrationTest extends PostgresIntegrationTest {
         reset(mailedToken(), NEW_PASSWORD);
 
         assertThat(http.post("/auth/refresh", "Cookie", cookie).status()).isEqualTo(401);
+    }
+
+    /** A reset ends every session, and the devices those sessions registered go with them. */
+    @Test
+    void resettingForgetsEveryDevice() {
+        Response registered = register("player@example.com", "player");
+        http.putJson(
+                "/devices",
+                Map.of("token", "apns-token-1", "platform", "IOS"),
+                "Authorization",
+                "Bearer " + registered.accessToken());
+        assertThat(devices.count()).isEqualTo(1);
+
+        requestLink("player@example.com");
+        reset(mailedToken(), NEW_PASSWORD);
+
+        assertThat(devices.count()).isZero();
     }
 
     /** Proving you can read a mailbox is not proving you know the password just set. */
