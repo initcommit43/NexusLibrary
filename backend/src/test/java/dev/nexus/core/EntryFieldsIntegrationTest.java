@@ -94,6 +94,57 @@ class EntryFieldsIntegrationTest extends PostgresIntegrationTest {
         assertThat(get()).containsEntry("private", false).containsEntry("repeatCount", 0);
     }
 
+    /** A start date set by mistake has to be something the reader can take back. */
+    @Test
+    void aDateCanBeCleared() {
+        patch(Map.of("startedAt", "2026-01-02", "finishedAt", "2026-02-03"));
+
+        Map<String, Object> entry = patch(Map.of("clear", List.of("startedAt"))).body();
+
+        assertThat(entry).containsEntry("startedAt", null).containsEntry("finishedAt", "2026-02-03");
+        assertThat(patch(Map.of("clear", List.of("finishedAt"))).body()).containsEntry("finishedAt", null);
+    }
+
+    /** What null meant before clearing existed is what it still means. */
+    @Test
+    void aNullDateStillLeavesTheDateAlone() {
+        patch(Map.of("startedAt", "2026-01-02"));
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("startedAt", null);
+        body.put("notes", "a note");
+
+        assertThat(patch(body).body()).containsEntry("startedAt", "2026-01-02");
+    }
+
+    /** Emptying the finish date wins over the date finishing would stamp in the same edit. */
+    @Test
+    void aClearedFinishDateStaysEmptyOnTheEditThatReachesTheEnd() {
+        Map<String, Object> entry =
+                patch(Map.of("progressCurrent", 12, "progressMax", 12, "clear", List.of("finishedAt"))).body();
+
+        assertThat(entry).containsEntry("status", "COMPLETED").containsEntry("finishedAt", null);
+    }
+
+    @Test
+    void setAndClearTogetherAreRefused() {
+        Response response = http.patchJson(
+                "/entries/" + entryId,
+                Map.of("startedAt", "2026-01-02", "clear", List.of("startedAt")),
+                "Authorization",
+                "Bearer " + token);
+
+        assertThat(response.status()).isEqualTo(400);
+    }
+
+    @Test
+    void onlyTheDatesCanBeCleared() {
+        Response response = http.patchJson(
+                "/entries/" + entryId, Map.of("clear", List.of("status")), "Authorization", "Bearer " + token);
+
+        assertThat(response.status()).isEqualTo(400);
+    }
+
     private Map<String, Object> get() {
         Response response = http.get("/entries/" + entryId, "Authorization", "Bearer " + token);
         assertThat(response.status()).isEqualTo(200);

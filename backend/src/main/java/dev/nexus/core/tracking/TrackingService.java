@@ -15,6 +15,7 @@ import dev.nexus.core.domain.TrackableItem;
 import dev.nexus.core.domain.TrackingStatus;
 import dev.nexus.core.domain.UserEntry;
 import dev.nexus.core.domain.UserEntryRepository;
+import dev.nexus.core.tracking.dto.ClearableField;
 import dev.nexus.core.tracking.dto.TrackRequest;
 import dev.nexus.core.tracking.dto.UpdateEntryRequest;
 import java.time.Instant;
@@ -194,6 +195,9 @@ public class TrackingService {
         applyIfPresent(request.isPrivate(), entry::setPrivate);
         applyIfPresent(request.hiddenFromStatusLists(), entry::setHiddenFromStatusLists);
         completeIfFinished(entry, request.status(), wasAtTheEnd);
+        // After completing, so a date the reader asked to empty stays empty even on the edit
+        // that reaches the last episode.
+        clear(entry, request.clear());
 
         UserEntry saved = entries.save(entry);
         activity.changed(saved, before);
@@ -324,6 +328,18 @@ public class TrackingService {
                 .filter(provider -> cleared.containsAll(provider.getValue()))
                 .map(provider -> provider.getKey().name())
                 .toList();
+    }
+
+    private void clear(UserEntry entry, Set<ClearableField> fields) {
+        if (fields == null) {
+            return;
+        }
+        if (fields.contains(ClearableField.STARTED_AT)) {
+            entry.setStartedAt(null);
+        }
+        if (fields.contains(ClearableField.FINISHED_AT)) {
+            entry.setFinishedAt(null);
+        }
     }
 
     private <T> void applyIfPresent(T value, java.util.function.Consumer<T> setter) {
