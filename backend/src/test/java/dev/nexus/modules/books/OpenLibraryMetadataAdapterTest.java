@@ -12,6 +12,7 @@ import dev.nexus.core.adapter.TrackableItemData;
 import dev.nexus.core.domain.ItemState;
 import dev.nexus.core.domain.MediaType;
 import dev.nexus.core.domain.Source;
+import dev.nexus.core.domain.TrackableItem;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +41,7 @@ class OpenLibraryMetadataAdapterTest {
                 "first_publish_year", 1965,
                 "cover_i", 11481354,
                 "number_of_pages_median", 607,
+                "edition_count", 142,
                 "ratings_average", 4.25,
                 "subject", List.of("Science fiction", "Desert"));
     }
@@ -145,5 +147,30 @@ class OpenLibraryMetadataAdapterTest {
                 .thenReturn(List.of(Map.of("key", "/works/OL1W"), Map.of("key", "/works/OL2W", "title", "Real")));
 
         assertThat(adapter.search(MediaType.BOOK, "x", 5, false)).hasSize(1);
+    }
+
+    @Test
+    void keepsHowManyEditionsTheWorkHas() {
+        assertThat(adapter.toItemData(dune(), null).metadata()).containsEntry("editionCount", 142);
+    }
+
+    /**
+     * A published book is never refreshed, so a copy cached before the count was asked for is
+     * fetched once more — and only once, because every fetch since writes the key.
+     */
+    @Test
+    void aBookCachedWithoutAnEditionCountIsDueOneRefetch() {
+        TrackableItemData fresh = adapter.toItemData(Map.of("key", "/works/OL1W", "title", "Untitled"), null);
+        assertThat(fresh.metadata()).containsKey("editionCount");
+
+        TrackableItem before = new TrackableItem(
+                MediaType.BOOK, Source.OPEN_LIBRARY, "OL893414W", "Dune", null, null, ItemState.RELEASED, false,
+                Map.of("pageCount", 607));
+        TrackableItem after = new TrackableItem(
+                MediaType.BOOK, Source.OPEN_LIBRARY, "OL893414W", "Dune", null, null, ItemState.RELEASED, false,
+                adapter.toItemData(dune(), null).metadata());
+
+        assertThat(adapter.isOutdated(before)).isTrue();
+        assertThat(adapter.isOutdated(after)).isFalse();
     }
 }

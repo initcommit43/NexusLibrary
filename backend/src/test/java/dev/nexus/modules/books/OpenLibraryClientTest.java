@@ -20,7 +20,8 @@ import org.springframework.web.client.RestClient;
 class OpenLibraryClientTest {
 
     private static final String FIELDS =
-            "key,title,author_name,first_publish_year,cover_i,number_of_pages_median,subject,ratings_average";
+            "key,title,author_name,first_publish_year,cover_i,number_of_pages_median,subject,ratings_average,"
+                    + "edition_count";
 
     private MockRestServiceServer server;
     private OpenLibraryClient client;

@@ -36,7 +36,8 @@ public class OpenLibraryClient {
      * fields nothing here reads.
      */
     private static final String FIELDS =
-            "key,title,author_name,first_publish_year,cover_i,number_of_pages_median,subject,ratings_average";
+            "key,title,author_name,first_publish_year,cover_i,number_of_pages_median,subject,ratings_average,"
+                    + "edition_count";
 
     /** How many work keys go into one batched search. Longer URLs start being refused. */
     private static final int BATCH_SIZE = 20;

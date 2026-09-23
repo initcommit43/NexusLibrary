@@ -13,6 +13,7 @@ import dev.nexus.core.adapter.TrackableItemData;
 import dev.nexus.core.domain.ItemState;
 import dev.nexus.core.domain.MediaType;
 import dev.nexus.core.domain.Source;
+import dev.nexus.core.domain.TrackableItem;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -34,6 +35,9 @@ public class OpenLibraryMetadataAdapter implements MetadataAdapter {
 
     /** Open Library's subject lists run to hundreds of entries; a shelf needs a handful. */
     private static final int MAX_SUBJECTS = 8;
+
+    /** How many editions Open Library groups under the work. */
+    static final String EDITION_COUNT = "editionCount";
 
     /**
      * What a book's own page keeps of the work record's lists.
@@ -66,6 +70,15 @@ public class OpenLibraryMetadataAdapter implements MetadataAdapter {
     @Override
     public Source source() {
         return Source.OPEN_LIBRARY;
+    }
+
+    /**
+     * A published book is never refreshed, so a copy cached before the edition count was asked
+     * for would go without it for good. Once only: every fetch since writes the key.
+     */
+    @Override
+    public boolean isOutdated(TrackableItem item) {
+        return !item.getMetadata().containsKey(EDITION_COUNT);
     }
 
     /** {@code includeAdult} is ignored: Open Library rates nothing, so there is nothing to filter on. */
@@ -250,6 +263,10 @@ public class OpenLibraryMetadataAdapter implements MetadataAdapter {
 
         // Editions of one work differ in length; the median is the honest single number.
         putIfPresent(metadata, "pageCount", doc.get("number_of_pages_median"));
+
+        // Written even when Open Library has none, so a copy cached before this field existed
+        // can be told apart from one that simply has no count. See isOutdated.
+        metadata.put(EDITION_COUNT, doc.get("edition_count") instanceof Number count ? count.intValue() : null);
 
         if (doc.get("ratings_average") instanceof Number rating && rating.doubleValue() > 0) {
             metadata.put("externalRating", Math.round(rating.doubleValue() * RATING_SCALE));
