@@ -206,6 +206,20 @@ public class IgdbClient {
         return found.stream().findFirst();
     }
 
+    /**
+     * How long players report a game taking, in seconds. Its own endpoint and its own round
+     * trip — IGDB does not expand it from the game — and empty for most games, since it is
+     * only as good as the submissions behind it.
+     */
+    public Optional<Map<String, Object>> findTimeToBeat(String externalId) {
+        List<Map<String, Object>> found = post(
+                "where game_id = %s; fields hastily,normally,completely,count; limit 1;"
+                        .formatted(Long.parseLong(externalId)),
+                "/game_time_to_beats");
+
+        return found.stream().findFirst();
+    }
+
     public List<Map<String, Object>> findGameById(String externalId) {
         return post("where id = %s; fields %s; limit 1;".formatted(Long.parseLong(externalId), GAME_FIELDS));
     }

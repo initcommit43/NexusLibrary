@@ -157,7 +157,38 @@ public class IgdbMetadataAdapter implements MetadataAdapter {
         if (!isIgdbId(externalId)) {
             return Optional.empty();
         }
-        return client.findGameDetail(externalId).map(this::toDetail);
+        return client.findGameDetail(externalId).map(game -> {
+            Map<String, Object> detail = toDetail(game);
+            putIfPresent(detail, "timeToBeat", timeToBeat(externalId));
+            return detail;
+        });
+    }
+
+    /**
+     * Player-reported playtimes, in seconds as IGDB keeps them. Most games have no entry, so
+     * a miss is the normal case — and a failure here is only ever this one figure missing,
+     * never the rest of the page.
+     */
+    private Map<String, Object> timeToBeat(String externalId) {
+        Map<String, Object> row;
+        try {
+            row = client.findTimeToBeat(externalId).orElse(Map.of());
+        } catch (RuntimeException e) {
+            log.warn("Could not fetch IGDB time to beat for {}, leaving it out: {}", externalId, e.toString());
+            return null;
+        }
+
+        Map<String, Object> times = new LinkedHashMap<>();
+        for (String key : List.of("hastily", "normally", "completely")) {
+            if (row.get(key) instanceof Number seconds && seconds.longValue() > 0) {
+                times.put(key, seconds.longValue());
+            }
+        }
+        if (times.isEmpty()) {
+            return null;
+        }
+        putIfPresent(times, "count", row.get("count"));
+        return times;
     }
 
     /** A game has no key art of banner shape, so its first screenshot stands in for one. */

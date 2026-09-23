@@ -136,4 +136,15 @@ class IgdbClientTest {
 
         server.verify();
     }
+
+    @Test
+    void timeToBeatIsAskedOfItsOwnEndpointByGameId() {
+        server.expect(requestTo("https://igdb.test/v4/game_time_to_beats"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("where game_id = 1942;")))
+                .andRespond(withSuccess("[]", MediaType.APPLICATION_JSON));
+
+        assertThat(client.findTimeToBeat("1942")).isEmpty();
+
+        server.verify();
+    }
 }

@@ -47,8 +47,8 @@ public class MediaDetailService {
      */
     static final String VERSION_KEY = "schemaVersion";
 
-    /** 5: IGDB age ratings and release status. */
-    static final int DETAIL_VERSION = 5;
+    /** 6: IGDB time to beat. */
+    static final int DETAIL_VERSION = 6;
 
     private static final Logger log = LoggerFactory.getLogger(MediaDetailService.class);
 

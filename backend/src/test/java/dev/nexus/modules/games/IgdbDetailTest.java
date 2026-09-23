@@ -153,4 +153,31 @@ class IgdbDetailTest {
     void aGameWithNoStatusHasNone() {
         assertThat(detailOf(Map.of("storyline", "A story."))).doesNotContainKey("releaseStatus");
     }
+
+    @Test
+    void timeToBeatIsKeptInSecondsWithHowManyReportedIt() {
+        when(client.findTimeToBeat("1942"))
+                .thenReturn(Optional.of(Map.of("hastily", 134552, "normally", 254778, "completely", 581483, "count", 41)));
+
+        Map<String, Object> detail = detailOf(Map.of("storyline", "A witcher hunts."));
+
+        assertThat((Map<String, Object>) detail.get("timeToBeat"))
+                .isEqualTo(Map.of("hastily", 134552L, "normally", 254778L, "completely", 581483L, "count", 41));
+    }
+
+    /** Most games have no entry at all; that is no figure, not a zero. */
+    @Test
+    void aGameNobodyHasTimedHasNoTimeToBeat() {
+        assertThat(detailOf(Map.of("storyline", "A story."))).doesNotContainKey("timeToBeat");
+    }
+
+    /** A second round trip, so its failure costs that one figure and never the page. */
+    @Test
+    void aFailedTimeToBeatLookupLeavesTheRestOfTheDetail() {
+        when(client.findTimeToBeat("1942")).thenThrow(new IgdbUnavailableException("down"));
+
+        Map<String, Object> detail = detailOf(Map.of("storyline", "A story."));
+
+        assertThat(detail).containsEntry("storyline", "A story.").doesNotContainKey("timeToBeat");
+    }
 }
