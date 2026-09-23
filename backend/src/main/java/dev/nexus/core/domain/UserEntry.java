@@ -79,6 +79,16 @@ public class UserEntry {
 
     private String notes;
 
+    /** Times gone through again after the first: a rewatch, a replay, a reread. */
+    @Column(name = "repeat_count", nullable = false)
+    private int repeatCount;
+
+    @Column(name = "is_private", nullable = false)
+    private boolean isPrivate;
+
+    @Column(name = "hidden_from_status_lists", nullable = false)
+    private boolean hiddenFromStatusLists;
+
     @Column(name = "created_at", nullable = false, insertable = false, updatable = false)
     private Instant createdAt;
 
@@ -182,6 +192,30 @@ public class UserEntry {
 
     public void setImportedFrom(Provider importedFrom) {
         this.importedFrom = importedFrom;
+    }
+
+    public int getRepeatCount() {
+        return repeatCount;
+    }
+
+    public void setRepeatCount(int repeatCount) {
+        this.repeatCount = repeatCount;
+    }
+
+    public boolean isPrivate() {
+        return isPrivate;
+    }
+
+    public void setPrivate(boolean isPrivate) {
+        this.isPrivate = isPrivate;
+    }
+
+    public boolean isHiddenFromStatusLists() {
+        return hiddenFromStatusLists;
+    }
+
+    public void setHiddenFromStatusLists(boolean hiddenFromStatusLists) {
+        this.hiddenFromStatusLists = hiddenFromStatusLists;
     }
 
     public boolean isFavorite() {

@@ -1,5 +1,6 @@
 package dev.nexus.core.tracking.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import dev.nexus.core.domain.MediaType;
 import dev.nexus.core.domain.ProgressUnit;
 import dev.nexus.core.domain.Provider;
@@ -38,6 +39,12 @@ public record TrackedItemResponse(
         /** Which service this entry was imported from, if it was not added by hand. */
         Provider importedFrom,
         String notes,
+        /** Times gone through again after the first: a rewatch, a replay, a reread. */
+        int repeatCount,
+        /** Stored for the reader to set; nothing is shown to anyone else yet, so nothing reads it. */
+        @JsonProperty("private") boolean isPrivate,
+        /** Stored for the reader to set; the status lists do not filter on it yet. */
+        boolean hiddenFromStatusLists,
         /** When the entry last changed here — an edit, or an import that moved something. */
         Instant updatedAt,
         /**
@@ -78,6 +85,9 @@ public record TrackedItemResponse(
                 entry.getFavoriteRank(),
                 entry.getImportedFrom(),
                 entry.getNotes(),
+                entry.getRepeatCount(),
+                entry.isPrivate(),
+                entry.isHiddenFromStatusLists(),
                 entry.getUpdatedAt(),
                 lastActivityAt);
     }

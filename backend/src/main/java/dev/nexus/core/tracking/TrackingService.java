@@ -190,6 +190,9 @@ public class TrackingService {
         if (request.favorite() != null) {
             entry.setFavorite(request.favorite());
         }
+        applyIfPresent(request.repeatCount(), entry::setRepeatCount);
+        applyIfPresent(request.isPrivate(), entry::setPrivate);
+        applyIfPresent(request.hiddenFromStatusLists(), entry::setHiddenFromStatusLists);
         completeIfFinished(entry, request.status(), wasAtTheEnd);
 
         UserEntry saved = entries.save(entry);
