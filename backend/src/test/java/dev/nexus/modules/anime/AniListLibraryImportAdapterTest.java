@@ -103,6 +103,21 @@ class AniListLibraryImportAdapterTest {
     }
 
     @Test
+    void theRepeatCountAndFlagsComeAcross() {
+        Map<String, Object> flagged = row(true);
+        flagged.put("repeat", 2);
+        flagged.put("private", true);
+        flagged.put("hiddenFromStatusLists", false);
+        when(client.fetchList(eq("reader"), eq(MediaType.ANIME), anyString())).thenReturn(List.of(flagged));
+
+        ImportedEntry entry = adapter.pullLibrary(account).getFirst();
+
+        assertThat(entry.repeatCount()).isEqualTo(2);
+        assertThat(entry.isPrivate()).isTrue();
+        assertThat(entry.hiddenFromStatusLists()).isFalse();
+    }
+
+    @Test
     void aHalfKnownDateIsLeftEmpty() {
         Map<String, Object> partial = row(true);
         partial.put("startedAt", new HashMap<>(Map.of("year", 2021)));

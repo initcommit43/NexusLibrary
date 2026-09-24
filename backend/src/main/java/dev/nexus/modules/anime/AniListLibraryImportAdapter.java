@@ -69,7 +69,10 @@ public class AniListLibraryImportAdapter implements LibraryImportAdapter {
                 rating(row.get("score")),
                 RATING_MAX,
                 fuzzyDate(row.get("startedAt")),
-                fuzzyDate(row.get("completedAt")));
+                fuzzyDate(row.get("completedAt")),
+                number(row.get("repeat")),
+                flag(row.get("private")),
+                flag(row.get("hiddenFromStatusLists")));
     }
 
     /**
@@ -124,6 +127,10 @@ public class AniListLibraryImportAdapter implements LibraryImportAdapter {
         Integer month = number(date.get("month"));
         Integer day = number(date.get("day"));
         return year == null || month == null || day == null ? null : LocalDate.of(year, month, day);
+    }
+
+    private Boolean flag(Object value) {
+        return value instanceof Boolean b ? b : null;
     }
 
     private Integer number(Object value) {

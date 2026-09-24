@@ -152,6 +152,9 @@ public class AniListClient {
                     status
                     progress
                     progressVolumes
+                    repeat
+                    private
+                    hiddenFromStatusLists
                     score(format: POINT_100)
                     startedAt { year month day }
                     completedAt { year month day }

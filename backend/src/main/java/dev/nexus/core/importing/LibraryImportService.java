@@ -298,7 +298,10 @@ public class LibraryImportService {
             Short rating,
             LocalDate startedAt,
             LocalDate finishedAt,
-            Provider importedFrom) {
+            Provider importedFrom,
+            int repeatCount,
+            boolean isPrivate,
+            boolean hiddenFromStatusLists) {
 
         static State of(UserEntry entry) {
             return new State(
@@ -309,7 +312,10 @@ public class LibraryImportService {
                     entry.getRating(),
                     entry.getStartedAt(),
                     entry.getFinishedAt(),
-                    entry.getImportedFrom());
+                    entry.getImportedFrom(),
+                    entry.getRepeatCount(),
+                    entry.isPrivate(),
+                    entry.isHiddenFromStatusLists());
         }
     }
 
@@ -326,6 +332,18 @@ public class LibraryImportService {
         }
         if (entry.getFinishedAt() == null) {
             entry.setFinishedAt(imported.finishedAt());
+        }
+
+        // A repeat count is the provider's tally, like progress. The flags only ever switch
+        // on: an entry the reader hid here must not reappear because the provider never hid it.
+        if (imported.repeatCount() != null) {
+            entry.setRepeatCount(imported.repeatCount());
+        }
+        if (Boolean.TRUE.equals(imported.isPrivate())) {
+            entry.setPrivate(true);
+        }
+        if (Boolean.TRUE.equals(imported.hiddenFromStatusLists())) {
+            entry.setHiddenFromStatusLists(true);
         }
     }
 

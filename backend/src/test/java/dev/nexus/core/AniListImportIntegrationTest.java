@@ -292,6 +292,50 @@ class AniListImportIntegrationTest extends PostgresIntegrationTest {
     }
 
     @Test
+    void theRepeatCountAndFlagsLandOnTheEntry() {
+        Map<String, Object> flagged = listRow(21, "ANIME", 430);
+        flagged.put("repeat", 2);
+        flagged.put("private", true);
+        flagged.put("hiddenFromStatusLists", true);
+        when(anilistClient.fetchList("reader", MediaType.ANIME, "tok")).thenReturn(List.of(flagged));
+
+        runImport();
+
+        assertThat(animeEntry()).satisfies(entry -> {
+            assertThat(entry.getRepeatCount()).isEqualTo(2);
+            assertThat(entry.isPrivate()).isTrue();
+            assertThat(entry.isHiddenFromStatusLists()).isTrue();
+        });
+    }
+
+    /** A flag the reader set here is theirs; AniList not having it set is no reason to lift it. */
+    @Test
+    void aReimportNeverLiftsAFlagTheReaderSet() {
+        runImport();
+        UserEntry entry = animeEntry();
+        entry.setPrivate(true);
+        entry.setHiddenFromStatusLists(true);
+        entries.save(entry);
+
+        Map<String, Object> unflagged = listRow(21, "ANIME", 430);
+        unflagged.put("private", false);
+        unflagged.put("hiddenFromStatusLists", false);
+        when(anilistClient.fetchList("reader", MediaType.ANIME, "tok")).thenReturn(List.of(unflagged));
+
+        runImport();
+
+        assertThat(animeEntry().isPrivate()).isTrue();
+        assertThat(animeEntry().isHiddenFromStatusLists()).isTrue();
+    }
+
+    private UserEntry animeEntry() {
+        return entries.findByUserIdOrderByUpdatedAtDesc(userId).stream()
+                .filter(entry -> entry.getItem().getMediaType() == MediaType.ANIME)
+                .findFirst()
+                .orElseThrow();
+    }
+
+    @Test
     void anEntryRemembersThatAniListPutItThere() {
         runImport();
 
