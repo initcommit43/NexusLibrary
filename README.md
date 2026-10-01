@@ -83,3 +83,14 @@ cd frontend && npm run lint && npm run build
 The suite covers the two claims the architecture rests on: a second user tracking an
 already-cached title costs no additional API call, and no user can reach another user's
 entry by any route.
+
+## License
+
+The source code is licensed under the [GNU Affero General Public License v3.0](LICENSE).
+If you run a modified version as a network service, you must offer its source to the
+people who use it.
+
+The license covers the code only. The NexusLibrary name and the NL logo are not licensed
+for use by forks. Metadata comes from IGDB, TMDB, AniList, MyAnimeList, Simkl, Steam and
+Open Library: anyone running this code needs their own API keys and must follow each
+provider's terms.
