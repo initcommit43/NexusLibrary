@@ -135,6 +135,12 @@
   /* The square an icon-only control takes standing on its own: the header, the theme dock. */
   --icon-control: 2.5rem; /* 40 */
 
+  /*
+   * The content column. Here rather than on .shell, because the footer and the legal and sign-in
+   * pages that sit outside .shell inset themselves by it too.
+   */
+  --shell-max: 86rem;
+
   /* A tab on the phone's floating bar, icon over label, and the widest that bar's tabs run. */
   --tab-bar-tab: 3.375rem; /* 54 */
   --tab-bar-max: 24rem;

@@ -698,7 +698,6 @@ button.small {
   flex-direction: column;
   min-height: 100vh;
 
-  --shell-max: 86rem;
   /* How far the docks sit in from the window's corners; one value, so the two mirror. */
   --dock-corner: calc(var(--space-3) + 5px);
 
@@ -6902,6 +6901,12 @@ a.icon-button.active {
 .auth-page {
   grid-template-rows: 1fr auto;
   gap: var(--space-5);
+  /*
+   * No side or bottom padding, so the footer spans the window and insets itself exactly as it
+   * does on every other page. The card is narrower than any desktop window and needs none.
+   */
+  padding-inline: 0;
+  padding-bottom: 0;
 }
 
 /* --- legal pages --- */
