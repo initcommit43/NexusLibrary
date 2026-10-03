@@ -351,6 +351,35 @@ button.small {
   transform: translateY(-100%);
 }
 
+/*
+ * Over a title's banner, which runs up behind it: the bar lets the art show through, as
+ * AniList's does, and takes its full ground back the moment it is reached for.
+ *
+ * A dark tint with light words in either theme, not the bar's own ground thinned out: a
+ * pale wash over dark key art left the links grey on grey. The text tokens are set over
+ * for the bar alone, so everything in it follows without a rule of its own.
+ */
+.shell-header.see-through {
+  border-bottom-color: transparent;
+  transition:
+    transform var(--duration-slow) var(--ease),
+    background var(--duration-base) var(--ease);
+}
+
+.shell-header.see-through:not(:hover, :focus-within) {
+  --text: var(--banner-text);
+  --text-body: var(--banner-text);
+  --text-muted: var(--banner-muted);
+  --border-strong: rgb(255 255 255 / 0.35);
+  background: var(--scrim);
+  color: var(--banner-text);
+}
+
+/* The round controls keep only their ring: a filled disc would be the one pale thing up there. */
+.shell-header.see-through:not(:hover, :focus-within) .icon-button {
+  background: transparent;
+}
+
 .brand {
   display: flex;
   align-items: center;
@@ -5690,15 +5719,18 @@ input.filter-control::-webkit-search-cancel-button {
    */
   width: 100vw;
   margin-inline: calc(50% - 50vw);
-  margin-top: calc(var(--space-5) * -1);
-  height: 16rem;
+  /* Up past the page's own top padding and the header too, which it shows through. */
+  margin-top: calc(-1 * (var(--space-5) + 3.5rem));
+  /* All but the header's height of it in plain view: about the band AniList shows. */
+  height: 21.5rem;
   background-size: cover;
   background-position: center;
 }
 
+/* The cover's column is AniList's width: wide enough to read, not so wide it leads the page. */
 .media-head {
   display: grid;
-  grid-template-columns: 15rem 1fr;
+  grid-template-columns: 13.5rem 1fr;
   gap: var(--space-4);
   align-items: start;
 }
@@ -5715,7 +5747,7 @@ input.filter-control::-webkit-search-cancel-button {
  */
 .media-cover {
   width: 100%;
-  aspect-ratio: 3 / 4;
+  aspect-ratio: 5 / 7;
   object-fit: cover;
   border-radius: 1px;
   border: 2px solid var(--card-border);
@@ -5852,7 +5884,7 @@ input.filter-control::-webkit-search-cancel-button {
 /* Same columns as the head, so the facts sit directly beneath the cover. */
 .media-layout {
   display: grid;
-  grid-template-columns: 15rem 1fr;
+  grid-template-columns: 13.5rem 1fr;
   gap: var(--space-4);
   align-items: start;
 }
@@ -6206,6 +6238,7 @@ input.filter-control::-webkit-search-cancel-button {
 
   /* About two fifths of the screen's width, so the cover stands on the lower half of it. */
   .media-banner {
+    margin-top: calc(var(--space-5) * -1);
     height: 10rem;
   }
 

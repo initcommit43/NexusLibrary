@@ -130,7 +130,7 @@ export const MediaPage = () => {
   const entry = media.entry
 
   return (
-    <AppShell module={module}>
+    <AppShell module={module} overBanner={banner !== null}>
       {/* Banner and head are one block, so the cover can ride the banner's lower edge
           without fighting the page column's own spacing. */}
       <div className={banner ? 'media-hero has-banner' : 'media-hero'}>

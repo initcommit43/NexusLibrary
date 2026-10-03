@@ -10,6 +10,7 @@ import { ThemeToggle } from './ThemeToggle'
 import { useCurrentModule } from '../modules/useCurrentModule'
 import { defaultTypeOf, typeBySlug } from '../modules/registry'
 import { useHideOnScroll } from './useHideOnScroll'
+import { useScrolledPast } from './useScrolledPast'
 import { useNarrowScreen } from './useNarrowScreen'
 import type { ModuleDefinition } from '../modules/registry'
 
@@ -18,16 +19,27 @@ import type { ModuleDefinition } from '../modules/registry'
  * activity span modules, but you are still somewhere, and remembering the last module you
  * picked is what keeps the right shelves in the nav while you are there.
  */
+/** How far down a page's banner reaches, past which a see-through header turns solid again. */
+const BANNER_REACH = 300
+
 export const AppShell = ({
   children,
   module,
+  overBanner = false,
 }: {
   children: React.ReactNode
   module?: ModuleDefinition
+  /**
+   * The page runs a banner up behind the header, which then lets it show through while the
+   * banner is what lies beneath it. A desk alone: a phone has no header to see through.
+   */
+  overBanner?: boolean
 }) => {
   const current = useCurrentModule(module)
   const hidden = useHideOnScroll()
   const narrow = useNarrowScreen()
+  const pastBanner = useScrolledPast(overBanner && !narrow ? BANNER_REACH : null)
+  const seeThrough = overBanner && !narrow && !pastBanner
 
   // Which shelf search will cover. Pages that span modules carry no type, so they get the
   // module's first — the same shelf its bare path opens.
@@ -35,7 +47,11 @@ export const AppShell = ({
 
   return (
     <div className="shell">
-      <header className={hidden ? 'shell-header hidden' : 'shell-header'}>
+      <header
+        className={['shell-header', hidden && 'hidden', seeThrough && 'see-through']
+          .filter(Boolean)
+          .join(' ')}
+      >
         <div className="header-left">
           <ModuleSwitcher current={current} />
         </div>
