@@ -2347,20 +2347,26 @@ input.filter-control::-webkit-search-cancel-button {
   gap: var(--space-5) 2.5rem;
 }
 
-.finished-months {
+/*
+ * Capped and centred in the room the map leaves, so the months stand as a group rather than
+ * seven bars strung out across half the card.
+ */
+.activity-months {
   display: flex;
   flex: 1 1 17.5rem;
   flex-direction: column;
   gap: var(--space-2);
   min-width: 0;
+  max-width: 28rem;
+  margin-inline: auto;
 }
 
-.finished-months-title {
+.activity-months-title {
   color: var(--text-body);
   font-size: var(--text-sm);
 }
 
-.finished-months-bars {
+.activity-months-bars {
   display: flex;
   align-items: flex-end;
   gap: var(--space-2);
@@ -2368,7 +2374,7 @@ input.filter-control::-webkit-search-cancel-button {
   border-bottom: 1px solid var(--border-strong);
 }
 
-.finished-month {
+.activity-month {
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -2378,7 +2384,7 @@ input.filter-control::-webkit-search-cancel-button {
   height: 100%;
 }
 
-.finished-month-amount {
+.activity-month-amount {
   color: var(--text);
   font-family: var(--font-display);
   font-size: var(--text-xs);
@@ -2387,7 +2393,7 @@ input.filter-control::-webkit-search-cancel-button {
 }
 
 /* Scaled to the room left under the figure, and never so short that a month vanishes. */
-.finished-month-bar {
+.activity-month-bar {
   width: 100%;
   max-width: 2.25rem;
   height: max(2px, calc(var(--share) * (100% - 1.25rem)));
@@ -2395,18 +2401,18 @@ input.filter-control::-webkit-search-cancel-button {
   background: var(--accent);
 }
 
-.finished-month-bar.is-running {
+.activity-month-bar.is-running {
   background: color-mix(in srgb, var(--accent) 30%, var(--surface));
 }
 
-.finished-months-axis {
+.activity-months-axis {
   display: flex;
   gap: var(--space-2);
   color: var(--text-body);
   font-size: var(--text-xs);
 }
 
-.finished-months-axis span {
+.activity-months-axis span {
   flex: 1;
   text-align: center;
 }

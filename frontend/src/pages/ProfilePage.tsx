@@ -16,7 +16,7 @@ import { CharacterPicker } from '../components/CharacterPicker'
 import { ProfileAvatar } from '../components/ProfileAvatar'
 import { ProfileBannerFrame } from '../components/ProfileBannerFrame'
 import { Figures } from '../components/Figures'
-import { FinishedByMonth, ProfileRings, ShelfTable } from '../components/ProfileStats'
+import { ActivityByMonth, ProfileRings, ShelfTable } from '../components/ProfileStats'
 import { SegmentedControl } from '../components/SegmentedControl'
 import { statusSplit, summarise, timeSpent } from '../components/stats'
 import { FavouriteBands } from '../components/FavouriteBands'
@@ -422,15 +422,7 @@ export const ProfilePage = () => {
             </div>
             <div className="profile-activity">
               <ActivityHeatmap days={history} weeks={HISTORY_WEEKS} labelled />
-              <FinishedByMonth
-                entries={
-                  scope === null
-                    ? entries
-                    : entries.filter((entry) =>
-                        scope.types.some((type) => type.mediaType === entry.mediaType),
-                      )
-                }
-              />
+              <ActivityByMonth days={history} />
             </div>
           </section>
         </>
