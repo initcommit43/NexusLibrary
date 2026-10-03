@@ -49,11 +49,17 @@ export const ActivityHeatmap = ({
   days,
   weeks,
   aside,
+  labelled = false,
 }: {
   days: ActivityDay[]
   weeks: number
   /** Drawn on the scale's line at the map's left edge, opposite the scale. */
   aside?: ReactNode
+  /**
+   * Months over the columns and weekdays down the side, in place of the scale. For a map
+   * read on its own terms, where a square has to be placeable in the year without a hover.
+   */
+  labelled?: boolean
 }) => {
   const { tip, show, hide } = useTooltip()
 
@@ -100,30 +106,62 @@ export const ActivityHeatmap = ({
     </p>
   )
 
-  return (
-    <div className="heatmap">
-      <div className="heatmap-grid" onPointerLeave={hide}>
-        {columns.map((column) => (
-          <div key={key(column[0].date)} className="heatmap-week">
-            {column.map(({ date, amount, ahead }) => (
-              <span
-                key={key(date)}
-                className={ahead ? 'heatmap-day is-ahead' : 'heatmap-day'}
-                data-step={step(amount)}
-                // Hover and touch both open it; the map is a graphic and its numbers are
-                // read out below it, so nothing here is only reachable by pointer.
-                onPointerEnter={(event) =>
-                  !ahead &&
-                  show(event, {
-                    title: spellOut(date),
-                    lines: [amount === 1 ? '1 title' : `${amount} titles`],
-                  })
-                }
-              />
+  // A column is named by the month that begins in it, and the first by whatever it opens on.
+  const monthLabels = columns.map((column, at) => {
+    const opening = at === 0 ? column[0] : column.find(({ date }) => date.getDate() === 1)
+    return opening ? MONTHS[opening.date.getMonth()] : ''
+  })
+
+  const grid = (
+    <div className="heatmap-grid" onPointerLeave={hide}>
+      {columns.map((column) => (
+        <div key={key(column[0].date)} className="heatmap-week">
+          {column.map(({ date, amount, ahead }) => (
+            <span
+              key={key(date)}
+              className={ahead ? 'heatmap-day is-ahead' : 'heatmap-day'}
+              data-step={step(amount)}
+              // Hover and touch both open it; the map is a graphic and its numbers are
+              // read out below it, so nothing here is only reachable by pointer.
+              onPointerEnter={(event) =>
+                !ahead &&
+                show(event, {
+                  title: spellOut(date),
+                  lines: [amount === 1 ? '1 title' : `${amount} titles`],
+                })
+              }
+            />
+          ))}
+        </div>
+      ))}
+    </div>
+  )
+
+  if (labelled) {
+    return (
+      <div className="heatmap is-labelled">
+        <div className="heatmap-months" aria-hidden>
+          {monthLabels.map((label, at) => (
+            <span key={key(columns[at][0].date)}>{label}</span>
+          ))}
+        </div>
+        <div className="heatmap-body">
+          {/* Every other day named, as a calendar's margin does: all seven crowd the squares. */}
+          <div className="heatmap-weekdays" aria-hidden>
+            {WEEKDAYS.map((day, at) => (
+              <span key={day}>{at % 2 === 1 ? day : ''}</span>
             ))}
           </div>
-        ))}
+          {grid}
+        </div>
+        <Tooltip tip={tip} />
       </div>
+    )
+  }
+
+  return (
+    <div className="heatmap">
+      {grid}
 
       {aside ? (
         <div className="heatmap-foot">

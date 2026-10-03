@@ -2098,6 +2098,67 @@ input.filter-control::-webkit-search-cancel-button {
   margin-right: var(--space-1);
 }
 
+/* --- wide: profile stats --- */
+
+/*
+ * The map as the wide profile draws it: bare on its card, larger squares named by month and
+ * weekday, so a square can be placed in the year without hovering it.
+ */
+.heatmap.is-labelled {
+  --heat-gap: 5px;
+  --heat-cell: 1.125rem;
+  --heat-weekday: 1.75rem;
+  flex: 0 1 auto;
+  min-width: 0;
+  gap: var(--space-1);
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.is-labelled .heatmap-day {
+  width: var(--heat-cell);
+  height: var(--heat-cell);
+}
+
+.heatmap-months {
+  display: flex;
+  gap: var(--heat-gap);
+  height: 0.875rem;
+  padding-left: calc(var(--heat-weekday) + var(--heat-gap));
+  color: var(--text-body);
+  font-size: var(--text-xs);
+  line-height: 1;
+}
+
+/* A cell wide, and spilling over the next ones: a month's name is longer than its square. */
+.heatmap-months span {
+  flex-shrink: 0;
+  width: var(--heat-cell);
+  white-space: nowrap;
+}
+
+.heatmap-body {
+  display: flex;
+  gap: var(--heat-gap);
+  min-width: 0;
+}
+
+.heatmap-weekdays {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: var(--heat-gap);
+  width: var(--heat-weekday);
+  color: var(--text-body);
+  font-size: 0.625rem;
+}
+
+.heatmap-weekdays span {
+  height: var(--heat-cell);
+  line-height: var(--heat-cell);
+}
+
 /* --- phone: profile --- */
 
 /*
