@@ -280,7 +280,9 @@ button.small {
           .status-options *,
           .search-card *,
           .feed-options *,
-          .filter-options *
+          .filter-options *,
+          .avatar-menu *,
+          .browse-toolbar *
         )
     ) {
     display: inline-flex;
@@ -1540,11 +1542,12 @@ input.filter-control::-webkit-search-cancel-button {
   background: var(--scrim-strong);
 }
 
-/* Under the circle, as wide as its words: the status menu's dress at the avatar's foot. */
+/* Centred under the circle, as wide as its words: the status menu's dress at the avatar's foot. */
 .avatar-menu {
   position: absolute;
   top: calc(100% + var(--space-1));
-  left: 0;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 20;
   width: max-content;
   margin: 0;
@@ -1570,11 +1573,6 @@ input.filter-control::-webkit-search-cancel-button {
 .avatar-menu button:hover:not(:disabled) {
   background: var(--surface-raised);
   color: var(--text);
-}
-
-.avatar-menu button.danger,
-.avatar-menu button.danger:hover:not(:disabled) {
-  color: var(--danger);
 }
 
 /* --- crop dialog --- */
@@ -2699,6 +2697,16 @@ input.filter-control::-webkit-search-cancel-button {
   .profile-avatar {
     width: 4rem;
     height: 4rem;
+  }
+
+  /*
+   * Centred under the smaller circle where it fits, and otherwise level with the circle's own
+   * left edge: the circle sits on the page's margin here, so a menu wider than it would hang
+   * past that margin, and the circle's edge is the line it can share instead.
+   */
+  .avatar-menu {
+    left: 0;
+    transform: translateX(max(0px, calc(2rem - 50%)));
   }
 
   /* Along the circle's foot rather than over its middle, where it would hide a face this small. */

@@ -145,7 +145,7 @@ export const ProfileAvatar = ({
         <ul className="avatar-menu" role="menu">
           <li role="none">
             <button type="button" role="menuitem" onClick={choose}>
-              Upload a new picture
+              Upload
             </button>
           </li>
           {src && (
@@ -158,13 +158,14 @@ export const ProfileAvatar = ({
                   setCropping({ kind: 'adjust', src })
                 }}
               >
-                Adjust the crop
+                Adjust
               </button>
             </li>
           )}
           <li role="none">
-            <button type="button" role="menuitem" className="danger" onClick={() => void remove()}>
-              Remove picture
+            {/* Not dressed as a danger: a picture is put back in two clicks, nothing is lost. */}
+            <button type="button" role="menuitem" onClick={() => void remove()}>
+              Remove
             </button>
           </li>
         </ul>
