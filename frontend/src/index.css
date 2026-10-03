@@ -2415,6 +2415,146 @@ input.filter-control::-webkit-search-cancel-button {
   text-align: center;
 }
 
+.shelf-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  color: var(--text-body);
+  font-size: var(--text-sm);
+  list-style: none;
+}
+
+.shelf-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.shelf-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-bar);
+}
+
+/*
+ * Finished strongest and abandoned in grey: the accent ramp says how far along, the greys
+ * say stopped. Mixed against the card so both themes keep the order.
+ */
+:is(.shelf-swatch, .shelf-bar span)[data-status='COMPLETED'] {
+  background: var(--accent);
+}
+
+:is(.shelf-swatch, .shelf-bar span)[data-status='IN_PROGRESS'] {
+  background: color-mix(in srgb, var(--accent) 65%, var(--surface));
+}
+
+:is(.shelf-swatch, .shelf-bar span)[data-status='PLANNING'] {
+  background: color-mix(in srgb, var(--accent) 25%, var(--surface));
+}
+
+:is(.shelf-swatch, .shelf-bar span)[data-status='PAUSED'] {
+  background: var(--text-muted);
+}
+
+:is(.shelf-swatch, .shelf-bar span)[data-status='DROPPED'] {
+  background: var(--text-body);
+}
+
+/* Scrolls in its box rather than squeezing the bars and the track to nothing. */
+.shelf-table-scroll {
+  overflow-x: auto;
+}
+
+.shelf-table {
+  width: 100%;
+  min-width: 47.5rem;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.shelf-col-name {
+  width: 8.25rem;
+}
+
+.shelf-col-count {
+  width: 4.75rem;
+}
+
+.shelf-col-score {
+  width: 12.75rem;
+}
+
+.shelf-col-time {
+  width: 10.125rem;
+}
+
+.shelf-table :is(th, td) {
+  padding: 0 0.75rem;
+  text-align: left;
+}
+
+.shelf-table :is(th, td):first-child {
+  padding-left: 0;
+}
+
+.shelf-table :is(th, td):last-child {
+  padding-right: 0;
+}
+
+.shelf-table thead th {
+  padding-block: var(--space-2);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-body);
+  font-size: var(--text-xs);
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.shelf-table tbody tr {
+  height: 3.5rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, var(--surface));
+}
+
+.shelf-table tbody th a {
+  color: var(--text);
+  font-size: var(--text-base);
+  font-weight: 600;
+}
+
+.shelf-table .is-numeric {
+  text-align: right;
+}
+
+.shelf-score-head {
+  display: flex;
+  justify-content: space-between;
+}
+
+.shelf-score-range {
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.shelf-bar {
+  display: flex;
+  gap: 2px;
+  height: 0.75rem;
+}
+
+.shelf-bar span {
+  border-radius: var(--radius-bar);
+}
+
+.shelf-count {
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  font-weight: 600;
+}
+
 /* --- phone: profile --- */
 
 /*
