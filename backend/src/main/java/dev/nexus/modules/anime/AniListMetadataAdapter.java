@@ -5,7 +5,6 @@ import static dev.nexus.core.adapter.Payloads.string;
 
 import dev.nexus.core.adapter.BrowseResults;
 import dev.nexus.core.adapter.BrowseShelf;
-import dev.nexus.core.adapter.CharacterPortrait;
 import dev.nexus.core.adapter.DiscoverFilters;
 import dev.nexus.core.adapter.FilterField;
 import dev.nexus.core.adapter.FetchProgress;
@@ -301,39 +300,6 @@ public class AniListMetadataAdapter implements MetadataAdapter, StudioBrowse {
     @Override
     public Optional<String> bannerFrom(Map<String, Object> detail) {
         return Optional.ofNullable(string(detail.get("bannerImage"))).filter(url -> !url.isBlank());
-    }
-
-    /**
-     * A character out of the detail's own edge list, by AniList's id for it.
-     *
-     * <p>Only characters with a portrait are offered. One without an image is still a real
-     * character, but it cannot stand as a picture, and answering with it would hand back a
-     * choice that draws as nothing.
-     */
-    @Override
-    public Optional<CharacterPortrait> characterFrom(Map<String, Object> detail, String characterId) {
-        if (characterId == null
-                || !(detail.get("characters") instanceof Map<?, ?> characters)
-                || !(characters.get("edges") instanceof List<?> edges)) {
-            return Optional.empty();
-        }
-        return edges.stream()
-                .filter(Map.class::isInstance)
-                .map(edge -> ((Map<?, ?>) edge).get("node"))
-                .filter(Map.class::isInstance)
-                .map(node -> (Map<?, ?>) node)
-                .filter(node -> characterId.equals(string(node.get("id"))))
-                .findFirst()
-                .flatMap(this::portrait);
-    }
-
-    private Optional<CharacterPortrait> portrait(Map<?, ?> node) {
-        String name = node.get("name") instanceof Map<?, ?> names ? string(names.get("full")) : null;
-        String image = node.get("image") instanceof Map<?, ?> images ? string(images.get("medium")) : null;
-        if (name == null || name.isBlank() || image == null || image.isBlank()) {
-            return Optional.empty();
-        }
-        return Optional.of(new CharacterPortrait(string(node.get("id")), name, image));
     }
 
     /** The MAL import's hard ID join: one call resolves a MAL id onto its AniList canonical. */

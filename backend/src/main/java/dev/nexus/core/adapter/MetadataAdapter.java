@@ -115,18 +115,6 @@ public interface MetadataAdapter {
     }
 
     /**
-     * One character out of a detail this adapter itself wrote, named by the source's own id.
-     *
-     * <p>Resolved here rather than trusted from a request: what a caller can name is a
-     * character, and where that character's portrait actually lives is a matter for the source
-     * that wrote the detail. A source with no characters at all has none to give, which is an
-     * answer rather than a failure.
-     */
-    default Optional<CharacterPortrait> characterFrom(Map<String, Object> detail, String characterId) {
-        return Optional.empty();
-    }
-
-    /**
      * Whether a cached copy predates something this adapter now stores, and so is due one
      * refetch whatever its state says. A released title is otherwise never refreshed, which
      * would leave every copy cached before a new field was added without it for good.
