@@ -1697,8 +1697,7 @@ input.filter-control::-webkit-search-cancel-button {
   color: var(--text-muted);
 }
 
-.profile-banner-credit,
-.profile-picture-credit {
+.profile-banner-credit {
   margin: 0;
   font-size: var(--text-xs);
 }

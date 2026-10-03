@@ -329,14 +329,10 @@ export const ProfilePage = () => {
             * avatar rides over it on the other side. The credit says where the banner came
             * from rather than leaving it an anonymous backdrop; the button is out of sight
             * until the head is reached for, like the fold control on home — it belongs on
-            * the thing it changes, but a profile is not read for its wallpaper.
+            * the thing it changes, but a profile is not read for its wallpaper. The avatar's
+            * own credit is gone: pictures are about to be uploaded rather than picked.
             */}
           <div className="profile-head-aside">
-            {picture && (
-              <p className="profile-picture-credit muted">
-                {picture.characterName} from <Link to={mediaPathFor(picture)}>{picture.title}</Link>
-              </p>
-            )}
             {banner && (
               <p className="profile-banner-credit muted">
                 Banner from <Link to={mediaPathFor(banner)}>{banner.title}</Link>
