@@ -114,14 +114,41 @@ export const readLinks = (detail: Record<string, unknown>): ExternalLink[] =>
     return [{ site, url, language: text(link.language) }]
   })
 
-/** "#70 Most Popular 2017" — AniList assembles these from parts. */
-export const readRankings = (detail: Record<string, unknown>): string[] =>
+/** One of a title's places in a chart, and the filters that draw that chart on browse. */
+export interface Ranking {
+  /** "#70 Most Popular 2017", in AniList's own capitals. */
+  label: string
+  kind: 'RATED' | 'POPULAR'
+  /** Browse's filter values for the chart: its order, and the year, season and format it covers. */
+  filters: Record<string, string>
+}
+
+const titled = (words: string) => words.replace(/\b\w/g, (first) => first.toUpperCase())
+
+/**
+ * The charts a title places in. AniList assembles each from parts, and the same parts name
+ * the browse filters that draw the chart: its order by score or popularity, narrowed to the
+ * year, season and format it was ranked within.
+ */
+export const readRankings = (detail: Record<string, unknown>): Ranking[] =>
   array(detail.rankings).flatMap((raw) => {
     const ranking = record(raw)
     const context = text(ranking.context)
-    if (typeof ranking.rank !== 'number' || !context) return []
-    const when = ranking.allTime === true ? '' : [text(ranking.season), ranking.year].filter(Boolean).join(' ')
-    return [`#${ranking.rank} ${context}${when ? ` ${when}` : ''}`]
+    const kind = ranking.type === 'POPULAR' ? 'POPULAR' : ranking.type === 'RATED' ? 'RATED' : null
+    if (typeof ranking.rank !== 'number' || !context || !kind) return []
+
+    const season = text(ranking.season)
+    const year = typeof ranking.year === 'number' ? String(ranking.year) : null
+    const allTime = ranking.allTime === true
+    const when = allTime ? '' : [season?.toLowerCase(), year].filter(Boolean).join(' ')
+
+    const filters: Record<string, string> = { sort: kind === 'RATED' ? 'SCORE_DESC' : 'POPULARITY_DESC' }
+    if (!allTime && year) filters.year = year
+    if (!allTime && season) filters.season = season
+    const format = text(ranking.format)
+    if (format) filters.format = format
+
+    return [{ label: titled(`#${ranking.rank} ${context}${when ? ` ${when}` : ''}`), kind, filters }]
   })
 
 export interface NextEpisode {

@@ -1,8 +1,20 @@
 import { Link } from 'react-router-dom'
 import type { MediaDetail } from '../api/client'
-import { browsePathFor, filtersTakeNames } from '../modules/registry'
+import { browsePathFor, browsePathWith, filtersTakeNames } from '../modules/registry'
 import { record } from './json'
 import { countdown, readNextEpisode, readRankings } from './mediaDetail'
+
+const StarIcon = () => (
+  <svg className="ranking-icon is-rated" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden>
+    <path d="m12 2.8 2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4-4.7-4.4 6.4-.8z" />
+  </svg>
+)
+
+const HeartIcon = () => (
+  <svg className="ranking-icon is-popular" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden>
+    <path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.2 3.2 4.5 6.9 4.5c2.1 0 3.6 1.1 5.1 2.9 1.5-1.8 3-2.9 5.1-2.9 3.7 0 6 3.7 4.5 7.2C19.5 16.4 12 21 12 21z" />
+  </svg>
+)
 
 /**
  * Its own reader rather than {@link text} from json: a fact is as often a number as a string
@@ -164,12 +176,19 @@ export const MediaFacts = ({ media }: { media: MediaDetail }) => {
   const until = next ? countdown(next.airingAt) : null
 
   return (
-    <aside className="media-facts">
+    <>
+      {/*
+        * Each chart its own small box above the facts, as AniList sets them, and each a way
+        * into that chart: the same order and the same year, season and format on browse.
+        */}
       {rankings.map((ranking) => (
-        <span key={ranking} className="ranking">
-          {ranking}
-        </span>
+        <Link key={ranking.label} className="ranking" to={browsePathWith(media.mediaType, ranking.filters)}>
+          {ranking.kind === 'RATED' ? <StarIcon /> : <HeartIcon />}
+          {ranking.label}
+        </Link>
       ))}
+
+      <aside className="media-facts">
 
       {next && until && (
         <div className="fact airing">
@@ -211,6 +230,7 @@ export const MediaFacts = ({ media }: { media: MediaDetail }) => {
             )}
           </div>
         ))}
-    </aside>
+      </aside>
+    </>
   )
 }

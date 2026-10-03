@@ -271,12 +271,16 @@ export const typeDefinitionFor = (mediaType: MediaType): MediaTypeDefinition | u
  * filter already chosen: arriving from "isekai" on a title's page lands on the isekai list
  * rather than on an empty bar to fill in again.
  */
-export const browsePathFor = (mediaType: MediaType, field: string, value: string): string => {
+export const browsePathFor = (mediaType: MediaType, field: string, value: string): string =>
+  browsePathWith(mediaType, { [field]: value })
+
+/** Browse for a media type with several filters, or an order, already applied. */
+export const browsePathWith = (mediaType: MediaType, filters: Record<string, string>): string => {
   const module = moduleForMediaType(mediaType)
   const type = typeDefinitionFor(mediaType)
   if (!module || !type) return '/browse'
 
-  const params = new URLSearchParams({ module: module.slug, type: type.slug, [field]: value })
+  const params = new URLSearchParams({ module: module.slug, type: type.slug, ...filters })
   return `/browse?${params}`
 }
 
