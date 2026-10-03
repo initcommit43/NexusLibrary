@@ -378,8 +378,17 @@ public class AniListMetadataAdapter implements MetadataAdapter, StudioBrowse {
                 .orElseGet(() -> string(media.get("id")));
     }
 
+    /**
+     * The extra-large cover where the query asked for it: "large" is some 230 pixels wide,
+     * under the 240 a title's page draws it at. Related titles ask for large alone, since
+     * they only ever show as tiles.
+     */
     private String coverUrl(Map<String, Object> media) {
-        return media.get("coverImage") instanceof Map<?, ?> cover ? string(cover.get("large")) : null;
+        if (!(media.get("coverImage") instanceof Map<?, ?> cover)) {
+            return null;
+        }
+        String sharpest = string(cover.get("extraLarge"));
+        return sharpest != null ? sharpest : string(cover.get("large"));
     }
 
     /**

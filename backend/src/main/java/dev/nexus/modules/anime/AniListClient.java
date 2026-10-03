@@ -50,7 +50,7 @@ public class AniListClient {
             isAdult
             description(asHtml: false)
             title { romaji english native }
-            coverImage { large }
+            coverImage { extraLarge large }
             startDate { year month day }
             genres
             studios(isMain: true) { nodes { name } }

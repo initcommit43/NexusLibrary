@@ -37,9 +37,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class IgdbMetadataAdapter implements MetadataAdapter {
 
-    /** IGDB serves thumbnails by default; the big variant is what a cover grid needs. */
+    /**
+     * IGDB serves thumbnails by default. The doubled big variant, because the plain one is 264
+     * pixels wide and a title's page draws its cover at 240 — soft on any screen past 1x.
+     */
     private static final String THUMB_SIZE = "t_thumb";
-    private static final String COVER_SIZE = "t_cover_big";
+    private static final String COVER_SIZE = "t_cover_big_2x";
 
     private static final String IMAGE_BASE = "https://images.igdb.com/igdb/image/upload/";
 

@@ -236,6 +236,17 @@ class AniListMetadataAdapterTest {
         media.put("studios", Map.of("nodes", List.of(Map.of("name", "Toei Animation"))));
         return media;
     }
+    /** The extra-large cover when it came back, and large for a query that asked for nothing more. */
+    @Test
+    void theSharpestCoverOnOfferIsTaken() {
+        Map<String, Object> asked = media();
+        asked.put("coverImage", Map.of(
+                "extraLarge", "https://anilist.test/xl.jpg", "large", "https://anilist.test/l.jpg"));
+
+        assertThat(adapter.toItemData(asked).coverUrl()).isEqualTo("https://anilist.test/xl.jpg");
+        assertThat(adapter.toItemData(media()).coverUrl()).isEqualTo("https://anilist.test/cover.jpg");
+    }
+
     /** AniList names its own banner, and leaves the field out for a title that has none. */
     @Test
     void aBannerIsReadStraightOffTheDetail() {

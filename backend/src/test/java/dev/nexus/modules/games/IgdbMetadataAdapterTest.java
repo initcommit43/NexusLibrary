@@ -83,7 +83,7 @@ class IgdbMetadataAdapterTest {
 
         TrackableItemData data = adapter.fetchById("7346").orElseThrow();
 
-        assertThat(data.coverUrl()).isEqualTo("https://images.igdb.com/igdb/image/upload/t_cover_big/co3p2d.jpg");
+        assertThat(data.coverUrl()).isEqualTo("https://images.igdb.com/igdb/image/upload/t_cover_big_2x/co3p2d.jpg");
     }
 
     @Test
