@@ -66,39 +66,45 @@ const SortMenu = ({
 
   return (
     <div className="sort-menu" ref={container}>
-      <button
-        ref={trigger}
-        type="button"
-        className="sort-trigger"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-label={`Sort by ${current?.label ?? ''}`}
-        onClick={() => setOpen((wasOpen) => !wasOpen)}
-      >
+      {/* Beside the label rather than in it, so the menu centres under the words alone. */}
+      <span className="sort-icon" aria-hidden="true" onClick={() => setOpen((wasOpen) => !wasOpen)}>
         <SortIcon />
-        {current?.label}
-      </button>
+      </span>
 
-      {open && (
-        <ul className="sort-options" role="menu">
-          {field.options.map((option) => (
-            <li key={option.value} role="none">
-              <button
-                type="button"
-                role="menuitemradio"
-                aria-checked={option.value === current?.value}
-                className={option.value === current?.value ? 'chosen' : undefined}
-                onClick={() => {
-                  setOpen(false)
-                  onChange(option.value)
-                }}
-              >
-                {option.label}
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+      <div className="sort-anchor">
+        <button
+          ref={trigger}
+          type="button"
+          className="sort-trigger"
+          aria-haspopup="menu"
+          aria-expanded={open}
+          aria-label={`Sort by ${current?.label ?? ''}`}
+          onClick={() => setOpen((wasOpen) => !wasOpen)}
+        >
+          {current?.label}
+        </button>
+
+        {open && (
+          <ul className="sort-options" role="menu">
+            {field.options.map((option) => (
+              <li key={option.value} role="none">
+                <button
+                  type="button"
+                  role="menuitemradio"
+                  aria-checked={option.value === current?.value}
+                  className={option.value === current?.value ? 'chosen' : undefined}
+                  onClick={() => {
+                    setOpen(false)
+                    onChange(option.value)
+                  }}
+                >
+                  {option.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   )
 }
