@@ -51,7 +51,20 @@ final class TmdbFilters {
             new FilterOption("nl", "Dutch"),
             new FilterOption("tr", "Turkish"));
 
+    /** Fewer votes than this and an average says more about the voters than the title. */
+    static final int RATED_BY_AT_LEAST = 200;
+
     private TmdbFilters() {}
+
+    /** TMDB's discover orders, listed as AniList lists its own; popularity is the default. */
+    static List<FilterOption> sorts(TmdbKind kind) {
+        boolean movie = kind == TmdbKind.MOVIE;
+        return List.of(
+                new FilterOption(movie ? "title.asc" : "name.asc", "Title"),
+                new FilterOption("popularity.desc", "Popularity"),
+                new FilterOption("vote_average.desc", "Average Score"),
+                new FilterOption(movie ? "primary_release_date.desc" : "first_air_date.desc", "Release Date"));
+    }
 
     static List<FilterField> fields(TmdbKind kind, List<FilterOption> genres, LocalDate today) {
         List<FilterField> fields = new ArrayList<>();
@@ -63,6 +76,7 @@ final class TmdbFilters {
         fields.add(FilterField.select("year", kind == TmdbKind.MOVIE ? "Release Year" : "First Aired", years(today)));
         fields.add(FilterField.select("rating", "Rating", RATINGS));
         fields.add(FilterField.select("language", "Language", LANGUAGES));
+        fields.add(FilterField.sort(sorts(kind), "popularity.desc"));
 
         return List.copyOf(fields);
     }
@@ -94,6 +108,15 @@ final class TmdbFilters {
         String language = language(filters);
         if (language != null) {
             params.add("with_original_language=" + language);
+        }
+
+        String sort = filters.offered(FilterField.SORT_ID, sorts(kind));
+        if (sort != null) {
+            params.add("sort_by=" + sort);
+            // Ranked by score, a film three people loved would otherwise top the list.
+            if (sort.startsWith("vote_average")) {
+                params.add("vote_count.gte=" + RATED_BY_AT_LEAST);
+            }
         }
 
         return String.join("&", params);

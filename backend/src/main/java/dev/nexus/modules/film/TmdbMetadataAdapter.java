@@ -506,6 +506,9 @@ public class TmdbMetadataAdapter implements MetadataAdapter {
         if (row.get("vote_average") instanceof Number rating && rating.doubleValue() > 0) {
             facets.put("score", Math.round(rating.doubleValue() * RATING_SCALE));
         }
+        if (row.get("vote_count") instanceof Number votes && votes.intValue() > 0) {
+            facets.put("votes", votes.intValue());
+        }
         return Map.copyOf(facets);
     }
 

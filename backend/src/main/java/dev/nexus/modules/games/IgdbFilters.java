@@ -52,7 +52,25 @@ final class IgdbFilters {
             new FilterOption("CANCELLED", "Cancelled"),
             new FilterOption("DELISTED", "Delisted"));
 
+    /**
+     * IGDB's orders as its own sort clauses. Popularity is how many people rated a game, which
+     * is what an unsorted grid already uses; by score asks for enough of them to mean it.
+     */
+    static final List<FilterOption> SORTS = List.of(
+            new FilterOption("name asc", "Title"),
+            new FilterOption("total_rating_count desc", "Popularity"),
+            new FilterOption("total_rating desc", "Average Score"),
+            new FilterOption("first_release_date desc", "Release Date"));
+
+    /** Fewer ratings than this and a game's average says more about its raters than about it. */
+    static final int RATED_BY_AT_LEAST = 25;
+
     private IgdbFilters() {}
+
+    /** The sort clause asked for, if it is one this adapter offered. */
+    static String sort(DiscoverFilters filters) {
+        return filters.offered(FilterField.SORT_ID, SORTS);
+    }
 
     static List<FilterField> fields(List<FilterOption> genres, List<FilterOption> platforms, LocalDate today) {
         List<FilterField> fields = new ArrayList<>();
@@ -66,6 +84,7 @@ final class IgdbFilters {
             fields.add(FilterField.multi("platform", "Platform", platforms));
         }
         fields.add(FilterField.select("year", "Year", years(today)));
+        fields.add(FilterField.sort(SORTS, "total_rating_count desc"));
 
         return List.copyOf(fields);
     }

@@ -98,7 +98,7 @@ public class IgdbClient {
      * @param where the caller's conditions, without the exclusions every query here carries
      */
     public List<Map<String, Object>> discoverGames(
-            String search, String where, int offset, int limit, boolean includeAdult) {
+            String search, String where, String sort, int offset, int limit, boolean includeAdult) {
         String conditions = where == null || where.isBlank()
                 ? BASE_CONDITIONS
                 : BASE_CONDITIONS + " & " + where;
@@ -106,9 +106,14 @@ public class IgdbClient {
             conditions = conditions + " & " + WITHOUT_EROTIC;
         }
 
+        // A search ranks by match and cannot also be sorted, so an order applies to listings.
         if (search == null || search.isBlank()) {
-            return post("where %s; sort total_rating_count desc; fields %s; offset %d; limit %d;"
-                    .formatted(conditions, GAME_FIELDS, offset, limit));
+            String order = sort == null ? "total_rating_count desc" : sort;
+            if (order.startsWith("total_rating desc")) {
+                conditions = conditions + " & total_rating_count >= " + IgdbFilters.RATED_BY_AT_LEAST;
+            }
+            return post("where %s; sort %s; fields %s; offset %d; limit %d;"
+                    .formatted(conditions, order, GAME_FIELDS, offset, limit));
         }
 
         return post("search \"%s\"; where %s; fields %s; offset %d; limit %d;"

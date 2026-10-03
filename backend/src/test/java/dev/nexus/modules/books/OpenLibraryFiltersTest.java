@@ -21,7 +21,7 @@ class OpenLibraryFiltersTest {
     @Test
     void theBarIsSearchSubjectYearAndLanguage() {
         assertThat(OpenLibraryFilters.fields(TODAY).stream().map(FilterField::id))
-                .containsExactly("q", "subject", "year", "language");
+                .containsExactly("q", "subject", "year", "language", "sort");
     }
 
     /**

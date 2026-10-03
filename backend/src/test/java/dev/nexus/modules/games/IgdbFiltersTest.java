@@ -48,7 +48,7 @@ class IgdbFiltersTest {
                 TODAY);
 
         assertThat(fields.stream().map(FilterField::id))
-                .containsExactly("q", "status", "genres", "platform", "year");
+                .containsExactly("q", "status", "genres", "platform", "year", "sort");
         assertThat(byId(fields, "genres").kind()).isEqualTo(FilterField.Kind.MULTI);
         assertThat(byId(fields, "platform").kind()).isEqualTo(FilterField.Kind.MULTI);
     }
@@ -58,7 +58,7 @@ class IgdbFiltersTest {
     void anEmptyLookupDropsItsControl() {
         List<FilterField> fields = IgdbFilters.fields(List.of(), List.of(), TODAY);
 
-        assertThat(fields.stream().map(FilterField::id)).containsExactly("q", "status", "year");
+        assertThat(fields.stream().map(FilterField::id)).containsExactly("q", "status", "year", "sort");
     }
 
     /**
@@ -141,6 +141,6 @@ class IgdbFiltersTest {
         when(client.platforms(IgdbFilters.PLATFORM_IDS)).thenThrow(new IgdbUnavailableException("down", new RuntimeException()));
 
         assertThat(adapter.discoverFilters(MediaType.GAME).stream().map(FilterField::id))
-                .containsExactly("q", "status", "year");
+                .containsExactly("q", "status", "year", "sort");
     }
 }

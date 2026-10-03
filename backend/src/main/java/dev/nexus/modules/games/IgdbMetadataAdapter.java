@@ -359,6 +359,7 @@ public class IgdbMetadataAdapter implements MetadataAdapter {
         List<Map<String, Object>> games = client.discoverGames(
                 filters.one("q"),
                 IgdbFilters.where(filters, Instant.now().getEpochSecond()),
+                IgdbFilters.sort(filters),
                 (page - 1) * size,
                 size,
                 includeAdult);

@@ -117,9 +117,9 @@ class AdultContentIntegrationTest extends PostgresIntegrationTest {
 
     @Test
     void discoverAsksTheSourceTheSameWay() {
-        when(igdbClient.discoverGames(any(), any(), anyInt(), anyInt(), eq(false)))
+        when(igdbClient.discoverGames(any(), any(), any(), anyInt(), anyInt(), eq(false)))
                 .thenReturn(List.of(GamesTestData.botw()));
-        when(igdbClient.discoverGames(any(), any(), anyInt(), anyInt(), eq(true)))
+        when(igdbClient.discoverGames(any(), any(), any(), anyInt(), anyInt(), eq(true)))
                 .thenReturn(List.of(GamesTestData.botw(), GamesTestData.eroticGame()));
 
         assertThat(titles(get("/catalog/discover?mediaType=GAME", hidden), "items")).hasSize(1);

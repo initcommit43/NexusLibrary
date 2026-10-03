@@ -60,6 +60,16 @@ final class OpenLibraryFilters {
             new FilterOption("jpn", "Japanese"),
             new FilterOption("chi", "Chinese"));
 
+    /**
+     * Open Library's own orders. Rating is what an unsearched grid already uses; a typed
+     * search keeps Open Library's relevance until another order is chosen.
+     */
+    static final List<FilterOption> SORTS = List.of(
+            new FilterOption("title", "Title"),
+            new FilterOption("readinglog", "Popularity"),
+            new FilterOption("rating", "Average Score"),
+            new FilterOption("new", "Release Date"));
+
     private OpenLibraryFilters() {}
 
     static List<FilterField> fields(LocalDate today) {
@@ -67,7 +77,8 @@ final class OpenLibraryFilters {
                 FilterField.text("q", "Search"),
                 FilterField.select("subject", "Subject", SUBJECTS),
                 FilterField.select("year", "First Published", years(today)),
-                FilterField.select("language", "Language", LANGUAGES));
+                FilterField.select("language", "Language", LANGUAGES),
+                FilterField.sort(SORTS, "rating"));
     }
 
     /**
@@ -81,12 +92,14 @@ final class OpenLibraryFilters {
         List<String> params = new ArrayList<>();
 
         String term = filters.one("q");
+        String sort = filters.offered(FilterField.SORT_ID, SORTS);
         if (term != null && !term.isBlank()) {
             params.add("q");
             params.add(term.trim());
-        } else {
+        }
+        if (sort != null || term == null || term.isBlank()) {
             params.add("sort");
-            params.add("rating");
+            params.add(sort != null ? sort : "rating");
         }
 
         addChosen(params, "subject", filters.one("subject"), SUBJECTS);

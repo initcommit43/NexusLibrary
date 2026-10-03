@@ -26,11 +26,22 @@ class TmdbFiltersTest {
     }
 
     @Test
-    void theBarIsSearchGenresYearRatingAndLanguage() {
+    void theBarIsSearchGenresYearRatingAndLanguageThenTheSort() {
         List<FilterField> fields = TmdbFilters.fields(TmdbKind.MOVIE, GENRES, TODAY);
 
         assertThat(fields.stream().map(FilterField::id))
-                .containsExactly("q", "genres", "year", "rating", "language");
+                .containsExactly("q", "genres", "year", "rating", "language", "sort");
+    }
+
+    /** By score, only titles enough people rated to mean it; an unoffered order goes nowhere. */
+    @Test
+    void aChosenOrderIsSentAndAScoreOrderNeedsVotes() {
+        assertThat(TmdbFilters.discoverQuery(TmdbKind.MOVIE, of(Map.of("sort", List.of("vote_average.desc")))))
+                .isEqualTo("sort_by=vote_average.desc&vote_count.gte=" + TmdbFilters.RATED_BY_AT_LEAST);
+        assertThat(TmdbFilters.discoverQuery(TmdbKind.SHOW, of(Map.of("sort", List.of("name.asc")))))
+                .isEqualTo("sort_by=name.asc");
+        assertThat(TmdbFilters.discoverQuery(TmdbKind.MOVIE, of(Map.of("sort", List.of("revenue.desc&x=1")))))
+                .isEmpty();
     }
 
     /** A film has a release year and a show has a first aired one; they are not the same word. */
@@ -45,7 +56,7 @@ class TmdbFiltersTest {
     @Test
     void anEmptyGenreListDropsItsControl() {
         assertThat(TmdbFilters.fields(TmdbKind.MOVIE, List.of(), TODAY).stream().map(FilterField::id))
-                .containsExactly("q", "year", "rating", "language");
+                .containsExactly("q", "year", "rating", "language", "sort");
     }
 
     /** TMDB reads a comma as "and" and a pipe as "or"; narrowing means the comma. */

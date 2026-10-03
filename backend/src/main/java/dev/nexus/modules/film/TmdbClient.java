@@ -92,8 +92,10 @@ public class TmdbClient {
      */
     public Map<String, Object> discover(TmdbKind kind, String query, int page, boolean includeAdult) {
         String filters = query == null || query.isBlank() ? "" : "&" + query;
+        // Popularity unless the query names an order of its own.
+        String order = filters.contains("sort_by=") ? "" : "&sort_by=popularity.desc";
         return get(
-                        "/discover/{kind}?include_adult={adult}&sort_by=popularity.desc&page={page}" + filters,
+                        "/discover/{kind}?include_adult={adult}" + order + "&page={page}" + filters,
                         kind.path(),
                         includeAdult,
                         page)
