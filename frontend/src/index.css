@@ -2973,11 +2973,24 @@ input.filter-control::-webkit-search-cancel-button {
 .stats-layout {
   display: grid;
   grid-template-columns: 8rem minmax(0, 1fr);
-  gap: var(--space-5) var(--space-6);
+  gap: var(--space-4) var(--space-6);
   align-items: start;
 }
 
+/* The rail starts level with the first section, so it waits a row under the title. */
+.stats-layout > * {
+  grid-column: 2;
+}
+
+.stats-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
 .stats-rail {
+  grid-column: 1;
+  grid-row: 2;
   /* Clears the header, whose 3.5rem .shell-header states in the same terms. */
   position: sticky;
   top: calc(3.5rem + var(--space-4));
@@ -3363,7 +3376,15 @@ input.filter-control::-webkit-search-cancel-button {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .stats-layout > *,
   .stats-rail {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .stats-rail {
+    /* Keeps the folded rail as far from the figures as it was before the title joined the grid. */
+    margin-bottom: var(--space-2);
     position: static;
     flex-direction: row;
     flex-wrap: wrap;

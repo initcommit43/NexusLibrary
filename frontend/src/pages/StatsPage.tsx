@@ -557,37 +557,43 @@ export const StatsPage = () => {
 
   return (
     <AppShell>
-      <h1 className="page-title">Stats</h1>
+      {/* One grid for the whole page, so the title and the shelf chips stand in the figures'
+          column rather than out over the rail. */}
+      <div className="stats-layout">
+        <div className="stats-head">
+          <h1 className="page-title">Stats</h1>
 
-      {error && (
-        <p className="alert" role="alert">
-          {error}
-        </p>
-      )}
+          {error && (
+            <p className="alert" role="alert">
+              {error}
+            </p>
+          )}
 
-      {!loaded && !error && <p className="muted">Reading your library…</p>}
+          {!loaded && !error && <p className="muted">Reading your library…</p>}
 
-      {loaded && (
-        <>
           {/* One shelf at a time, or the whole library added together. */}
-          <nav className="lens-bar" aria-label="Shelf">
-            {LENSES.map((candidate) => (
-              <NavLink
-                key={candidate.key}
-                to={`/stats/${candidate.key}`}
-                className={({ isActive }) => (isActive ? 'lens-link on' : 'lens-link')}
-              >
-                {candidate.label}
-              </NavLink>
-            ))}
-          </nav>
+          {loaded && (
+            <nav className="lens-bar" aria-label="Shelf">
+              {LENSES.map((candidate) => (
+                <NavLink
+                  key={candidate.key}
+                  to={`/stats/${candidate.key}`}
+                  className={({ isActive }) => (isActive ? 'lens-link on' : 'lens-link')}
+                >
+                  {candidate.label}
+                </NavLink>
+              ))}
+            </nav>
+          )}
+        </div>
 
-          {shown.length === 0 ? (
+        {loaded &&
+          (shown.length === 0 ? (
             <p className="muted">
               Nothing on this shelf yet. Track something and its figures appear here.
             </p>
           ) : (
-            <div className="stats-layout">
+            <>
               <nav className="stats-rail" aria-label="Stats sections">
                 {sections.map((section) => (
                   <a
@@ -613,10 +619,9 @@ export const StatsPage = () => {
                   </section>
                 ))}
               </div>
-            </div>
-          )}
-        </>
-      )}
+            </>
+          ))}
+      </div>
     </AppShell>
   )
 }
