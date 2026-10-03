@@ -1,4 +1,4 @@
-import { useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import type { FilterField, FilterValues } from '../api/client'
 import { useMenuDismiss } from './useMenuDismiss'
 
@@ -212,7 +212,17 @@ const Dropdown = ({
   )
 }
 
-/** A free-text box. Its label rests where the value will be until the first letter is typed. */
+/** How long typing has to pause before the text is written back to the URL. */
+const WRITE_BACK_MS = 150
+
+/**
+ * A free-text box. Its label rests where the value will be until the first letter is typed.
+ *
+ * <p>The text is held here rather than read straight from the URL. The URL catches up a beat
+ * after each keystroke, and a box bound to it was put back to the older text in between, so a
+ * quick typist lost letters. It writes back once typing pauses, and follows the URL only when
+ * something else moves it — a step back, a reset — never when the URL is merely catching up.
+ */
 const TextFilter = ({
   field,
   chosen,
@@ -224,9 +234,41 @@ const TextFilter = ({
 }) => {
   const id = useId()
   const value = chosen[0] ?? ''
+  const [text, setText] = useState(value)
+  const [sent, setSent] = useState(value)
+  const [seen, setSeen] = useState(value)
+
+  if (value !== seen) {
+    setSeen(value)
+    if (value !== sent) {
+      setText(value)
+      setSent(value)
+    }
+  }
+
+  const writing = useRef<ReturnType<typeof setTimeout>>(undefined)
+  // A box left mid-pause on the way off the page has nothing left to write to.
+  useEffect(() => () => clearTimeout(writing.current), [])
+
+  const write = (next: string) => {
+    setSent(next)
+    onChange(next ? [next] : [])
+  }
+
+  const type = (next: string) => {
+    setText(next)
+    clearTimeout(writing.current)
+    writing.current = setTimeout(() => write(next), WRITE_BACK_MS)
+  }
+
+  const clear = () => {
+    clearTimeout(writing.current)
+    setText('')
+    write('')
+  }
 
   return (
-    <div className="filter" data-typing={value ? '' : undefined}>
+    <div className="filter" data-typing={text ? '' : undefined}>
       <label className="filter-label" htmlFor={id}>
         {field.label}
       </label>
@@ -235,11 +277,11 @@ const TextFilter = ({
         id={id}
         className="filter-control"
         type="search"
-        value={value}
-        onChange={(event) => onChange(event.target.value ? [event.target.value] : [])}
+        value={text}
+        onChange={(event) => type(event.target.value)}
       />
 
-      <Affordance filled={value !== ''} label={field.label} onClear={() => onChange([])} />
+      <Affordance filled={text !== ''} label={field.label} onClear={clear} />
     </div>
   )
 }
