@@ -4364,6 +4364,118 @@ input.filter-control::-webkit-search-cancel-button {
   transition: opacity var(--duration-base) var(--ease);
 }
 
+/* --- card peek --- */
+
+/*
+ * The card beside a pointed-at cover. Fixed and above everything, since it has to clear the
+ * shelf that holds the cover; it takes no pointer, so leaving the cover always closes it.
+ */
+.card-peek {
+  position: fixed;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--card-border);
+  border-radius: 2px;
+  box-shadow: var(--shadow-2);
+  pointer-events: none;
+  animation: peek-in var(--duration-fast) var(--ease);
+}
+
+@keyframes peek-in {
+  from {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+}
+
+.card-peek.is-left {
+  animation-name: peek-in-left;
+}
+
+@keyframes peek-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-peek {
+    animation: none;
+  }
+}
+
+.peek-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.peek-lead {
+  color: var(--text);
+  font-size: var(--text-md);
+  font-weight: 600;
+}
+
+.peek-score {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-left: auto;
+  color: var(--text);
+  font-size: var(--text-md);
+  font-weight: 600;
+}
+
+.peek-face.is-high {
+  color: var(--success);
+}
+
+.peek-face.is-mid {
+  color: var(--warning);
+}
+
+.peek-face.is-low {
+  color: var(--danger);
+}
+
+.peek-studio {
+  color: var(--accent);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+.peek-format {
+  color: var(--text-body);
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+
+.peek-genres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin: var(--space-1) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.peek-genres li {
+  padding: 0.1rem var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+
 /* --- browse toolbar --- */
 
 /* What the results are narrowed by on the left; their order and layout pinned to the right. */

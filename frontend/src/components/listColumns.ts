@@ -21,9 +21,12 @@ const FORMAT_WORDS: Record<string, string> = {
   ONE_SHOT: 'One Shot',
 }
 
+/** A source's format token written out for reading, wherever a format is shown. */
+export const formatWord = (format: string): string => FORMAT_WORDS[format] ?? format.replaceAll('_', ' ')
+
 const formatOf = (entry: TrackedItem) => {
   const format = text(entry.metadata.format)
-  return format ? (FORMAT_WORDS[format] ?? format.replaceAll('_', ' ')) : null
+  return format ? formatWord(format) : null
 }
 
 const countOf = (value: unknown) => (typeof value === 'number' ? String(value) : null)

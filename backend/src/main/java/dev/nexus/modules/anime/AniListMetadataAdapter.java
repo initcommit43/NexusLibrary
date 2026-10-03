@@ -229,6 +229,12 @@ public class AniListMetadataAdapter implements MetadataAdapter, StudioBrowse {
         putIfPresent(facets, "popularity", number(media.get("popularity")));
         putIfPresent(facets, "season", string(media.get("season")));
         putIfPresent(facets, "seasonYear", number(media.get("seasonYear")));
+        // What a card's hover says first: who made it, and when the next episode lands.
+        putIfPresent(facets, "studio", mainStudio(media));
+        if (media.get("nextAiringEpisode") instanceof Map<?, ?> next) {
+            putIfPresent(facets, "nextEpisode", number(next.get("episode")));
+            putIfPresent(facets, "nextAiringAt", epochSeconds(next.get("airingAt")));
+        }
         if (media.get("genres") instanceof List<?> genres && !genres.isEmpty()) {
             facets.put("genres", genres.stream().limit(4).map(String::valueOf).toList());
         }
@@ -354,6 +360,17 @@ public class AniListMetadataAdapter implements MetadataAdapter, StudioBrowse {
      * under the 240 a title's page draws it at. Related titles ask for large alone, since
      * they only ever show as tiles.
      */
+    /** The first studio AniList marks as the main one, which is the one a title is known by. */
+    private String mainStudio(Map<String, Object> media) {
+        if (media.get("studios") instanceof Map<?, ?> studios
+                && studios.get("nodes") instanceof List<?> nodes
+                && !nodes.isEmpty()
+                && nodes.get(0) instanceof Map<?, ?> first) {
+            return string(first.get("name"));
+        }
+        return null;
+    }
+
     private String coverUrl(Map<String, Object> media) {
         if (!(media.get("coverImage") instanceof Map<?, ?> cover)) {
             return null;
