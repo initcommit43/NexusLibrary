@@ -889,7 +889,6 @@ a.list-link:hover {
   /* Stacked to the card's width, so every button on the screen is one size. */
   .settings-subview .integration-head,
   .settings-subview .integration-actions,
-  .settings-subview .integration-csv,
   .settings-subview .export-row {
     flex-direction: column;
     align-items: stretch;
@@ -910,12 +909,12 @@ a.list-link:hover {
     font-size: inherit;
   }
 
-  .settings-subview .integration-head.banner button {
+  .settings-subview .integration-head.banner button:not(.ghost) {
     background: var(--accent);
     color: var(--accent-contrast);
   }
 
-  .settings-subview .integration-head.banner button:hover:not(:disabled) {
+  .settings-subview .integration-head.banner button:not(.ghost):hover:not(:disabled) {
     background: var(--accent-hover);
   }
 
@@ -6639,16 +6638,71 @@ button.ghost.danger:hover:not(:disabled) {
 }
 
 /*
- * The upload route, under the connection buttons and quieter than them: it is what someone
- * reaches for when linking an account is impossible rather than the thing to do first.
+ * Every button on a connection card one size, whatever its label, so the cards' rows line up
+ * down the page instead of each ending where its longest service name does.
  */
-.integration-csv {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  flex-wrap: wrap;
-  padding-top: var(--space-3);
-  border-top: 1px solid var(--border);
+.connection .integration-actions button {
+  width: 11rem;
+  justify-content: center;
+}
+
+/*
+ * The whole stretch left of the buttons answers a hover, not just the service's name, which
+ * on its own is a target a few letters wide.
+ */
+.integration-name {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Said on a phone's screen for the service; a desk has the tooltip instead. */
+.integration-about {
+  display: none;
+}
+
+.integration-name .integration-tip {
+  top: calc(100% + var(--space-1));
+  left: 0;
+  transform: none;
+}
+
+.integration-tip-note {
+  display: block;
+  margin-top: var(--space-1);
+}
+
+.integration-tip-note strong {
+  font-weight: 600;
+}
+
+/* A keyboard reaches the description through the card's own button, since a name takes no focus. */
+.integration-name:hover .integration-tip,
+.integration-head:has(.integration-actions > button:focus-visible) .integration-tip {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Under the upload button rather than beside it, where it would lie across the next button. */
+.integration-actions .hint-tip {
+  top: calc(100% + var(--space-1));
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
+@media (max-width: 52rem) {
+  .integration-about {
+    display: block;
+  }
+
+  .integration-name .integration-tip {
+    display: none;
+  }
+
+  .connection .integration-actions button {
+    width: 100%;
+  }
 }
 
 /*
@@ -6997,12 +7051,13 @@ button.ghost.danger:hover:not(:disabled) {
   font-size: var(--text-xs);
 }
 
-.integration-head.banner button {
+/* The upload button keeps its outline: it is the way round connecting, not the call itself. */
+.integration-head.banner button:not(.ghost) {
   background: var(--accent-alt);
   color: var(--accent-alt-contrast);
 }
 
-.integration-head.banner button:hover:not(:disabled) {
+.integration-head.banner button:not(.ghost):hover:not(:disabled) {
   background: var(--accent-alt-hover);
 }
 

@@ -445,31 +445,29 @@ export const SettingsPage = () => {
   }
 
   /**
-   * The way in that needs no account: upload what the service exported. Sits under the
-   * connection buttons on every card, because it is the alternative to using them.
+   * The way in that needs no account: upload what the service exported. First in the card's
+   * row of buttons, ahead of the connect button it is the alternative to.
    */
-  const csvRow = (provider: ModuleProvider) => {
+  const csvButton = (provider: ModuleProvider) => {
     const hintId = `csv-hint-${provider.provider.toLowerCase()}`
     return (
-      <div className="integration-csv">
-        {/* What the file needs, shown on hover or focus rather than as a line beside the button. */}
-        <span className="hint-anchor">
-          <button
-            type="button"
-            className="ghost"
-            disabled={busy !== null}
-            aria-describedby={provider.csvHint ? hintId : undefined}
-            onClick={() => pickCsv(provider.provider)}
-          >
-            {working(provider.provider, 'import') ? 'Importing…' : 'Import from CSV'}
-          </button>
-          {provider.csvHint && (
-            <span id={hintId} role="tooltip" className="hint-tip">
-              {provider.csvHint}
-            </span>
-          )}
-        </span>
-      </div>
+      // What the file needs, shown on hover or focus rather than as a line beside the button.
+      <span className="hint-anchor">
+        <button
+          type="button"
+          className="ghost"
+          disabled={busy !== null}
+          aria-describedby={provider.csvHint ? hintId : undefined}
+          onClick={() => pickCsv(provider.provider)}
+        >
+          {working(provider.provider, 'import') ? 'Importing…' : 'Import from CSV'}
+        </button>
+        {provider.csvHint && (
+          <span id={hintId} role="tooltip" className="hint-tip">
+            {provider.csvHint}
+          </span>
+        )}
+      </span>
     )
   }
 
@@ -562,67 +560,81 @@ export const SettingsPage = () => {
     const head =
       connection && !account ? 'integration-head banner' : 'integration-head'
 
+    const csv = provider.csvHint ? csvButton(provider) : null
+    const aboutId = `about-${provider.provider.toLowerCase()}`
+
     return (
       <div key={provider.provider} className="connection">
         <div className={head}>
-          <div>
+          {/* On a desk what the service brings, and anything to do at its end, waits behind a
+              hover on its name; on a phone the card is a screen of its own and says it outright. */}
+          <div className="integration-name">
             <h3>{provider.label}</h3>
-            <p className="muted">
-              {account ? `Connected as ${account.externalUserId}` : provider.blurb}
-            </p>
+            {account ? (
+              <p className="muted">Connected as {account.externalUserId}</p>
+            ) : (
+              <p className="muted integration-about">{provider.blurb}</p>
+            )}
+            <span id={aboutId} role="tooltip" className="hint-tip integration-tip">
+              {provider.blurb}
+              {connection?.note && <span className="integration-tip-note">{connection.note}</span>}
+            </span>
           </div>
 
-          {connection &&
-            (account ? (
-              <div className="integration-actions">
-                <button
-                  type="button"
-                  disabled={busy !== null}
-                  onClick={() => void runImport(provider.provider)}
-                >
-                  {working(provider.provider, 'import') ? 'Importing…' : connection.importLabel}
-                </button>
+          <div className="integration-actions">
+            {csv}
 
-                {/*
-                  * AniList alone keeps a history worth walking, and it is its own press: a
-                  * library is what you need before anything else works, and a history is years
-                  * deep and worth waiting for separately.
-                  */}
-                {provider.provider === 'ANILIST' && (
+            {connection &&
+              (account ? (
+                <>
+                  <button
+                    type="button"
+                    disabled={busy !== null}
+                    aria-describedby={aboutId}
+                    onClick={() => void runImport(provider.provider)}
+                  >
+                    {working(provider.provider, 'import') ? 'Importing…' : connection.importLabel}
+                  </button>
+
+                  {/*
+                    * AniList alone keeps a history worth walking, and it is its own press: a
+                    * library is what you need before anything else works, and a history is years
+                    * deep and worth waiting for separately.
+                    */}
+                  {provider.provider === 'ANILIST' && (
+                    <button
+                      type="button"
+                      className="ghost"
+                      disabled={busy !== null}
+                      onClick={() => void runAniListActivity()}
+                    >
+                      {working('ANILIST', 'activity') ? 'Reading…' : 'Import activity'}
+                    </button>
+                  )}
+
                   <button
                     type="button"
                     className="ghost"
                     disabled={busy !== null}
-                    onClick={() => void runAniListActivity()}
+                    onClick={() => void disconnect(provider.provider)}
                   >
-                    {working('ANILIST', 'activity') ? 'Reading…' : 'Import activity'}
+                    Disconnect
                   </button>
-                )}
-
+                </>
+              ) : (
                 <button
                   type="button"
-                  className="ghost"
                   disabled={busy !== null}
-                  onClick={() => void disconnect(provider.provider)}
+                  aria-describedby={aboutId}
+                  onClick={() => void startConnect(provider.provider, connection)}
                 >
-                  Disconnect
+                  {working(provider.provider, 'connect') ? 'Redirecting…' : `Connect ${provider.label}`}
                 </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                disabled={busy !== null}
-                onClick={() => void startConnect(provider.provider, connection)}
-              >
-                {working(provider.provider, 'connect') ? 'Redirecting…' : `Connect ${provider.label}`}
-              </button>
-            ))}
+              ))}
+          </div>
         </div>
 
-        {connection?.note && <p className="muted note">{connection.note}</p>}
-
-        {/* The way in that needs no account, for every service that publishes an export. */}
-        {provider.csvHint && csvRow(provider)}
+        {connection?.note && <p className="muted note integration-about">{connection.note}</p>}
 
         {account?.lastSyncedAt && (
           <p className="muted">Last imported {new Date(account.lastSyncedAt).toLocaleString()}.</p>
