@@ -2555,6 +2555,70 @@ input.filter-control::-webkit-search-cancel-button {
   font-weight: 600;
 }
 
+.shelf-track {
+  position: relative;
+  height: 1.25rem;
+}
+
+.shelf-track::before {
+  content: '';
+  position: absolute;
+  inset: 9px 0 auto;
+  height: 2px;
+  border-radius: var(--radius-bar);
+  background: var(--border);
+}
+
+.shelf-track-average {
+  position: absolute;
+  top: 4px;
+  height: 12px;
+  border-left: 1px dashed var(--text-muted);
+}
+
+.shelf-track-dot {
+  position: absolute;
+  top: 4px;
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
+  border: 2px solid var(--surface);
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.shelf-track-label {
+  position: absolute;
+  top: 4px;
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  line-height: 1;
+  transform: translateX(10px);
+}
+
+.shelf-track-label.is-before {
+  transform: translateX(calc(-100% - 10px));
+}
+
+.shelf-table td strong {
+  color: var(--text);
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+
+.shelf-table td .muted {
+  font-size: 0.8125rem;
+}
+
+.shelf-table-note {
+  margin: 0;
+  color: var(--text-body);
+  font-size: var(--text-xs);
+}
+
 /* --- phone: profile --- */
 
 /*

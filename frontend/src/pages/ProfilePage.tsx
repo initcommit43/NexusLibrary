@@ -16,7 +16,9 @@ import { CharacterPicker } from '../components/CharacterPicker'
 import { ProfileAvatar } from '../components/ProfileAvatar'
 import { ProfileBannerFrame } from '../components/ProfileBannerFrame'
 import { Figures } from '../components/Figures'
-import { summarise, timeSpent } from '../components/stats'
+import { FinishedByMonth, ProfileRings, ShelfTable } from '../components/ProfileStats'
+import { SegmentedControl } from '../components/SegmentedControl'
+import { statusSplit, summarise, timeSpent } from '../components/stats'
 import { FavouriteBands } from '../components/FavouriteBands'
 import { FavouriteGrid } from '../components/FavouriteGrid'
 import { Grip } from '../components/Grip'
@@ -78,14 +80,16 @@ export const ProfilePage = () => {
   const [everyDay, setEveryDay] = useState<ActivityDay[]>([])
 
   /*
-   * The map opens on whatever module the header is set to, and then follows the picker
-   * rather than the header: someone comparing two modules on this page is not asking to be
-   * moved to one of them.
+   * The map opens on whatever module the header is set to, or on all of them when that one
+   * keeps no dates, and then follows the picker rather than the header: someone comparing two
+   * modules on this page is not asking to be moved to one of them.
    */
   const mapped = MODULES.filter(keepsDates)
-  const [scope, setScope] = useState<ModuleDefinition>(
-    () => mapped.find((candidate) => candidate.slug === module.slug) ?? mapped[0],
-  )
+  const opening = mapped.find((candidate) => candidate.slug === module.slug) ?? null
+  /** Null is every module at once, which only the wide page offers. */
+  const [chosenScope, setScope] = useState<ModuleDefinition | null>(opening)
+  // A phone's picker has no "all", so there the map falls back to the first module it offers.
+  const scope = narrow ? (chosenScope ?? mapped[0]) : chosenScope
   const [picking, setPicking] = useState(false)
   const [adjusting, setAdjusting] = useState(false)
   const [pickingCharacter, setPickingCharacter] = useState(false)
@@ -129,7 +133,7 @@ export const ProfilePage = () => {
     api
       .activityHistory(
         HISTORY_WEEKS,
-        scope.types.map((type) => type.mediaType),
+        scope?.types.map((type) => type.mediaType) ?? [],
       )
       // A map that will not load leaves the squares blank rather than taking the page down
       // with it: nothing else here depends on it.
@@ -245,6 +249,7 @@ export const ProfilePage = () => {
             path: `/library/${module.slug}/${type.slug}`,
             label: type.label,
             summary: summarise(held),
+            split: statusSplit(held),
             time: timeSpent(held, type.mediaType),
           }
         }),
@@ -390,18 +395,54 @@ export const ProfilePage = () => {
 
       {entries === null && !error && <p className="muted">Loading your library…</p>}
 
-      {entries !== null && (
+      {entries !== null && !narrow && (
         <>
-          {/*
-            * Two lanes: the year on the left and the totals beside it. The map is read
-            * across and the figures down, so side by side each gets the shape it wants and
-            * neither pushes the favourites below the fold on its own.
-            */}
+          <ProfileRings totals={totals} favourites={favouriteCount} />
+
+          <section className="profile-panel">
+            <div className="profile-panel-head">
+              <div className="profile-panel-title">
+                <h2>Activity</h2>
+                <span className="profile-panel-meta">
+                  {history.length.toLocaleString()} active days · last {HISTORY_WEEKS} weeks
+                </span>
+              </div>
+              <SegmentedControl
+                className="profile-scope"
+                label="Scope"
+                value={scope?.slug ?? 'all'}
+                options={[
+                  { value: 'all', label: 'All' },
+                  ...mapped.map((candidate) => ({ value: candidate.slug, label: candidate.label })),
+                ]}
+                onChange={(slug) =>
+                  setScope(mapped.find((candidate) => candidate.slug === slug) ?? null)
+                }
+              />
+            </div>
+            <div className="profile-activity">
+              <ActivityHeatmap days={history} weeks={HISTORY_WEEKS} labelled />
+              <FinishedByMonth
+                entries={
+                  scope === null
+                    ? entries
+                    : entries.filter((entry) =>
+                        scope.types.some((type) => type.mediaType === entry.mediaType),
+                      )
+                }
+              />
+            </div>
+          </section>
+        </>
+      )}
+
+      {entries !== null && narrow && (
+        <>
+          {/* The native app's sections, which the phone follows rather than the wide page. */}
           <div className="profile-overview">
             <section className="status-section">
               <h2>
                 Activity
-                {!narrow && <ScopePicker modules={mapped} current={scope} onChoose={setScope} />}
                 {/* The phone's way to the stats, which the account menu carries when wide. */}
                 <Link className="section-action profile-stats-link" to="/stats">
                   Stats →
@@ -413,7 +454,7 @@ export const ProfilePage = () => {
                 days={history}
                 weeks={HISTORY_WEEKS}
                 aside={
-                  narrow && <ScopePicker modules={mapped} current={scope} onChoose={setScope} />
+                  <ScopePicker modules={mapped} current={scope ?? mapped[0]} onChoose={setScope} />
                 }
               />
             </section>
@@ -440,7 +481,11 @@ export const ProfilePage = () => {
               />
             </section>
           </div>
+        </>
+      )}
 
+      {entries !== null && (
+        <>
           <section className="status-section">
             <h2>
               Favourites {!narrow && <span className="muted">({favouriteCount})</span>}
@@ -502,36 +547,40 @@ export const ProfilePage = () => {
             )}
           </section>
 
-          <section className="status-section">
-            <h2>
-              Your library
-              <Link className="section-action" to="/stats">
-                See all stats →
-              </Link>
-            </h2>
+          {!narrow && <ShelfTable shelves={shelves} average={totals.meanScore} />}
 
-            <table className="stat-table">
-              <tbody>
-                {shelves.map(({ key, path, label, summary, time }) => (
-                  <tr key={key}>
-                    <th scope="row">
-                      <Link to={path}>{label}</Link>
-                    </th>
-                    <td>{`${summary.tracked.toLocaleString()} entries`}</td>
-                    <td className="muted">
-                      {summary.completed > 0 ? `${summary.completed.toLocaleString()} completed` : ''}
-                    </td>
-                    <td className="muted">
-                      {summary.meanScore === null ? '' : `${summary.meanScore.toFixed(1)} average`}
-                    </td>
-                    <td className="muted">
-                      {time === null ? '' : `${time.amount.toLocaleString()} ${time.unit}`}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </section>
+          {narrow && (
+            <section className="status-section">
+              <h2>
+                Your library
+                <Link className="section-action" to="/stats">
+                  See all stats →
+                </Link>
+              </h2>
+
+              <table className="stat-table">
+                <tbody>
+                  {shelves.map(({ key, path, label, summary, time }) => (
+                    <tr key={key}>
+                      <th scope="row">
+                        <Link to={path}>{label}</Link>
+                      </th>
+                      <td>{`${summary.tracked.toLocaleString()} entries`}</td>
+                      <td className="muted">
+                        {summary.completed > 0 ? `${summary.completed.toLocaleString()} completed` : ''}
+                      </td>
+                      <td className="muted">
+                        {summary.meanScore === null ? '' : `${summary.meanScore.toFixed(1)} average`}
+                      </td>
+                      <td className="muted">
+                        {time === null ? '' : `${time.amount.toLocaleString()} ${time.unit}`}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </section>
+          )}
         </>
       )}
 
