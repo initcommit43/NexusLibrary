@@ -18,6 +18,7 @@ nexus:
     auth-requests-per-minute: 100
     search-requests-per-minute: 1000
     import-requests-per-minute: 1000
+    picture-uploads-per-minute: 1000
   verification:
     # Off for the suite at large, so the hundreds of tests that register an account and then use
     # it keep working. EmailVerificationIntegrationTest turns it on for itself.

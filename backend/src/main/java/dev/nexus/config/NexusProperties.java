@@ -46,7 +46,8 @@ public record NexusProperties(Jwt jwt, Security security, RateLimit rateLimit, R
     public record RateLimit(
             @Positive int authRequestsPerMinute,
             @Positive int searchRequestsPerMinute,
-            @Positive int importRequestsPerMinute) {}
+            @Positive int importRequestsPerMinute,
+            @Positive int pictureUploadsPerMinute) {}
 
     /**
      * What an address has to be before it may open an account.

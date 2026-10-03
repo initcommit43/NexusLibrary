@@ -93,6 +93,9 @@ nexus:
     search-requests-per-minute: 30
     # An import touches a whole library and spends external API budget.
     import-requests-per-minute: 3
+    # Each upload is decoded and re-encoded, the heaviest thing a reader can ask of the server
+    # in one request; nobody choosing a picture needs more than a few tries a minute.
+    picture-uploads-per-minute: 5
   import:
     # A file with more rows than this is not a library anyone actually has, and each row
     # spends source budget once the import runs.
