@@ -1,6 +1,9 @@
-import { api, type ProfilePicture } from '../api/client'
-import { CLOSEST, COVER, framedStyle, framingOf } from './framing'
-import { useFramingEditor } from './useFramingEditor'
+import { useEffect, useRef, useState } from 'react'
+import { api, errorMessage, type Framing, type ProfilePicture } from '../api/client'
+import { CropDialog } from './CropDialog'
+import { COVER, framedStyle, framingOf } from './framing'
+import { PictureFileError, preparePicture } from './pictureFile'
+import { useMenuDismiss } from './useMenuDismiss'
 
 /** A head and shoulders: what a profile has before the reader gives it a face. */
 const PersonIcon = () => (
@@ -22,96 +25,181 @@ const PencilIcon = () => (
   </svg>
 )
 
+const CENTRED: Framing = { focusX: 50, focusY: 50, zoom: COVER }
+
+/** What the crop dialog is open on: a file about to be sent, or the picture already held. */
+type Cropping = { kind: 'new'; picture: Blob; src: string } | { kind: 'adjust'; src: string }
+
 /**
- * The circle at the head of a profile, and the handling of where the face sits inside it.
+ * An uploaded picture's address, fetched with the reader's token since nothing else may load
+ * it. Fetched again only when the upload changes, and let go of when it does.
+ */
+const useUploadedSrc = (version: string | null) => {
+  const [held, setHeld] = useState<{ version: string; src: string } | null>(null)
+
+  useEffect(() => {
+    if (!version) return
+    let current = true
+    let src: string | null = null
+    api
+      .profilePictureImage()
+      .then((blob) => {
+        if (!current) return
+        src = URL.createObjectURL(blob)
+        setHeld({ version, src })
+      })
+      // A picture that will not load leaves the plain icon, not a broken page.
+      .catch(() => {})
+    return () => {
+      current = false
+      if (src) URL.revokeObjectURL(src)
+    }
+  }, [version])
+
+  return held?.version === version ? held.src : null
+}
+
+/**
+ * The circle at the head of a profile, and the way to change what is in it.
  *
- * <p>Character art is a tall portrait and this is a circle, so a plain cover crop lands on a
- * torso about as often as on a face. Dragging says which part to hold; the slider says how
- * close. The same maths and the same editing the banner strip uses — {@link useFramingEditor}
- * — against a different shape.
- *
- * <p>One affordance at rest: a pencil that fades in over the picture and opens the picker.
- * Choosing there drops straight back here in adjust mode, which is why cropping is not a
- * second thing to go looking for.
+ * <p>The pencil opens a short menu once there is a picture — a new one, the crop of this one,
+ * or none — and goes straight to choosing a file while there is not, since then that is the
+ * only thing it could mean. Either way the crop dialog is where the picture is placed: it shows
+ * the whole file with the circle marked on it, rather than asking for a drag inside a circle
+ * too small to see what is outside it.
  */
 export const ProfileAvatar = ({
   picture,
-  adjusting,
-  onEdit,
-  onFramed,
-  onClose,
+  onChanged,
+  onError,
 }: {
   picture: ProfilePicture | null
-  adjusting: boolean
-  onEdit: () => void
-  onFramed: (framed: ProfilePicture) => void
-  onClose: () => void
+  onChanged: (picture: ProfilePicture | null) => void
+  onError: (message: string) => void
 }) => {
-  const { framing, error, busy, image, setFraming, dragHandlers, commit } = useFramingEditor({
-    session: `${picture?.imageUrl ?? ''}#${adjusting}`,
-    // A profile with no picture yet still has a framing to open on: dead centre, uncropped.
-    stored: () => (picture ? framingOf(picture) : { focusX: 50, focusY: 50, zoom: COVER }),
-    adjusting,
-    save: api.frameProfilePicture,
-    onFramed,
-    onClose,
-  })
+  const uploaded = useUploadedSrc(picture?.version ?? null)
+  const src = picture?.version ? uploaded : (picture?.imageUrl ?? null)
+
+  const { open, setOpen, container, trigger } = useMenuDismiss<HTMLDivElement, HTMLButtonElement>()
+  const chooser = useRef<HTMLInputElement>(null)
+  const [cropping, setCropping] = useState<Cropping | null>(null)
+
+  const choose = () => {
+    setOpen(false)
+    chooser.current?.click()
+  }
+
+  const chosen = async (file: File | undefined) => {
+    if (!file) return
+    try {
+      const prepared = await preparePicture(file)
+      setCropping({ kind: 'new', picture: prepared, src: URL.createObjectURL(prepared) })
+    } catch (err) {
+      onError(err instanceof PictureFileError ? err.message : 'That file could not be read as a picture.')
+    }
+  }
+
+  const closeCrop = () => {
+    if (cropping?.kind === 'new') URL.revokeObjectURL(cropping.src)
+    setCropping(null)
+  }
+
+  const remove = async () => {
+    setOpen(false)
+    try {
+      await api.clearProfilePicture()
+      onChanged(null)
+    } catch (err) {
+      onError(errorMessage(err, 'Could not remove the picture.'))
+    }
+  }
 
   return (
-    <div className="profile-avatar-holder">
-      <div className={adjusting ? 'profile-avatar adjusting' : 'profile-avatar'}>
-        {picture ? (
-          <img
-            ref={image}
-            src={picture.imageUrl}
-            alt={picture.characterName}
-            title={`${picture.characterName} — ${picture.title}`}
-            draggable={false}
-            style={framedStyle(framing)}
-            {...dragHandlers}
-          />
+    <div className="profile-avatar-holder" ref={container}>
+      <div className="profile-avatar">
+        {src && picture ? (
+          <img src={src} alt="Your profile picture" draggable={false} style={framedStyle(framingOf(picture))} />
         ) : (
           <PersonIcon />
         )}
 
         {/*
           * Out of sight until the circle is reached for, like the fold control on home: it
-          * belongs on the thing it changes, but a profile is not read for its portrait. A disc
-          * behind it because the ground here is whatever art the reader chose.
+          * belongs on the thing it changes, but a profile is not read for its portrait.
           */}
-        {!adjusting && (
-          <button
-            type="button"
-            className="avatar-edit-button"
-            aria-label={picture ? 'Change your profile picture' : 'Choose a profile picture'}
-            title={picture ? 'Change picture' : 'Add a picture'}
-            onClick={onEdit}
-          >
-            <PencilIcon />
-          </button>
-        )}
+        <button
+          ref={trigger}
+          type="button"
+          className="avatar-edit-button"
+          aria-label={picture ? 'Change your profile picture' : 'Upload a profile picture'}
+          aria-haspopup={picture ? 'menu' : undefined}
+          aria-expanded={picture ? open : undefined}
+          title={picture ? 'Change picture' : 'Upload a picture'}
+          onClick={() => (picture ? setOpen((wasOpen) => !wasOpen) : choose())}
+        >
+          <PencilIcon />
+        </button>
       </div>
 
-      {adjusting && picture && (
-        <div className="avatar-adjust">
-          <span className="avatar-adjust-hint">{error ?? 'Drag the picture to move it'}</span>
+      {open && picture && (
+        <ul className="avatar-menu" role="menu">
+          <li role="none">
+            <button type="button" role="menuitem" onClick={choose}>
+              Upload a new picture
+            </button>
+          </li>
+          {src && (
+            <li role="none">
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setOpen(false)
+                  setCropping({ kind: 'adjust', src })
+                }}
+              >
+                Adjust the crop
+              </button>
+            </li>
+          )}
+          <li role="none">
+            <button type="button" role="menuitem" className="danger" onClick={() => void remove()}>
+              Remove picture
+            </button>
+          </li>
+        </ul>
+      )}
 
-          <input
-            type="range"
-            min={COVER}
-            max={CLOSEST}
-            value={framing.zoom}
-            aria-label="Zoom"
-            onChange={(event) => setFraming({ ...framing, zoom: Number(event.target.value) })}
-          />
+      <input
+        ref={chooser}
+        type="file"
+        accept="image/jpeg,image/png"
+        hidden
+        onChange={(event) => {
+          const file = event.target.files?.[0]
+          // Cleared at once, so choosing the same file again after a cancel still registers.
+          event.target.value = ''
+          void chosen(file)
+        }}
+      />
 
-          <button type="button" className="ghost small" disabled={busy} onClick={onClose}>
-            Cancel
-          </button>
-          <button type="button" className="small" disabled={busy} onClick={() => void commit()}>
-            Save
-          </button>
-        </div>
+      {cropping && (
+        <CropDialog
+          title={cropping.kind === 'new' ? 'Crop your new profile picture' : 'Adjust your profile picture'}
+          src={cropping.src}
+          shape="circle"
+          measureFrame={() => 1}
+          initial={cropping.kind === 'new' || !picture ? CENTRED : framingOf(picture)}
+          confirmLabel={cropping.kind === 'new' ? 'Set new profile picture' : 'Save'}
+          onConfirm={async (framing) => {
+            onChanged(
+              cropping.kind === 'new'
+                ? await api.uploadProfilePicture(cropping.picture, framing)
+                : await api.frameProfilePicture(framing),
+            )
+          }}
+          onClose={closeCrop}
+        />
       )}
     </div>
   )

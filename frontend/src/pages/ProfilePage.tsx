@@ -12,7 +12,6 @@ import {
 import { ActivityHeatmap } from '../components/ActivityHeatmap'
 import { AppShell } from '../components/AppShell'
 import { BannerPicker } from '../components/BannerPicker'
-import { CharacterPicker } from '../components/CharacterPicker'
 import { ProfileAvatar } from '../components/ProfileAvatar'
 import { ProfileBannerFrame } from '../components/ProfileBannerFrame'
 import { Figures } from '../components/Figures'
@@ -92,8 +91,6 @@ export const ProfilePage = () => {
   const scope = narrow ? (chosenScope ?? mapped[0]) : chosenScope
   const [picking, setPicking] = useState(false)
   const [adjusting, setAdjusting] = useState(false)
-  const [pickingCharacter, setPickingCharacter] = useState(false)
-  const [adjustingPicture, setAdjustingPicture] = useState(false)
   const [arranging, setArranging] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -311,13 +308,11 @@ export const ProfilePage = () => {
         <div className="profile-identity">
           <ProfileAvatar
             picture={picture}
-            adjusting={adjustingPicture}
-            onEdit={() => {
-              setAdjustingPicture(false)
-              setPickingCharacter(true)
+            onChanged={(changed) => {
+              setError(null)
+              setPicture(changed)
             }}
-            onFramed={setPicture}
-            onClose={() => setAdjustingPicture(false)}
+            onError={setError}
           />
           <div className="profile-name">
             {narrow ? <h1>{user?.username}</h1> : <h2>{user?.username}</h2>}
@@ -362,24 +357,14 @@ export const ProfilePage = () => {
         <BannerPicker
           entries={entries}
           chosen={banner}
-          onChosen={setBanner}
+          // Straight into the crop, as an upload goes: a wide picture dropped into the strip
+          // almost never shows the part it was picked for.
+          onChosen={(chosen) => {
+            setBanner(chosen)
+            setAdjusting(true)
+          }}
           onCleared={() => setBanner(null)}
           onClose={() => setPicking(false)}
-        />
-      )}
-
-      {pickingCharacter && entries !== null && (
-        <CharacterPicker
-          entries={entries}
-          chosen={picture}
-          // Straight into the crop: a portrait dropped into a circle almost never lands where
-          // the reader wants it, so the adjustment is the same gesture as the choice.
-          onChosen={(face) => {
-            setPicture(face)
-            setAdjustingPicture(true)
-          }}
-          onCleared={() => setPicture(null)}
-          onClose={() => setPickingCharacter(false)}
         />
       )}
 

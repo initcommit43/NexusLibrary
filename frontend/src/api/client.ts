@@ -128,14 +128,16 @@ export type ProfileBanner = {
   zoom: number
 }
 
-/** The character standing for a reader, the title they are from, and how they are framed. */
+/**
+ * The picture standing for a reader, and how it is framed.
+ *
+ * <p>An upload carries a version and no url: its image is only served to its signed-in owner,
+ * so it is fetched with the token rather than linked. A character picked before uploads
+ * replaced that carries its url instead, and no version.
+ */
 export type ProfilePicture = {
-  imageUrl: string
-  characterName: string
-  title: string
-  mediaType: MediaType
-  source: string
-  externalId: string
+  imageUrl: string | null
+  version: string | null
   focusX: number
   focusY: number
   zoom: number
@@ -840,16 +842,24 @@ export const api = {
 
   profilePicture: () => request<ProfilePicture | null>('/settings/profile-picture'),
 
-  /**
-   * Takes the entry and a character within it, never an image: the server reads the portrait
-   * out of that title's detail, so a profile can only ever wear a face from the reader's own
-   * library. Only AniList titles carry characters at all.
-   */
-  chooseProfilePicture: (entryId: number, characterId: string) =>
-    request<ProfilePicture>('/settings/profile-picture', {
-      method: 'PUT',
-      body: JSON.stringify({ entryId, characterId }),
-    }),
+  /** The picture and the crop it was given, in one request, so it never shows uncropped. */
+  uploadProfilePicture: (picture: Blob, framing: Framing) => {
+    const body = new FormData()
+    body.append('file', picture, 'picture.jpg')
+    const query = new URLSearchParams({
+      focusX: String(framing.focusX),
+      focusY: String(framing.focusY),
+      zoom: String(framing.zoom),
+    })
+    return request<ProfilePicture>(`/settings/profile-picture/upload?${query}`, {
+      method: 'POST',
+      body,
+    })
+  },
+
+  /** The uploaded picture's bytes, which only its owner's token can fetch. */
+  profilePictureImage: async (): Promise<Blob> =>
+    (await send('/settings/profile-picture/image')).blob(),
 
   frameProfilePicture: (framing: Framing) =>
     request<ProfilePicture>('/settings/profile-picture', {
