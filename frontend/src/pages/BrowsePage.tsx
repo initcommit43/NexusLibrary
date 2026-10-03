@@ -12,6 +12,8 @@ import {
 import { AppShell } from '../components/AppShell'
 import { EntryEditDialog } from '../components/EntryEditDialog'
 import { BrowseFilters } from '../components/BrowseFilters'
+import { BrowseListRow } from '../components/BrowseListRow'
+import { BrowseToolbar, type BrowseView } from '../components/BrowseToolbar'
 import { Carousel } from '../components/Carousel'
 import { CatalogCard } from '../components/CatalogCard'
 import { RankedRow } from '../components/RankedRow'
@@ -60,6 +62,17 @@ const isNarrowed = (values: FilterValues) =>
 
 const pageIn = (params: URLSearchParams) => Math.max(1, Number(params.get('page') ?? 1) || 1)
 
+/** Where the chosen layout is remembered: a way of looking, kept per browser, not per account. */
+const VIEW_KEY = 'nexus.browse-view'
+
+const storedView = (): BrowseView => {
+  try {
+    return localStorage.getItem(VIEW_KEY) === 'list' ? 'list' : 'grid'
+  } catch {
+    return 'grid'
+  }
+}
+
 /** Long enough that a typed word is one request rather than one per letter. */
 const SETTLE_MS = 300
 
@@ -92,6 +105,15 @@ export const BrowsePage = () => {
   const page = pageIn(params)
 
   const [bar, setBar] = useState<{ mediaType: MediaType; fields: FilterField[] } | null>(null)
+  const [view, setView] = useState<BrowseView>(storedView)
+  const chooseView = (next: BrowseView) => {
+    setView(next)
+    try {
+      localStorage.setItem(VIEW_KEY, next)
+    } catch {
+      // Private windows refuse storage; the layout simply is not remembered there.
+    }
+  }
   const fields = bar?.mediaType === mediaType ? bar.fields : null
 
   // Typing narrows on every keystroke; asking the source on every keystroke would spend the
@@ -258,6 +280,10 @@ export const BrowsePage = () => {
         <BrowseFilters fields={fields} values={values} onChange={narrowTo} />
       )}
 
+      {narrowed && fields && fields.length > 0 && (
+        <BrowseToolbar fields={fields} values={values} onChange={narrowTo} view={view} onView={chooseView} />
+      )}
+
       {(error || found?.error || tracking.error) && (
         <p className="alert" role="alert">
           {error ?? found?.error ?? tracking.error}
@@ -279,7 +305,15 @@ export const BrowsePage = () => {
         <p className="muted">Nothing matches those filters.</p>
       )}
 
-      {narrowed && showing && showing.results.length > 0 && (
+      {narrowed && showing && showing.results.length > 0 && view === 'list' && (
+        <div className={awaiting ? 'browse-list is-stale' : 'browse-list'} aria-busy={awaiting}>
+          {showing.results.map((result) => (
+            <BrowseListRow key={keyOf(result)} result={result} fields={fields ?? []} />
+          ))}
+        </div>
+      )}
+
+      {narrowed && showing && showing.results.length > 0 && view === 'grid' && (
         <div className={awaiting ? 'cover-grid is-stale' : 'cover-grid'} aria-busy={awaiting}>
           {showing.results.map((result) => (
             <CatalogCard

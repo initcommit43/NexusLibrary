@@ -62,8 +62,11 @@ export type FilterOption = {
 export type FilterField = {
   id: string
   label: string
-  kind: 'TEXT' | 'SELECT' | 'MULTI'
+  /** SORT is the order results come in: drawn beside them, not on the bar. */
+  kind: 'TEXT' | 'SELECT' | 'MULTI' | 'SORT'
   options: FilterOption[]
+  /** For SORT, the order a source uses when none is chosen. */
+  defaultValue?: string | null
 }
 
 /** The chosen value of every control, by field id. A multi holds several. */

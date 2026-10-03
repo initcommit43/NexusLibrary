@@ -306,7 +306,7 @@ export const BrowseFilters = ({
 
   return (
     <div className="filter-bar">
-      {fields.map((field) => {
+      {fields.filter((field) => field.kind !== 'SORT').map((field) => {
         const chosen = values[field.id] ?? []
         const change = (next: string[]) => set(field.id, next)
 
