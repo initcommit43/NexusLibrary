@@ -2315,9 +2315,14 @@ input.filter-control::-webkit-search-cancel-button {
   background: var(--segment-track);
 }
 
-.profile-scope button,
-.profile-scope button + button,
-.profile-scope button.ghost:hover:not(:disabled) {
+/*
+ * Held to .segmented.profile-scope rather than .profile-scope alone: the bare .segmented rules
+ * come later in the file at the same weight, and were handing the first segment their padding
+ * and square corners and every other one a divider that its hover then took away.
+ */
+.segmented.profile-scope button,
+.segmented.profile-scope button + button,
+.segmented.profile-scope button:hover:not(:disabled) {
   height: 1.75rem;
   padding: 0 0.75rem;
   border: 0;
@@ -2328,12 +2333,12 @@ input.filter-control::-webkit-search-cancel-button {
   font-weight: 500;
 }
 
-.profile-scope button.ghost:hover:not(:disabled) {
+.segmented.profile-scope button.ghost:hover:not(:disabled) {
   color: var(--text);
 }
 
-.profile-scope button.active,
-.profile-scope button.active:hover:not(:disabled) {
+.segmented.profile-scope button.active,
+.segmented.profile-scope button.active:hover:not(:disabled) {
   background: var(--segment-on);
   color: var(--text);
   box-shadow: var(--shadow-1);
