@@ -169,7 +169,16 @@ export const MediaFacts = ({ media }: { media: MediaDetail }) => {
     ['Native', plain([text(titles.native) ?? ''].filter(Boolean))],
   ]
 
-  const rankings = readRankings(detail)
+  /*
+   * One chart of each kind, as AniList shows them: the all-time one where there is one, since
+   * a year or a season is a narrower boast, and otherwise whichever AniList lists first.
+   */
+  const ranked = readRankings(detail)
+  const rankings = (['RATED', 'POPULAR'] as const).flatMap((kind) => {
+    const ofKind = ranked.filter((ranking) => ranking.kind === kind)
+    const pick = ofKind.find((ranking) => !('year' in ranking.filters)) ?? ofKind[0]
+    return pick ? [pick] : []
+  })
 
   // The one fact that changes by the hour, so it leads rather than sitting in the list.
   const next = readNextEpisode(detail)
