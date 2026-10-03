@@ -16,7 +16,6 @@ import { BrowseListRow } from '../components/BrowseListRow'
 import { BrowseToolbar, type BrowseView } from '../components/BrowseToolbar'
 import { Carousel } from '../components/Carousel'
 import { CatalogCard } from '../components/CatalogCard'
-import { RankedRow } from '../components/RankedRow'
 import { TypeSwitch } from '../components/TypeSwitch'
 import { useNarrowScreen } from '../components/useNarrowScreen'
 import { keyOf, useTrackable } from '../components/useTrackable'
@@ -375,11 +374,12 @@ export const BrowsePage = () => {
           ) : results.length === 0 ? (
             <p className="muted">Nothing here right now.</p>
           ) : isRanked(shelf.id) ? (
-            <div className="ranked-list">
+            <div className="browse-list">
               {results.slice(0, 10).map((result, index) => (
-                <RankedRow
+                <BrowseListRow
                   key={keyOf(result)}
                   result={result}
+                  fields={fields ?? []}
                   rank={index + 1}
                 />
               ))}

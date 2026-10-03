@@ -34,8 +34,19 @@ const Fact = ({ lead, under }: { lead: string | null; under: string | null }) =>
  * read for — how well it scores and with how many, what it is and how long, when it ran and
  * whether it still does. A column a source cannot fill is left blank rather than closed up,
  * so the rows stay aligned down the page.
+ *
+ * <p>A ranked shelf uses the same row with its place in front, so a top-100 chart and the
+ * list view read as the same kind of thing.
  */
-export const BrowseListRow = ({ result, fields }: { result: SearchResult; fields: FilterField[] }) => {
+export const BrowseListRow = ({
+  result,
+  fields,
+  rank,
+}: {
+  result: SearchResult
+  fields: FilterField[]
+  rank?: number
+}) => {
   const blur = useBlurAdult()
   const facets = result.facets ?? {}
   const genres = Array.isArray(facets.genres) ? facets.genres.map(String) : []
@@ -54,7 +65,13 @@ export const BrowseListRow = ({ result, fields }: { result: SearchResult; fields
   const status = named(fields, 'status', text(facets.status))
 
   return (
-    <Link className="card list-row" to={mediaPathFor(result)}>
+    <Link className={rank === undefined ? 'card list-row' : 'card list-row has-rank'} to={mediaPathFor(result)}>
+      {rank !== undefined && (
+        <span className="list-row-rank" aria-label={`Number ${rank}`}>
+          #{rank}
+        </span>
+      )}
+
       {result.coverUrl ? (
         <img className={coverBlurClass(result.adult, blur, 'list-row-cover')} src={result.coverUrl} alt="" loading="lazy" />
       ) : (

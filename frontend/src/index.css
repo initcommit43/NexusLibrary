@@ -4187,85 +4187,6 @@ input.filter-control::-webkit-search-cancel-button {
   text-decoration: none;
 }
 
-/* --- ranked shelves --- */
-
-.ranked-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.ranked-row {
-  display: grid;
-  grid-template-columns: auto 3rem 1fr auto auto;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-2) var(--space-3);
-}
-
-.ranked-position {
-  font-family: var(--font-display);
-  font-variant-numeric: tabular-nums;
-  color: var(--muted);
-}
-
-.ranked-cover {
-  width: 3rem;
-  aspect-ratio: 3 / 4;
-  object-fit: cover;
-  border-radius: var(--radius-sm);
-}
-
-.ranked-main h3 {
-  margin: 0;
-  font-size: var(--text-base);
-}
-
-.ranked-genres {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1);
-  margin: var(--space-1) 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.ranked-genres li {
-  font-size: var(--text-xs);
-  padding: 0.1rem var(--space-2);
-  border-radius: var(--radius-sm);
-  background: var(--module-accent-soft);
-}
-
-.ranked-facts {
-  display: flex;
-  gap: var(--space-3);
-  align-items: baseline;
-  font-size: var(--text-sm);
-  white-space: nowrap;
-}
-
-/* A row has no cover to hover over, and ten of them do not crowd the way forty cards would. */
-
-.ranked-score {
-  font-family: var(--font-display);
-  font-variant-numeric: tabular-nums;
-}
-
-/*
- * A ranked row is five columns of detail, which stops fitting long before a phone. Below
- * that it becomes cover, title and rank, with the facts folded under the title.
- */
-@media (max-width: 40rem) {
-  .ranked-row {
-    grid-template-columns: auto 3rem 1fr;
-  }
-
-  .ranked-facts {
-    grid-column: 3;
-  }
-}
-
 .pager {
   display: flex;
   align-items: center;
@@ -4663,6 +4584,19 @@ input.filter-control::-webkit-search-cancel-button {
   color: inherit;
 }
 
+/* A ranked shelf's rows carry their place first, in a column of its own. */
+.list-row.has-rank {
+  grid-template-columns: 2.5rem 3rem minmax(0, 1fr) repeat(3, 9rem);
+}
+
+.list-row-rank {
+  color: var(--text-muted);
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
 .list-row:hover h3 {
   color: var(--accent);
 }
@@ -4726,6 +4660,10 @@ input.filter-control::-webkit-search-cancel-button {
 @media (max-width: 52rem) {
   .list-row {
     grid-template-columns: 3rem minmax(0, 1fr) auto;
+  }
+
+  .list-row.has-rank {
+    grid-template-columns: 2rem 3rem minmax(0, 1fr) auto;
   }
 
   .list-row-fact + .list-row-fact {
@@ -6266,7 +6204,7 @@ input.filter-control::-webkit-search-cancel-button {
   padding: var(--space-3);
   background: var(--surface);
   border: 2px solid var(--card-border);
-  border-radius: var(--radius-lg);
+  border-radius: 2px;
 }
 
 .fact {
@@ -6567,7 +6505,7 @@ input.filter-control::-webkit-search-cancel-button {
   padding: var(--space-3);
   background: var(--surface);
   border: 2px solid var(--card-border);
-  border-radius: var(--radius-lg);
+  border-radius: 2px;
 }
 
 .tag-row {

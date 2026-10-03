@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { api, errorMessage, type SearchResult } from '../api/client'
+import { api, errorMessage, type FilterField, type SearchResult } from '../api/client'
 import { AppShell } from '../components/AppShell'
 import { EntryEditDialog } from '../components/EntryEditDialog'
 import { CatalogCard } from '../components/CatalogCard'
-import { RankedRow } from '../components/RankedRow'
+import { BrowseListRow } from '../components/BrowseListRow'
 import { keyOf, useTrackable } from '../components/useTrackable'
 import { defaultTypeOf, moduleBySlug, typeBySlug } from '../modules/registry'
 import { useCurrentModule } from '../modules/useCurrentModule'
@@ -41,6 +41,8 @@ export const ShelfPage = () => {
   const active = typeBySlug(module, typeSlug) ?? defaultTypeOf(module)
 
   const [label, setLabel] = useState<string | null>(null)
+  // The browse bar's own names for formats, statuses and seasons, which the rows borrow.
+  const [fields, setFields] = useState<FilterField[]>([])
   const [loaded, setLoaded] = useState<Loaded | null>(null)
   const [page, setPage] = useState(1)
   const tracking = useTrackable()
@@ -66,6 +68,12 @@ export const ShelfPage = () => {
       .catch(() => {
         // Only costs the heading; the grid below still loads and is the point of the page.
       })
+
+    api
+      .browseFilters(mediaType)
+      .then((declared) => !cancelled && setFields(declared))
+      // Without them the rows fall back to the source's own words.
+      .catch(() => {})
 
     return () => {
       cancelled = true
@@ -129,11 +137,12 @@ export const ShelfPage = () => {
       ) : results.length === 0 && !error ? (
         <p className="muted">Nothing here right now.</p>
       ) : isRanked(shelfId) ? (
-        <div className="ranked-list">
+        <div className="browse-list">
           {results.map((result, index) => (
-            <RankedRow
+            <BrowseListRow
               key={keyOf(result)}
               result={result}
+              fields={fields}
               // Continues across pages, so #41 is the first row of page two.
               rank={(page - 1) * PAGE_SIZE + index + 1}
             />
