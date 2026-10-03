@@ -84,6 +84,12 @@ export const AccountMenu = () => {
         <div className="account-menu">
           <ul role="menu">
             <li role="none">
+              <Link role="menuitem" to="/settings" onClick={() => setOpen(false)}>
+                <SettingsIcon />
+                Settings
+              </Link>
+            </li>
+            <li role="none">
               <Link role="menuitem" to="/profile" onClick={() => setOpen(false)}>
                 <UserIcon />
                 Profile
@@ -93,12 +99,6 @@ export const AccountMenu = () => {
               <Link role="menuitem" to="/stats" onClick={() => setOpen(false)}>
                 <StatsIcon />
                 Stats
-              </Link>
-            </li>
-            <li role="none">
-              <Link role="menuitem" to="/settings" onClick={() => setOpen(false)}>
-                <SettingsIcon />
-                Settings
               </Link>
             </li>
             <li role="none">
