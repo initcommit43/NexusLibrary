@@ -84,6 +84,19 @@ final class AniListFilters {
 
     static final String TAG = "tag:";
 
+    /**
+     * AniList's own orders, in the order its browse page lists them. Popularity is what the
+     * grid falls back to; a typed search ranks by match until one is chosen.
+     */
+    static final List<FilterOption> SORTS = List.of(
+            new FilterOption("TITLE_ROMAJI", "Title"),
+            new FilterOption("POPULARITY_DESC", "Popularity"),
+            new FilterOption("SCORE_DESC", "Average Score"),
+            new FilterOption("TRENDING_DESC", "Trending"),
+            new FilterOption("FAVOURITES_DESC", "Favorites"),
+            new FilterOption("ID_DESC", "Date Added"),
+            new FilterOption("START_DATE_DESC", "Release Date"));
+
     private AniListFilters() {}
 
     static List<FilterField> forMediaType(
@@ -103,6 +116,7 @@ final class AniListFilters {
         fields.add(FilterField.select("format", "Format", anime ? ANIME_FORMATS : MANGA_FORMATS));
         fields.add(FilterField.select(
                 "status", anime ? "Airing Status" : "Publishing Status", anime ? ANIME_STATUS : MANGA_STATUS));
+        fields.add(FilterField.sort(SORTS, "POPULARITY_DESC"));
 
         return List.copyOf(fields);
     }

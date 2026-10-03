@@ -146,6 +146,7 @@ public class AniListMetadataAdapter implements MetadataAdapter, StudioBrowse {
                 filters.one("season"),
                 filters.one("format"),
                 filters.one("status"),
+                filters.offered(FilterField.SORT_ID, AniListFilters.SORTS),
                 page,
                 size,
                 includeAdult);
@@ -224,6 +225,10 @@ public class AniListMetadataAdapter implements MetadataAdapter, StudioBrowse {
         putIfPresent(facets, "chapters", number(media.get("chapters")));
         // Already the 0-100 scale used internally, so nothing to convert.
         putIfPresent(facets, "score", number(media.get("averageScore")));
+        // How many readers hold it on a list, which is what AniList means by popularity.
+        putIfPresent(facets, "popularity", number(media.get("popularity")));
+        putIfPresent(facets, "season", string(media.get("season")));
+        putIfPresent(facets, "seasonYear", number(media.get("seasonYear")));
         if (media.get("genres") instanceof List<?> genres && !genres.isEmpty()) {
             facets.put("genres", genres.stream().limit(4).map(String::valueOf).toList());
         }

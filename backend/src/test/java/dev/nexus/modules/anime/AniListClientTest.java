@@ -68,14 +68,14 @@ class AniListClientTest {
         server.expect(requestTo(ENDPOINT))
                 .andExpect(content().string(containsString("isAdult: false")))
                 .andRespond(withSuccess(page("[]"), org.springframework.http.MediaType.APPLICATION_JSON));
-        client.discoverMedia(MediaType.ANIME, null, List.of(), List.of(), null, null, null, null, 1, 20, false);
+        client.discoverMedia(MediaType.ANIME, null, List.of(), List.of(), null, null, null, null, null, 1, 20, false);
         server.verify();
 
         server.reset();
         server.expect(requestTo(ENDPOINT))
                 .andExpect(content().string(org.hamcrest.Matchers.not(containsString("isAdult: "))))
                 .andRespond(withSuccess(page("[]"), org.springframework.http.MediaType.APPLICATION_JSON));
-        client.discoverMedia(MediaType.ANIME, null, List.of(), List.of(), null, null, null, null, 1, 20, true);
+        client.discoverMedia(MediaType.ANIME, null, List.of(), List.of(), null, null, null, null, null, 1, 20, true);
         server.verify();
     }
 
@@ -230,17 +230,17 @@ class AniListClientTest {
                 .andExpect(content().string(containsString("\"seasonYear\":2023")))
                 .andRespond(withSuccess(page("[]"), org.springframework.http.MediaType.APPLICATION_JSON));
 
-        client.discoverMedia(MediaType.ANIME, null, List.of(), List.of(), 2023, null, null, null, 1, 20, false);
+        client.discoverMedia(MediaType.ANIME, null, List.of(), List.of(), 2023, null, null, null, null, 1, 20, false);
         server.verify();
 
         server.reset();
         server.expect(requestTo(ENDPOINT))
                 .andExpect(content().string(containsString("\"startDate_greater\":20230000")))
                 .andExpect(content().string(containsString("\"startDate_lesser\":20240000")))
-                .andExpect(content().string(org.hamcrest.Matchers.not(containsString("seasonYear"))))
+                .andExpect(content().string(org.hamcrest.Matchers.not(containsString("\"seasonYear\":"))))
                 .andRespond(withSuccess(page("[]"), org.springframework.http.MediaType.APPLICATION_JSON));
 
-        client.discoverMedia(MediaType.MANGA, null, List.of(), List.of(), 2023, null, null, null, 1, 20, false);
+        client.discoverMedia(MediaType.MANGA, null, List.of(), List.of(), 2023, null, null, null, null, 1, 20, false);
         server.verify();
     }
 
@@ -251,7 +251,7 @@ class AniListClientTest {
                 .andExpect(content().string(containsString("SEARCH_MATCH")))
                 .andRespond(withSuccess(page("[]"), org.springframework.http.MediaType.APPLICATION_JSON));
 
-        client.discoverMedia(MediaType.ANIME, "frieren", List.of(), List.of(), null, null, null, null, 1, 20, false);
+        client.discoverMedia(MediaType.ANIME, "frieren", List.of(), List.of(), null, null, null, null, null, 1, 20, false);
         server.verify();
 
         server.reset();
@@ -259,7 +259,7 @@ class AniListClientTest {
                 .andExpect(content().string(containsString("POPULARITY_DESC")))
                 .andRespond(withSuccess(page("[]"), org.springframework.http.MediaType.APPLICATION_JSON));
 
-        client.discoverMedia(MediaType.ANIME, "  ", List.of(), List.of(), null, null, null, null, 1, 20, false);
+        client.discoverMedia(MediaType.ANIME, "  ", List.of(), List.of(), null, null, null, null, null, 1, 20, false);
         server.verify();
     }
 

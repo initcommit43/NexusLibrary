@@ -33,6 +33,17 @@ public record DiscoverFilters(Map<String, List<String>> values) {
         return all(field).stream().findFirst().orElse(null);
     }
 
+    /**
+     * The single value of a field, but only if it is one of those offered: a source builds its
+     * request from what it published, never from whatever arrived in the query string.
+     */
+    public String offered(String field, List<FilterField.FilterOption> options) {
+        String chosen = one(field);
+        return chosen != null && options.stream().anyMatch(option -> option.value().equals(chosen))
+                ? chosen
+                : null;
+    }
+
     /** The value of a field that takes a number, or null where it was left alone or is not one. */
     public Integer number(String field) {
         String value = one(field);

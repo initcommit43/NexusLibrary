@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -48,8 +49,8 @@ class AniListFiltersTest {
         List<FilterField> anime = AniListFilters.forMediaType(MediaType.ANIME, List.of("Action"), List.of("Isekai"), TODAY);
         List<FilterField> manga = AniListFilters.forMediaType(MediaType.MANGA, List.of("Action"), List.of("Isekai"), TODAY);
 
-        assertThat(idsOf(anime)).containsExactly("q", "genres", "year", "season", "format", "status");
-        assertThat(idsOf(manga)).containsExactly("q", "genres", "year", "format", "status");
+        assertThat(idsOf(anime)).containsExactly("q", "genres", "year", "season", "format", "status", "sort");
+        assertThat(idsOf(manga)).containsExactly("q", "genres", "year", "format", "status", "sort");
     }
 
     @Test
@@ -161,6 +162,7 @@ class AniListFiltersTest {
                         anyString(),
                         anyString(),
                         anyString(),
+                        anyString(),
                         anyInt(),
                         anyInt(),
                         anyBoolean()))
@@ -174,7 +176,8 @@ class AniListFiltersTest {
                         "year", List.of("2023"),
                         "season", List.of("FALL"),
                         "format", List.of("TV"),
-                        "status", List.of("FINISHED"))),
+                        "status", List.of("FINISHED"),
+                        "sort", List.of("SCORE_DESC"))),
                 2,
                 40,
                 false);
@@ -189,6 +192,7 @@ class AniListFiltersTest {
                         eq("FALL"),
                         eq("TV"),
                         eq("FINISHED"),
+                        eq("SCORE_DESC"),
                         eq(2),
                         eq(40),
                         eq(false));
@@ -202,7 +206,7 @@ class AniListFiltersTest {
     @Test
     void anUnmarkedValueIsReadAsAGenre() {
         when(client.discoverMedia(
-                        any(MediaType.class), any(), any(), any(), any(), any(), any(), any(), anyInt(), anyInt(), anyBoolean()))
+                        any(MediaType.class), any(), any(), any(), any(), any(), any(), any(), any(), anyInt(), anyInt(), anyBoolean()))
                 .thenReturn(new AniListClient.MediaPage(List.of(media()), false));
 
         adapter.discover(MediaType.ANIME, new DiscoverFilters(Map.of("genres", List.of("Fantasy"))), 1, 20, false);
@@ -217,9 +221,25 @@ class AniListFiltersTest {
                         any(),
                         any(),
                         any(),
+                        any(),
                         eq(1),
                         eq(20),
                         eq(false));
+    }
+
+    /** An order AniList was never offered to be asked for is not passed on to it. */
+    @Test
+    void aSortThatWasNotOfferedIsDropped() {
+        when(client.discoverMedia(
+                        any(MediaType.class), any(), any(), any(), any(), any(), any(), any(), any(), anyInt(), anyInt(), anyBoolean()))
+                .thenReturn(new AniListClient.MediaPage(List.of(media()), false));
+
+        adapter.discover(
+                MediaType.ANIME, new DiscoverFilters(Map.of("sort", List.of("ID_DESC) { evil }"))), 1, 20, false);
+
+        verify(client)
+                .discoverMedia(
+                        eq(MediaType.ANIME), any(), any(), any(), any(), any(), any(), any(), isNull(), eq(1), eq(20), eq(false));
     }
 
     private static Map<String, Object> media() {

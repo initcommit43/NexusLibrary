@@ -47,6 +47,9 @@ public class AniListClient {
             chapters
             volumes
             averageScore
+            popularity
+            season
+            seasonYear
             isAdult
             description(asHtml: false)
             title { romaji english native }
@@ -306,7 +309,7 @@ public class AniListClient {
                     }
                   }
                 }
-                rankings { rank type year season allTime context }
+                rankings { rank type format year season allTime context }
               }
             }
             """;
@@ -365,8 +368,11 @@ public class AniListClient {
      * <p>Shares {@link #browseQuery} with the shelves, and for the same reason: an argument
      * AniList never received is no filter, while one it received as null is a filter for null.
      *
-     * <p>Sorted by how well a title matches when there is a term to match, and by popularity
-     * when there is not — an unranked list of everything in a genre is not an answer.
+     * <p>In the order asked for; failing that, by how well a title matches when there is a term
+     * to match, and by popularity when there is not — an unranked list of everything in a genre
+     * is not an answer.
+     *
+     * @param sort one of AniList's own MediaSort values, already checked against those offered
      */
     public MediaPage discoverMedia(
             MediaType mediaType,
@@ -377,6 +383,7 @@ public class AniListClient {
             String season,
             String format,
             String status,
+            String sort,
             int page,
             int perPage,
             boolean includeAdult) {
@@ -392,7 +399,7 @@ public class AniListClient {
         }
         Map<String, Object> variables = new java.util.HashMap<>();
         variables.put("type", anilistType(mediaType));
-        variables.put("sort", List.of(term == null ? "POPULARITY_DESC" : "SEARCH_MATCH"));
+        variables.put("sort", List.of(sort != null ? sort : term == null ? "POPULARITY_DESC" : "SEARCH_MATCH"));
         variables.put("page", page);
         variables.put("perPage", Math.min(perPage, MAX_BATCH));
 
