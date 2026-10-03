@@ -43,6 +43,9 @@
   --card-border: #e4e9f0;
   /* Derived one step darker for control edges. */
   --border-strong: #cbd5e3;
+  /* A segmented control on a card: the track, and the choice raised out of it. */
+  --segment-track: #eef1f6;
+  --segment-on: #ffffff;
 
   /* 30 — the dark blocks, same ink */
   --banner-bg: #0b1220;
@@ -244,6 +247,8 @@
     --border: #233049;
     --card-border: #233049;
     --border-strong: #33456a;
+    --segment-track: #16233b;
+    --segment-on: #2a3a5a;
 
     --banner-bg: #16233b;
     --banner-text: #eef3fa;
@@ -291,6 +296,8 @@
   --border: #233049;
   --card-border: #233049;
   --border-strong: #33456a;
+  --segment-track: #16233b;
+  --segment-on: #2a3a5a;
 
   --banner-bg: #16233b;
   --banner-text: #eef3fa;

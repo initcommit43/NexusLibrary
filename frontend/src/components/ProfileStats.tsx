@@ -1,6 +1,9 @@
 import type { CSSProperties, ReactNode } from 'react'
+import type { TrackedItem } from '../api/client'
 import { Heart } from './Heart'
 import type { Summary } from './stats'
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 const percent = (part: number, whole: number) => (whole === 0 ? 0 : Math.round((part / whole) * 100))
 
@@ -57,6 +60,58 @@ export const ProfileRings = ({ totals, favourites }: { totals: Summary; favourit
           <Heart filled={false} size={22} />
         </div>
         <Tally value={favourites.toLocaleString()} label="favourites" />
+      </div>
+    </div>
+  )
+}
+
+/** How many months the bars cover, this one included. */
+const MONTHS_SHOWN = 7
+
+/**
+ * Titles finished in each of the last months, read off the entries' own finish dates.
+ *
+ * <p>Not off the map beside it: a day on the map is anything started, finished or logged, and
+ * a bar labelled finished must count only that. The month still running is drawn paler,
+ * since its bar is not done growing.
+ */
+export const FinishedByMonth = ({ entries }: { entries: TrackedItem[] }) => {
+  const today = new Date()
+  const months = Array.from({ length: MONTHS_SHOWN }, (_, back) => {
+    const at = new Date(today.getFullYear(), today.getMonth() - (MONTHS_SHOWN - 1 - back), 1)
+    return { year: at.getFullYear(), month: at.getMonth(), amount: 0 }
+  })
+
+  for (const entry of entries) {
+    if (!entry.finishedAt) continue
+    // A calendar date, split rather than parsed: Date would read it as UTC midnight and
+    // move the last of the month into the next for anyone west of Greenwich.
+    const [year, month] = entry.finishedAt.split('-').map(Number)
+    const bucket = months.find((held) => held.year === year && held.month === month - 1)
+    if (bucket) bucket.amount += 1
+  }
+
+  const most = Math.max(1, ...months.map((held) => held.amount))
+
+  return (
+    <div className="finished-months">
+      <span className="finished-months-title">Finished per month</span>
+      <div className="finished-months-bars">
+        {months.map((held, at) => (
+          <div key={`${held.year}-${held.month}`} className="finished-month">
+            <span className="finished-month-amount">{held.amount}</span>
+            <span
+              className={at === MONTHS_SHOWN - 1 ? 'finished-month-bar is-running' : 'finished-month-bar'}
+              style={{ '--share': held.amount / most } as CSSProperties}
+              title={`${MONTHS[held.month]} ${held.year} · ${held.amount} finished`}
+            />
+          </div>
+        ))}
+      </div>
+      <div className="finished-months-axis">
+        {months.map((held) => (
+          <span key={`${held.year}-${held.month}`}>{MONTHS[held.month]}</span>
+        ))}
       </div>
     </div>
   )
