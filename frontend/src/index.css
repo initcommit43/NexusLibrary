@@ -6448,23 +6448,24 @@ button.ghost.danger:hover:not(:disabled) {
 }
 
 /*
- * Not yet connected is the direction's ink call-to-action strip — the one place a dark slab
- * is deliberate in light mode, with the cyan reserved for sync and integrations.
+ * Not yet connected is a call-to-action strip, raised off the card in the theme's own tones
+ * with the cyan reserved for sync and integrations. The ink slab it once was read as dark
+ * mode leaking into light.
  */
 .integration-head.banner {
   align-items: center;
   padding: var(--space-3);
   border-radius: var(--radius-md);
-  background: var(--banner-bg);
+  background: var(--surface-raised);
 }
 
 .integration-head.banner h3 {
-  color: var(--banner-text);
+  color: var(--text);
   font-size: var(--text-base);
 }
 
 .integration-head.banner .muted {
-  color: var(--banner-muted);
+  color: var(--text-muted);
   font-size: var(--text-xs);
 }
 
