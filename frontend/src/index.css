@@ -2353,8 +2353,8 @@ input.filter-control::-webkit-search-cancel-button {
 }
 
 /*
- * Capped and centred in the room the map leaves, so the months stand as a group rather than
- * seven bars strung out across half the card.
+ * Capped, so the months stand as a group rather than seven bars strung out across half the
+ * card, and held to the card's right edge, under the scope switch's end.
  */
 .activity-months {
   display: flex;
@@ -2362,8 +2362,8 @@ input.filter-control::-webkit-search-cancel-button {
   flex-direction: column;
   gap: var(--space-2);
   min-width: 0;
-  max-width: 28rem;
-  margin-inline: auto;
+  max-width: 36rem;
+  margin-left: auto;
 }
 
 .activity-months-title {
@@ -2375,7 +2375,7 @@ input.filter-control::-webkit-search-cancel-button {
   display: flex;
   align-items: flex-end;
   gap: var(--space-2);
-  height: 8.75rem;
+  height: 10rem;
   border-bottom: 1px solid var(--border-strong);
 }
 
@@ -2400,7 +2400,7 @@ input.filter-control::-webkit-search-cancel-button {
 /* Scaled to the room left under the figure, and never so short that a month vanishes. */
 .activity-month-bar {
   width: 100%;
-  max-width: 2.25rem;
+  max-width: 3.5rem;
   height: max(2px, calc(var(--share) * (100% - 1.25rem)));
   border-radius: var(--radius-bar) var(--radius-bar) 0 0;
   background: var(--accent);
