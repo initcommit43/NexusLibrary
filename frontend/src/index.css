@@ -1417,11 +1417,10 @@ input.filter-control::-webkit-search-cancel-button {
  * beneath it. Contained rather than breaking out to the window, unlike .media-banner — a
  * profile is about the reader, and a full-bleed image would make the picture the page.
  */
+/* No rule of its own underneath: the ring strip's top rule already closes it off. */
 .profile-head {
   display: flex;
   flex-direction: column;
-  padding-bottom: var(--space-4);
-  border-bottom: 1px solid var(--border);
 }
 
 .profile-banner {
@@ -2171,24 +2170,21 @@ input.filter-control::-webkit-search-cancel-button {
   border-block: 1px solid var(--border);
 }
 
+/*
+ * Each ring and its figures sit in the middle of their cell, nudged right of it: the ring
+ * outweighs the words beside it, and a group centred by width reads as leaning left.
+ */
 .profile-ring-cell {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: var(--space-3);
   min-width: 0;
-  padding: 1.25rem var(--space-4);
+  padding: 1.25rem var(--space-4) 1.25rem calc(var(--space-4) + 1.5rem);
 }
 
 .profile-ring-cell + .profile-ring-cell {
   border-left: 1px solid var(--border);
-}
-
-.profile-ring-cell:first-child {
-  padding-left: 0;
-}
-
-.profile-ring-cell:last-child {
-  padding-right: 0;
 }
 
 @media (max-width: 60rem) {
@@ -2196,12 +2192,7 @@ input.filter-control::-webkit-search-cancel-button {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .profile-ring-cell:nth-child(2) {
-    padding-right: 0;
-  }
-
   .profile-ring-cell:nth-child(3) {
-    padding-left: 0;
     border-left: 0;
   }
 
@@ -2636,8 +2627,6 @@ input.filter-control::-webkit-search-cancel-button {
     /* .shell-main's padding, which the banner reaches back across to meet the window. */
     --profile-bleed-top: var(--space-5);
     --profile-bleed-side: var(--space-4);
-    padding-bottom: 0;
-    border-bottom: 0;
   }
 
   .profile-banner {
