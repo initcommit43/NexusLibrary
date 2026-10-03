@@ -1106,9 +1106,10 @@ a.list-link:hover {
 }
 
 /*
- * At rest it is where the value will be, doing a placeholder's job. It floats to the top of
- * the box once there is a value under it — or, for a select, from the start, since a select
- * has something to show before anyone touches it.
+ * At rest it is where the value will be, doing a placeholder's job: it stays put while the
+ * caret blinks beside it and goes once the first letter is typed. Above a list's chosen
+ * values it floats to the top of the box, since those are not what was typed and still need
+ * naming.
  */
 .filter-label {
   position: absolute;
@@ -1131,9 +1132,23 @@ a.list-link:hover {
     color var(--duration-base) var(--ease);
 }
 
-.filter[data-float] .filter-label,
-.filter:focus-within .filter-label {
+.filter[data-float] .filter-label {
   transform: translateY(-0.8rem) scale(0.78);
+}
+
+.filter[data-typing]:not([data-float]) .filter-label {
+  opacity: 0;
+}
+
+/* With nothing floated above it, what is typed sits on the line the label rests on. */
+.filter:not([data-float]) .filter-control {
+  padding-block: 0;
+}
+
+/* A list's chosen values sit in the placeholder, so they read as values rather than a hint. */
+.filter-control::placeholder {
+  color: var(--text);
+  opacity: 1;
 }
 
 .filter:focus-within .filter-label {
@@ -1165,18 +1180,13 @@ a.list-link:hover {
   font-size: var(--text-base);
   font-weight: 500;
   text-align: left;
+  /* The chosen genres run long; the control keeps its track and clips rather than pushing. */
+  text-overflow: ellipsis;
 }
 
 .filter-control:hover:not(:disabled) {
   background: var(--surface);
   border-color: var(--accent);
-}
-
-/* The chosen genres run long; the control keeps its track and clips rather than pushing. */
-.filter-control > span:first-child {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 input.filter-control,
@@ -1201,20 +1211,16 @@ input.filter-control::-webkit-search-cancel-button {
   transform: translateY(-50%);
   display: grid;
   place-items: center;
-  pointer-events: none;
-  color: var(--text-muted);
-}
-
-.filter-x {
   width: 1.5rem;
   height: 1.5rem;
   padding: 0;
   background: transparent;
   border: none;
   border-radius: var(--radius-sm);
-  pointer-events: auto;
+  color: var(--text-muted);
 }
 
+.filter-chevron:hover:not(:disabled),
 .filter-x:hover:not(:disabled) {
   background: var(--surface-raised);
   color: var(--text);
@@ -3967,26 +3973,6 @@ input.filter-control::-webkit-search-cancel-button {
 .fact-link:focus-visible {
   color: var(--accent);
   text-decoration: none;
-}
-
-/* The line you type into, at the top of a menu too long to read down. */
-.filter-search {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  padding: var(--space-1);
-  background: var(--surface);
-  border-bottom: 1px solid var(--card-border);
-}
-
-.filter-search input {
-  width: 100%;
-  padding: var(--space-1) var(--space-2);
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius-sm);
-  background: var(--bg);
-  color: var(--text);
-  font-size: var(--text-sm);
 }
 
 .filter-empty {

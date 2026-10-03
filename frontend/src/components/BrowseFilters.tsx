@@ -2,9 +2,6 @@ import { useId, useState } from 'react'
 import type { FilterField, FilterValues } from '../api/client'
 import { useMenuDismiss } from './useMenuDismiss'
 
-/** How many options make a list worth searching rather than reading. */
-const SEARCHABLE_FROM = 12
-
 const ChevronIcon = () => (
   <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" aria-hidden>
     <path d="m6 9 6 6 6-6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -26,14 +23,15 @@ const ClearIcon = () => (
  */
 const Affordance = ({
   filled,
-  hasList,
   label,
   onClear,
+  onToggle,
 }: {
   filled: boolean
-  hasList: boolean
   label: string
   onClear: () => void
+  /** Present for a control with a list behind it; the chevron opens it. */
+  onToggle?: () => void
 }) => {
   if (filled) {
     return (
@@ -42,10 +40,17 @@ const Affordance = ({
       </button>
     )
   }
-  return hasList ? (
-    <span className="filter-chevron" aria-hidden>
+  // Out of the tab order: the box itself opens the list from the keyboard.
+  return onToggle ? (
+    <button
+      type="button"
+      className="filter-chevron"
+      tabIndex={-1}
+      aria-label={`Show ${label} options`}
+      onClick={onToggle}
+    >
       <ChevronIcon />
-    </span>
+    </button>
   ) : null
 }
 
@@ -71,16 +76,24 @@ const Dropdown = ({
 }) => {
   const { open, setOpen, container } = useMenuDismiss<HTMLDivElement>()
   const id = useId()
+  const listId = useId()
   const [typed, setTyped] = useState('')
   const filled = chosen.length > 0
 
+  // A search belongs to the one opening of the list: closed, the box shows what is chosen, and
+  // reopened, the list starts whole again.
+  const search = open ? typed : ''
+  const reveal = () => {
+    if (!open) setTyped('')
+    setOpen(true)
+  }
+
   /*
-   * A list long enough to be hunted through rather than read gets something to type into.
-   * AniList files under a few dozen genres and several hundred tags, and scrolling a menu of
-   * three hundred words to find "found family" is not looking for it.
+   * The box doubles as the search. AniList files under a few dozen genres and several hundred
+   * tags, and scrolling a menu of three hundred words to find "found family" is not looking
+   * for it; a second box inside the menu only repeated the one already on the bar.
    */
-  const searchable = field.options.length > SEARCHABLE_FROM
-  const term = typed.trim().toLowerCase()
+  const term = search.trim().toLowerCase()
   const offered = term
     ? field.options.filter((option) => option.label.toLowerCase().includes(term))
     : field.options
@@ -101,42 +114,56 @@ const Dropdown = ({
   }
 
   return (
-    <div className="filter" ref={container} data-float={filled ? '' : undefined}>
+    <div
+      className="filter"
+      ref={container}
+      data-float={filled ? '' : undefined}
+      data-typing={search ? '' : undefined}
+    >
       <label className="filter-label" htmlFor={id}>
         {field.label}
       </label>
 
-      <button
+      {/* What is chosen stands in the placeholder, so the first letter typed clears it away
+          and the box holds only the search while there is one. */}
+      <input
         id={id}
-        type="button"
         className="filter-control"
-        aria-haspopup="listbox"
+        type="text"
+        role="combobox"
+        autoComplete="off"
         aria-expanded={open}
-        onClick={() => setOpen((wasOpen) => !wasOpen)}
-      >
-        <span>{labelled.join(', ')}</span>
-      </button>
+        aria-controls={listId}
+        aria-autocomplete="list"
+        value={search}
+        placeholder={labelled.join(', ')}
+        onClick={reveal}
+        onChange={(event) => {
+          reveal()
+          setTyped(event.target.value)
+        }}
+        onKeyDown={(event) => {
+          if (event.key === 'ArrowDown') reveal()
+          // Enter takes the best match, so a typed name needs no reach for the mouse.
+          if (event.key === 'Enter' && term && offered.length > 0) {
+            event.preventDefault()
+            pick(offered[0].value)
+          }
+        }}
+      />
 
-      <Affordance filled={filled} hasList label={field.label} onClear={() => onChange([])} />
+      <Affordance
+        filled={filled}
+        label={field.label}
+        onClear={() => onChange([])}
+        onToggle={() => (open ? setOpen(false) : reveal())}
+      />
 
       {open && (
-        <ul className="filter-options">
-          {searchable && (
-            <li className="filter-search">
-              <input
-                type="search"
-                value={typed}
-                autoFocus
-                placeholder={`Search ${field.label.toLowerCase()}`}
-                aria-label={`Search ${field.label}`}
-                onChange={(event) => setTyped(event.target.value)}
-              />
-            </li>
-          )}
-
+        <ul className="filter-options" id={listId} role="listbox" aria-multiselectable={multiple}>
           {/* Named here, where it is a choice among others, rather than in the closed box,
               where it would be a word standing in for the nothing it means. */}
-          {!multiple && (
+          {!multiple && !term && (
             <li>
               <button
                 type="button"
@@ -185,7 +212,7 @@ const Dropdown = ({
   )
 }
 
-/** A free-text box. Its label rests where the value will be until there is one. */
+/** A free-text box. Its label rests where the value will be until the first letter is typed. */
 const TextFilter = ({
   field,
   chosen,
@@ -199,7 +226,7 @@ const TextFilter = ({
   const value = chosen[0] ?? ''
 
   return (
-    <div className="filter" data-float={value ? '' : undefined}>
+    <div className="filter" data-typing={value ? '' : undefined}>
       <label className="filter-label" htmlFor={id}>
         {field.label}
       </label>
@@ -212,12 +239,7 @@ const TextFilter = ({
         onChange={(event) => onChange(event.target.value ? [event.target.value] : [])}
       />
 
-      <Affordance
-        filled={value !== ''}
-        hasList={false}
-        label={field.label}
-        onClear={() => onChange([])}
-      />
+      <Affordance filled={value !== ''} label={field.label} onClear={() => onChange([])} />
     </div>
   )
 }
