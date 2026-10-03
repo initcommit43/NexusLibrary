@@ -2,21 +2,19 @@
  * Holding a picture inside a frame that is not its shape.
  *
  * <p>A banner strip and an avatar circle have the same problem: a cover crop of a picture
- * shaped differently to the frame throws away whatever the reader picked it for. The maths
- * for saying which part to keep is the same for both — it reads the picture's own size
- * against the frame's — so it lives here rather than twice.
+ * shaped differently to the frame throws away whatever the reader picked it for. What is
+ * stored is a focus point and a zoom, which is what the frame is drawn with; what the reader
+ * handles is a crop drawn over the whole picture. The two are the same thing said two ways,
+ * and the conversion lives here rather than in either frame.
  */
 
 import type { Framing } from '../api/client'
-
-/** Below a pixel of room there is nothing to move: the image already fits the frame there. */
-export const NO_ROOM = 1
 
 /** A picture may be magnified, never shrunk below the crop that fills the frame. */
 export const COVER = 100
 export const CLOSEST = 300
 
-export const clamp = (value: number) => Math.min(100, Math.max(0, value))
+export const clamp = (value: number, low = 0, high = 100) => Math.min(high, Math.max(low, value))
 
 export const framingOf = (held: Framing): Framing => ({
   focusX: held.focusX,
@@ -24,47 +22,55 @@ export const framingOf = (held: Framing): Framing => ({
   zoom: held.zoom,
 })
 
+/** A crop as fractions of the picture: its top-left corner, and its size. */
+export type Crop = { x: number; y: number; width: number; height: number }
+
 /**
- * How much of the image is out of sight in each axis, in pixels of the frame.
- *
- * <p>What a drag is measured against, so the picture keeps pace with the pointer rather than
- * racing it on a tall image and crawling on a wide one.
+ * How much of the picture a cover crop shows in each axis. Shapes are width over height: a
+ * picture wider in proportion than its frame shows all its height and part of its width.
  */
-export const hidden = (node: HTMLImageElement | null, zoomPercent: number) => {
-  if (!node?.naturalWidth || !node.naturalHeight) return null
+const coverShare = (picture: number, frame: number) => ({
+  width: Math.min(1, frame / picture),
+  height: Math.min(1, picture / frame),
+})
 
-  // The laid-out size, not the drawn one: getBoundingClientRect would carry the zoom.
-  const width = node.offsetWidth
-  const height = node.offsetHeight
-  const aspect = node.naturalWidth / node.naturalHeight
-  const zoom = zoomPercent / 100
-
+/**
+ * The part of the picture a framing shows, given the picture's shape and the frame's.
+ *
+ * <p>{@link framedStyle} draws a cover crop placed by the focus point and then scales it about
+ * that same point, which works out to a window 1/zoom of the cover's size whose corner sits
+ * the focus's share of the way along the room left either side of it.
+ */
+export const cropOf = (framing: Framing, picture: number, frame: number): Crop => {
+  const cover = coverShare(picture, frame)
+  const zoom = framing.zoom / 100
+  const width = cover.width / zoom
+  const height = cover.height / zoom
   return {
-    x: (Math.max(width, height * aspect) - width) * zoom + width * (zoom - 1),
-    y: (Math.max(height, width / aspect) - height) * zoom + height * (zoom - 1),
+    x: (framing.focusX / 100) * (1 - width),
+    y: (framing.focusY / 100) * (1 - height),
+    width,
+    height,
   }
 }
 
-/** Where a drag started, and the framing it started from. */
-export type DragOrigin = { x: number; y: number; from: Framing }
+/** The framing that draws exactly this crop: {@link cropOf}, run backwards. */
+export const framingFrom = (crop: Crop, picture: number, frame: number): Framing => {
+  const cover = coverShare(picture, frame)
+  // Where the crop already spans the picture there is no room to place it in; any focus does.
+  const along = (start: number, size: number) => (size > 0.999 ? 50 : clamp((start / (1 - size)) * 100))
+  return {
+    focusX: Math.round(along(crop.x, crop.width)),
+    focusY: Math.round(along(crop.y, crop.height)),
+    zoom: Math.round(clamp((cover.width / crop.width) * 100, COVER, CLOSEST)),
+  }
+}
 
-/** The framing a pointer at this position means, given where the drag took hold. */
-export const draggedTo = (
-  origin: DragOrigin,
-  room: { x: number; y: number },
-  clientX: number,
-  clientY: number,
-): Framing => ({
-  ...origin.from,
-  focusX:
-    room.x < NO_ROOM
-      ? origin.from.focusX
-      : clamp(origin.from.focusX - ((clientX - origin.x) * 100) / room.x),
-  focusY:
-    room.y < NO_ROOM
-      ? origin.from.focusY
-      : clamp(origin.from.focusY - ((clientY - origin.y) * 100) / room.y),
-})
+/** The crop's size limits in picture widths: from the full cover down to the closest zoom. */
+export const cropWidths = (picture: number, frame: number) => {
+  const cover = coverShare(picture, frame)
+  return { widest: cover.width, narrowest: cover.width / (CLOSEST / 100) }
+}
 
 /**
  * How the picture is drawn under a framing.
