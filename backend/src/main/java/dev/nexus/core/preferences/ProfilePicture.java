@@ -1,6 +1,5 @@
 package dev.nexus.core.preferences;
 
-import dev.nexus.core.adapter.CharacterPortrait;
 import dev.nexus.core.domain.TrackableItem;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -10,42 +9,45 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.util.UUID;
 
 /**
- * The character a reader chose to stand for them, and the title that character came from.
+ * The picture standing for a reader, and how it sits in the circle.
  *
  * <p>Keyed by the reader like the banner beside it: this is one choice rather than a
  * collection, and having no row is what a profile with no picture is.
  *
- * <p>The character's id and name are kept alongside the resolved url because all three come
- * out of the same walk through a source-shaped detail. Resolving once at the moment of
- * choosing is what lets the profile draw its head from one row.
+ * <p>Either an upload, named by {@link #uploadId} with its bytes in {@link PictureUpload}, or a
+ * character picked from a title before uploads replaced that — the item, character and url
+ * columns, kept so those pictures go on showing until their reader uploads one. Never both.
  */
 @Entity
 @Table(name = "user_profile_picture")
 public class ProfilePicture {
 
-    /** The middle of the image, and the size a cover crop is: what an untouched picture wears. */
-    private static final short CENTRE = 50;
-
-    private static final short COVER = 100;
-
     @Id
     @Column(name = "user_id")
     private Long userId;
 
-    @ManyToOne(fetch = FetchType.EAGER, optional = false)
-    @JoinColumn(name = "trackable_item_id", nullable = false)
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "trackable_item_id")
     private TrackableItem item;
 
-    @Column(name = "character_id", nullable = false)
+    @Column(name = "character_id")
     private String characterId;
 
-    @Column(name = "character_name", nullable = false)
+    @Column(name = "character_name")
     private String characterName;
 
-    @Column(name = "image_url", nullable = false)
+    @Column(name = "image_url")
     private String imageUrl;
+
+    /**
+     * Which upload this is, new with every one: the image is served from a fixed address, and
+     * this is what tells a cached copy of the last upload from the current one.
+     */
+    @Column(name = "upload_id")
+    private UUID uploadId;
 
     @Column(name = "chosen_at", nullable = false)
     private Instant chosenAt;
@@ -69,14 +71,8 @@ public class ProfilePicture {
         // JPA
     }
 
-    public ProfilePicture(Long userId, TrackableItem item, CharacterPortrait character) {
+    public ProfilePicture(Long userId) {
         this.userId = userId;
-        this.item = item;
-        this.characterId = character.id();
-        this.characterName = character.name();
-        this.imageUrl = character.imageUrl();
-        this.chosenAt = Instant.now();
-        resetFraming();
     }
 
     public Long getUserId() {
@@ -93,6 +89,10 @@ public class ProfilePicture {
 
     public String getImageUrl() {
         return imageUrl;
+    }
+
+    public UUID getUploadId() {
+        return uploadId;
     }
 
     public Instant getChosenAt() {
@@ -112,17 +112,17 @@ public class ProfilePicture {
     }
 
     /**
-     * Re-pointed at another character, since a reader has one picture rather than a history of
-     * them. The framing goes back to a plain cover crop: it was a set of offsets into a
-     * different portrait, and carrying them over would open the new one already askew.
+     * Pointed at a fresh upload, framed as the reader cropped it before sending. Whatever it
+     * showed before, character or upload, is let go: a reader has one picture, not a history.
      */
-    public void moveTo(TrackableItem chosen, CharacterPortrait character) {
-        this.item = chosen;
-        this.characterId = character.id();
-        this.characterName = character.name();
-        this.imageUrl = character.imageUrl();
+    public void uploaded(int x, int y, int magnification) {
+        this.item = null;
+        this.characterId = null;
+        this.characterName = null;
+        this.imageUrl = null;
+        this.uploadId = UUID.randomUUID();
         this.chosenAt = Instant.now();
-        resetFraming();
+        frame(x, y, magnification);
     }
 
     /** Moved and magnified within the circle, leaving the image it does this to alone. */
@@ -130,11 +130,5 @@ public class ProfilePicture {
         this.focusX = (short) x;
         this.focusY = (short) y;
         this.zoom = (short) magnification;
-    }
-
-    private void resetFraming() {
-        this.focusX = CENTRE;
-        this.focusY = CENTRE;
-        this.zoom = COVER;
     }
 }

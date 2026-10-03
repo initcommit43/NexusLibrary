@@ -1,42 +1,28 @@
 package dev.nexus.core.preferences;
 
-import dev.nexus.core.adapter.CharacterPortrait;
-import dev.nexus.core.adapter.MetadataAdapterRegistry;
-import dev.nexus.core.catalog.MediaDetailService;
-import dev.nexus.core.domain.TrackableItem;
-import dev.nexus.core.domain.UserEntry;
-import dev.nexus.core.domain.UserEntryRepository;
-import dev.nexus.core.tracking.EntryNotFoundException;
-import java.util.Map;
 import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * The character standing at the head of a reader's profile.
+ * The picture standing at the head of a reader's profile.
  *
- * <p>Scoped the same way the banner is, and for the same reason: the request names an entry of
- * the reader's own and a character within it, never a url. What that character's portrait
- * actually is gets resolved here, out of the title's cached detail, so nothing in a request can
- * point a profile at an arbitrary image.
+ * <p>Every call is keyed by the authenticated reader and nothing else: there is no picture id
+ * in any request, so there is no other reader's picture a request could name.
+ *
+ * <p>What reaches {@link #store} has already been through {@link PictureSanitizer}, outside
+ * any transaction — decoding holds a thread for a moment, and a database connection should
+ * not be held for it too.
  */
 @Service
 public class ProfilePictureService {
 
     private final ProfilePictureRepository pictures;
-    private final UserEntryRepository entries;
-    private final MediaDetailService details;
-    private final MetadataAdapterRegistry adapters;
+    private final PictureUploadRepository uploads;
 
-    public ProfilePictureService(
-            ProfilePictureRepository pictures,
-            UserEntryRepository entries,
-            MediaDetailService details,
-            MetadataAdapterRegistry adapters) {
+    public ProfilePictureService(ProfilePictureRepository pictures, PictureUploadRepository uploads) {
         this.pictures = pictures;
-        this.entries = entries;
-        this.details = details;
-        this.adapters = adapters;
+        this.uploads = uploads;
     }
 
     @Transactional(readOnly = true)
@@ -44,33 +30,33 @@ public class ProfilePictureService {
         return pictures.findByUserId(userId);
     }
 
-    /**
-     * Points the profile at one character of a title behind one of this reader's entries.
-     *
-     * <p>The detail is fetched rather than assumed present: characters live there and not on
-     * the item itself, and it is the same fetch that opening the title would make.
-     */
+    /** The bytes of this reader's own upload, if what they have is one. */
+    @Transactional(readOnly = true)
+    public Optional<PictureUpload> uploadOf(long userId) {
+        return uploads.findByUserId(userId);
+    }
+
+    /** Puts an upload at the head of the profile, framed as it was cropped before sending. */
     @Transactional
-    public ProfilePicture choose(long userId, long entryId, String characterId) {
-        UserEntry entry = entries.findByIdAndUserId(entryId, userId)
-                .orElseThrow(EntryNotFoundException::new);
+    public ProfilePicture store(long userId, PictureSanitizer.Sanitized picture, int focusX, int focusY, int zoom) {
+        // Pointed at the upload before a new row is saved, not after: the insert is written as
+        // the row stood when saved, and a row naming no image breaks the table's own check.
+        ProfilePicture held = pictures.findByUserId(userId).orElseGet(() -> new ProfilePicture(userId));
+        held.uploaded(focusX, focusY, zoom);
+        held = pictures.save(held);
+        // Flushed before the bytes, whose row hangs off this one by foreign key.
+        pictures.flush();
 
-        TrackableItem item = details.findOrFetch(
-                entry.getItem().getSource(), entry.getItem().getExternalId());
-        CharacterPortrait character = characterOf(item, characterId)
-                .orElseThrow(() -> new NoCharacterException(item.getTitle()));
-
-        return pictures.findByUserId(userId)
-                .map(held -> {
-                    held.moveTo(item, character);
-                    return held;
-                })
-                .orElseGet(() -> pictures.save(new ProfilePicture(userId, item, character)));
+        uploads.findByUserId(userId)
+                .ifPresentOrElse(
+                        existing -> existing.replaceWith(picture),
+                        () -> uploads.save(new PictureUpload(userId, picture)));
+        return held;
     }
 
     /**
-     * Where the portrait sits inside the circle, which is a change to the framing and not to
-     * the choice: the same character, held differently.
+     * Where the picture sits inside the circle, which is a change to the framing and not to
+     * the picture: the same image, held differently.
      */
     @Transactional
     public ProfilePicture frame(long userId, int focusX, int focusY, int zoom) {
@@ -80,15 +66,9 @@ public class ProfilePictureService {
         return picture;
     }
 
+    /** The uploaded bytes go with it, by the cascade on their foreign key. */
     @Transactional
     public void clear(long userId) {
         pictures.deleteByUserId(userId);
-    }
-
-    /** Only the source that wrote a detail knows how it names and pictures its characters. */
-    private Optional<CharacterPortrait> characterOf(TrackableItem item, String characterId) {
-        Map<String, Object> detail = MediaDetailService.detailOf(item);
-        return adapters.forSource(item.getSource())
-                .flatMap(adapter -> adapter.characterFrom(detail, characterId));
     }
 }
