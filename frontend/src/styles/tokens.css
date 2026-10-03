@@ -154,6 +154,9 @@
    * a control with text in it takes --radius-sm however short it is.
    */
   --radius-bar: 2px; /* progress and meter bars, chart marks */
+  /* Barely there: noticed only by looking at the corner itself. */
+  --radius-picture: 2px; /* covers and thumbnails */
+  --radius-box: 3px; /* boxes, menus, popovers and chips that sit flat */
   --radius-sm: 4px; /* controls: buttons, inputs, chips, badges, menus and their items, small thumbnails */
   --radius-md: 6px; /* rows and tiles: list rows, cover art, cards in a list, callouts */
   --radius-lg: 8px; /* cards, popovers, dialogs */
