@@ -15,7 +15,7 @@ import { Scatter } from '../components/charts/Scatter'
 import { SplitLegend, StackedBar } from '../components/charts/StackedBar'
 import { Tooltip } from '../components/charts/Tooltip'
 import { useTooltip } from '../components/charts/useTooltip'
-import { MODULES, mediaPathFor, statusLabelsFor } from '../modules/registry'
+import { MODULES, PLAIN_STATUS, mediaPathFor, statusLabelsFor } from '../modules/registry'
 import {
   STATUS_ORDER,
   achievementTally,
@@ -57,15 +57,6 @@ const LENSES: { key: string; label: string; mediaType: MediaType | null }[] = [
     })),
   ),
 ]
-
-/** Words for the shared legend on the all lens, where no one medium's verbs apply. */
-const PLAIN_STATUS: Record<TrackingStatus, string> = {
-  PLANNING: 'Planned',
-  IN_PROGRESS: 'In progress',
-  COMPLETED: 'Completed',
-  PAUSED: 'On hold',
-  DROPPED: 'Dropped',
-}
 
 /** Films rank by runtime, not by being watched more than once, and the title must not lie. */
 const BOARD_TITLES: Record<MediaType, string> = {

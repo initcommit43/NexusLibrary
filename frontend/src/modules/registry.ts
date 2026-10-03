@@ -280,6 +280,15 @@ export const browsePathFor = (mediaType: MediaType, field: string, value: string
   return `/browse?${params}`
 }
 
+/** Words for a status across media, where no one medium's verbs apply. */
+export const PLAIN_STATUS: Record<TrackingStatus, string> = {
+  PLANNING: 'Planned',
+  IN_PROGRESS: 'In progress',
+  COMPLETED: 'Completed',
+  PAUSED: 'On hold',
+  DROPPED: 'Dropped',
+}
+
 /** The words for one kind of thing, falling back to plain ones for anything unmapped. */
 export const statusLabelsFor = (mediaType: MediaType): Record<TrackingStatus, string> =>
   typeDefinitionFor(mediaType)?.statusLabels ?? {
