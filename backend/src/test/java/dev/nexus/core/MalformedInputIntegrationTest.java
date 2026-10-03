@@ -97,14 +97,6 @@ class MalformedInputIntegrationTest extends PostgresIntegrationTest {
         assertThat(get("/catalog/media/IGDB/" + tooLong + "/achievements").status()).isEqualTo(400);
     }
 
-    @Test
-    void aCharacterIdWiderThanTheColumnIsRefused() {
-        Response response = put("/settings/profile-picture", Map.of("entryId", 1, "characterId", "1".repeat(65)));
-
-        assertThat(response.status()).isEqualTo(400);
-        assertThat(response.fieldErrors()).containsKey("characterId");
-    }
-
     /** Nothing legitimate mints a token this long; a value past the bound is refused outright. */
     @Test
     void aRefreshTokenPastItsBoundIsRefused() {

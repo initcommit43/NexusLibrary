@@ -2,174 +2,184 @@ package dev.nexus.core;
 
 import static dev.nexus.support.AuthenticatedTest.registerAndGetToken;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.when;
 
-import dev.nexus.modules.anime.AniListClient;
-import dev.nexus.modules.games.IgdbClient;
-import dev.nexus.support.GamesTestData;
 import dev.nexus.support.HttpTestClient;
+import dev.nexus.support.HttpTestClient.BinaryResponse;
 import dev.nexus.support.HttpTestClient.Response;
 import dev.nexus.support.PostgresIntegrationTest;
-import java.util.HashMap;
-import java.util.List;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import java.util.Optional;
+import javax.imageio.ImageIO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-/** The character a reader stands behind, and whose character it stays. */
+/**
+ * An uploaded profile picture: whose it is, who can see it, and what of the upload survives.
+ *
+ * <p>The authorization half is the point of most of these. Every route is keyed by the signed-in
+ * reader alone, and these hold that to the claim: no other reader, and nobody signed out, can
+ * read, frame, replace or remove someone's picture by any route.
+ */
 class ProfilePictureIntegrationTest extends PostgresIntegrationTest {
 
-    private static final String ONE_PIECE = "21";
-    private static final String NARUTO = "20";
-
-    /** AniList's own ids for three characters, the last of them portrait-less. */
-    private static final String LUFFY = "40";
-    private static final String NAMI = "62";
-    private static final String FACELESS = "77";
+    private static final String PICTURE = "/settings/profile-picture";
 
     @LocalServerPort
     int port;
 
-    @MockitoBean
-    AniListClient anilistClient;
-
-    @MockitoBean
-    IgdbClient igdbClient;
-
     private HttpTestClient http;
     private String ownerToken;
     private String intruderToken;
-    private long onePiece;
-    private long naruto;
-    private long aGame;
 
     @BeforeEach
     void setUp() {
         resetDatabase();
-
         http = new HttpTestClient(port);
-
-        when(anilistClient.findMediaById(eq(ONE_PIECE))).thenReturn(List.of(anime(21, "One Piece")));
-        when(anilistClient.findMediaById(eq(NARUTO))).thenReturn(List.of(anime(20, "Naruto")));
-        when(anilistClient.findMediaDetail(eq(ONE_PIECE)))
-                .thenReturn(withCharacters(anime(21, "One Piece")));
-        when(anilistClient.findMediaDetail(eq(NARUTO)))
-                .thenReturn(withCharacters(anime(20, "Naruto")));
-
-        // A source with no characters at all, which is the case the reader has to be told about.
-        when(igdbClient.findGameById(eq(GamesTestData.BOTW_ID))).thenReturn(List.of(GamesTestData.botw()));
-        when(igdbClient.findGameDetail(eq(GamesTestData.BOTW_ID)))
-                .thenReturn(Optional.of(GamesTestData.botw()));
-
         ownerToken = registerAndGetToken(http, "owner@example.com", "owner");
         intruderToken = registerAndGetToken(http, "intruder@example.com", "intruder");
-
-        onePiece = track(ownerToken, "ANILIST", ONE_PIECE);
-        naruto = track(ownerToken, "ANILIST", NARUTO);
-        aGame = track(ownerToken, "IGDB", GamesTestData.BOTW_ID);
     }
 
     @Test
-    void thereIsNoPictureUntilTheReaderChoosesOne() {
-        Response response = http.get("/settings/profile-picture", "Authorization", "Bearer " + ownerToken);
-
-        assertThat(response.status()).isEqualTo(200);
-        assertThat(response.rawBody()).isBlank();
+    void thereIsNoPictureUntilTheReaderUploadsOne() {
+        assertThat(current(ownerToken)).isEmpty();
+        assertThat(image(ownerToken).status()).isEqualTo(404);
     }
 
-    /** The url is read out of the title's own detail, so no request can name an image itself. */
     @Test
-    void thePictureIsThePortraitOfTheChosenCharacter() {
-        Response response = choose(ownerToken, onePiece, LUFFY);
+    void anUploadIsStoredWithTheFramingItWasCroppedTo() throws IOException {
+        Response response = upload(ownerToken, png(400, 300), 30, 60, 150);
 
         assertThat(response.status()).isEqualTo(200);
         assertThat(response.body())
-                .containsEntry("imageUrl", "https://anilist.test/character/40.jpg")
-                .containsEntry("characterName", "Character 40")
-                .containsEntry("title", "One Piece")
-                .containsEntry("mediaType", "ANIME")
-                .containsEntry("source", "ANILIST")
-                .containsEntry("externalId", ONE_PIECE);
+                .containsEntry("focusX", 30)
+                .containsEntry("focusY", 60)
+                .containsEntry("zoom", 150)
+                .containsEntry("imageUrl", null)
+                .containsKey("version");
+        assertThat(current(ownerToken)).containsEntry("version", response.body().get("version"));
+    }
+
+    /** Served as a JPEG the server wrote, under headers that keep it from being anything else. */
+    @Test
+    void theImageIsServedAsAJpegThatCannotRunAsAPage() throws IOException {
+        upload(ownerToken, png(400, 300), 50, 50, 100);
+
+        BinaryResponse served = image(ownerToken);
+
+        assertThat(served.status()).isEqualTo(200);
+        assertThat(served.header("Content-Type")).contains("image/jpeg");
+        assertThat(served.header("X-Content-Type-Options")).contains("nosniff");
+        assertThat(served.header("Content-Security-Policy").orElseThrow()).contains("sandbox");
+        assertThat(served.header("Cache-Control").orElseThrow()).contains("private");
+        assertThat(served.body()[0]).isEqualTo((byte) 0xFF);
+        assertThat(served.body()[1]).isEqualTo((byte) 0xD8);
     }
 
     @Test
-    void theChoiceIsThereOnTheNextRead() {
-        choose(ownerToken, onePiece, LUFFY);
+    void anotherReaderCannotSeeSomeoneElsesPicture() throws IOException {
+        upload(ownerToken, png(400, 300), 50, 50, 100);
 
-        assertThat(current(ownerToken)).containsEntry("characterName", "Character 40");
+        assertThat(image(intruderToken).status()).isEqualTo(404);
+        assertThat(current(intruderToken)).isEmpty();
     }
 
-    /** One picture, not a history of them: choosing again moves the same row. */
     @Test
-    void choosingAgainReplacesThePicture() {
-        choose(ownerToken, onePiece, LUFFY);
+    void anotherReaderCannotReframeOrRemoveSomeoneElsesPicture() throws IOException {
+        upload(ownerToken, png(400, 300), 30, 30, 120);
 
-        assertThat(choose(ownerToken, naruto, NAMI).status()).isEqualTo(200);
+        assertThat(frame(intruderToken, 90, 90, 300).status()).isEqualTo(404);
+        http.delete(PICTURE, "Authorization", "Bearer " + intruderToken);
+
         assertThat(current(ownerToken))
-                .containsEntry("title", "Naruto")
-                .containsEntry("characterName", "Character 62");
+                .containsEntry("focusX", 30)
+                .containsEntry("focusY", 30)
+                .containsEntry("zoom", 120);
+        assertThat(image(ownerToken).status()).isEqualTo(200);
+    }
+
+    /** An upload only ever lands on the uploader's own profile. */
+    @Test
+    void anotherReadersUploadDoesNotTouchSomeoneElsesPicture() throws IOException {
+        String ownerVersion = (String) upload(ownerToken, png(400, 300), 50, 50, 100).body().get("version");
+
+        upload(intruderToken, png(200, 200), 50, 50, 100);
+
+        assertThat(current(ownerToken)).containsEntry("version", ownerVersion);
     }
 
     @Test
-    void aCharacterTheTitleDoesNotHaveIsRefused() {
-        Response response = choose(ownerToken, onePiece, "999");
+    void nothingIsReachableSignedOut() throws IOException {
+        upload(ownerToken, png(400, 300), 50, 50, 100);
 
-        assertThat(response.status()).isEqualTo(409);
-        assertThat((String) response.body().get("message")).contains("One Piece");
-    }
-
-    /** A character without a portrait cannot stand as a picture, so it is not stored as one. */
-    @Test
-    void aCharacterWithNoPortraitIsRefusedRatherThanStoredEmpty() {
-        assertThat(choose(ownerToken, onePiece, FACELESS).status()).isEqualTo(409);
-    }
-
-    /** Only AniList carries characters; every other source simply has none to give. */
-    @Test
-    void aTitleFromASourceWithNoCharactersIsRefused() {
-        Response response = choose(ownerToken, aGame, LUFFY);
-
-        assertThat(response.status()).isEqualTo(409);
-        assertThat((String) response.body().get("message"))
-                .contains("The Legend of Zelda: Breath of the Wild");
-    }
-
-    /** The only entry id in the request is the reader's own, and another's is not found. */
-    @Test
-    void anotherReadersEntryIsNotAPictureToChoose() {
-        assertThat(choose(intruderToken, onePiece, LUFFY).status()).isEqualTo(404);
-        assertThat(http.get("/settings/profile-picture", "Authorization", "Bearer " + intruderToken)
-                        .rawBody())
-                .isBlank();
-    }
-
-    @Test
-    void removingThePictureLeavesThePlainIcon() {
-        choose(ownerToken, onePiece, LUFFY);
-
-        assertThat(http.delete("/settings/profile-picture", "Authorization", "Bearer " + ownerToken)
+        assertThat(http.getBytes(PICTURE + "/image").status()).isEqualTo(401);
+        assertThat(http.get(PICTURE).status()).isEqualTo(401);
+        assertThat(http.postMultipart(PICTURE + "/upload?focusX=50&focusY=50&zoom=100", "file", "a.png", png(64, 64))
                         .status())
-                .isEqualTo(204);
-        assertThat(http.get("/settings/profile-picture", "Authorization", "Bearer " + ownerToken)
-                        .rawBody())
-                .isBlank();
+                .isEqualTo(401);
+    }
+
+    /** Named and sent as a PNG, but its bytes are a page. Nothing is stored. */
+    @Test
+    void aFileThatIsNotAPictureIsRefused() {
+        byte[] page = "<html><script>alert(1)</script></html>".getBytes(StandardCharsets.UTF_8);
+
+        Response response = upload(ownerToken, page, 50, 50, 100);
+
+        assertThat(response.status()).isEqualTo(400);
+        assertThat(response.body().get("message").toString()).contains("JPEG and PNG");
+        assertThat(current(ownerToken)).isEmpty();
     }
 
     @Test
-    void aNewPictureStartsAsAPlainCoverCrop() {
-        assertThat(choose(ownerToken, onePiece, LUFFY).body())
-                .containsEntry("focusX", 50)
-                .containsEntry("focusY", 50)
-                .containsEntry("zoom", 100);
+    void anUploadOverAMegabyteIsRefused() {
+        byte[] heavy = new byte[1024 * 1024 + 1];
+        heavy[0] = (byte) 0x89;
+
+        Response response = upload(ownerToken, heavy, 50, 50, 100);
+
+        assertThat(response.status()).isEqualTo(413);
+        assertThat(current(ownerToken)).isEmpty();
+    }
+
+    /** These go straight into the style the circle is drawn with, so they are bounded here. */
+    @Test
+    void framingOutsideThePictureIsRefusedOnUpload() throws IOException {
+        assertThat(upload(ownerToken, png(100, 100), 50, 140, 100).status()).isEqualTo(400);
+        assertThat(upload(ownerToken, png(100, 100), 50, 50, 900).status()).isEqualTo(400);
+        assertThat(upload(ownerToken, png(100, 100), 50, 50, 40).status()).isEqualTo(400);
+        assertThat(current(ownerToken)).isEmpty();
     }
 
     @Test
-    void theFramingIsRememberedAgainstTheSamePicture() {
-        choose(ownerToken, onePiece, LUFFY);
+    void whatTheFileCarriedBesidesThePictureIsNotServed() throws IOException {
+        byte[] png = png(120, 120);
+        byte[] tail = "<script>steal()</script>".getBytes(StandardCharsets.US_ASCII);
+        byte[] polyglot = ByteBuffer.allocate(png.length + tail.length).put(png).put(tail).array();
+
+        upload(ownerToken, polyglot, 50, 50, 100);
+
+        String served = new String(image(ownerToken).body(), StandardCharsets.ISO_8859_1);
+        assertThat(served).doesNotContain("<script");
+    }
+
+    @Test
+    void aNewUploadReplacesTheOldOne() throws IOException {
+        String first = (String) upload(ownerToken, png(400, 300), 50, 50, 100).body().get("version");
+        String second = (String) upload(ownerToken, png(200, 200), 20, 20, 200).body().get("version");
+
+        assertThat(second).isNotEqualTo(first);
+        assertThat(image(ownerToken, "\"" + first + "\"").status()).isEqualTo(200);
+        assertThat(image(ownerToken, "\"" + second + "\"").status()).isEqualTo(304);
+    }
+
+    @Test
+    void theFramingIsRememberedAgainstTheSamePicture() throws IOException {
+        upload(ownerToken, png(400, 300), 50, 50, 100);
 
         assertThat(frame(ownerToken, 30, 20, 175).status()).isEqualTo(200);
         assertThat(current(ownerToken))
@@ -178,93 +188,71 @@ class ProfilePictureIntegrationTest extends PostgresIntegrationTest {
                 .containsEntry("zoom", 175);
     }
 
-    /** These go straight into the style the head is drawn with, so they are bounded here. */
     @Test
-    void framingOutsideThePictureIsRefused() {
-        choose(ownerToken, onePiece, LUFFY);
+    void framingOutsideThePictureIsRefused() throws IOException {
+        upload(ownerToken, png(400, 300), 50, 50, 100);
 
         assertThat(frame(ownerToken, 30, 140, 100).status()).isEqualTo(400);
         assertThat(frame(ownerToken, 30, 40, 900).status()).isEqualTo(400);
-        // Shrinking below the crop that fills the circle would leave a gap around the portrait.
         assertThat(frame(ownerToken, 30, 40, 40).status()).isEqualTo(400);
     }
 
-    /** Offsets into one portrait mean nothing in the next, so a new choice starts square. */
     @Test
-    void choosingAnotherCharacterStartsItsFramingAfresh() {
-        choose(ownerToken, onePiece, LUFFY);
-        frame(ownerToken, 20, 10, 220);
-
-        choose(ownerToken, onePiece, NAMI);
-
-        assertThat(current(ownerToken))
-                .containsEntry("focusX", 50)
-                .containsEntry("focusY", 50)
-                .containsEntry("zoom", 100);
-    }
-
-    @Test
-    void thereIsNothingToFrameBeforeAPictureIsChosen() {
+    void thereIsNothingToFrameBeforeAPictureIsUploaded() {
         assertThat(frame(ownerToken, 30, 20, 150).status()).isEqualTo(404);
     }
 
-    private static Map<String, Object> anime(int id, String title) {
-        Map<String, Object> media = new HashMap<>();
-        media.put("id", id);
-        media.put("type", "ANIME");
-        media.put("status", "FINISHED");
-        media.put("episodes", 12);
-        media.put("title", new HashMap<>(Map.of("english", title)));
-        return media;
+    @Test
+    void removingThePictureTakesItsImageWithIt() throws IOException {
+        upload(ownerToken, png(400, 300), 50, 50, 100);
+
+        assertThat(http.delete(PICTURE, "Authorization", "Bearer " + ownerToken).status()).isEqualTo(204);
+
+        assertThat(current(ownerToken)).isEmpty();
+        assertThat(image(ownerToken).status()).isEqualTo(404);
     }
 
-    /** AniList hangs its characters off edges, and leaves an image empty for some of them. */
-    private static Map<String, Object> withCharacters(Map<String, Object> media) {
-        Map<String, Object> detailed = new HashMap<>(media);
-        detailed.put(
-                "characters",
-                Map.of("edges", List.of(edge(LUFFY, true), edge(NAMI, true), edge(FACELESS, false))));
-        return detailed;
-    }
-
-    private static Map<String, Object> edge(String characterId, boolean pictured) {
-        Map<String, Object> node = new HashMap<>();
-        node.put("id", Integer.parseInt(characterId));
-        node.put("name", Map.of("full", "Character " + characterId));
-        node.put(
-                "image",
-                Map.of("medium", pictured ? "https://anilist.test/character/" + characterId + ".jpg" : ""));
-        return Map.of("role", "MAIN", "node", node);
-    }
-
-    private Response choose(String token, long entryId, String characterId) {
-        return http.putJson(
-                "/settings/profile-picture",
-                Map.of("entryId", entryId, "characterId", characterId),
+    private Response upload(String token, byte[] file, int focusX, int focusY, int zoom) {
+        return http.postMultipart(
+                PICTURE + "/upload?focusX=" + focusX + "&focusY=" + focusY + "&zoom=" + zoom,
+                "file",
+                "picture.png",
+                file,
                 "Authorization",
                 "Bearer " + token);
     }
 
     private Response frame(String token, int focusX, int focusY, int zoom) {
         return http.patchJson(
-                "/settings/profile-picture",
+                PICTURE,
                 Map.of("focusX", focusX, "focusY", focusY, "zoom", zoom),
                 "Authorization",
                 "Bearer " + token);
     }
 
+    private BinaryResponse image(String token) {
+        return http.getBytes(PICTURE + "/image", "Authorization", "Bearer " + token);
+    }
+
+    private BinaryResponse image(String token, String etag) {
+        return http.getBytes(PICTURE + "/image", "Authorization", "Bearer " + token, "If-None-Match", etag);
+    }
+
     private Map<String, Object> current(String token) {
-        Response response = http.get("/settings/profile-picture", "Authorization", "Bearer " + token);
+        Response response = http.get(PICTURE, "Authorization", "Bearer " + token);
         assertThat(response.status()).isEqualTo(200);
         return response.body();
     }
 
-    private long track(String token, String source, String externalId) {
-        Response response = http.postJson(
-                "/entries",
-                Map.of("source", source, "externalId", externalId, "status", "PLANNING"),
-                "Authorization",
-                "Bearer " + token);
-        return ((Number) response.body().get("id")).longValue();
+    private static byte[] png(int width, int height) throws IOException {
+        BufferedImage picture = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                picture.setRGB(x, y, (x * 5 + y * 11) & 0xFFFFFF);
+            }
+        }
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ImageIO.write(picture, "png", out);
+        return out.toByteArray();
     }
 }

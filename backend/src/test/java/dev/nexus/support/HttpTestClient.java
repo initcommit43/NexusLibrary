@@ -152,6 +152,27 @@ public class HttpTestClient {
         return send(request(path, headers).GET());
     }
 
+    /** A response read as bytes, for the routes that answer with a file rather than JSON. */
+    public record BinaryResponse(int status, byte[] body, HttpHeaders headers) {
+
+        public Optional<String> header(String name) {
+            return headers.firstValue(name);
+        }
+    }
+
+    public BinaryResponse getBytes(String path, String... headers) {
+        try {
+            HttpResponse<byte[]> response =
+                    client.send(request(path, headers).GET().build(), HttpResponse.BodyHandlers.ofByteArray());
+            return new BinaryResponse(response.statusCode(), response.body(), response.headers());
+        } catch (java.io.IOException e) {
+            throw new IllegalStateException(e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException(e);
+        }
+    }
+
     private HttpRequest.Builder request(String path, String... headers) {
         HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(baseUri + path));
         for (int i = 0; i + 1 < headers.length; i += 2) {
