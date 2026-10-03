@@ -25,7 +25,8 @@ import dev.nexus.core.importing.SyncJobNotFoundException;
 import dev.nexus.core.importing.UpstreamUnavailableException;
 import dev.nexus.core.preferences.BannerNotSetException;
 import dev.nexus.core.preferences.NoBannerException;
-import dev.nexus.core.preferences.NoCharacterException;
+import dev.nexus.core.preferences.PictureRejectedException;
+import dev.nexus.core.preferences.PictureTooLargeException;
 import dev.nexus.core.preferences.PictureNotSetException;
 import dev.nexus.core.security.BotCheckFailedException;
 import dev.nexus.core.review.ReviewNotFoundException;
@@ -59,6 +60,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 /**
@@ -91,6 +93,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         log.debug("Rejected unreadable request body", e);
         return ResponseEntity.badRequest()
                 .body(new ApiError("The request body is malformed or contains an invalid value."));
+    }
+
+    /**
+     * A multipart body over the ceiling Spring enforces before any controller runs. Answered in
+     * this app's own shape rather than the base class's problem detail, like every other error.
+     */
+    @Override
+    protected ResponseEntity<Object> handleMaxUploadSizeExceededException(
+            MaxUploadSizeExceededException e, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(new ApiError("That file is too large."));
     }
 
     /** Raised by {@code @Validated} constraints on query parameters. */
@@ -300,7 +312,17 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ApiError(e.getMessage()));
     }
 
-    @ExceptionHandler({NoBannerException.class, NoCharacterException.class})
+    @ExceptionHandler(PictureRejectedException.class)
+    public ResponseEntity<ApiError> handlePictureRejected(PictureRejectedException e) {
+        return ResponseEntity.badRequest().body(new ApiError(e.getMessage()));
+    }
+
+    @ExceptionHandler(PictureTooLargeException.class)
+    public ResponseEntity<ApiError> handlePictureTooLarge(PictureTooLargeException e) {
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(new ApiError(e.getMessage()));
+    }
+
+    @ExceptionHandler(NoBannerException.class)
     public ResponseEntity<ApiError> handleNothingToTake(RuntimeException e) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(new ApiError(e.getMessage()));
     }

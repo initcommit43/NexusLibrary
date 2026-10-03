@@ -12,10 +12,13 @@ import dev.nexus.core.domain.UserEntryRepository;
 import dev.nexus.core.preferences.DisabledModuleRepository;
 import dev.nexus.core.preferences.FavouriteRowRepository;
 import dev.nexus.core.preferences.ProfileBannerRepository;
+import dev.nexus.core.preferences.PictureUpload;
+import dev.nexus.core.preferences.PictureUploadRepository;
 import dev.nexus.core.preferences.ProfilePictureRepository;
 import dev.nexus.core.tracking.dto.TrackedItemResponse;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,6 +67,7 @@ public class AccountExport {
     private final FavouriteRowRepository favouriteRows;
     private final ProfileBannerRepository banners;
     private final ProfilePictureRepository pictures;
+    private final PictureUploadRepository uploads;
 
     public AccountExport(
             UserEntryRepository entries,
@@ -77,7 +81,8 @@ public class AccountExport {
             DisabledModuleRepository disabledModules,
             FavouriteRowRepository favouriteRows,
             ProfileBannerRepository banners,
-            ProfilePictureRepository pictures) {
+            ProfilePictureRepository pictures,
+            PictureUploadRepository uploads) {
         this.entries = entries;
         this.accounts = accounts;
         this.activity = activity;
@@ -90,6 +95,7 @@ public class AccountExport {
         this.favouriteRows = favouriteRows;
         this.banners = banners;
         this.pictures = pictures;
+        this.uploads = uploads;
     }
 
     @Transactional(readOnly = true)
@@ -234,7 +240,11 @@ public class AccountExport {
                                 .toList());
     }
 
-    /** The chosen picture and banner are references to catalogue art, not uploaded files. */
+    /**
+     * The banner, and a picture picked before uploads, are references to catalogue art. An
+     * uploaded picture is the reader's own file and comes back with them, as the server
+     * encoded it.
+     */
     private Map<String, Object> profile(long userId) {
         Map<String, Object> profile = new LinkedHashMap<>();
 
@@ -244,6 +254,11 @@ public class AccountExport {
                         .map(picture -> row(
                                 "characterName", picture.getCharacterName(),
                                 "imageUrl", picture.getImageUrl(),
+                                "uploadedImage", uploads.findByUserId(userId)
+                                        .map(PictureUpload::getContent)
+                                        .map(bytes -> "data:image/jpeg;base64,"
+                                                + Base64.getEncoder().encodeToString(bytes))
+                                        .orElse(null),
                                 "chosenAt", String.valueOf(picture.getChosenAt())))
                         .orElse(null));
         profile.put(
