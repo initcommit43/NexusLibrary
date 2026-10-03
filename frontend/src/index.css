@@ -1446,14 +1446,6 @@ input.filter-control::-webkit-search-cancel-button {
   user-select: none;
 }
 
-.profile-banner.adjusting img {
-  cursor: grab;
-}
-
-.profile-banner.adjusting img:active {
-  cursor: grabbing;
-}
-
 .banner-adjust-button {
   position: absolute;
   top: var(--space-2);
@@ -1479,34 +1471,6 @@ input.filter-control::-webkit-search-cancel-button {
 
 .banner-adjust-button:hover {
   background: var(--scrim-strong);
-}
-
-/*
- * Over the picture rather than under it: a bar that pushed the head down would move the
- * thing being framed while it was being framed.
- */
-.banner-adjust {
-  position: absolute;
-  inset-inline: 0;
-  bottom: 0;
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-2) var(--space-3);
-  background: var(--scrim-strong);
-  color: var(--banner-text);
-}
-
-.banner-adjust-hint {
-  flex: 1;
-  min-width: 0;
-  font-size: var(--text-xs);
-  color: var(--banner-muted);
-}
-
-.banner-adjust input[type='range'] {
-  width: 8rem;
-  accent-color: var(--accent);
 }
 
 .profile-identity {
@@ -2708,21 +2672,6 @@ input.filter-control::-webkit-search-cancel-button {
   .banner-adjust-button {
     top: var(--m-gap);
     right: var(--profile-bleed-side);
-  }
-
-  .banner-adjust {
-    flex-wrap: wrap;
-    row-gap: var(--space-1);
-    padding-inline: var(--profile-bleed-side);
-  }
-
-  .banner-adjust-hint {
-    flex-basis: 100%;
-  }
-
-  .banner-adjust input[type='range'] {
-    flex: 1;
-    width: auto;
   }
 
   .profile-identity {
