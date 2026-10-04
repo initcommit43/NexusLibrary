@@ -1,9 +1,9 @@
 ---
 title: End User Licence Agreement
-updated: 19 September 2026
+updated: 4 October 2026
 ---
 
-This agreement covers the NexusLibrary mobile app. It is between you and [OPERATOR], who
+This agreement covers the NexusLibrary mobile app. It is between you and Maximilian Müller, who
 licenses the app to you — it is not a sale, and nothing in it transfers ownership of the
 software. Using the service the app talks to is covered separately by the
 [Terms of Service](/terms) and the [Privacy Policy](/privacy), both of which apply as well.
@@ -57,18 +57,18 @@ protection that the mandatory law of your country of residence gives you.
 
 The following applies where Apple is the store, and Apple requires it to be said plainly:
 
-- This agreement is between you and [OPERATOR] only, not with Apple. [OPERATOR], not Apple, is
+- This agreement is between you and Maximilian Müller only, not with Apple. Maximilian Müller, not Apple, is
   solely responsible for the app and its content.
 - Apple has no obligation to furnish any maintenance or support for the app.
 - If the app fails to conform to any applicable warranty, you may notify Apple, and Apple will
   refund the purchase price to you. The app is free, so there is nothing to refund. To the
   maximum extent permitted by law, Apple has no other warranty obligation with respect to the
   app.
-- [OPERATOR], not Apple, is responsible for addressing any claim by you or a third party relating
+- Maximilian Müller, not Apple, is responsible for addressing any claim by you or a third party relating
   to the app or your use of it — including product liability claims, any claim that the app fails
   to conform to a legal or regulatory requirement, and claims under consumer protection or
   similar legislation.
-- [OPERATOR], not Apple, is responsible for the investigation, defence, settlement and discharge
+- Maximilian Müller, not Apple, is responsible for the investigation, defence, settlement and discharge
   of any third-party claim that the app infringes that party's intellectual property rights.
 - You represent that you are not located in a country subject to a U.S. Government embargo or
   designated as a terrorist-supporting country, and that you are not on any U.S. Government list
@@ -89,7 +89,7 @@ when you next open the app. The date at the top says when it last changed.
 
 ## Governing law
 
-[GOVERNING LAW], excluding its conflict-of-laws rules, and without removing any protection that
+Austrian law, excluding its conflict-of-laws rules, and without removing any protection that
 the mandatory law of your country of residence gives you.
 
-Questions about this licence go to [CONTACT EMAIL].
+Questions about this licence go to contact@nexuslibrary.net.

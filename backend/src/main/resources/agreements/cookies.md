@@ -1,6 +1,6 @@
 ---
 title: Cookie Policy
-updated: 19 September 2026
+updated: 4 October 2026
 ---
 
 This page lists everything NexusLibrary keeps in your browser, what each item is for and how long
@@ -10,7 +10,7 @@ because the site does none of those things.
 ## Why you are not asked to consent
 
 Every item below is needed to provide the service you asked for. Storage of that kind does not
-require consent under § 25(2) no. 2 TDDDG, which is why this site shows no cookie banner. Nothing
+require consent under § 165(3) TKG 2021, which is why this site shows no cookie banner. Nothing
 is set for any other purpose, so there is nothing to opt out of — and a banner asking permission
 for things that cannot be refused without breaking the site would be theatre.
 
@@ -64,5 +64,5 @@ nothing else depends on them.
 If what the site stores changes, this page changes with it and you will be asked to acknowledge
 the new version when you next sign in. The date at the top says when it last changed.
 
-Questions about any of this go to [CONTACT EMAIL]. How your data is handled more generally is set
+Questions about any of this go to contact@nexuslibrary.net. How your data is handled more generally is set
 out in the [Privacy Policy](/privacy).

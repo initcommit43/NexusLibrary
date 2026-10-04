@@ -239,18 +239,18 @@ nexus:
     # the native build; a cookie notice is meaningless to a client that sets no cookies.
     documents:
       terms:
-        version: ${TERMS_VERSION:2026-09-14}
+        version: ${TERMS_VERSION:2026-10-04}
         url: /terms
       privacy:
-        version: ${PRIVACY_VERSION:2026-09-20}
+        version: ${PRIVACY_VERSION:2026-10-04}
         url: /privacy
       # Native only. No page exists on the web for either of the two below yet — the URLs are
       # what a client is told to open, and they are relative so the app and the site each
       # resolve them against their own origin.
       eula:
-        version: ${EULA_VERSION:2026-09-19}
+        version: ${EULA_VERSION:2026-10-04}
         url: /eula
       # Web only.
       cookies:
-        version: ${COOKIE_POLICY_VERSION:2026-09-19}
+        version: ${COOKIE_POLICY_VERSION:2026-10-04}
         url: /cookies

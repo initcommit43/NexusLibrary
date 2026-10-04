@@ -1,12 +1,6 @@
 import { Link } from 'react-router-dom'
 import { LegalLayout } from './LegalLayout'
 
-/*
- * TODO before this goes public: the [BRACKETED] values in the documents themselves are
- * placeholders — controller name, postal address, contact address, governing law, supervisory
- * authority. They live in backend/src/main/resources/agreements/*.md now, not here.
- */
-
 /**
  * Renders one of the legal documents from the Markdown the backend serves to the app.
  *
