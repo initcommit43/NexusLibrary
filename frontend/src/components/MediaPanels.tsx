@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import type { Distribution, ExternalLink, MediaTag, Person } from './mediaDetail'
 import type { CharacterRole } from './mediaDetail'
 import type { Score } from './detailView'
-import { Bars } from './Bars'
 import { useEscapeKey } from './useEscapeKey'
 
 const PersonTile = ({ left, right }: { left: Person; right: Person | null }) => (
@@ -62,18 +61,83 @@ export const MediaStaff = ({ staff, title }: { staff: Person[]; title: string })
   )
 }
 
+/**
+ * How a title's audience splits, as one compact row: statuses beside scores.
+ *
+ * <p>Statuses are coloured by rank rather than by name — they are the provider's vocabulary,
+ * not a module's, and naming them here would hardcode strings the registry owns. Scores run
+ * from the danger tone to the success tone, so the shape reads as good or bad at a glance.
+ */
 export const MediaStats = ({
   statuses,
   scores,
 }: {
   statuses: Distribution[]
   scores: Distribution[]
-}) => (
-  <>
-    <Bars rows={statuses} title="Status distribution" />
-    <Bars rows={scores} title="Score distribution" />
-  </>
-)
+}) => {
+  if (statuses.length === 0 && scores.length === 0) return null
+  const ranked = [...statuses].sort((a, b) => b.amount - a.amount)
+  const total = ranked.reduce((sum, row) => sum + row.amount, 0)
+  const peak = Math.max(0, ...scores.map((row) => row.amount))
+
+  return (
+    <div className="media-stats">
+      {ranked.length > 0 && (
+        <section className="status-section">
+          <h2>Status distribution</h2>
+          <div className="stat-panel">
+            <ul className="status-split">
+              {ranked.map((row, index) => (
+                <li key={row.label} className={`tone-${index % 5}`}>
+                  <span className="status-chip">{row.label}</span>
+                  <span className="status-count">
+                    {row.amount.toLocaleString()} <span className="muted">users</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <div className="status-strip" aria-hidden="true">
+              {ranked.map((row, index) => (
+                <span
+                  key={row.label}
+                  className={`tone-${index % 5}`}
+                  style={{ flexGrow: total === 0 ? 1 : row.amount }}
+                />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+      {scores.length > 0 && (
+        <section className="status-section">
+          <h2>Score distribution</h2>
+          <div className="stat-panel score-pills">
+            {/* Keyed by place: a long axis labels only some of its bars, and blanks collide. */}
+            {scores.map((row, index) => (
+              <div
+                key={`${index}-${row.label}`}
+                className="score-pill"
+                title={`${row.label}: ${row.amount.toLocaleString()} users`}
+                style={
+                  {
+                    '--pill-tone': scores.length === 1 ? 1 : index / (scores.length - 1),
+                  } as React.CSSProperties
+                }
+              >
+                <span className="score-pill-value">{row.amount.toLocaleString()}</span>
+                <span
+                  className="score-pill-fill"
+                  style={{ height: peak === 0 ? '0%' : `${(row.amount / peak) * 100}%` }}
+                />
+                <span className="score-pill-label muted">{row.label}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
+  )
+}
 
 /**
  * Ratings stated rather than charted. A source that reports one number and how many people

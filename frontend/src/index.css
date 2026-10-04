@@ -6483,6 +6483,134 @@ input.filter-control::-webkit-search-cancel-button {
   background: var(--accent-hover);
 }
 
+/*
+ * A title's statuses and scores share one row, each in a low panel. Two full-width charts
+ * stacked made a few numbers take up a screen.
+ */
+.media-stats {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: var(--space-4);
+}
+
+/* Drawn as the facts box beside it is, so the page has one kind of box. */
+.stat-panel {
+  height: 6.5rem;
+  padding: var(--space-3) var(--space-3) 0;
+  border: 2px solid var(--card-border);
+  border-radius: var(--radius-box);
+  background: var(--surface);
+}
+
+/* Five tones for the statuses, by rank; the order follows the size of each share. */
+.media-stats .tone-0 { --tone: var(--success); }
+.media-stats .tone-1 { --tone: var(--accent); }
+.media-stats .tone-2 { --tone: color-mix(in oklch, var(--accent) 50%, var(--danger)); }
+.media-stats .tone-3 { --tone: var(--warning); }
+.media-stats .tone-4 { --tone: var(--danger); }
+
+.stat-panel:has(.status-split) {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: var(--space-3) 0 0;
+  overflow: hidden;
+}
+
+.status-split {
+  display: flex;
+  justify-content: space-evenly;
+  gap: var(--space-2);
+  padding: 0 var(--space-3);
+  list-style: none;
+}
+
+.status-split li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  font-size: var(--text-sm);
+}
+
+.status-chip {
+  max-width: 100%;
+  padding: 0.125rem var(--space-2);
+  overflow: hidden;
+  border-radius: var(--radius-box);
+  background: var(--tone);
+  color: var(--surface);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-count {
+  color: var(--tone);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.status-count .muted {
+  font-size: var(--text-xs);
+}
+
+/* The shares end to end along the panel's foot, each as wide as its count. */
+.status-strip {
+  display: flex;
+  height: 0.5rem;
+}
+
+.status-strip span {
+  flex-basis: 0;
+  background: var(--tone);
+}
+
+.score-pills {
+  display: flex;
+  justify-content: space-evenly;
+  gap: var(--space-1);
+  padding-bottom: var(--space-1);
+}
+
+.score-pill {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  min-width: 0;
+  font-size: var(--text-xs);
+}
+
+/* Reserves its line whether or not it is showing, so pills do not shift on hover. */
+.score-pill-value {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease);
+}
+
+.score-pill:hover .score-pill-value {
+  opacity: 1;
+}
+
+/* A pill, not a bar: a mark this narrow reads as a dot at its smallest, and that is the point. */
+.score-pill-fill {
+  width: 0.5rem;
+  min-height: 0.5rem;
+  border-radius: var(--radius-full);
+  background: color-mix(in oklch, var(--success) calc(var(--pill-tone) * 100%), var(--danger));
+}
+
+/* A fixed line, labelled or not, so every pill stands on the same foot. */
+.score-pill-label {
+  height: 1.2em;
+  margin-top: 2px;
+  line-height: 1.2;
+}
+
 .trailer {
   aspect-ratio: 16 / 9;
   border-radius: var(--radius-md);
@@ -6645,16 +6773,21 @@ input.filter-control::-webkit-search-cancel-button {
     scroll-snap-align: start;
   }
 
-  /* Bars share the width; a count wider than its bar must not push the chart off the page. */
-  .media-main .bar {
-    min-width: 0;
+  /* Too narrow for two panels side by side; the scores follow the statuses. */
+  .media-stats {
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .media-main .bar-value,
-  .media-main .bar-label {
-    max-width: 100%;
-    overflow: hidden;
-    white-space: nowrap;
+  /* Five names do not fit across a phone; they wrap rather than cut to an ellipsis. */
+  .stat-panel:has(.status-split) {
+    height: auto;
+  }
+
+  .status-split {
+    flex-wrap: wrap;
+    justify-content: center;
+    column-gap: var(--space-3);
+    padding-bottom: var(--space-3);
   }
 }
 
