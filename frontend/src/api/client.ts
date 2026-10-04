@@ -924,6 +924,10 @@ export const api = {
   importAniListActivity: () =>
     request<SyncJob>('/integrations/anilist/activity', { method: 'POST' }),
 
+  /** Steam's achievements on their own, for a run that failed or came long after the import. */
+  syncSteamAchievements: () =>
+    request<SyncJob>('/integrations/steam/achievements', { method: 'POST' }),
+
   importLibrary: (provider: Provider) =>
     request<SyncJob>(`/integrations/${provider}/import`, { method: 'POST' }),
 

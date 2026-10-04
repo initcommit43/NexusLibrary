@@ -13,6 +13,7 @@ import dev.nexus.modules.anime.AniListActivityService;
 import dev.nexus.modules.anime.AniListOAuthService;
 import dev.nexus.modules.anime.MalOAuthService;
 import dev.nexus.modules.film.SimklOAuthService;
+import dev.nexus.modules.games.AchievementSyncService;
 import dev.nexus.modules.games.SteamOpenIdService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -115,6 +116,7 @@ public class IntegrationController {
     private final SteamOpenIdService steamOpenId;
     private final AniListOAuthService anilistOAuth;
     private final AniListActivityService anilistActivity;
+    private final AchievementSyncService achievements;
     private final MalOAuthService malOAuth;
     private final SimklOAuthService simklOAuth;
     private final ImportRunner runner;
@@ -131,6 +133,7 @@ public class IntegrationController {
             SteamOpenIdService steamOpenId,
             AniListOAuthService anilistOAuth,
             AniListActivityService anilistActivity,
+            AchievementSyncService achievements,
             MalOAuthService malOAuth,
             SimklOAuthService simklOAuth,
             ImportRunner runner,
@@ -144,6 +147,7 @@ public class IntegrationController {
         this.steamOpenId = steamOpenId;
         this.anilistOAuth = anilistOAuth;
         this.anilistActivity = anilistActivity;
+        this.achievements = achievements;
         this.malOAuth = malOAuth;
         this.simklOAuth = simklOAuth;
         this.runner = runner;
@@ -332,6 +336,22 @@ public class IntegrationController {
 
         ExternalAccount account = accounts.requireConnected(user.id(), Provider.ANILIST);
         return SyncJobResponse.from(anilistActivity.start(account));
+    }
+
+    /**
+     * Syncs a reader's Steam achievements on its own press, without importing the library again.
+     *
+     * <p>The library import still starts one when it finishes. This is for the run that failed
+     * or was never wanted then — a profile made public afterwards, or a library imported long
+     * ago — which otherwise could only be retried by importing everything again.
+     */
+    @PostMapping("/steam/achievements")
+    public SyncJobResponse syncSteamAchievements(@AuthenticationPrincipal CurrentUser user) {
+        // Throttled with the library import: both walk somebody else's API for minutes.
+        rateLimiter.check("import:" + user.id(), importsPerMinute);
+
+        ExternalAccount account = accounts.requireConnected(user.id(), Provider.STEAM);
+        return SyncJobResponse.from(achievements.start(account));
     }
 
     /**

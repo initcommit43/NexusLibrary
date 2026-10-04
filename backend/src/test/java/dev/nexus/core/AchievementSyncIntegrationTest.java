@@ -16,12 +16,14 @@ import dev.nexus.core.domain.TrackableItemRepository;
 import dev.nexus.core.domain.TrackingStatus;
 import dev.nexus.core.domain.UserEntry;
 import dev.nexus.core.domain.UserEntryRepository;
+import dev.nexus.core.importing.ExternalAccountService;
 import dev.nexus.modules.games.AchievementItemSyncer;
 import dev.nexus.modules.games.IgdbClient;
 import dev.nexus.modules.games.SteamAchievementsClient;
 import dev.nexus.support.GamesTestData;
 import dev.nexus.support.HttpTestClient;
 import dev.nexus.support.PostgresIntegrationTest;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -57,6 +59,13 @@ class AchievementSyncIntegrationTest extends PostgresIntegrationTest {
     @Autowired
     AppUserRepository users;
 
+    @Autowired
+    ExternalAccountService accountService;
+
+    private HttpTestClient http;
+
+    private String token;
+
     private Long entryId;
 
     private Long userId;
@@ -65,8 +74,8 @@ class AchievementSyncIntegrationTest extends PostgresIntegrationTest {
     void setUp() {
         resetDatabase();
 
-        HttpTestClient http = new HttpTestClient(port);
-        String token = registerAndGetToken(http, "player@example.com", "player");
+        http = new HttpTestClient(port);
+        token = registerAndGetToken(http, "player@example.com", "player");
         userId = users.findByEmail("player@example.com").orElseThrow().getId();
 
         when(igdbClient.findGameById(anyString())).thenReturn(List.of(GamesTestData.botw()));
@@ -212,6 +221,44 @@ class AchievementSyncIntegrationTest extends PostgresIntegrationTest {
     }
 
     @SuppressWarnings("unchecked")
+    /** Its own press, so a run that found a private profile can be retried without a re-import. */
+    @Test
+    void achievementsSyncOnTheirOwnPress() {
+        accountService.connect(userId, Provider.STEAM, "76561198000000001");
+
+        HttpTestClient.Response started =
+                http.post("/integrations/steam/achievements", "Authorization", "Bearer " + token);
+
+        assertThat(started.status()).isEqualTo(200);
+        assertThat(started.body()).containsEntry("kind", "ACHIEVEMENTS");
+        awaitDone(String.valueOf(started.body().get("id")));
+        assertThat(achievementsOf(entries.findById(entryId).orElseThrow())).isNotNull();
+    }
+
+    @Test
+    void achievementsCannotSyncWithoutAConnectedSteamAccount() {
+        assertThat(http.post("/integrations/steam/achievements", "Authorization", "Bearer " + token).status())
+                .isEqualTo(404);
+    }
+
+    private void awaitDone(String jobId) {
+        Instant deadline = Instant.now().plusSeconds(20);
+        while (Instant.now().isBefore(deadline)) {
+            HttpTestClient.Response job = http.get("/integrations/jobs/" + jobId, "Authorization", "Bearer " + token);
+            if (!"RUNNING".equals(job.body().get("state"))) {
+                assertThat(job.body().get("state")).isEqualTo("COMPLETE");
+                return;
+            }
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException(e);
+            }
+        }
+        throw new IllegalStateException("Achievement job never finished: " + jobId);
+    }
+
     private Map<String, Object> achievementsOf(UserEntry entry) {
         return (Map<String, Object>) entry.getProgressExtra().get("achievements");
     }

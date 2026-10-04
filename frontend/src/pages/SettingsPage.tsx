@@ -365,6 +365,24 @@ export const SettingsPage = () => {
     }
   }
 
+  /** Steam's achievements on their own press, as AniList's history has its own. */
+  const runSteamAchievements = async () => {
+    setBusy({ provider: 'STEAM', action: 'achievements' })
+    setError(null)
+    setReport(null)
+    forgetFinishedJob()
+    setStartedFor('STEAM')
+    try {
+      const started = await api.syncSteamAchievements()
+      await watchJob(started.id)
+      load()
+    } catch (err) {
+      setError(errorMessage(err, 'Your Steam achievements could not be read.'))
+    } finally {
+      setBusy(null)
+    }
+  }
+
   /**
    * Watches a background job to the end, keeping the latest state on screen.
    *
@@ -610,6 +628,18 @@ export const SettingsPage = () => {
                       onClick={() => void runAniListActivity()}
                     >
                       {working('ANILIST', 'activity') ? 'Reading…' : 'Import activity'}
+                    </button>
+                  )}
+
+                  {/* Retried without importing the library again — after a profile goes public. */}
+                  {provider.provider === 'STEAM' && (
+                    <button
+                      type="button"
+                      className="ghost"
+                      disabled={busy !== null}
+                      onClick={() => void runSteamAchievements()}
+                    >
+                      {working('STEAM', 'achievements') ? 'Reading…' : 'Import achievements'}
                     </button>
                   )}
 
