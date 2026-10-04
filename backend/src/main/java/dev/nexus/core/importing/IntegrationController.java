@@ -97,16 +97,18 @@ public class IntegrationController {
      * <p>One record for AniList, MAL and Simkl alike: all three send back the same field, and
      * three copies of it only invited the three callbacks to validate it differently.
      *
-     * <p>512 is generous for any of the three: an authorization code is a short-lived,
-     * single-use opaque string, well under a hundred characters for each provider today. The
-     * bound exists only so an unbounded value never reaches the outbound exchange call.
+     * <p>The code is bounded at 4096, not at the length an opaque token "usually" has. AniList
+     * and MAL both issue league/oauth2-server codes — an encrypted payload, hex-encoded, that
+     * runs past a thousand characters — and a 512 cap refused every one of them as a malformed
+     * request before the exchange was even tried. The bound exists only so an unbounded value
+     * never reaches the outbound exchange call.
      *
      * <p>{@code state} is optional rather than required because only two of the three mint
      * one — MAL's PKCE verifier already binds its callback — and because a missing or wrong
      * state is the service's to refuse, not a shape the request is malformed for. It is
-     * bounded for the same reason the code is.
+     * bounded for the same reason the code is, and tighter, since this app mints it.
      */
-    public record OAuthCallbackRequest(@NotBlank @Size(max = 512) String code, @Size(max = 512) String state) {}
+    public record OAuthCallbackRequest(@NotBlank @Size(max = 4096) String code, @Size(max = 512) String state) {}
 
     private final ExternalAccountService accounts;
     private final LibraryImportService importService;

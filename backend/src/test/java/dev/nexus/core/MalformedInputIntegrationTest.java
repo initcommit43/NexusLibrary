@@ -141,6 +141,21 @@ class MalformedInputIntegrationTest extends PostgresIntegrationTest {
         assertThat(response.fieldErrors()).containsKey("params");
     }
 
+    /**
+     * AniList and MAL codes are encrypted payloads over a thousand characters long; a cap sized
+     * for a short opaque token refused every real one as a malformed request.
+     */
+    @Test
+    void aRealLengthOAuthCodeIsNotRefusedAsMalformed() {
+        Response response = http.postJson(
+                "/integrations/anilist/callback",
+                Map.of("code", "def50200" + "a".repeat(1200), "state", "not-the-minted-one"),
+                "Authorization",
+                "Bearer " + token);
+
+        assertThat(response.fieldErrors()).doesNotContainKey("code");
+    }
+
     private Response get(String path) {
         return http.get(path, "Authorization", "Bearer " + token);
     }
