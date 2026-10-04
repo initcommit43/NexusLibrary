@@ -187,7 +187,7 @@ export const ShelfTable = ({ shelves, average }: { shelves: ShelfLine[]; average
             <tr>
               <th scope="col">Shelf</th>
               <th scope="col">By status</th>
-              <th scope="col" className="is-numeric">Titles</th>
+              <th scope="col">Titles</th>
               <th scope="col">
                 <span className="shelf-score-head">
                   <span>Avg score</span>
@@ -224,7 +224,7 @@ export const ShelfTable = ({ shelves, average }: { shelves: ShelfLine[]; average
                       ))}
                     </div>
                   </td>
-                  <td className="is-numeric shelf-count">{summary.tracked.toLocaleString()}</td>
+                  <td className="shelf-count">{summary.tracked.toLocaleString()}</td>
                   <td>
                     <div className="shelf-track">
                       {average !== null && (
