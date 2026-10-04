@@ -140,11 +140,8 @@ export const ActivityHeatmap = ({
   if (labelled) {
     return (
       <div className="heatmap is-labelled">
-        <div className="heatmap-months" aria-hidden>
-          {monthLabels.map((label, at) => (
-            <span key={key(columns[at][0].date)}>{label}</span>
-          ))}
-        </div>
+        <span className="activity-caption">Per day</span>
+        {scale}
         <div className="heatmap-body">
           {/* Every other day named, as a calendar's margin does: all seven crowd the squares. */}
           <div className="heatmap-weekdays" aria-hidden>
@@ -154,7 +151,12 @@ export const ActivityHeatmap = ({
           </div>
           {grid}
         </div>
-        {scale}
+        {/* Under the weeks, as the month chart beside it names its bars underneath. */}
+        <div className="heatmap-months" aria-hidden>
+          {monthLabels.map((label, at) => (
+            <span key={key(columns[at][0].date)}>{label}</span>
+          ))}
+        </div>
         <Tooltip tip={tip} />
       </div>
     )

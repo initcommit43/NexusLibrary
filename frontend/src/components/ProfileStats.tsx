@@ -102,7 +102,7 @@ export const ActivityByMonth = ({ days }: { days: ActivityDay[] }) => {
 
   return (
     <div className="activity-months">
-      <span className="activity-months-title">Activity per month</span>
+      <span className="activity-caption activity-months-title">Per month</span>
       <div className="activity-months-bars">
         {months.map((held, at) => (
           <div key={`${held.year}-${held.month}`} className="activity-month">

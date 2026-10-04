@@ -2394,15 +2394,18 @@ input.filter-control::-webkit-search-cancel-button {
 }
 
 /*
- * The map and the months as one table of three rows — names, body, foot — so the two start
- * on one line, stand on one baseline and end on one line. Each lays its parts straight into
- * these rows; as two boxes side by side, each kept its own heights and nothing met.
+ * The map and the months drawn to one plan: each is a caption, a body and a row of month
+ * names under it, and the two share those three rows — so they start on one line, stand on
+ * one baseline and are named on one line. Each lays its parts straight into the rows.
+ *
+ * Down the left, the card's title, the map's caption and its weekday names share one edge;
+ * down the right, the scope switch and the month chart end on one.
  */
 .profile-activity {
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr);
   grid-template-rows: auto auto auto;
-  align-items: end;
+  align-items: center;
   gap: var(--space-2) var(--space-6);
 }
 
@@ -2411,9 +2414,25 @@ input.filter-control::-webkit-search-cancel-button {
   display: contents;
 }
 
-.profile-activity .heatmap-months { grid-area: 1 / 1; }
+/* Named as the library table names its columns, so the profile has one kind of caption. */
+.activity-caption {
+  color: var(--text-body);
+  font-size: var(--text-xs);
+  letter-spacing: 0.04em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+/* A caption sits a step further from its body than the month names do, so it reads as a head. */
+.profile-activity .activity-caption,
+.profile-activity .heatmap-key {
+  margin-bottom: var(--space-1);
+}
+
+.profile-activity .heatmap.is-labelled > .activity-caption { grid-area: 1 / 1; justify-self: start; }
+.profile-activity .heatmap-key { grid-area: 1 / 1; justify-self: end; }
 .profile-activity .heatmap-body { grid-area: 2 / 1; }
-.profile-activity .heatmap-key { grid-area: 3 / 1; }
+.profile-activity .heatmap-months { grid-area: 3 / 1; }
 .profile-activity .activity-months-title { grid-area: 1 / 2; }
 .profile-activity .activity-months-axis { grid-area: 3 / 2; }
 
@@ -2429,9 +2448,15 @@ input.filter-control::-webkit-search-cancel-button {
   padding-bottom: 0;
 }
 
+/* Both rows of month names one size, so the two read as the same axis. */
+.profile-activity :is(.heatmap-months, .activity-months-axis) {
+  height: 0.875rem;
+  line-height: 1;
+}
+
 /*
  * Too narrow for both across: the months go under the map, full width, while the map keeps
- * its own column so its key still ends under its last week.
+ * its own column so its key still ends over its last week.
  */
 @media (max-width: 64rem) {
   .profile-activity {
@@ -2449,14 +2474,6 @@ input.filter-control::-webkit-search-cancel-button {
   .profile-activity .activity-months-title {
     margin-top: var(--space-4);
   }
-}
-
-/* The month names' line exactly, so the two captions share a top as well as a foot. */
-.activity-months-title {
-  height: 0.875rem;
-  color: var(--text-body);
-  font-size: var(--text-xs);
-  line-height: 1;
 }
 
 .activity-months-bars {
