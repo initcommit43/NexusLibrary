@@ -7568,6 +7568,18 @@ button.ghost.danger:hover:not(:disabled) {
   background: var(--accent-alt-hover);
 }
 
+/*
+ * Settings is boxes and controls and nothing else, so its corners showed most: every one of
+ * them takes the box radius here, cards, strips, notes, tooltips and controls alike. Desk only —
+ * a phone draws this page from the app's Figma, pills included.
+ */
+@media (min-width: 52.0625rem) {
+  .list-layout:has(.settings-anchor)
+    :is(.card, .integration-head.banner, .danger-note, .hint-tip, .list-link, .switch-row, input, button) {
+    border-radius: var(--radius-box);
+  }
+}
+
 /* Square ghost button for icon-only controls, sized to stay a comfortable tap target. */
 /* Radius lives here rather than on the element: one of these is a link, not a button. */
 .icon-button {
