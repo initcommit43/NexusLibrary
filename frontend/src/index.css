@@ -7420,7 +7420,7 @@ button.ghost.danger:hover:not(:disabled) {
   padding: var(--space-3);
   background: var(--surface);
   border: 2px solid var(--card-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-box);
 }
 
 .activity-row img,
@@ -7428,7 +7428,7 @@ button.ghost.danger:hover:not(:disabled) {
   width: 2.875rem;
   height: 3.875rem;
   object-fit: cover;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-picture);
   background: var(--module-accent-soft);
   flex-shrink: 0;
 }
