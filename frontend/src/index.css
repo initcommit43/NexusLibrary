@@ -571,12 +571,43 @@ button.small {
  * level and read as one set. Named here rather than on .icon-button, which dialogs and the
  * outage banner also use at their own size.
  */
-/* Round, like the theme dock's: icon-only buttons with no edge in the bar to line up with. */
-.header-right > .icon-button,
-.account > .icon-button {
+/* Bare: a magnifier is recognised without a ring drawn round it. */
+.header-right > .icon-button {
   width: var(--icon-control);
   height: var(--icon-control);
+  border: 0;
   border-radius: var(--radius-full);
+}
+
+/*
+ * The reader's own picture, square rather than round so it sits as a picture among the bar's
+ * controls rather than as another icon. Cropped as the profile crops it.
+ */
+.account > .account-face {
+  /* A block, so no line box under it lifts it off the search beside it. */
+  display: grid;
+  position: relative;
+  width: var(--icon-control);
+  height: var(--icon-control);
+  overflow: hidden;
+  border-radius: var(--radius-box);
+}
+
+.account-face img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* A picture keeps no frame of its own; reaching for it rings it in the accent instead. */
+.account > .account-face:has(img) {
+  border: 0;
+}
+
+.account > .account-face:has(img):is(:hover, .active, :focus-visible) {
+  box-shadow: 0 0 0 2px var(--accent);
 }
 
 /*

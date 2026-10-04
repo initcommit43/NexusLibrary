@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
+import { framedStyle, framingOf } from './framing'
+import { useOwnPicture, useUploadedSrc } from './ownPicture'
 import { useMenuDismiss } from './useMenuDismiss'
 
 const UserIcon = () => (
@@ -54,6 +56,11 @@ const SignOutIcon = () => (
 export const AccountMenu = () => {
   const { logout } = useAuth()
   const { open, setOpen, container, trigger } = useMenuDismiss<HTMLDivElement, HTMLAnchorElement>()
+  // The reader's own face where it was a generic one: an uploaded picture is fetched with the
+  // reader's token, a legacy character picture is a plain address.
+  const picture = useOwnPicture()
+  const uploaded = useUploadedSrc(picture?.version ?? null)
+  const src = picture?.version ? uploaded : (picture?.imageUrl ?? null)
 
   return (
     <div
@@ -69,7 +76,7 @@ export const AccountMenu = () => {
     >
       <Link
         ref={trigger}
-        className="icon-button"
+        className="icon-button account-face"
         to="/profile"
         aria-haspopup="menu"
         aria-expanded={open}
@@ -77,7 +84,11 @@ export const AccountMenu = () => {
         title="Your profile"
         onClick={() => setOpen(false)}
       >
-        <UserIcon />
+        {src && picture ? (
+          <img src={src} alt="" draggable={false} style={framedStyle(framingOf(picture))} />
+        ) : (
+          <UserIcon />
+        )}
       </Link>
 
       {open && (

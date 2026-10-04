@@ -13,6 +13,7 @@ import { ActivityHeatmap } from '../components/ActivityHeatmap'
 import { AppShell } from '../components/AppShell'
 import { BannerPicker } from '../components/BannerPicker'
 import { ProfileAvatar } from '../components/ProfileAvatar'
+import { publishOwnPicture } from '../components/ownPicture'
 import { ProfileBannerFrame } from '../components/ProfileBannerFrame'
 import { Figures } from '../components/Figures'
 import { ActivityByMonth, ProfileRings, ShelfTable } from '../components/ProfileStats'
@@ -311,6 +312,8 @@ export const ProfilePage = () => {
             onChanged={(changed) => {
               setError(null)
               setPicture(changed)
+              // The header shows it too, and should not wait for a reload to catch up.
+              if (user) publishOwnPicture(user.id, changed)
             }}
             onError={setError}
           />

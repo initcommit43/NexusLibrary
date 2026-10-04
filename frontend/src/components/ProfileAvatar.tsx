@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { api, errorMessage, type Framing, type ProfilePicture } from '../api/client'
 import { CropDialog } from './CropDialog'
 import { COVER, framedStyle, framingOf } from './framing'
 import { PictureFileError, preparePicture } from './pictureFile'
+import { useUploadedSrc } from './ownPicture'
 import { useMenuDismiss } from './useMenuDismiss'
 
 /** A head and shoulders: what a profile has before the reader gives it a face. */
@@ -29,35 +30,6 @@ const CENTRED: Framing = { focusX: 50, focusY: 50, zoom: COVER }
 
 /** What the crop dialog is open on: a file about to be sent, or the picture already held. */
 type Cropping = { kind: 'new'; picture: Blob; src: string } | { kind: 'adjust'; src: string }
-
-/**
- * An uploaded picture's address, fetched with the reader's token since nothing else may load
- * it. Fetched again only when the upload changes, and let go of when it does.
- */
-const useUploadedSrc = (version: string | null) => {
-  const [held, setHeld] = useState<{ version: string; src: string } | null>(null)
-
-  useEffect(() => {
-    if (!version) return
-    let current = true
-    let src: string | null = null
-    api
-      .profilePictureImage()
-      .then((blob) => {
-        if (!current) return
-        src = URL.createObjectURL(blob)
-        setHeld({ version, src })
-      })
-      // A picture that will not load leaves the plain icon, not a broken page.
-      .catch(() => {})
-    return () => {
-      current = false
-      if (src) URL.revokeObjectURL(src)
-    }
-  }, [version])
-
-  return held?.version === version ? held.src : null
-}
 
 /**
  * The circle at the head of a profile, and the way to change what is in it.
