@@ -2393,31 +2393,70 @@ input.filter-control::-webkit-search-cancel-button {
   box-shadow: var(--shadow-1);
 }
 
-/* The map at its own width and the bars taking what is left, under it once that runs out. */
+/*
+ * The map and the months as one table of three rows — names, body, foot — so the two start
+ * on one line, stand on one baseline and end on one line. Each lays its parts straight into
+ * these rows; as two boxes side by side, each kept its own heights and nothing met.
+ */
 .profile-activity {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: var(--space-5) 2.5rem;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  grid-template-rows: auto auto auto;
+  align-items: end;
+  gap: var(--space-2) var(--space-6);
+}
+
+.profile-activity > .heatmap.is-labelled,
+.profile-activity > .activity-months {
+  display: contents;
+}
+
+.profile-activity .heatmap-months { grid-area: 1 / 1; }
+.profile-activity .heatmap-body { grid-area: 2 / 1; }
+.profile-activity .heatmap-key { grid-area: 3 / 1; }
+.profile-activity .activity-months-title { grid-area: 1 / 2; }
+.profile-activity .activity-months-axis { grid-area: 3 / 2; }
+
+/* As tall as the map beside it, whatever the map's squares come to. */
+.profile-activity .activity-months-bars {
+  grid-area: 2 / 2;
+  align-self: stretch;
+  height: auto;
+}
+
+/* The scrollbar's room under the squares would lift the map's foot off the bars' baseline. */
+.profile-activity .heatmap-grid {
+  padding-bottom: 0;
 }
 
 /*
- * Capped, so the months stand as a group rather than seven bars strung out across half the
- * card, and held to the card's right edge, under the scope switch's end.
+ * Too narrow for both across: the months go under the map, full width, while the map keeps
+ * its own column so its key still ends under its last week.
  */
-.activity-months {
-  display: flex;
-  flex: 1 1 17.5rem;
-  flex-direction: column;
-  gap: var(--space-2);
-  min-width: 0;
-  max-width: 36rem;
-  margin-left: auto;
+@media (max-width: 64rem) {
+  .profile-activity {
+    grid-template-rows: none;
+  }
+
+  .profile-activity :is(.activity-months-title, .activity-months-bars, .activity-months-axis) {
+    grid-area: auto / 1 / auto / -1;
+  }
+
+  .profile-activity .activity-months-bars {
+    height: 10rem;
+  }
+
+  .profile-activity .activity-months-title {
+    margin-top: var(--space-4);
+  }
 }
 
+/* The month names' line exactly, so the two captions share a top as well as a foot. */
 .activity-months-title {
+  height: 0.875rem;
   color: var(--text-body);
-  font-size: var(--text-sm);
+  font-size: var(--text-xs);
+  line-height: 1;
 }
 
 .activity-months-bars {

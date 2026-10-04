@@ -154,6 +154,7 @@ export const ActivityHeatmap = ({
           </div>
           {grid}
         </div>
+        {scale}
         <Tooltip tip={tip} />
       </div>
     )
