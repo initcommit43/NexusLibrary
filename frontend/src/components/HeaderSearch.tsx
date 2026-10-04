@@ -16,10 +16,14 @@ const SETTLE_MS = 250
 /** The rest are a click away on the results page; this is a glance, not a list. */
 const SHOWN = 8
 
-const SearchIcon = () => (
-  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" aria-hidden>
-    <circle cx="11" cy="11" r="7" strokeWidth="1.8" />
-    <path d="m20 20-3.5-3.5" strokeWidth="1.8" strokeLinecap="round" />
+/**
+ * Sized by where it stands. In the header it sits beside the reader's picture, a filled square
+ * the bar's full control height, and at the field's size it read as a speck next to it.
+ */
+const SearchIcon = ({ size = 16, stroke = 1.8 }: { size?: number; stroke?: number }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" aria-hidden>
+    <circle cx="11" cy="11" r="7" strokeWidth={stroke} />
+    <path d="m20 20-3.5-3.5" strokeWidth={stroke} strokeLinecap="round" />
   </svg>
 )
 
@@ -169,7 +173,7 @@ export const HeaderSearch = ({
         aria-expanded={open}
         onClick={start}
       >
-        <SearchIcon />
+        <SearchIcon size={22} stroke={2.2} />
       </button>
 
       {open && (
