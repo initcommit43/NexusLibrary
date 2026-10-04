@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { api, errorMessage, type ConnectedAccount } from '../api/client'
+import { ApiError, api, errorMessage, type ConnectedAccount } from '../api/client'
 import { AppShell } from '../components/AppShell'
 
 /**
@@ -54,8 +54,16 @@ const ConnectCallback = ({
 
     complete()
       .then(() => navigate('/settings', { replace: true }))
-      .catch((err) => setFailure(errorMessage(err, failed)))
-  }, [complete, failed, navigate])
+      // A refused shape has no field on this page to point at, so it is said in the
+      // provider's terms rather than as the forms' "check the highlighted fields".
+      .catch((err) =>
+        setFailure(
+          err instanceof ApiError && Object.keys(err.fieldErrors).length > 0
+            ? `${label} sent back a reply this app could not accept. Try connecting again.`
+            : errorMessage(err, failed),
+        ),
+      )
+  }, [complete, failed, label, navigate])
 
   const error = denied ? refused : complete ? failure : missing
 

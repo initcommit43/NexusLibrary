@@ -82,6 +82,10 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 .getFieldErrors()
                 .forEach(error -> fieldErrors.putIfAbsent(error.getField(), error.getDefaultMessage()));
 
+        // Which fields and why, never their values: a refusal the caller cannot see the cause
+        // of — a callback page has no fields to highlight — must at least leave a trace here.
+        log.info("Rejected {}: invalid {}", request.getDescription(false), fieldErrors);
+
         return ResponseEntity.badRequest().body(new ApiError("Please check the highlighted fields.", fieldErrors));
     }
 
