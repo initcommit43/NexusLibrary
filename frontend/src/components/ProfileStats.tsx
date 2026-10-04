@@ -158,7 +158,7 @@ export const ShelfTable = ({ shelves, average }: { shelves: ShelfLine[]; average
   )
 
   return (
-    <section className="profile-panel">
+    <section className="profile-panel is-outlined">
       <div className="profile-panel-head">
         <div className="profile-panel-title">
           <h2>Your library</h2>

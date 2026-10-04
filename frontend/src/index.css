@@ -2317,6 +2317,12 @@ input.filter-control::-webkit-search-cancel-button {
   background: var(--surface);
 }
 
+/* The table's own rules already order it; a fill behind them only boxed it in again. */
+.profile-panel.is-outlined {
+  border-radius: var(--radius-box);
+  background: none;
+}
+
 .profile-panel-head {
   display: flex;
   flex-wrap: wrap;
