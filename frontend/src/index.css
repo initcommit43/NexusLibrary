@@ -1303,6 +1303,17 @@ input.filter-control::-webkit-search-cancel-button {
 
 /* --- detail extras --- */
 
+/*
+ * Unboxed at the head of the side column, but on the boxes' own inset — their border and
+ * padding — and under the same small label, so its words start where every fact below starts.
+ */
+.media-ratings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-inline: calc(var(--space-3) + 2px);
+}
+
 /* Ratings a source states rather than charts: the number, what it measures, how many said so. */
 .score-list {
   display: flex;
@@ -7059,6 +7070,7 @@ button.ghost.danger:hover:not(:disabled) {
 
 .list-sidebar h2,
 .tag-list h2,
+.media-ratings h2,
 .profile-favourites h3,
 .stats-heading {
   color: var(--text-muted);

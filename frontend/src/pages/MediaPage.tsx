@@ -191,8 +191,9 @@ export const MediaPage = () => {
 
       <div className="media-layout">
         <div className="media-side">
-          <MediaFacts media={media} />
+          {/* Over the boxes rather than between them, where it split the column in two. */}
           <MediaScores scores={view.scores} />
+          <MediaFacts media={media} />
           <MediaTags tags={view.tags} linkTo={(tag) => tagPathFor(media.mediaType, tag)} />
           <MediaLinks links={view.links} />
         </div>

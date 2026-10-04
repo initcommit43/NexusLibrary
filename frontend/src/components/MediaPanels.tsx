@@ -147,7 +147,7 @@ export const MediaScores = ({ scores }: { scores: Score[] }) => {
   if (scores.length === 0) return null
 
   return (
-    <section className="status-section">
+    <section className="media-ratings">
       <h2>Ratings</h2>
       <ul className="score-list">
         {scores.map((score) => (
