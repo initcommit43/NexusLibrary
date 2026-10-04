@@ -1,6 +1,6 @@
 ---
 title: Terms of Service
-updated: 14 September 2026
+updated: 4 October 2026
 ---
 
 By creating an account you agree to these terms. If you do not, please do not register.
@@ -16,7 +16,7 @@ mind losing. Settings offers a full export at any time.
 
 You are responsible for what happens under your account and for keeping your password to
 yourself. Use an address you actually control — it is the only way back in if you forget your
-password. One account per person. Tell us at [CONTACT EMAIL] if you think someone else has got
+password. One account per person. Tell us at contact@nexuslibrary.net if you think someone else has got
 into your account.
 
 You must be at least 16 years old to register, and we ask for your date of birth when you create
@@ -68,7 +68,7 @@ when you next sign in. The date at the top says when they last changed.
 
 ## Governing law
 
-[GOVERNING LAW], excluding its conflict-of-laws rules, and without removing any protection that
+Austrian law, excluding its conflict-of-laws rules, and without removing any protection that
 the mandatory law of your country of residence gives you.
 
 How your data is handled is set out separately in the [Privacy Policy](/privacy), which forms

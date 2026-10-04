@@ -1,6 +1,6 @@
 ---
 title: Privacy Policy
-updated: 20 September 2026
+updated: 4 October 2026
 ---
 
 NexusLibrary is a media tracker. It keeps the list of things you are reading, watching and
@@ -9,8 +9,8 @@ means for your data.
 
 ## Who is responsible
 
-The controller for the purposes of the GDPR is [CONTROLLER NAME], [POSTAL ADDRESS]. Questions
-about your data, or any of the rights below, go to [CONTACT EMAIL].
+The controller for the purposes of the GDPR is Maximilian Müller, 4030 Linz, Austria. Questions
+about your data, or any of the rights below, go to contact@nexuslibrary.net.
 
 ## What is stored, and why
 
@@ -26,9 +26,8 @@ add it once in Settings. It is stored as the date rather than as an age, and it 
 afterwards from the app; to correct a mistake, write to us. It is used for two things only:
 refusing accounts under 16, and deciding whether the 18+ content setting is available to you. It
 is never shown on your profile and no proof of it is asked for. It is included in your data
-export and deleted with your account. Legal basis: Art. 6(1)(c) GDPR for the youth-protection
-duties of the JMStV, and our legitimate interest in running the service lawfully,
-Art. 6(1)(f) GDPR.
+export and deleted with your account. Legal basis: our legitimate interest in keeping minors out of
+the service and away from adult content, Art. 6(1)(f) GDPR.
 
 Your content settings: whether 18+ titles are shown to you and whether their covers are blurred.
 Legal basis: Art. 6(1)(b) GDPR.
@@ -110,7 +109,7 @@ shared for anyone else's purposes.
 ## Cookies and local storage
 
 Up to two cookies, and four values kept in your browser's local storage. All of them are needed
-for the site to work as you asked it to, so none of them requires consent under § 25(2) TDDDG:
+for the site to work as you asked it to, so none of them requires consent under § 165(3) TKG 2021:
 
 - `nexus_refresh` — the cookie that keeps you signed in. It is httpOnly, so no script can read
   it, restricted to this site, and scoped to the sign-in endpoints alone. It lasts 30 days, or
@@ -166,15 +165,16 @@ rests on consent, you may withdraw it at any time under Art. 7(3), without affec
 lawful before.
 
 Two of these you can exercise yourself, without asking anyone: Settings offers a full export of
-your data as a file, and account deletion. Everything else goes to [CONTACT EMAIL].
+your data as a file, and account deletion. Everything else goes to contact@nexuslibrary.net.
 
 You may also complain to a supervisory authority under Art. 77 GDPR — for us,
-[SUPERVISORY AUTHORITY].
+the Austrian Data Protection Authority (Datenschutzbehörde),
+Barichgasse 40–42, 1030 Vienna, [dsb.gv.at](https://www.dsb.gv.at).
 
 ## Age
 
 This service is not intended for anyone under 16, and registration refuses a date of birth below
-that. If you believe an account here belongs to someone under 16, write to [CONTACT EMAIL] and we
+that. If you believe an account here belongs to someone under 16, write to contact@nexuslibrary.net and we
 will delete it.
 
 ## Changes
