@@ -555,10 +555,9 @@ export const SettingsPage = () => {
 
     // Goodreads closed its API to new keys in 2020, so uploading an export is the whole
     // integration there rather than the fallback it is elsewhere: no head buttons, no account.
-    // The banner treatment is for a card asking to be connected; a card with nothing to
-    // connect to — Goodreads — is not asking for anything and reads as a plain head.
-    const head =
-      connection && !account ? 'integration-head banner' : 'integration-head'
+    // It still wears the banner every unlinked card does — a card that drew a different head
+    // because it lacks a Connect button read as a broken one beside the others.
+    const head = account ? 'integration-head' : 'integration-head banner'
 
     const csv = provider.csvHint ? csvButton(provider) : null
     const aboutId = `about-${provider.provider.toLowerCase()}`
