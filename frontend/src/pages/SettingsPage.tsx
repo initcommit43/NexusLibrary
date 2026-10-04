@@ -586,8 +586,10 @@ export const SettingsPage = () => {
             {connection &&
               (account ? (
                 <>
+                  {/* One outline with the buttons beside it: once linked, no single act is the call. */}
                   <button
                     type="button"
+                    className="ghost"
                     disabled={busy !== null}
                     aria-describedby={aboutId}
                     onClick={() => void runImport(provider.provider)}
@@ -613,7 +615,7 @@ export const SettingsPage = () => {
 
                   <button
                     type="button"
-                    className="ghost"
+                    className="ghost danger"
                     disabled={busy !== null}
                     onClick={() => void disconnect(provider.provider)}
                   >
