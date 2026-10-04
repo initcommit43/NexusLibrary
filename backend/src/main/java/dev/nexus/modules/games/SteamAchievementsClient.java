@@ -113,6 +113,16 @@ public class SteamAchievementsClient {
         return stats.get("achievements") instanceof List<?> list ? (List<Map<String, Object>>) list : List.of();
     }
 
+    /** A refusal's body, or null when it has none worth reading. */
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> readQuietly(RestClient.RequestHeadersSpec.ConvertibleClientHttpResponse response) {
+        try {
+            return (Map<String, Object>) response.bodyTo(Map.class);
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
     /**
      * Steam applies undocumented per-method limits and answers 429 when they are hit.
      * Retries with a doubling delay rather than failing a whole sync over one throttled call.
@@ -140,9 +150,15 @@ public class SteamAchievementsClient {
                             if (status.value() == 429 || status.is5xxServerError()) {
                                 return null;
                             }
-                            // 400 here means the app has no stats at all, which is expected.
+                            // A 400 is an app with no stats at all, which is expected. A 403 is
+                            // usually a profile whose game details are private, and Steam says so
+                            // in the body — so the body is read, or the one failure a reader can
+                            // fix would pass as a library of games without achievements.
                             if (status.value() == 400 || status.value() == 403) {
-                                return Map.<String, Object>of("success", false, "error", "no stats");
+                                Map<String, Object> refusal = readQuietly(response);
+                                return refusal != null && refusal.get("playerstats") instanceof Map<?, ?>
+                                        ? refusal
+                                        : Map.<String, Object>of("success", false, "error", "no stats");
                             }
                             return (Map<String, Object>) response.bodyTo(Map.class);
                         });

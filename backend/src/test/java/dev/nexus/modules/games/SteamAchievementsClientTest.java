@@ -64,6 +64,28 @@ class SteamAchievementsClientTest {
                 .isThrownBy(() -> client.fetch(APP_ID, STEAM_ID));
     }
 
+    /**
+     * What Steam actually sends for private game details: a 403 whose body names the cause.
+     * Read as a game without stats, every sync of a private profile "succeeded" with nothing.
+     */
+    @Test
+    void aForbiddenPrivateProfileIsReportedDistinctlyToo() {
+        server.expect(requestTo(Matchers.any(String.class)))
+                .andRespond(withStatus(HttpStatus.FORBIDDEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body("{\"playerstats\":{\"error\":\"Profile is not public\",\"success\":false}}"));
+
+        assertThatExceptionOfType(SteamProfileNotPublicException.class)
+                .isThrownBy(() -> client.fetch(APP_ID, STEAM_ID));
+    }
+
+    @Test
+    void aForbiddenResponseWithoutAReasonIsStillJustEmpty() {
+        server.expect(requestTo(Matchers.any(String.class))).andRespond(withStatus(HttpStatus.FORBIDDEN));
+
+        assertThat(client.fetch(APP_ID, STEAM_ID)).isEmpty();
+    }
+
     /** Plenty of games simply have none. That is a fact about the game, not a failure. */
     @Test
     void aGameWithoutAchievementsIsEmptyRatherThanAnError() {
