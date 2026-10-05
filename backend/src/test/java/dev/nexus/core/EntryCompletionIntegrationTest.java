@@ -151,6 +151,28 @@ class EntryCompletionIntegrationTest extends PostgresIntegrationTest {
                 .containsEntry("progressCurrent", 3);
     }
 
+    /** A source with no count yet leaves the entry's own total as the end to reach. */
+    @Test
+    void withNoCountFromTheSourceTheEntrysOwnTotalIsTheEnd() {
+        Map<String, Object> airing = anime();
+        airing.put("id", 22);
+        airing.remove("episodes");
+        when(anilistClient.findMediaById(eq("22"))).thenReturn(List.of(airing));
+        Response tracked = http.postJson(
+                "/entries",
+                Map.of("source", "ANILIST", "externalId", "22", "status", "IN_PROGRESS"),
+                "Authorization",
+                "Bearer " + token);
+        long id = ((Number) tracked.body().get("id")).longValue();
+        http.patchJson("/entries/" + id, Map.of("progressMax", 24, "progressUnit", "EPISODES"),
+                "Authorization", "Bearer " + token);
+
+        Response completed = http.patchJson(
+                "/entries/" + id, Map.of("status", "COMPLETED"), "Authorization", "Bearer " + token);
+
+        assertThat(completed.body()).containsEntry("progressCurrent", 24);
+    }
+
     private Response progress(int watched, String status) {
         Map<String, Object> body = new HashMap<>();
         body.put("progressCurrent", watched);

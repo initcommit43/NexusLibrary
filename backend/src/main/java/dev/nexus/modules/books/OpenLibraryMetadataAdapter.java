@@ -12,6 +12,7 @@ import dev.nexus.core.adapter.MetadataAdapter;
 import dev.nexus.core.adapter.TrackableItemData;
 import dev.nexus.core.domain.ItemState;
 import dev.nexus.core.domain.MediaType;
+import dev.nexus.core.domain.ProgressUnit;
 import dev.nexus.core.domain.Source;
 import dev.nexus.core.domain.TrackableItem;
 import java.time.LocalDate;
@@ -70,6 +71,12 @@ public class OpenLibraryMetadataAdapter implements MetadataAdapter {
     @Override
     public Source source() {
         return Source.OPEN_LIBRARY;
+    }
+
+    /** Pages, as the median across a work's editions: the one count a work has, not an edition. */
+    @Override
+    public Optional<ProgressTotal> progressTotal(TrackableItem item) {
+        return ProgressTotal.of(item.getMetadata().get("pageCount"), ProgressUnit.PAGES);
     }
 
     /**

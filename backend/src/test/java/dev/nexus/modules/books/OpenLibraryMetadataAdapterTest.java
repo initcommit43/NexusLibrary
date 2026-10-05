@@ -8,9 +8,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import dev.nexus.core.adapter.MetadataAdapter.ProgressTotal;
 import dev.nexus.core.adapter.TrackableItemData;
 import dev.nexus.core.domain.ItemState;
 import dev.nexus.core.domain.MediaType;
+import dev.nexus.core.domain.ProgressUnit;
 import dev.nexus.core.domain.Source;
 import dev.nexus.core.domain.TrackableItem;
 import java.time.LocalDate;
@@ -44,6 +46,18 @@ class OpenLibraryMetadataAdapterTest {
                 "edition_count", 142,
                 "ratings_average", 4.25,
                 "subject", List.of("Science fiction", "Desert"));
+    }
+
+    /** A book ends at its page count; one Open Library has no count for gives none. */
+    @Test
+    void aBookCountsInPages() {
+        TrackableItem counted = new TrackableItem(MediaType.BOOK, Source.OPEN_LIBRARY, "OL1W", "Counted", null, null,
+                ItemState.RELEASED, false, Map.of("pageCount", 320));
+        TrackableItem uncounted = new TrackableItem(MediaType.BOOK, Source.OPEN_LIBRARY, "OL2W", "Uncounted", null,
+                null, ItemState.RELEASED, false, Map.of());
+
+        assertThat(adapter.progressTotal(counted)).contains(new ProgressTotal(320, ProgressUnit.PAGES));
+        assertThat(adapter.progressTotal(uncounted)).isEmpty();
     }
 
     /** The stored id is the bare work id; the {@code /works/} prefix is the same for all of them. */

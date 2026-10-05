@@ -2,6 +2,7 @@ package dev.nexus.core.tracking;
 
 import dev.nexus.core.activity.ActivityRecorder;
 import dev.nexus.core.activity.ActivityRecorder.EntrySnapshot;
+import dev.nexus.core.adapter.MetadataAdapter.ProgressTotal;
 import dev.nexus.core.adapter.MetadataAdapterRegistry;
 import dev.nexus.core.cache.ItemCacheService;
 import dev.nexus.core.cache.ItemNotFoundException;
@@ -10,6 +11,7 @@ import dev.nexus.core.content.ContentPreferences;
 import dev.nexus.core.domain.ActivityRepository;
 import dev.nexus.core.domain.MediaType;
 import dev.nexus.core.domain.NotificationRepository;
+import dev.nexus.core.domain.ProgressUnit;
 import dev.nexus.core.domain.Provider;
 import dev.nexus.core.domain.ProviderActivityRepository;
 import dev.nexus.core.domain.TrackableItem;
@@ -273,15 +275,21 @@ public class TrackingService {
         }
 
         TrackableItem item = entry.getItem();
-        adapters.forSource(item.getSource())
+        Optional<ProgressTotal> total = adapters.forSource(item.getSource())
                 .flatMap(adapter -> adapter.progressTotal(item))
+                // Where the source counts nothing, a total the entry already carries — a
+                // Goodreads row brings its page count — is the end to reach. Playtime has none.
+                .or(() -> Optional.ofNullable(entry.getProgressMax())
+                        .filter(max -> max > 0 && entry.getProgressUnit() != ProgressUnit.MINUTES)
+                        .map(max -> new ProgressTotal(max, entry.getProgressUnit())));
+        total
                 // A unit already on the entry that is not the source's would make the count a
                 // different measure; leave such an entry as it is.
-                .filter(total -> entry.getProgressUnit() == null || entry.getProgressUnit() == total.unit())
-                .ifPresent(total -> {
-                    entry.setProgressUnit(total.unit());
-                    entry.setProgressMax(total.count());
-                    entry.setProgressCurrent(total.count());
+                .filter(end -> entry.getProgressUnit() == null || entry.getProgressUnit() == end.unit())
+                .ifPresent(end -> {
+                    entry.setProgressUnit(end.unit());
+                    entry.setProgressMax(end.count());
+                    entry.setProgressCurrent(end.count());
                 });
     }
 
