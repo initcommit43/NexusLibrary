@@ -319,7 +319,6 @@ export const ProfilePage = () => {
           />
           <div className="profile-name">
             {narrow ? <h1>{user?.username}</h1> : <h2>{user?.username}</h2>}
-            <p className="muted">{user?.email}</p>
           </div>
 
           {/*
