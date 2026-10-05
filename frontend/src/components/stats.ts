@@ -9,6 +9,7 @@
  */
 import type { MediaType, TrackedItem, TrackingStatus } from '../api/client'
 import { achievementProgress } from './achievements'
+import { typeDefinitionFor } from '../modules/registry'
 
 /** How a medium counts what has been got through, and what to call it. */
 export interface TimeSpent {
@@ -114,11 +115,17 @@ export const timeSpent = (entries: TrackedItem[], mediaType: MediaType): TimeSpe
     return minutes === 0 ? null : { amount: Math.round(minutes / MINUTES_PER_HOUR), unit: 'hours watched' }
   }
 
-  const progressed = entries.filter((entry) => entry.progressCurrent !== null)
-  const total = progressed.reduce((sum, entry) => sum + (entry.progressCurrent ?? 0), 0)
+  // The medium says what it counts in, not whichever entry happens to come first: a book
+  // tracked by hand carries no unit of its own, and guessing from it called pages episodes.
+  // An entry stored in some other unit is a different measure and stays out of the sum.
+  const unit = typeDefinitionFor(mediaType)?.progressUnit ?? null
+  if (unit === null) return null
+
+  const total = entries
+    .filter((entry) => entry.progressUnit === null || entry.progressUnit === unit)
+    .reduce((sum, entry) => sum + (entry.progressCurrent ?? 0), 0)
   if (total === 0) return null
 
-  const unit = progressed.find((entry) => entry.progressUnit !== null)?.progressUnit
   switch (unit) {
     case 'MINUTES':
       return { amount: Math.round(total / MINUTES_PER_HOUR), unit: 'hours played' }
@@ -126,7 +133,7 @@ export const timeSpent = (entries: TrackedItem[], mediaType: MediaType): TimeSpe
       return { amount: total, unit: 'chapters read' }
     case 'PAGES':
       return { amount: total, unit: 'pages read' }
-    default:
+    case 'EPISODES':
       return { amount: total, unit: 'episodes watched' }
   }
 }

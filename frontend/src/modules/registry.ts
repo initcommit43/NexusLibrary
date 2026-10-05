@@ -1,5 +1,7 @@
 import type { MediaType, Provider, TrackingStatus } from '../api/client'
 
+export type ProgressUnit = 'MINUTES' | 'EPISODES' | 'CHAPTERS' | 'PAGES'
+
 export type ModuleSlug = 'games' | 'anime' | 'film' | 'books'
 
 /** An external service this module can pull a library from. */
@@ -38,6 +40,8 @@ export interface MediaTypeDefinition {
   slug: string
   /** What progress means here — hours played, episodes watched, chapters read. */
   progressLabel: string
+  /** The unit progress is counted in, as the backend stores it; a film counts none. */
+  progressUnit: ProgressUnit | null
   statusLabels: Record<TrackingStatus, string>
   /** Section order down the page; each community has its own habit. */
   statusOrder: TrackingStatus[]
@@ -104,6 +108,7 @@ export const MODULES: ModuleDefinition[] = [
         listLabel: 'Game List',
         slug: 'games',
         progressLabel: 'Hours played',
+        progressUnit: 'MINUTES',
         listColumns: ['score', 'hours', 'year'],
         searchPlaceholder: 'Search games…',
         statusOrder: ['IN_PROGRESS', 'PLANNING', 'COMPLETED', 'PAUSED', 'DROPPED'],
@@ -129,6 +134,7 @@ export const MODULES: ModuleDefinition[] = [
         listLabel: 'Anime List',
         slug: 'anime',
         progressLabel: 'Episodes',
+        progressUnit: 'EPISODES',
         listColumns: ['score', 'progress', 'format'],
         searchPlaceholder: 'Search anime…',
         statusOrder: ['IN_PROGRESS', 'COMPLETED', 'PAUSED', 'DROPPED', 'PLANNING'],
@@ -140,6 +146,7 @@ export const MODULES: ModuleDefinition[] = [
         listLabel: 'Manga List',
         slug: 'manga',
         progressLabel: 'Chapters',
+        progressUnit: 'CHAPTERS',
         listColumns: ['score', 'progress', 'format'],
         searchPlaceholder: 'Search manga…',
         statusOrder: ['IN_PROGRESS', 'COMPLETED', 'PAUSED', 'DROPPED', 'PLANNING'],
@@ -174,6 +181,7 @@ export const MODULES: ModuleDefinition[] = [
         listLabel: 'Movie List',
         slug: 'movies',
         progressLabel: 'Progress',
+        progressUnit: null,
         listColumns: ['score', 'runtime', 'year'],
         searchPlaceholder: 'Search movies…',
         statusOrder: ['IN_PROGRESS', 'COMPLETED', 'PAUSED', 'DROPPED', 'PLANNING'],
@@ -185,6 +193,7 @@ export const MODULES: ModuleDefinition[] = [
         listLabel: 'TV List',
         slug: 'tv',
         progressLabel: 'Episodes',
+        progressUnit: 'EPISODES',
         listColumns: ['score', 'progress', 'seasons'],
         searchPlaceholder: 'Search shows…',
         statusOrder: ['IN_PROGRESS', 'COMPLETED', 'PAUSED', 'DROPPED', 'PLANNING'],
@@ -213,6 +222,7 @@ export const MODULES: ModuleDefinition[] = [
         listLabel: 'Book List',
         slug: 'books',
         progressLabel: 'Pages',
+        progressUnit: 'PAGES',
         listColumns: ['score', 'progress', 'author'],
         searchPlaceholder: 'Search books…',
         statusOrder: ['IN_PROGRESS', 'PLANNING', 'COMPLETED', 'PAUSED', 'DROPPED'],
