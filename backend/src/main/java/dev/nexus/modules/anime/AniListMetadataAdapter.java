@@ -15,7 +15,9 @@ import dev.nexus.core.adapter.MetadataAdapter;
 import dev.nexus.core.adapter.TrackableItemData;
 import dev.nexus.core.domain.ItemState;
 import dev.nexus.core.domain.MediaType;
+import dev.nexus.core.domain.ProgressUnit;
 import dev.nexus.core.domain.Source;
+import dev.nexus.core.domain.TrackableItem;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -311,6 +313,14 @@ public class AniListMetadataAdapter implements MetadataAdapter, StudioBrowse {
     @Override
     public Optional<String> bannerFrom(Map<String, Object> detail) {
         return Optional.ofNullable(string(detail.get("bannerImage"))).filter(url -> !url.isBlank());
+    }
+
+    /** Episodes for anime, chapters for manga; a series still running has no count to give. */
+    @Override
+    public Optional<ProgressTotal> progressTotal(TrackableItem item) {
+        return item.getMediaType() == MediaType.MANGA
+                ? ProgressTotal.of(item.getMetadata().get("chapters"), ProgressUnit.CHAPTERS)
+                : ProgressTotal.of(item.getMetadata().get("episodes"), ProgressUnit.EPISODES);
     }
 
     /** The MAL import's hard ID join: one call resolves a MAL id onto its AniList canonical. */

@@ -2,6 +2,7 @@ package dev.nexus.core.tracking;
 
 import dev.nexus.core.activity.ActivityRecorder;
 import dev.nexus.core.activity.ActivityRecorder.EntrySnapshot;
+import dev.nexus.core.adapter.MetadataAdapterRegistry;
 import dev.nexus.core.cache.ItemCacheService;
 import dev.nexus.core.cache.ItemNotFoundException;
 import dev.nexus.core.cache.ItemRefreshService;
@@ -48,6 +49,7 @@ public class TrackingService {
     private final ActivityRepository activities;
     private final NotificationRepository notifications;
     private final ContentPreferences content;
+    private final MetadataAdapterRegistry adapters;
 
     public TrackingService(
             UserEntryRepository entries,
@@ -57,7 +59,8 @@ public class TrackingService {
             ProviderActivityRepository imported,
             ActivityRepository activities,
             NotificationRepository notifications,
-            ContentPreferences content) {
+            ContentPreferences content,
+            MetadataAdapterRegistry adapters) {
         this.entries = entries;
         this.itemCache = itemCache;
         this.activity = activity;
@@ -66,6 +69,7 @@ public class TrackingService {
         this.activities = activities;
         this.notifications = notifications;
         this.content = content;
+        this.adapters = adapters;
     }
 
     /**
@@ -151,6 +155,7 @@ public class TrackingService {
         UserEntry entry = isNew ? new UserEntry(userId, item, request.status()) : existing;
         EntrySnapshot before = isNew ? null : EntrySnapshot.of(entry);
         boolean wasAtTheEnd = !isNew && atTheEnd(entry);
+        boolean wasCompleted = !isNew && entry.getStatus() == TrackingStatus.COMPLETED;
 
         entry.setStatus(request.status());
         applyIfPresent(request.rating(), entry::setRating);
@@ -164,6 +169,7 @@ public class TrackingService {
             entry.setFavorite(request.favorite());
         }
         completeIfFinished(entry, request.status(), wasAtTheEnd);
+        fillInCompletion(entry, wasCompleted);
 
         UserEntry saved = entries.save(entry);
         if (isNew) {
@@ -179,6 +185,7 @@ public class TrackingService {
         UserEntry entry = requireOwned(entryId, userId);
         EntrySnapshot before = EntrySnapshot.of(entry);
         boolean wasAtTheEnd = atTheEnd(entry);
+        boolean wasCompleted = entry.getStatus() == TrackingStatus.COMPLETED;
 
         applyIfPresent(request.status(), entry::setStatus);
         applyIfPresent(request.rating(), entry::setRating);
@@ -195,6 +202,7 @@ public class TrackingService {
         applyIfPresent(request.isPrivate(), entry::setPrivate);
         applyIfPresent(request.hiddenFromStatusLists(), entry::setHiddenFromStatusLists);
         completeIfFinished(entry, request.status(), wasAtTheEnd);
+        fillInCompletion(entry, wasCompleted);
         // After completing, so a date the reader asked to empty stays empty even on the edit
         // that reaches the last episode.
         clear(entry, request.clear());
@@ -242,6 +250,39 @@ public class TrackingService {
         if (entry.getFinishedAt() == null) {
             entry.setFinishedAt(LocalDate.now());
         }
+    }
+
+    /**
+     * Marking a title completed says it was seen to the end, so the entry is made to say so:
+     * progress at the last episode or chapter, and today as the day it ended.
+     *
+     * <p>Only on the move to completed. An entry already completed is left as the reader keeps
+     * it, so a later edit to a finished title does not drag its progress back to the end. A
+     * finish date already set — given with the same edit, or kept from before — stands; a date
+     * the reader asked to empty is emptied after this, so it stays empty.
+     *
+     * <p>The count is the source's, read fresh off the cached title, and only a source that
+     * counts one gives it: a game has no last episode, and an ongoing series has no total yet.
+     */
+    private void fillInCompletion(UserEntry entry, boolean wasCompleted) {
+        if (wasCompleted || entry.getStatus() != TrackingStatus.COMPLETED) {
+            return;
+        }
+        if (entry.getFinishedAt() == null) {
+            entry.setFinishedAt(LocalDate.now());
+        }
+
+        TrackableItem item = entry.getItem();
+        adapters.forSource(item.getSource())
+                .flatMap(adapter -> adapter.progressTotal(item))
+                // A unit already on the entry that is not the source's would make the count a
+                // different measure; leave such an entry as it is.
+                .filter(total -> entry.getProgressUnit() == null || entry.getProgressUnit() == total.unit())
+                .ifPresent(total -> {
+                    entry.setProgressUnit(total.unit());
+                    entry.setProgressMax(total.count());
+                    entry.setProgressCurrent(total.count());
+                });
     }
 
     /**

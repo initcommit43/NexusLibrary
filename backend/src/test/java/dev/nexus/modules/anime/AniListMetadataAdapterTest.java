@@ -9,10 +9,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import dev.nexus.core.adapter.MetadataAdapter.ProgressTotal;
 import dev.nexus.core.adapter.TrackableItemData;
 import dev.nexus.core.domain.ItemState;
 import dev.nexus.core.domain.MediaType;
+import dev.nexus.core.domain.ProgressUnit;
 import dev.nexus.core.domain.Source;
+import dev.nexus.core.domain.TrackableItem;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
@@ -245,6 +248,21 @@ class AniListMetadataAdapterTest {
 
         assertThat(adapter.toItemData(asked).coverUrl()).isEqualTo("https://anilist.test/xl.jpg");
         assertThat(adapter.toItemData(media()).coverUrl()).isEqualTo("https://anilist.test/cover.jpg");
+    }
+
+    /** Chapters for manga, episodes for anime, and nothing for a series with no count yet. */
+    @Test
+    void aTitleCountsInItsOwnUnit() {
+        TrackableItem manga = new TrackableItem(MediaType.MANGA, Source.ANILIST, "1", "Manga", null, null,
+                ItemState.RELEASED, false, Map.of("chapters", 100, "volumes", 10));
+        TrackableItem anime = new TrackableItem(MediaType.ANIME, Source.ANILIST, "2", "Anime", null, null,
+                ItemState.RELEASED, false, Map.of("episodes", 12));
+        TrackableItem airing = new TrackableItem(MediaType.ANIME, Source.ANILIST, "3", "Airing", null, null,
+                ItemState.ONGOING, false, Map.of());
+
+        assertThat(adapter.progressTotal(manga)).contains(new ProgressTotal(100, ProgressUnit.CHAPTERS));
+        assertThat(adapter.progressTotal(anime)).contains(new ProgressTotal(12, ProgressUnit.EPISODES));
+        assertThat(adapter.progressTotal(airing)).isEmpty();
     }
 
     /** AniList names its own banner, and leaves the field out for a title that has none. */

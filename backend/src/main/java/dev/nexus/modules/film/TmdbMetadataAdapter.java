@@ -15,6 +15,7 @@ import dev.nexus.core.adapter.MetadataAdapter;
 import dev.nexus.core.adapter.TrackableItemData;
 import dev.nexus.core.domain.ItemState;
 import dev.nexus.core.domain.MediaType;
+import dev.nexus.core.domain.ProgressUnit;
 import dev.nexus.core.domain.Source;
 import dev.nexus.core.domain.TrackableItem;
 import java.time.Instant;
@@ -169,6 +170,14 @@ public class TmdbMetadataAdapter implements MetadataAdapter {
         Instant aired = Instant.ofEpochSecond(airingAt.longValue());
         Instant fetched = item.lastRefreshedAt();
         return !aired.isAfter(Instant.now()) && (fetched == null || fetched.isBefore(aired));
+    }
+
+    /** A show's episodes to date. A film is one sitting and counts nothing. */
+    @Override
+    public Optional<ProgressTotal> progressTotal(TrackableItem item) {
+        return item.getMediaType() == MediaType.SHOW
+                ? ProgressTotal.of(item.getMetadata().get("episodes"), ProgressUnit.EPISODES)
+                : Optional.empty();
     }
 
     @Override

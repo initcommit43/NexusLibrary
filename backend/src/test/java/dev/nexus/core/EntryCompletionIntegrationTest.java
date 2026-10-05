@@ -101,6 +101,56 @@ class EntryCompletionIntegrationTest extends PostgresIntegrationTest {
         assertThat(progress(EPISODES, null).body()).containsEntry("finishedAt", watched.toString());
     }
 
+    /** Saying it is finished says it was seen to the end: every episode, on the day it was said. */
+    @Test
+    void markingCompletedFillsInTheProgressAndTheDay() {
+        Response updated = patch(Map.of("status", "COMPLETED"));
+
+        assertThat(updated.body()).containsEntry("progressCurrent", EPISODES);
+        assertThat(updated.body()).containsEntry("progressMax", EPISODES);
+        assertThat(updated.body()).containsEntry("progressUnit", "EPISODES");
+        assertThat(updated.body()).containsEntry("finishedAt", LocalDate.now().toString());
+    }
+
+    /** The edit dialog sends the progress it was opened with alongside the new status. */
+    @Test
+    void markingCompletedOverTheOldProgressStillReachesTheEnd() {
+        patch(Map.of("progressCurrent", 5));
+
+        assertThat(patch(Map.of("status", "COMPLETED", "progressCurrent", 5)).body())
+                .containsEntry("progressCurrent", EPISODES);
+    }
+
+    /** Tracking a title straight from the status menu goes through the same door. */
+    @Test
+    void trackingAsCompletedFillsInTheProgressToo() {
+        Response response = http.postJson(
+                "/entries",
+                Map.of("source", "ANILIST", "externalId", "21", "status", "COMPLETED"),
+                "Authorization",
+                "Bearer " + token);
+
+        assertThat(response.body()).containsEntry("progressCurrent", EPISODES);
+        assertThat(response.body()).containsEntry("finishedAt", LocalDate.now().toString());
+    }
+
+    @Test
+    void aFinishDateGivenWithTheStatusIsKept() {
+        LocalDate watched = LocalDate.now().minusDays(3);
+
+        assertThat(patch(Map.of("status", "COMPLETED", "finishedAt", watched.toString())).body())
+                .containsEntry("finishedAt", watched.toString());
+    }
+
+    /** Only the move to completed fills anything in; a finished title edited later keeps what it says. */
+    @Test
+    void editingAnAlreadyCompletedEntryLeavesItsProgressAlone() {
+        patch(Map.of("status", "COMPLETED"));
+
+        assertThat(patch(Map.of("status", "COMPLETED", "progressCurrent", 3)).body())
+                .containsEntry("progressCurrent", 3);
+    }
+
     private Response progress(int watched, String status) {
         Map<String, Object> body = new HashMap<>();
         body.put("progressCurrent", watched);

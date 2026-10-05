@@ -1,6 +1,7 @@
 package dev.nexus.core.adapter;
 
 import dev.nexus.core.domain.MediaType;
+import dev.nexus.core.domain.ProgressUnit;
 import dev.nexus.core.domain.Source;
 import dev.nexus.core.domain.TrackableItem;
 import java.util.Collection;
@@ -124,6 +125,25 @@ public interface MetadataAdapter {
      */
     default boolean isOutdated(TrackableItem item) {
         return false;
+    }
+
+    /**
+     * How far a cached title goes in its own unit — twelve episodes, a hundred chapters — where
+     * the source counts one. Read when a reader marks the title completed, which says they got
+     * to the end of it. An ongoing series with no count yet, or a medium with no unit, has none.
+     */
+    default Optional<ProgressTotal> progressTotal(TrackableItem item) {
+        return Optional.empty();
+    }
+
+    record ProgressTotal(int count, ProgressUnit unit) {
+
+        /** A count as cached metadata holds it; anything that is not a positive number is no count. */
+        public static Optional<ProgressTotal> of(Object count, ProgressUnit unit) {
+            return count instanceof Number number && number.intValue() > 0
+                    ? Optional.of(new ProgressTotal(number.intValue(), unit))
+                    : Optional.empty();
+        }
     }
 
     /**
