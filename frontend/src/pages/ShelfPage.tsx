@@ -5,6 +5,7 @@ import { AppShell } from '../components/AppShell'
 import { EntryEditDialog } from '../components/EntryEditDialog'
 import { CatalogCard } from '../components/CatalogCard'
 import { BrowseListRow } from '../components/BrowseListRow'
+import { CoverGridSkeleton } from '../components/Skeleton'
 import { keyOf, useTrackable } from '../components/useTrackable'
 import { defaultTypeOf, moduleBySlug, typeBySlug } from '../modules/registry'
 import { useCurrentModule } from '../modules/useCurrentModule'
@@ -127,13 +128,7 @@ export const ShelfPage = () => {
       )}
 
       {results === null ? (
-        <div className="cover-grid" aria-busy="true">
-          {Array.from({ length: 12 }, (_, i) => (
-            <div key={i} className="card cover-card browse-skeleton" aria-hidden="true">
-              <div className="cover-placeholder" />
-            </div>
-          ))}
-        </div>
+        <CoverGridSkeleton />
       ) : results.length === 0 && !error ? (
         <p className="muted">Nothing here right now.</p>
       ) : isRanked(shelfId) ? (

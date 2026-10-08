@@ -4,6 +4,7 @@ import { api, errorMessage, type SearchResult } from '../api/client'
 import { AppShell } from '../components/AppShell'
 import { CatalogCard } from '../components/CatalogCard'
 import { EntryEditDialog } from '../components/EntryEditDialog'
+import { CoverGridSkeleton, HeadingSkeleton } from '../components/Skeleton'
 import { keyOf, useTrackable } from '../components/useTrackable'
 
 /** What a work with no date yet is filed under, as the source itself files it. */
@@ -107,7 +108,13 @@ export const StudioPage = () => {
         </p>
       )}
 
-      {works === null && !error && <p className="muted">Loading…</p>}
+      {/* Drawn as the first year of the list, the shape the answer arrives in. */}
+      {works === null && !error && (
+        <section className="status-section">
+          <HeadingSkeleton width="3rem" />
+          <CoverGridSkeleton />
+        </section>
+      )}
 
       {works !== null && shown.length === 0 && !error && (
         <p className="muted">

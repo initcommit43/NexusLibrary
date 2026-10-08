@@ -4,6 +4,7 @@ import { api, errorMessage, type SearchResult } from '../api/client'
 import { AppShell } from '../components/AppShell'
 import { EntryEditDialog } from '../components/EntryEditDialog'
 import { CatalogCard } from '../components/CatalogCard'
+import { CoverGridSkeleton } from '../components/Skeleton'
 import { keyOf, useTrackable } from '../components/useTrackable'
 import { defaultTypeOf, moduleBySlug, typeBySlug } from '../modules/registry'
 import { useCurrentModule } from '../modules/useCurrentModule'
@@ -88,6 +89,8 @@ export const SearchPage = () => {
           {error ?? tracking.error}
         </p>
       )}
+
+      {searching && <CoverGridSkeleton />}
 
       {results?.length === 0 && <p className="muted">Nothing found for “{query}”.</p>}
 

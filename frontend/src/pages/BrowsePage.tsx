@@ -17,6 +17,7 @@ import { BrowseToolbar, type BrowseView } from '../components/BrowseToolbar'
 import { Carousel } from '../components/Carousel'
 import { CatalogCard } from '../components/CatalogCard'
 import { TypeSwitch } from '../components/TypeSwitch'
+import { Bone, CoverGridSkeleton, CoverSkeletons } from '../components/Skeleton'
 import { useNarrowScreen } from '../components/useNarrowScreen'
 import { keyOf, useTrackable } from '../components/useTrackable'
 import { defaultTypeOf, moduleBySlug, typeBySlug } from '../modules/registry'
@@ -291,13 +292,7 @@ export const BrowsePage = () => {
 
       {/* Narrowed, the shelves give way: they answer a question nobody is asking any more. */}
       {narrowed && awaiting && showing === null && !grid?.error && (
-        <div className="cover-grid" aria-busy="true">
-          {Array.from({ length: 12 }, (_, i) => (
-            <div key={i} className="card cover-card browse-skeleton" aria-hidden="true">
-              <div className="cover-placeholder" />
-            </div>
-          ))}
-        </div>
+        <CoverGridSkeleton />
       )}
 
       {narrowed && found && found.results.length === 0 && !found.error && (
@@ -338,6 +333,23 @@ export const BrowsePage = () => {
         </nav>
       )}
 
+      {/* Which shelves a type has is its own request; until it answers, three stand in. */}
+      {!narrowed &&
+        shelves === null &&
+        !error &&
+        [0, 1, 2].map((i) => (
+          <section key={i} className="browse-shelf" aria-hidden="true">
+            <div className="browse-shelf-head">
+              <h2>
+                <Bone className="skeleton-heading" width="10rem" />
+              </h2>
+            </div>
+            <div className="browse-row" aria-busy="true">
+              <CoverSkeletons count={6} />
+            </div>
+          </section>
+        ))}
+
       {!narrowed && shelves !== null && shelves.length === 0 && !error && (
         <p className="muted">
           Nothing to browse here yet. <Link to="/search">Search</Link> to find something by
@@ -365,11 +377,7 @@ export const BrowsePage = () => {
             <p className="muted">This row could not be loaded.</p>
           ) : results === null ? (
             <div className="browse-row" aria-busy="true">
-              {Array.from({ length: 6 }, (_, i) => (
-                <div key={i} className="card cover-card browse-skeleton" aria-hidden="true">
-                  <div className="cover-placeholder" />
-                </div>
-              ))}
+              <CoverSkeletons count={6} />
             </div>
           ) : results.length === 0 ? (
             <p className="muted">Nothing here right now.</p>

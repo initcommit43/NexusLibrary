@@ -46,6 +46,9 @@
   /* A segmented control on a card: the track, and the choice raised out of it. */
   --segment-track: #eef1f6;
   --segment-on: #ffffff;
+  /* Loading placeholders: a block that shows on a card and on the page, and the band crossing it. */
+  --skeleton-base: #e9edf3;
+  --skeleton-shine: #f8fafc;
 
   /* 30 — the dark blocks, same ink */
   --banner-bg: #0b1220;
@@ -252,6 +255,8 @@
     --border-strong: #33456a;
     --segment-track: #16233b;
     --segment-on: #2a3a5a;
+    --skeleton-base: #16233b;
+    --skeleton-shine: #22314d;
 
     --banner-bg: #16233b;
     --banner-text: #eef3fa;
@@ -301,6 +306,8 @@
   --border-strong: #33456a;
   --segment-track: #16233b;
   --segment-on: #2a3a5a;
+  --skeleton-base: #16233b;
+  --skeleton-shine: #22314d;
 
   --banner-bg: #16233b;
   --banner-text: #eef3fa;

@@ -4355,26 +4355,12 @@ input.filter-control::-webkit-search-cancel-button {
 .browse-skeleton {
   border-color: transparent;
   box-shadow: none;
-  animation: browse-pulse 1.4s var(--ease) infinite;
 }
 
 .browse-skeleton:hover {
   transform: none;
   border-color: transparent;
   box-shadow: none;
-}
-
-@keyframes browse-pulse {
-  50% {
-    opacity: 0.45;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .browse-skeleton {
-    animation: none;
-    opacity: 0.6;
-  }
 }
 
 /* --- item grid --- */
@@ -5504,16 +5490,6 @@ input.filter-control::-webkit-search-cancel-button {
   color: var(--text-muted);
 }
 
-.entry-row.is-pending .entry-row-cover {
-  background: var(--surface-raised);
-  animation: shelf-pending 1.6s ease-in-out infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .entry-row.is-pending .entry-row-cover {
-    animation: none;
-  }
-}
 
 /*
  * The desktop list view: a table per status section, with the columns the media type names in
@@ -7139,7 +7115,6 @@ button.ghost.danger:hover:not(:disabled) {
   content: '';
   display: block;
   aspect-ratio: 3 / 4;
-  background: var(--surface-raised);
   border-bottom: 1px solid var(--card-border);
 }
 
@@ -7149,7 +7124,6 @@ button.ghost.danger:hover:not(:disabled) {
   height: var(--space-3);
   margin: var(--space-2) var(--space-2) var(--space-4);
   border-radius: var(--radius-sm);
-  background: var(--surface-raised);
 }
 
 /* One line of a title tall, so the heading that replaces it leaves its rule where it was. */
@@ -7158,28 +7132,8 @@ button.ghost.danger:hover:not(:disabled) {
   height: calc(var(--text-xl) * var(--leading-tight));
   width: 7rem;
   border-radius: var(--radius-sm);
-  background: var(--surface-raised);
   background-clip: content-box;
   border-bottom: 1px solid var(--card-border);
-}
-
-.cover-pending,
-.shelf-heading-pending {
-  animation: shelf-pending 1.6s ease-in-out infinite;
-}
-
-@keyframes shelf-pending {
-  50% {
-    opacity: 0.62;
-  }
-}
-
-/* Holding still is the alternative, not a faster pulse. */
-@media (prefers-reduced-motion: reduce) {
-  .cover-pending,
-  .shelf-heading-pending {
-    animation: none;
-  }
 }
 
 /* --- nothing on the shelf --- */
@@ -9133,5 +9087,102 @@ a.icon-button.active {
   .feed-read-all:disabled {
     color: var(--text-muted);
     cursor: default;
+  }
+}
+
+/* --- skeletons --- */
+
+/*
+ * One band of light crossing the whole page, not one per block. The gradient is pinned to
+ * the viewport, so every placeholder on screen catches the same sweep at the same moment and
+ * a shelf of twelve reads as one thing loading rather than twelve things each doing
+ * something.
+ */
+.skeleton,
+.cover-pending::before,
+.cover-pending::after,
+.shelf-heading-pending,
+.entry-row.is-pending .entry-row-cover {
+  background-color: var(--skeleton-base);
+  background-image: linear-gradient(
+    100deg,
+    transparent 40%,
+    var(--skeleton-shine) 50%,
+    transparent 60%
+  );
+  background-size: 200vw 100%;
+  background-attachment: fixed;
+  animation: skeleton-shimmer 2s linear infinite;
+}
+
+/*
+ * A line of text. Weightless, so a line that borrows a real element's class — a ring — keeps
+ * that class's own size and corners instead. Covers and thumbnails carry .skeleton alone: a
+ * height of any kind would override the aspect ratio that sizes them.
+ */
+:where(.skeleton-line) {
+  display: block;
+  height: 0.75em;
+  border-radius: var(--radius-sm);
+}
+
+/* A heading's line: its own height, so the rule under it sits where the real one will. */
+.skeleton-line.skeleton-heading {
+  display: inline-block;
+  height: 1em;
+  vertical-align: middle;
+}
+
+/* A panel's or a control's stand-in, at the corner the real box has. */
+.skeleton-line.skeleton-box {
+  border-radius: var(--radius-box);
+}
+
+/* A page title's line. */
+.skeleton-line.skeleton-title {
+  height: 1.75rem;
+}
+
+.activity-row.is-pending .activity-text {
+  gap: var(--space-2);
+}
+
+/* A phone row's lines are packed for text; bars that tight read as one thick bar. */
+.group-row-text > .skeleton-line + .skeleton-line {
+  margin-top: var(--space-1);
+}
+
+/* The profile's outline keeps the same gap between rings and panel as the page it stands for. */
+.profile-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.profile-skeleton-tally {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* Shifting by exactly one tile makes the loop seamless. */
+@keyframes skeleton-shimmer {
+  from {
+    background-position: -200vw 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+
+/* Holding still is the alternative, not a slower sweep. */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton,
+  .cover-pending::before,
+  .cover-pending::after,
+  .shelf-heading-pending,
+  .entry-row.is-pending .entry-row-cover {
+    animation: none;
+    background-image: none;
   }
 }
