@@ -32,6 +32,8 @@ export const useNotifications = (
    * and anime notifications under a games heading read as the app being wrong.
    */
   const [answer, setAnswer] = useState<{ scope: string; waiting: Waiting } | null>(null)
+  /** The scope whose last fetch failed, kept apart so a quiet caller can ignore it. */
+  const [failedFor, setFailedFor] = useState<string | null>(null)
   /** Bumped by the clock below; the only thing that makes the fetch run again unasked. */
   const [beat, setBeat] = useState(0)
 
@@ -47,8 +49,16 @@ export const useNotifications = (
       .notifications(limit, scope === '' ? [] : (scope.split(',') as MediaType[]))
       // Nothing waiting is the answer for anyone who has just arrived, and a panel that
       // cannot load is not worth an alarm on a page about your own library.
-      .then((waiting) => current && setAnswer({ scope, waiting }))
-      .catch(() => current && setAnswer({ scope, waiting: NOTHING }))
+      .then((waiting) => {
+        if (!current) return
+        setAnswer({ scope, waiting })
+        setFailedFor(null)
+      })
+      .catch(() => {
+        if (!current) return
+        setAnswer({ scope, waiting: NOTHING })
+        setFailedFor(scope)
+      })
 
     return () => {
       current = false
@@ -95,5 +105,5 @@ export const useNotifications = (
       api.readAllNotifications(limit, asked()),
     )
 
-  return { waiting, loading, read, readAll }
+  return { waiting, loading, failed: !loading && failedFor === scope, read, readAll }
 }

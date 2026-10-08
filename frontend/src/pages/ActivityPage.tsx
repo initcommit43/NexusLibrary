@@ -3,6 +3,7 @@ import { ActivityFeed } from '../components/ActivityFeed'
 import { AppShell } from '../components/AppShell'
 import { FeedHead } from '../components/FeedHead'
 import { ActivityGroups } from '../components/FeedGroups'
+import { FeedGroupSkeleton, FeedSkeleton } from '../components/Skeleton'
 import { useActivityFeed } from '../components/useActivityFeed'
 import { useNarrowScreen } from '../components/useNarrowScreen'
 import { useCurrentModule } from '../modules/useCurrentModule'
@@ -26,7 +27,9 @@ export const ActivityPage = () => {
         </p>
       )}
 
-      {loading && !error && <p className="muted">Loading…</p>}
+      {loading &&
+        !error &&
+        (narrow ? <FeedGroupSkeleton rows={8} /> : <FeedSkeleton rows={8} />)}
 
       {!loading && rows.length === 0 && (
         <p className="muted">
