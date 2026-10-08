@@ -16,6 +16,12 @@ import { AppShell } from '../components/AppShell'
 import { PosterGallery, type Poster } from '../components/PosterGallery'
 import { ModuleSwitcher } from '../components/ModuleSwitcher'
 import { ShelfGallery } from '../components/ShelfGallery'
+import {
+  FeedSkeleton,
+  HeadingSkeleton,
+  PosterRowSkeleton,
+  ShelfRowSkeleton,
+} from '../components/Skeleton'
 import { CatalogueShelfRow, ShelfRow, type Shelvable } from '../components/ShelfRow'
 import { countdown } from '../components/mediaDetail'
 import { episodesWaiting, progressSummary } from '../components/progress'
@@ -622,7 +628,33 @@ export const HomePage = () => {
         </p>
       )}
 
-      {!loaded && !error && <p className="muted">Reading your library…</p>}
+      {/* The page's own two columns, or a phone's rows, standing in until the library lands. */}
+      {!loaded && !error && narrow && (
+        <div className="shelf-rows" aria-busy="true">
+          <ShelfRowSkeleton />
+          <ShelfRowSkeleton />
+          <ShelfRowSkeleton />
+        </div>
+      )}
+
+      {!loaded && !error && !narrow && (
+        <div className="home-layout" aria-busy="true">
+          <div className="home-main">
+            <section className="status-section">
+              <HeadingSkeleton width="9rem" />
+              <FeedSkeleton rows={7} />
+            </section>
+          </div>
+          <aside className="home-side">
+            {[0, 1, 2].map((i) => (
+              <section key={i} className="status-section">
+                <HeadingSkeleton />
+                <PosterRowSkeleton />
+              </section>
+            ))}
+          </aside>
+        </div>
+      )}
 
       {loaded && narrow && phoneShelves}
 

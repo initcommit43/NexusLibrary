@@ -10,6 +10,7 @@ import {
 import { AppShell } from '../components/AppShell'
 import { Bars } from '../components/Bars'
 import { Figures, type Figure } from '../components/Figures'
+import { Bone } from '../components/Skeleton'
 import { Leaderboard } from '../components/charts/Leaderboard'
 import { Scatter } from '../components/charts/Scatter'
 import { SplitLegend, StackedBar } from '../components/charts/StackedBar'
@@ -569,10 +570,9 @@ export const StatsPage = () => {
             </p>
           )}
 
-          {!loaded && !error && <p className="muted">Reading your library…</p>}
-
-          {/* One shelf at a time, or the whole library added together. */}
-          {loaded && (
+          {/* One shelf at a time, or the whole library added together. The shelves are the
+              app's own, so the bar stands while the library is still on its way. */}
+          {(loaded || !error) && (
             <nav className="lens-bar" aria-label="Shelf">
               {LENSES.map((candidate) => (
                 <NavLink
@@ -586,6 +586,15 @@ export const StatsPage = () => {
             </nav>
           )}
         </div>
+
+        {/* The first section's figures in outline, where they will land. */}
+        {!loaded && !error && (
+          <div className="stats-grid" aria-busy="true">
+            {[0, 1, 2, 3].map((i) => (
+              <Bone key={i} className="skeleton-box" height="12rem" />
+            ))}
+          </div>
+        )}
 
         {loaded &&
           (shown.length === 0 ? (

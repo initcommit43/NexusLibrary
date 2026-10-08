@@ -19,7 +19,8 @@ const SHOWN = 5
  * line still feels slower than one that does not.
  */
 export const useShelfResults = <T extends HTMLElement>(mediaType: MediaType, shelf: string) => {
-  const [results, setResults] = useState<SearchResult[]>([])
+  /** Null until the shelf has been asked and has answered, so it can hold its shape meanwhile. */
+  const [results, setResults] = useState<SearchResult[] | null>(null)
   const frame = useRef<T>(null)
 
   useEffect(() => {

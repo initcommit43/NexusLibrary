@@ -23,6 +23,7 @@ import { FavouriteBands } from '../components/FavouriteBands'
 import { FavouriteGrid } from '../components/FavouriteGrid'
 import { Grip } from '../components/Grip'
 import { ScopePicker } from '../components/ScopePicker'
+import { Bone, HeadingSkeleton } from '../components/Skeleton'
 import { useNarrowScreen } from '../components/useNarrowScreen'
 import { useAuth } from '../auth/useAuth'
 import { MODULES, mediaPathFor, type ModuleDefinition } from '../modules/registry'
@@ -376,7 +377,39 @@ export const ProfilePage = () => {
         </p>
       )}
 
-      {entries === null && !error && <p className="muted">Loading your library…</p>}
+      {/* The rings and the activity panel in outline: the parts every profile has, at any size. */}
+      {entries === null && !error && !narrow && (
+        <div className="profile-skeleton" aria-busy="true">
+          <div className="profile-rings" aria-hidden="true">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="profile-ring-cell">
+                <Bone className="profile-ring" />
+                <div className="profile-skeleton-tally">
+                  <Bone width="3.5rem" height="1.25rem" />
+                  <Bone width="5.5rem" />
+                </div>
+              </div>
+            ))}
+          </div>
+          <section className="profile-panel" aria-hidden="true">
+            <Bone className="skeleton-heading" width="6rem" />
+            <Bone className="skeleton-box" height="9rem" />
+          </section>
+        </div>
+      )}
+
+      {entries === null && !error && narrow && (
+        <div className="profile-overview" aria-busy="true">
+          <section className="status-section" aria-hidden="true">
+            <HeadingSkeleton width="6rem" />
+            <Bone className="skeleton-box" height="8rem" />
+          </section>
+          <section className="status-section" aria-hidden="true">
+            <HeadingSkeleton width="7rem" />
+            <Bone className="skeleton-box" height="10rem" />
+          </section>
+        </div>
+      )}
 
       {entries !== null && !narrow && (
         <>

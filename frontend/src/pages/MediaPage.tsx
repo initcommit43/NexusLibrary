@@ -13,6 +13,7 @@ import { MediaAchievements } from '../components/MediaAchievements'
 import { MediaReview } from '../components/MediaReview'
 import { MediaFacts } from '../components/MediaFacts'
 import { FavouriteToggle } from '../components/FavouriteToggle'
+import { Bone } from '../components/Skeleton'
 import { StatusMenu } from '../components/StatusMenu'
 import { MediaRecommendations, MediaRelations } from '../components/MediaRelations'
 import {
@@ -113,10 +114,37 @@ export const MediaPage = () => {
     )
   }
 
+  /*
+   * The page without its banner: whether there is one is part of the answer, and a hero that
+   * collapses when it turns out there is none moves everything under it.
+   */
   if (!media) {
     return (
       <AppShell>
-        <p className="muted">Loading…</p>
+        <div className="media-hero" aria-busy="true">
+          <div className="media-head" aria-hidden="true">
+            <div className="media-cover-column">
+              <span className="media-cover skeleton" />
+              <Bone className="skeleton-box" height="2.5rem" />
+            </div>
+            <div className="media-intro">
+              <Bone className="skeleton-title" width="45%" />
+              {['100%', '96%', '92%', '60%'].map((width) => (
+                <Bone key={width} width={width} />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="media-layout" aria-hidden="true">
+          <div className="media-side">
+            <Bone className="skeleton-box" height="7rem" />
+            <Bone className="skeleton-box" height="14rem" />
+          </div>
+          <div className="media-main">
+            <Bone className="skeleton-box" height="18rem" />
+          </div>
+        </div>
       </AppShell>
     )
   }

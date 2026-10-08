@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import type { MediaType } from '../api/client'
 import { PosterGallery } from './PosterGallery'
 import { mediaPathFor } from '../modules/registry'
+import { PosterRowSkeleton } from './Skeleton'
 import { useShelfResults } from './useShelfResults'
 
 /** One catalogue shelf as a gallery, fetched when it is nearly on screen. */
@@ -28,16 +29,20 @@ export const ShelfGallery = ({
           See all →
         </Link>
       </h2>
-      <PosterGallery
-        posters={results.map((item) => ({
-          key: `${item.source}-${item.externalId}`,
-          title: item.title,
-          coverUrl: item.coverUrl,
-          adult: item.adult,
-          to: mediaPathFor(item),
-        }))}
-        oneRow
-      />
+      {results === null ? (
+        <PosterRowSkeleton />
+      ) : (
+        <PosterGallery
+          posters={results.map((item) => ({
+            key: `${item.source}-${item.externalId}`,
+            title: item.title,
+            coverUrl: item.coverUrl,
+            adult: item.adult,
+            to: mediaPathFor(item),
+          }))}
+          oneRow
+        />
+      )}
     </section>
   )
 }

@@ -4,6 +4,7 @@ import type { MediaType, SearchResult, TrackingStatus } from '../api/client'
 import { mediaPathFor } from '../modules/registry'
 import { CoverStatusMenu } from './CoverStatusMenu'
 import { ChevronRight } from './GroupedList'
+import { ShelfCardSkeletons } from './Skeleton'
 import { useShelfResults } from './useShelfResults'
 import { coverBlurClass, useBlurAdult } from '../content/blur'
 
@@ -49,6 +50,7 @@ export const ShelfRow = ({
   cards,
   onStatus,
   frame,
+  pending = false,
 }: {
   title: string
   /** Where the whole shelf lives; no "See all" where there is no such page. */
@@ -56,6 +58,8 @@ export const ShelfRow = ({
   cards: RowCard[]
   onStatus: (item: Shelvable, status: TrackingStatus) => Promise<void>
   frame?: Ref<HTMLElement>
+  /** Covers still on their way: the row holds five placeholders in their place. */
+  pending?: boolean
 }) => (
   <section className="shelf-row-section" ref={frame}>
     <div className="shelf-row-head">
@@ -69,6 +73,7 @@ export const ShelfRow = ({
     </div>
 
     <ul className="chip-row shelf-row">
+      {pending && <ShelfCardSkeletons />}
       {cards.map((card) => (
         <li key={card.key} className="shelf-card">
           <div className="shelf-card-cover">
@@ -123,7 +128,8 @@ export const CatalogueShelfRow = ({
       title={title}
       to={to}
       onStatus={onStatus}
-      cards={results.map((item) => ({
+      pending={results === null}
+      cards={(results ?? []).map((item) => ({
         key: `${item.source}-${item.externalId}`,
         source: item.source,
         externalId: item.externalId,
